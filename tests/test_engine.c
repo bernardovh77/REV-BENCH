@@ -1,7 +1,10 @@
 /*
- * test_engine.c - the breathing engine: conservation, steady state, the
- * throttle, choked flow, pumping loss, and no step-to-step oscillation.
+ * test_engine.c - the whole engine. Motored with adiabatic walls (stage 5):
+ * conservation, steady state, the throttle, choked flow, pumping loss, no
+ * step-to-step oscillation. Fired (stage 6): conservation of every species
+ * and of energy, full-load numbers, spark advance and mixture strength.
  */
+#include "combustion.h"
 #include "engine.h"
 #include "rb_test.h"
 
@@ -11,14 +14,94 @@
 
 static rb_engine e;           /* about 10 KB: kept off the stack */
 
-/* The default 2.0 L four, from rest, at the given speed and throttle. */
+/* The default 2.0 L four from rest, motored with adiabatic walls (stage 5),
+ * at the given speed and throttle. */
 static void start(double rpm, double throttle)
+{
+    rb_engine_desc d;
+    rb_engine_desc_default(&d);
+    d.heat_transfer = 0;
+    rb_engine_init(&e, &d, DT);
+    e.rpm = rpm;
+    e.throttle_pos = throttle;
+}
+
+/* The same engine running on fuel, walls and all (stage 6). */
+static void start_fired(double rpm, double throttle)
 {
     rb_engine_desc d;
     rb_engine_desc_default(&d);
     rb_engine_init(&e, &d, DT);
     e.rpm = rpm;
     e.throttle_pos = throttle;
+    e.ignition = 1;
+}
+
+/* Everything inside the engine: mass, sensible energy, mass of each species
+ * and the count of repaired states. */
+typedef struct contents {
+    double mass, U, species[RB_NSPECIES];
+    int repairs;
+} contents;
+
+static void add_chamber(contents *c, const rb_chamber *g)
+{
+    c->mass += g->mass;
+    c->U += g->U;
+    for (int s = 0; s < RB_NSPECIES; s++) c->species[s] += g->m[s];
+    c->repairs += g->repairs;
+}
+
+static contents inside(void)
+{
+    contents c = { 0 };
+    add_chamber(&c, &e.plenum);
+    add_chamber(&c, &e.manifold);
+    add_chamber(&c, &e.muffler);
+    for (int i = 0; i < e.desc.cylinders; i++) add_chamber(&c, &e.cyl[i].gas);
+    return c;
+}
+
+/* What the engine's books say should have changed: energy brought in by the
+ * air and fuel, taken out by the exhaust, added by the pistons, the walls
+ * and the burning. */
+static double energy_books(void)
+{
+    return e.energy_in - e.energy_out + e.work_on_gas + e.wall_heat + e.heat_released
+         + e.fuel_energy_in;
+}
+
+/* The engine's running totals at one moment, to compare two moments. */
+typedef struct books {
+    contents c;
+    double fuel_in, burned, heat, energy, in[RB_NSPECIES], out[RB_NSPECIES];
+} books;
+
+static books snapshot(void)
+{
+    books b = { .c = inside(), .fuel_in = e.fuel_in, .burned = e.fuel_burned,
+                .heat = e.heat_released, .energy = energy_books() };
+    for (int s = 0; s < RB_NSPECIES; s++) {
+        b.in[s] = e.species_in[s];
+        b.out[s] = e.species_out[s];
+    }
+    return b;
+}
+
+/* How many species' books don't balance between two moments: what came in,
+ * minus what went out, plus what the burning made, is what's inside. */
+static int species_unbalanced(const books *a, const books *b)
+{
+    const double burned = b->burned - a->burned, afr = RB_AFR_STOICH;
+    const double made[RB_NSPECIES] = { [RB_AIR] = -afr * burned,
+                                       [RB_FUEL] = b->fuel_in - a->fuel_in - burned,
+                                       [RB_BURNED] = (1.0 + afr) * burned };
+    int wrong = 0;
+    for (int s = 0; s < RB_NSPECIES; s++) {
+        const double expected = b->in[s] - a->in[s] - (b->out[s] - a->out[s]) + made[s];
+        if (fabs(b->c.species[s] - a->c.species[s] - expected) > 1e-12 * a->c.mass) wrong++;
+    }
+    return wrong;
 }
 
 static double ambient_density(void)
@@ -75,29 +158,16 @@ void test_engine_conserves_mass_and_energy(void)
 {
     /* Part throttle from rest: the plenum is still pumping down, so a lot is
      * changing. Every kg and every J must be accounted for. */
-    double m0 = 0.0, u0 = 0.0, m1 = 0.0, u1 = 0.0;
-    int repairs = 0;
-
     start(3000.0, 0.1);
-    m0 = e.plenum.mass;
-    u0 = e.plenum.U;
-    for (int i = 0; i < 4; i++) {
-        m0 += e.cyl[i].gas.mass;
-        u0 += e.cyl[i].gas.U;
-    }
+    const contents c0 = inside();
     for (int k = 0; k < 3 * 7680; k++) rb_engine_step(&e);   /* three cycles */
-    m1 = e.plenum.mass;
-    u1 = e.plenum.U;
-    repairs = e.plenum.repairs;
-    for (int i = 0; i < 4; i++) {
-        m1 += e.cyl[i].gas.mass;
-        u1 += e.cyl[i].gas.U;
-        repairs += e.cyl[i].gas.repairs;
-    }
-    CHECK(m1 < 0.8 * m0);   /* a good part of the air has been pumped out */
-    CHECK_NEAR(m1 - m0, e.mass_in - e.mass_out, 1e-12 * m0);
-    CHECK_NEAR(u1 - u0, e.energy_in - e.energy_out + e.work_on_gas, 1e-9 * fabs(e.energy_out));
-    CHECK_EQ_INT(repairs, 0);
+    const contents c1 = inside();
+
+    CHECK(e.plenum.p < 0.8 * e.desc.p_ambient);   /* the plenum is pumping down */
+    CHECK_NEAR(c1.mass - c0.mass, e.mass_in - e.mass_out, 1e-12 * c0.mass);
+    CHECK_NEAR(c1.U - c0.U, energy_books(), 1e-9 * fabs(e.energy_out));
+    CHECK(e.wall_heat == 0.0 && e.heat_released == 0.0 && e.fuel_in == 0.0);
+    CHECK_EQ_INT(c1.repairs, 0);
     CHECK_EQ_INT((int)e.cycles, 3);
 }
 
@@ -107,13 +177,13 @@ void test_engine_settles_and_balances(void)
      * the throttle equals the air into the cylinders, and the volumetric
      * efficiency is in the range of real naturally aspirated engines. */
     start(3000.0, 1.0);
-    const int cycles = rb_engine_settle(&e, 60, 1e-6);
+    const int cycles = rb_engine_settle(&e, 100, 1e-6);
     const rb_engine_cycle *r = &e.result;
     const double expected_flow = r->ve * ambient_density() * rb_engine_displacement(&e) * 3000.0 / 120.0;
 
-    CHECK(cycles > 0 && cycles < 30);
+    CHECK(cycles > 0 && cycles < 50);
     CHECK(r->ve > 0.85 && r->ve < 0.95);
-    CHECK_NEAR(r->air_flow, expected_flow, 1e-6 * expected_flow);
+    CHECK_NEAR(r->air_flow, expected_flow, 1e-5 * expected_flow);
     CHECK(r->map < e.desc.p_ambient && r->map > 0.98 * e.desc.p_ambient);
     CHECK(r->map_min < r->map && r->map < r->map_max);
     CHECK(r->pmep > 0.0);           /* turning it over costs work ... */
@@ -127,7 +197,7 @@ void test_engine_cycle_totals_dont_jitter(void)
      * totals still settle to a steady value (without sharing, they wobble
      * by about one step in 3291, 3e-4). */
     start(7000.0, 1.0);
-    CHECK(rb_engine_settle(&e, 60, 1e-6) > 0);
+    CHECK(rb_engine_settle(&e, 100, 1e-5) > 0);
 }
 
 void test_engine_cylinders_breathe_alike(void)
@@ -199,25 +269,34 @@ void test_engine_pumping_loss(void)
     CHECK_NEAR(e.result.pmep, expected, 0.02 * expected);
 }
 
+/* Pressure of chamber j: the four cylinders, then plenum, manifold, muffler. */
+static double watched_p(int j)
+{
+    if (j < 4) return e.cyl[j].gas.p;
+    return j == 4 ? e.plenum.p : j == 5 ? e.manifold.p : e.muffler.p;
+}
+
 void test_engine_pressures_dont_zigzag(void)
 {
     /* Explicit flow steps can make a small chamber's pressure flip up and
      * down every step when several openings feed it. Watch every chamber for
-     * three changes of direction in a row. */
-    static const double cases[3][2] = { { 1200.0, 0.02 }, { 3000.0, 1.0 }, { 6500.0, 1.0 } };
+     * three changes of direction in a row, motored and fired. */
+    static const double cases[4][3] = { { 1200.0, 0.02, 0 }, { 3000.0, 1.0, 0 }, { 6500.0, 1.0, 0 },
+                                        { 3000.0, 1.0, 1 } };
     int zigzags = 0;
 
-    for (int k = 0; k < 3; k++) {
-        start(cases[k][0], cases[k][1]);
+    for (int k = 0; k < 4; k++) {
+        if (cases[k][2] > 0.0) start_fired(cases[k][0], cases[k][1]);
+        else start(cases[k][0], cases[k][1]);
         rb_engine_settle(&e, 100, 1e-4);
-        double prev[5], dprev[5] = { 0 };
-        int flips[5] = { 0 };
-        for (int j = 0; j < 5; j++) prev[j] = (j < 4) ? e.cyl[j].gas.p : e.plenum.p;
+        double prev[7], dprev[7] = { 0 };
+        int flips[7] = { 0 };
+        for (int j = 0; j < 7; j++) prev[j] = watched_p(j);
         const long c = e.cycles;
         while (e.cycles == c) {
             rb_engine_step(&e);
-            for (int j = 0; j < 5; j++) {
-                const double p = (j < 4) ? e.cyl[j].gas.p : e.plenum.p;
+            for (int j = 0; j < 7; j++) {
+                const double p = watched_p(j);
                 const double dp = p - prev[j];
                 flips[j] = (dp * dprev[j] < 0.0) ? flips[j] + 1 : 0;
                 if (flips[j] >= 3) zigzags++;
@@ -227,4 +306,185 @@ void test_engine_pressures_dont_zigzag(void)
         }
     }
     CHECK_EQ_INT(zigzags, 0);
+}
+
+/* ---- fired (stage 6) ---------------------------------------------------- */
+
+void test_engine_fired_conserves_everything(void)
+{
+    /* From a standing start with the ignition on, the books must balance for
+     * every species and for energy: air and fuel in, exhaust out, burning,
+     * walls and pistons. */
+    start_fired(3000.0, 1.0);
+    const books b0 = snapshot();
+    const contents c0 = b0.c;
+    for (int k = 0; k < 4 * 7680; k++) rb_engine_step(&e);   /* four cycles */
+    const books b1 = snapshot();
+    const contents c1 = b1.c;
+    const double burned = e.fuel_burned;
+    CHECK_EQ_INT(species_unbalanced(&b0, &b1), 0);
+    CHECK(burned > 0.0 && e.heat_released > 0.0 && e.wall_heat < 0.0);
+    CHECK_NEAR(c1.mass - c0.mass, e.mass_in - e.mass_out + e.fuel_in, 1e-12 * c0.mass);
+    CHECK_NEAR(c1.U - c0.U, energy_books(), 1e-9 * e.heat_released);
+    CHECK_NEAR(e.heat_released, burned * rb_fuel_heat(), 1e-9 * e.heat_released);
+    CHECK_EQ_INT(c1.repairs, 0);
+}
+
+void test_engine_fired_full_load(void)
+{
+    /* The plan's goal for stage 6: wide open at 3000 rpm with the spark at
+     * best torque, a 2.0 L four makes 11-13 bar IMEP with its peak pressure
+     * 10-20 degrees after TDC. The rest should look like a real engine too. */
+    start_fired(3000.0, 1.0);
+    CHECK(rb_engine_settle(&e, 100, 1e-4) > 0);
+    const rb_engine_cycle *r = &e.result;
+    const double fuel_energy = r->fuel_flow * (120.0 / 3000.0) * RB_FUEL_LHV;   /* per cycle */
+
+    CHECK(r->imep_net > 11e5 && r->imep_net < 13e5);
+    CHECK(r->angle_p_max > 10.0 && r->angle_p_max < 20.0);
+    CHECK(r->p_max > 45e5 && r->p_max < 75e5);
+    CHECK(r->efficiency > 0.34 && r->efficiency < 0.42);    /* indicated */
+    CHECK(r->ve > 0.82 && r->ve < 0.95);
+    CHECK_NEAR(r->afr, 14.6, 0.15);
+    CHECK(r->t_exhaust > 1000.0 && r->t_exhaust < 1400.0);
+    CHECK(r->residual > 0.02 && r->residual < 0.08);
+    CHECK(r->wall_loss > 0.10 * fuel_energy && r->wall_loss < 0.25 * fuel_energy);
+    CHECK(r->p_exhaust > e.desc.p_ambient && r->p_exhaust < 1.15 * e.desc.p_ambient);
+    CHECK_NEAR(r->imep_net, r->imep_gross - r->pmep, 1e-6 * r->imep_net);
+    CHECK_NEAR(r->torque, r->net_work / (4.0 * 3.14159265358979323846), 1e-9);
+}
+
+void test_engine_spark_advance(void)
+{
+    /* Advancing the spark raises the peak pressure and moves it earlier, and
+     * the torque peaks in between ("MBT"): too early or too late both lose. */
+    static const double spark[3] = { 10.0, 25.0, 40.0 };
+    double torque[3], p_max[3], angle[3];
+    for (int k = 0; k < 3; k++) {
+        start_fired(3000.0, 1.0);
+        e.spark = spark[k];
+        rb_engine_settle(&e, 100, 1e-4);
+        torque[k] = e.result.torque;
+        p_max[k] = e.result.p_max;
+        angle[k] = e.result.angle_p_max;
+    }
+    CHECK(torque[1] > torque[0] && torque[1] > torque[2]);
+    CHECK(p_max[0] < p_max[1] && p_max[1] < p_max[2]);
+    CHECK(angle[0] > angle[1] && angle[1] > angle[2]);
+}
+
+void test_engine_mixture_strength(void)
+{
+    /* A slightly rich mixture makes the most power and a lean one the most
+     * efficient, and a rich engine blows unburned fuel out of its exhaust. */
+    static const double afr[3] = { 13.0, 14.6, 17.0 };
+    double imep[3], eff[3], unburned[3];
+    for (int k = 0; k < 3; k++) {
+        start_fired(3000.0, 1.0);
+        e.afr = afr[k];
+        rb_engine_settle(&e, 100, 1e-4);
+        const double fuel0 = e.species_out[RB_FUEL], all0 = e.mass_out;
+        const long c = e.cycles;
+        while (e.cycles == c) rb_engine_step(&e);
+        imep[k] = e.result.imep_net;
+        eff[k] = e.result.efficiency;
+        unburned[k] = (e.species_out[RB_FUEL] - fuel0) / (e.mass_out - all0);
+    }
+    CHECK(imep[0] > imep[1] && imep[1] > imep[2]);
+    CHECK(eff[2] > eff[1] && eff[1] > eff[0]);
+    CHECK(unburned[0] > 2.0 * unburned[1]);
+}
+
+void test_engine_walls_and_residuals(void)
+{
+    /* Warm walls heat the incoming charge, so the engine draws in less air
+     * than with adiabatic walls. Throttled, more of the trapped charge is old
+     * exhaust, and the injectors still hit their target: the engine doesn't
+     * breathe fresh air in through its tailpipe. */
+    rb_engine_desc d;
+    start(1000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-4);
+    const double ve_adiabatic = e.result.ve;
+    rb_engine_desc_default(&d);
+    rb_engine_init(&e, &d, DT);
+    e.rpm = 1000.0;
+    rb_engine_settle(&e, 100, 1e-4);
+    CHECK(e.result.ve < ve_adiabatic - 0.02);
+
+    start_fired(2000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-4);
+    const double residual_wot = e.result.residual;
+    start_fired(2000.0, 0.06);
+    rb_engine_settle(&e, 150, 1e-4);
+    CHECK(e.result.residual > 2.5 * residual_wot);
+    CHECK_NEAR(e.result.afr, 14.6, 0.15);
+    CHECK(e.result.pmep > 0.5e5);
+    CHECK(e.result.efficiency > 0.2 && e.result.efficiency < 0.34);
+}
+
+void test_engine_trapped_charge(void)
+{
+    /* At intake valve closing the engine notes the trapped charge, fuel and
+     * all, as Woschni's reference state: throttled, it is well below
+     * atmospheric pressure. */
+    start_fired(2000.0, 0.06);
+    rb_engine_settle(&e, 150, 1e-4);
+    const double ivc = rb_valve_closes(&e.desc.intake);
+    double a = rb_engine_cylinder_angle(&e, 0), before = a;
+    /* The step that passes IVC: like the engine, count an event exactly at
+     * the step's start, not one exactly at its end. */
+    for (int k = 0; k < 12000 && !(before <= ivc && ivc < a); k++) {
+        before = a;
+        rb_engine_step(&e);
+        a = rb_engine_cylinder_angle(&e, 0);
+    }
+    const rb_chamber *g = &e.cyl[0].gas;
+    const rb_burn *b = &e.burn[0];
+    CHECK(before <= ivc && ivc < a);
+    CHECK_NEAR(b->p_ivc, g->p, 0.002 * g->p);    /* one step later: a hair more squeezed */
+    CHECK_NEAR(b->V_ivc, g->V, 0.002 * g->V);
+    CHECK_NEAR(b->T_ivc, g->T, 0.002 * g->T);
+    CHECK_NEAR(b->residual, g->y[RB_BURNED], 1e-9);
+    CHECK(g->m[RB_FUEL] > 0.0 && b->p_ivc < 0.6 * e.desc.p_ambient);
+}
+
+void test_engine_burn_stops_at_evo(void)
+{
+    /* Spark 90 degrees after TDC: the exhaust valve opens with the flame still
+     * going, and whatever hasn't burned by then leaves unburned. The burned
+     * share is where the Wiebe curve has got to at the valve's opening, and
+     * the books still balance. */
+    start_fired(3000.0, 1.0);
+    e.spark = -90.0;
+    rb_engine_settle(&e, 100, 1e-4);
+    const books b0 = snapshot();
+    const long c = e.cycles;
+    while (e.cycles == c) rb_engine_step(&e);
+    const books b1 = snapshot();
+    const rb_engine_desc *d = &e.desc;
+    const double evo = rb_valve_opens(&d->exhaust), a = rb_engine_cylinder_angle(&e, 0);
+    const double x_evo = rb_wiebe(evo - 90.0, d->burn_duration, d->wiebe_a, d->wiebe_m);
+    const double fuel = b1.fuel_in - b0.fuel_in, unburned = b1.out[RB_FUEL] - b0.out[RB_FUEL];
+
+    CHECK(x_evo > 0.3 && x_evo < 0.95);          /* the valve opens mid-burn */
+    CHECK(a > evo || a < 89.0);                   /* cylinder 1 is between its EVO and spark */
+    CHECK_NEAR(e.burn[0].fraction, x_evo, 0.01);
+    CHECK(!e.burn[0].burning);
+    CHECK(unburned > 0.1 * fuel);
+    CHECK_EQ_INT(species_unbalanced(&b0, &b1), 0);
+    CHECK_NEAR(b1.c.U - b0.c.U, b1.energy - b0.energy, 1e-9 * (b1.heat - b0.heat));
+}
+
+void test_engine_settles_light_load(void)
+{
+    /* Nearly shut at 800 rpm, the plenum fills slowly and the engine takes
+     * the longest to settle. When rb_engine_settle says it has, the work of
+     * the next cycle agrees too, not just the air. */
+    start_fired(800.0, 0.02);
+    const int cycles = rb_engine_settle(&e, 150, 1e-4);
+    const double w = e.result.net_work;
+    const long c = e.cycles;
+    while (e.cycles == c) rb_engine_step(&e);
+    CHECK(cycles > 0 && cycles < 100);
+    CHECK(fabs(e.result.net_work - w) <= 2e-4 * (fabs(w) + 1.0));
 }

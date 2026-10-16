@@ -66,14 +66,15 @@ def label(ax, text, xy, offset, ha="left", va="center", color=INK_2, size=8.5):
 
 
 def titles(fig, title, subtitle, top=0.95, left=0.075):
-    """Bold title and a grey subtitle (which may have line breaks) at the top left."""
-    h = fig.get_figheight()          # inches
-    line = 13.0 / 72.0 / h           # one 9-point line with its spacing, as a figure fraction
+    """Bold title and a grey subtitle (which may have line breaks) at the top left.
+    `top` is the title's baseline; the subtitle's lines follow 0.2 in below it,
+    16 points apart."""
+    pt = 1.0 / 72.0 / fig.get_figheight()   # one point, as a figure fraction
     fig.text(left, top, title, fontsize=12, fontweight="bold", color=INK)
-    lines = subtitle.count("\n") + 1
-    # The y position is the baseline of the subtitle's last line.
-    fig.text(left, top - 0.2 / h - line * (lines - 1), subtitle, fontsize=9, color=INK_2,
-             linespacing=1.45)
+    # One text per line, so the spacing is exactly what's written here whatever
+    # the font (matplotlib anchors multi-line text at its last line).
+    for k, line in enumerate(subtitle.split("\n")):
+        fig.text(left, top - (14.4 + 16.0 * k) * pt, line, fontsize=9, color=INK_2)
 
 
 def crank_axis(ax, lo, hi):

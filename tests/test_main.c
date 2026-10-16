@@ -52,6 +52,13 @@ void test_valve_lift_profile(void);
 void test_valve_flow_area(void);
 void test_throttle_geometry(void);
 void test_throttle_pedal(void);
+/* ---- combustion and walls (tests/test_combustion.c) ---- */
+void test_fuel_heat(void);
+void test_wiebe_burn(void);
+void test_burnable_fuel(void);
+void test_constant_volume_burn(void);
+void test_woschni(void);
+void test_motored_loss_angle(void);
 /* ---- engine (tests/test_engine.c) ---- */
 void test_engine_description(void);
 void test_engine_pistons_follow_the_crank(void);
@@ -63,6 +70,14 @@ void test_engine_throttle_response(void);
 void test_engine_choked_throttle(void);
 void test_engine_pumping_loss(void);
 void test_engine_pressures_dont_zigzag(void);
+void test_engine_fired_conserves_everything(void);
+void test_engine_fired_full_load(void);
+void test_engine_spark_advance(void);
+void test_engine_mixture_strength(void);
+void test_engine_walls_and_residuals(void);
+void test_engine_trapped_charge(void);
+void test_engine_burn_stops_at_evo(void);
+void test_engine_settles_light_load(void);
 /* ---- native helpers (tests/test_wav.c, tests/test_csv.c) ---- */
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
@@ -108,6 +123,12 @@ static const struct {
     T(test_valve_flow_area),
     T(test_throttle_geometry),
     T(test_throttle_pedal),
+    T(test_fuel_heat),
+    T(test_wiebe_burn),
+    T(test_burnable_fuel),
+    T(test_constant_volume_burn),
+    T(test_woschni),
+    T(test_motored_loss_angle),
     T(test_engine_description),
     T(test_engine_pistons_follow_the_crank),
     T(test_engine_conserves_mass_and_energy),
@@ -118,6 +139,14 @@ static const struct {
     T(test_engine_choked_throttle),
     T(test_engine_pumping_loss),
     T(test_engine_pressures_dont_zigzag),
+    T(test_engine_fired_conserves_everything),
+    T(test_engine_fired_full_load),
+    T(test_engine_spark_advance),
+    T(test_engine_mixture_strength),
+    T(test_engine_walls_and_residuals),
+    T(test_engine_trapped_charge),
+    T(test_engine_burn_stops_at_evo),
+    T(test_engine_settles_light_load),
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),

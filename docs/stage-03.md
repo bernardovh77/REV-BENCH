@@ -37,6 +37,11 @@ mole of it in air gives 7.48 CO2 + 6.99 H2O + 40.91 N2 + 0.49 Ar.
 The burned gas has a *frozen* composition, with no dissociation into CO, H2, OH, etc. at very high
 temperature. That makes peak combustion temperatures a little high; stage 6 calibrates for it.
 
+> **Update (stage 6):** above 1000 K, `RB_BURNED`'s heat capacity is now the *apparent* cp of the
+> equilibrium mixture at 40 bar, which includes the energy that dissociation takes: 1977 J/(kg K)
+> at 2500 K and 2753 at 3000 K, against the frozen gas's values in the table above. A constant-volume
+> burn now lands within 2 % of Cantera's equilibrium temperature. See `docs/stage-06.md`.
+
 ## Equations used
 
 1. **Ideal gas:** `p = m R T / V`. Mixture values are mass-weighted: `R = sum(y_i R_i)` and

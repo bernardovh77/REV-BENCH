@@ -21,12 +21,23 @@
   formula, orifices with the equalisation limit, `rb_network_step`), `cylinder.c` (slider-crank
   geometry; `rb_cylinder` = chamber + geometry + crank angle, `rb_cylinder_move` returns the work),
   `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
-  (butterfly plate + shaft), `engine.c` (N cylinders + plenum + throttle + two air reservoirs).
+  (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
+  correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
+  area), `engine.c` (N cylinders + plenum + throttle + exhaust manifold → catalyst orifice → muffler
+  → tailpipe + two air reservoirs; fuel at IVC, spark, burn, walls; per-cycle IMEP, torque etc.).
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
-  Claude's cloud workspace; see docs/stage-03.md.
-- Engine step order: set areas (throttle, valves) → all flows from the current state, integrated
-  (explicit Euler) → turn the crank and move the pistons (trapezoidal). Per-cycle totals share the
-  step that crosses 720° between both cycles. `rb_engine_settle` runs to a steady state.
+  Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
+  equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
+- Engine step order: events the crank passes during the step (an event counts if it's in
+  [angle, angle + step)): IVC injects the fuel and then notes the trapped charge, the spark sets the
+  burnable fuel, EVO stops the burn, overlap TDC closes the peak-pressure bookkeeping → set areas
+  (throttle, valves) → all flows, Woschni wall heat and burning as rates from the current state,
+  integrated together (explicit Euler) → turn the crank and move the pistons (trapezoidal).
+  Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
+  a steady state of VE, plenum pressure and net work.
+- `rb_cli breathe` stays motored with adiabatic walls by default (stage 5's numbers; `--walls` adds
+  heat transfer); `rb_cli fire` has walls and fuel. In tests, `start()` (test_engine.c) is motored
+  and adiabatic, `start_fired()` the full engine.
 - Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
   360 + ICL), exhaust centerline before it (360 - ECL).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
@@ -41,7 +52,8 @@
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
-  ones (cycle, map). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power). The shared
+  style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.

@@ -9,7 +9,9 @@
 #include <stddef.h>
 
 /* Reference values from the NASA Glenn database (Cantera 3.2): cp in
- * J/(kg K) and u(T) - u(298.15 K) in J/kg. */
+ * J/(kg K) and u(T) - u(298.15 K) in J/kg. The burned gas above 1000 K is in
+ * chemical equilibrium at 40 bar (apparent cp, dissociation included), and
+ * its u uses the complete products' R, as the model does. */
 static const double REF_T[13] = {
     200, 250, 300, 400, 600, 800, 1000, 1500, 2000, 2500, 3000, 3500, 4000,
 };
@@ -19,7 +21,7 @@ static const double REF_CP[RB_NSPECIES][13] = {
     [RB_FUEL]   = { 1029.106, 1256.516, 1483.475, 1921.323, 2663.959, 3187.848, 3580.345,
                     4180.7, 4535.28, 4728.28, 4826.633, 4880.008, 4920.808 },
     [RB_BURNED] = { 1034.615, 1046.206, 1058.155, 1083.536, 1141.074, 1204.032, 1260.084,
-                    1356.751, 1417.207, 1453.253, 1474.484, 1488.285, 1499.837 },
+                    1360.826, 1508.056, 1963.665, 2778.322, 3537.313, 4091.002 },
 };
 static const double REF_U[RB_NSPECIES][13] = {
     [RB_AIR]    = { -70300.31, -34507.78, 1327.86, 73516.02, 222241.86, 379665.02, 546441.84,
@@ -27,7 +29,7 @@ static const double REF_U[RB_NSPECIES][13] = {
     [RB_FUEL]   = { -115054.29, -61921.03, 2588.7, 165077.62, 611151.91, 1183727.12, 1845180.7,
                     3757660.71, 5905006.51, 8186098.58, 10537599.84, 12925323.36, 15335600.18 },
     [RB_BURNED] = { -74537.08, -36849.06, 1426.91, 79830.75, 244821.74, 421991.69, 611344.04,
-                    1124023.69, 1675446.52, 2250549.18, 2839617.27, 3437181.61, 4040914.49 },
+                    1124492.30, 1691926.80, 2398308.36, 3432973.97, 4877172.91, 6651981.23 },
 };
 
 static void pure(rb_gas *g, int species)
@@ -43,8 +45,13 @@ void test_gas_matches_nasa_data(void)
         rb_gas g;
         pure(&g, s);
         for (int i = 0; i < 13; i++) {
-            CHECK_NEAR(rb_gas_cp(&g, REF_T[i]), REF_CP[s][i], 1e-4 * REF_CP[s][i]);
-            CHECK_NEAR(rb_gas_u(&g, REF_T[i]), REF_U[s][i], 1e-4 * fabs(REF_U[s][i]) + 2.0);
+            /* The equilibrium burned gas is harder to fit: 1 % in cp up to
+             * 3500 K (4.5 % at 4000 K), 0.25 % in energy. */
+            const int eq = (s == RB_BURNED && REF_T[i] > 1000.0);
+            const double tol_cp = eq ? (REF_T[i] > 3500.0 ? 0.045 : 0.011) : 1e-4;
+            const double tol_u = eq ? 2.5e-3 : 1e-4;
+            CHECK_NEAR(rb_gas_cp(&g, REF_T[i]), REF_CP[s][i], tol_cp * REF_CP[s][i]);
+            CHECK_NEAR(rb_gas_u(&g, REF_T[i]), REF_U[s][i], tol_u * fabs(REF_U[s][i]) + 2.0);
         }
     }
     CHECK_NEAR(rb_species_R(RB_AIR), 287.0985, 0.001);

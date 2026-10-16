@@ -8,7 +8,10 @@
  *              47.85 % isooctane, 15 % n-heptane, 37.15 % toluene (by mole),
  *              which has real gasoline's hydrogen/carbon ratio of 1.87
  *   RB_BURNED  what air and fuel become when they burn in the exact
- *              (stoichiometric) ratio: CO2, H2O, N2 and Ar
+ *              (stoichiometric) ratio: CO2, H2O, N2 and Ar. Above 1000 K its
+ *              heat capacity includes dissociation at 40 bar (stage 6): at
+ *              2500 K some CO2 and H2O split into CO, H2, OH, ..., which takes
+ *              energy that returns as the gas cools.
  *
  * A lean mixture burns into BURNED plus leftover AIR, a rich one into BURNED
  * plus leftover FUEL, so these three are enough to follow the air-fuel ratio.
@@ -16,7 +19,8 @@
  * Heat capacity depends strongly on temperature (air: cp = 1005 J/(kg K) at
  * 300 K, 1141 at 1000 K, 1296 at 3000 K), so each species has a cp(T) fit in
  * two ranges, 200-1000 K and 1000-4000 K, made from the NASA Glenn
- * thermodynamic database; it matches the data to better than 0.001 %.
+ * thermodynamic database; it matches the data to better than 0.001 % (the
+ * burned gas's equilibrium fit above 1000 K: within 0.2 % in energy).
  * Outside 200-4000 K, cp is held constant.
  *
  * Energies are "sensible": zero at T_REF = 298.15 K for every species. The

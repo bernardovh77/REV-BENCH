@@ -1,23 +1,35 @@
 /*
- * engine.h - a whole engine breathing: N cylinders on one crankshaft, fed
- * from an intake plenum behind the throttle, exhausting straight into the
- * open air. There is no fuel yet (stage 6) and the crank is turned at a set
- * speed by a motor (stage 7 lets it run itself), so this measures how well
- * the engine breathes.
+ * engine.h - a whole engine: N cylinders on one crankshaft, fed from an
+ * intake plenum behind the throttle, exhausting through a manifold, a
+ * catalyst, a muffler and a tailpipe into the open air.
+ * The crank is turned at a set speed, by a motor or a dyno (stage 7 lets the
+ * engine drive itself). With the ignition off it is motored: it only breathes
+ * (stage 5). With the ignition on, fuel is injected and burned (stage 6).
  *
  *   ambient air --> throttle --> plenum --> intake valves --> cylinder 1..N
  *                                                                  |
- *   ambient air <--------------------------------- exhaust valves <-+
+ *   ambient air <-- tailpipe <-- muffler <-- catalyst <-- exhaust  |
+ *                                                         manifold <-- exhaust valves
  *
+ * The exhaust is two volumes for now (stage 10 replaces it with pipes): the
+ * manifold catches the exhaust pulses, and the muffler holds old exhaust gas,
+ * so when the pressure dips at light load, the engine pulls back exhaust gas
+ * through its tailpipe rather than fresh air.
  * One physics step (dt):
- *   1. set every opening's area: the throttle from the pedal, each valve
+ *   1. events for each cylinder whose crank passes them during the step:
+ *      intake valve closing (inject the fuel for the trapped air, then note
+ *      the trapped charge), the spark (start burning), exhaust valve opening
+ *      (stop burning), overlap TDC (close the books on the cylinder's peak
+ *      pressure);
+ *   2. set every opening's area: the throttle from the pedal, each valve
  *      from its cam at the current crank angle;
- *   2. move gas through all the openings at once, computed from the current
- *      state (explicit Euler, as in stage 3);
- *   3. turn the crank by 6 rpm dt degrees and move every piston (the
+ *   3. everything that changes the gas, computed from the current state and
+ *      applied together (explicit Euler, as in stage 3): flow through the
+ *      openings, heat to or from the walls, and the burning;
+ *   4. turn the crank by 6 rpm dt degrees and move every piston (the
  *      trapezoidal step of stage 4).
  * At the end of every 720-degree cycle the engine adds up what went through
- * it: volumetric efficiency, plenum pressure, pumping loss. The step that
+ * it: volumetric efficiency, plenum pressure, work, fuel, heat. The step that
  * crosses the end of a cycle is shared between the two cycles in proportion
  * to its angle on either side, so the totals don't jitter when a cycle isn't
  * a whole number of steps.
@@ -45,7 +57,21 @@ typedef struct rb_engine_desc {
     rb_valve    intake, exhaust;          /* each cylinder's valves (valve.h)         */
     rb_throttle throttle;                 /* throttle.h                               */
     double plenum_volume;                 /* m^3                                      */
+    double exhaust_volume;                /* m^3: headers and collector               */
+    double catalyst_area;                 /* m^2: effective area (Cd included) of the
+                                           * downpipe and catalyst                    */
+    double muffler_volume;                /* m^3: mufflers and the pipes between them */
+    double tailpipe_area;                 /* m^2: effective area of the way out       */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
+    /* combustion (combustion.h) */
+    double burn_duration;                 /* crank degrees from the spark to the end  */
+    double wiebe_a, wiebe_m;              /* shape of the burn                        */
+    double mixture_spread;                /* spread of the local fuel-air ratio, as a
+                                           * standard deviation of phi (combustion.h) */
+    double combustion_efficiency;         /* share of the burnable fuel that burns    */
+    /* walls (heat.h) */
+    int    heat_transfer;                 /* 1 = Woschni heat flow, 0 = adiabatic     */
+    double wall_temperature;              /* K                                        */
 } rb_engine_desc;
 
 /* What went through the engine during one 720-degree cycle. */
@@ -60,54 +86,102 @@ typedef struct rb_engine_cycle {
     double pmep;                      /* Pa: pumping mean effective pressure = pumping_work /
                                        * displacement                                         */
     double net_work;                  /* J: work done BY the gas on the pistons, whole cycle  */
+    double imep_gross;                /* Pa: work of the compression and power strokes /
+                                       * displacement                                         */
+    double imep_net;                  /* Pa: net_work / displacement = imep_gross - pmep      */
+    double torque;                    /* N m: indicated, net_work / (4 pi)                    */
+    double power;                     /* W: indicated                                         */
+    double fuel_flow;                 /* kg/s injected                                        */
+    double afr;                       /* air drawn in / fuel injected (0 with no fuel)        */
+    double efficiency;                /* indicated: net_work / (fuel * RB_FUEL_LHV)           */
+    double heat_released;             /* J from burning, all cylinders                        */
+    double wall_loss;                 /* J of heat lost to the walls (< 0: walls warmed the gas) */
+    double t_exhaust;                 /* K: mass-averaged temperature of the gas leaving
+                                       * through the exhaust valves                          */
+    double p_exhaust;                 /* Pa: mean exhaust manifold pressure                   */
+    double p_max;                     /* Pa: peak cylinder pressure, mean over the cylinders  */
+    double angle_p_max;               /* degrees after firing TDC where it happens (mean)     */
+    double residual;                  /* burned-gas share of the trapped charge (mean)        */
 } rb_engine_cycle;
 
+/* One cylinder's combustion bookkeeping. */
+typedef struct rb_burn {
+    double p_ivc, V_ivc, T_ivc;   /* trapped charge at intake valve closing, fuel and all
+                                     (Woschni's reference)                               */
+    double residual;              /* its burned-gas mass fraction                        */
+    double burnable;              /* kg of fuel set to burn at the spark                 */
+    double fraction;              /* burned fraction so far, 0..1                        */
+    int    burning;               /* 1 from the spark until the burn ends                */
+    int    after_spark;           /* 1 from the spark to exhaust valve opening           */
+    double heat, wall_heat;       /* J released by burning / added by the walls, last step */
+    double p_max, angle_p_max;    /* highest pressure since overlap TDC, and where       */
+    double last_p_max, last_angle_p_max;   /* the same for the last complete cycle       */
+} rb_burn;
+
+/* The orifices point at chambers inside the same struct, so an rb_engine must
+ * stay where rb_engine_init put it: don't copy it (init another one instead). */
 typedef struct rb_engine {
     rb_engine_desc desc;
-    double dt;              /* s, physics step                                    */
-    double rpm;             /* crank speed, held by the motor (set it any time)   */
-    double throttle_pos;    /* pedal, 0..1 (set it any time)                      */
-    double theta;           /* degrees, cylinder 1's crank angle in the cycle     */
-    long   cycles;          /* cycles completed since rb_engine_init               */
-    rb_engine_cycle result; /* the last completed cycle                           */
+    double dt;              /* s, physics step                                         */
+    double rpm;             /* crank speed, held by the motor (set it any time)        */
+    double throttle_pos;    /* pedal, 0..1 (set it any time)                           */
+    int    ignition;        /* 1 = injectors and spark on, 0 = motored (any time)      */
+    double afr;             /* air-fuel ratio (by mass) the injectors aim for          */
+    double spark;           /* spark advance, crank degrees before firing TDC          */
+    double theta;           /* degrees, cylinder 1's crank angle in the cycle          */
+    long   cycles;          /* cycles completed since rb_engine_init                    */
+    rb_engine_cycle result; /* the last completed cycle                                */
 
     /* the gas */
     rb_cylinder cyl[RB_MAX_CYLINDERS];
-    rb_chamber  intake_air, plenum, exhaust_air;   /* the two air reservoirs are fixed */
+    rb_burn     burn[RB_MAX_CYLINDERS];
+    rb_chamber  intake_air, plenum, manifold, muffler, exhaust_air;   /* the air reservoirs are fixed */
     rb_orifice  throttle;                          /* intake_air -> plenum             */
     rb_orifice  intake[RB_MAX_CYLINDERS];          /* plenum -> cylinder i             */
-    rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> exhaust_air        */
+    rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> manifold           */
+    rb_orifice  catalyst;                          /* manifold -> muffler              */
+    rb_orifice  tailpipe;                          /* muffler -> exhaust_air           */
+    rb_gas      fuel_gas;                          /* pure fuel vapour, for injection  */
 
     /* totals since rb_engine_init, for checking conservation */
-    double mass_in, mass_out;       /* kg taken from the intake air / given to the exhaust air */
+    double mass_in, mass_out;       /* kg taken from the intake air / given to the outside air */
     double energy_in, energy_out;   /* J of enthalpy carried along with that mass              */
+    double species_in[RB_NSPECIES], species_out[RB_NSPECIES];   /* the same mass, by species */
     double work_on_gas;             /* J the pistons did on the gas                            */
+    double fuel_in;                 /* kg of fuel injected                                     */
+    double fuel_energy_in;          /* J of sensible energy the injected fuel brought          */
+    double fuel_burned;             /* kg of fuel burned                                       */
+    double heat_released;           /* J released by burning                                   */
+    double wall_heat;               /* J the walls gave the gas (negative: the gas lost heat)  */
 
     /* the cycle in progress (internal) */
     double acc_air[RB_MAX_CYLINDERS], acc_throttle, acc_p, acc_rho, acc_pmin, acc_pmax;
-    double acc_pump, acc_work, acc_time;
+    double acc_pump, acc_work, acc_time, acc_fuel, acc_heat, acc_wall, acc_exh_m, acc_exh_mT;
+    double acc_pexh;
     double throttle_area_pos;       /* pedal position the throttle's area was computed for */
 } rb_engine;
 
 /* A 2.0 L inline four: 86 x 86 mm, firing order 1-3-4-2, two intake and two
- * exhaust valves per cylinder, a 60 mm throttle and a 2.5 L plenum. */
+ * exhaust valves per cylinder, a 60 mm throttle, a 2.5 L plenum, a 2 L
+ * exhaust manifold and a 10 L muffler. */
 void   rb_engine_desc_default(rb_engine_desc *d);
 
 /* 0 if the description makes a possible engine, -1 otherwise. */
 int    rb_engine_desc_check(const rb_engine_desc *d);
 
-/* Sets up the engine at rest with the crank at 0 and all the gas at ambient
- * conditions. Returns 0, or -1 (and leaves e unusable) for a bad description
- * or time step. */
+/* Sets up the engine at rest with the crank at 0, all the gas at ambient
+ * conditions, the ignition off, a stoichiometric mixture and the default
+ * spark advance. Returns 0, or -1 (and leaves e unusable) for a bad
+ * description or time step. */
 int    rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt);
 
-/* One physics step at the current rpm and throttle. */
+/* One physics step at the current rpm, throttle, ignition, afr and spark. */
 void   rb_engine_step(rb_engine *e);
 
-/* Runs whole cycles until the volumetric efficiency and plenum pressure
- * change by less than tol (relative) for 3 cycles in a row. Returns the
+/* Runs whole cycles until the volumetric efficiency, plenum pressure and net
+ * work change by less than tol (relative) for 3 cycles in a row. Returns the
  * number of cycles run, or -1 if it didn't settle in max_cycles (or the crank
- * isn't turning). */
+ * turns slower than 10 rpm, where a single cycle takes millions of steps). */
 int    rb_engine_settle(rb_engine *e, int max_cycles, double tol);
 
 /* Total swept volume of all cylinders (m^3). */

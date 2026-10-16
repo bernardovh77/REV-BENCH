@@ -21,7 +21,7 @@ gets a one-line summary of anything that changed from the plan.
 | 3  | Gas & flow primitives                            | Physics core     | ✅     | 3 gases fitted to NASA data, first law, nozzle flow; blowdown within 0.07 % of exact |
 | 4  | Single cylinder: slider-crank + motoring         | Physics core     | ✅     | Trapezoidal piston work: TDC within 1e-6 of the exact isentrope, no drift over 1000 revs |
 | 5  | Valvetrain, throttle & intake plenum             | Physics core     | ✅     | Motored 2.0 L four: VE 0.79–0.93 wide open, 28 kPa at idle throttle, pumping loss = p_amb − MAP |
-| 6  | Combustion (Wiebe) + heat transfer               | Physics core     | ⬜     | |
+| 6  | Combustion (Wiebe) + heat transfer               | Physics core     | ✅     | 2.0 L four at 3000 rpm WOT: IMEP 12.0 bar, peak 58.8 bar at 12.7° ATDC at MBT (25°), 38.8 % indicated; low-speed VE 0.87 |
 | 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ⬜     | |
 | 8  | Engine layouts & presets                         | Physics core     | ⬜     | |
 | 9  | Dyno + validation against real engines           | Physics core     | ⬜     | |
@@ -189,6 +189,13 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - Outputs: IMEP, indicated torque and peak pressure location.
 - **Done when:** a 2.0 L NA I4-sized cylinder at WOT gives IMEP ≈ 11–13 bar, peak pressure lands about
   10–20° ATDC at MBT timing, and too much advance visibly raises peak pressure while lowering torque.
+- *Built:* `combustion.c` (heat release with the constant-volume correction, the Wiebe burn, and an
+  unmixedness model for how much fuel can burn: best power at AFR 13), `heat.c` (Woschni), and in
+  `engine.c` fuel injected at intake valve closing, the spark, the burn stopping at exhaust valve
+  opening, and an exhaust manifold + muffler (lumped volumes until stage 10). The burned gas's cp
+  above 1000 K now includes dissociation (within 2 % of Cantera's equilibrium). `rb_cli fire`
+  (`--spark-sweep`, `--rpm-sweep`) and `tools/plot_fire.py` show it (details in
+  `docs/stage-06.md`). All checks met except low-speed VE: 0.87 instead of 0.80–0.85.
 
 #### Stage 7 — Crankshaft dynamics, multi-cylinder, self-running
 - Crank and flywheel inertia, gas torque through the rod geometry, friction (a Chen-Flynn style FMEP),
@@ -196,6 +203,8 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   `τ = -W / Δθ` (W from `rb_cylinder_move`), so the energy balance between gas and crank stays exact.
 - N cylinders sharing a crank with a firing order and phase offsets (stage 5's `rb_engine` already
   has them, turned at a fixed rpm). Throttle, idle air control and a rev limiter (spark cut).
+- Stage 6's `rb_engine_cycle.torque` is the indicated torque (the gas's net work over 4π); the
+  brake torque is that minus friction.
 - **Done when:** an I4 cranks, starts, idles stably (about 800 rpm), revs up and down with
   the throttle, bounces off the limiter, and shuts down when ignition is cut.
 
@@ -216,6 +225,10 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   (e.g. 1500→redline) → CSV torque/power curve + plot.
 - Compare 2–3 presets against published real-engine numbers and tune the model's free factors
   (discharge coefficients, friction, burn duration).
+- Stage 6's knobs: burn duration and Wiebe shape (60° at every speed and load for now, so MBT
+  only moves between 20° and 25°; real engines want more advance at high rpm and light load),
+  mixture spread, combustion efficiency and wall temperature. Add the fuel's evaporation cooling
+  the charge. Low-speed VE is 0.87, against 0.80–0.85 in real engines.
 - **Done when:** peak torque and power are within about ±15% of the reference engines, at sensible RPMs,
   and changes behave in the right direction (more CR → more torque until knock; bigger cams → torque
   shifts up the rev range).
@@ -230,8 +243,11 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   exhaust view (stage 19).
 - Use the same pipe model for the intake runners. Stage 5's quasi-steady valves give VE no
   mid-range hump: that comes from the inertia of the air in tuned runners ("ram" effect).
-- Mind the budget: the breathing four alone already costs 1.0 µs per step natively (1.4 µs in
-  WASM) at 192 kHz. Keep pipes cheap (few cells, a cheap flux scheme, or a lower update rate than
+- The pipes replace stage 6's lumped exhaust manifold (2 L) and muffler (10 L). Check the
+  air-fuel ratio at the lightest loads, where the lumped tailpipe still lets some air in (13.6
+  instead of 14.6 at 2000 rpm and 3 % throttle).
+- Mind the budget: the fired four already costs 1.8 µs per step natively (2.4 µs in WASM, 47 % of
+  a core) at 192 kHz. Keep pipes cheap (few cells, a cheap flux scheme, or a lower update rate than
   the cylinders) and measure their cost from the start.
 - **Done when:** a pressure pulse travels at the right speed of sound (the measured delay matches
   `L/c`), reflects correctly at an open end, and the engine still runs and holds dyno numbers with
@@ -262,10 +278,11 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   gamma-dependent constants or tabulate them if they show up in the profile.
 - Baselines (Node 22, i7-1355U): one cylinder's volume step costs about 150 ns natively and 96 ns
   in WASM (stage 4); one step of the whole breathing four, 1.0 µs natively and 1.4 µs in WASM
-  (stage 5). That's 5× real time natively at 192 kHz, and a V8 would be about 2.6×, so the
-  target below likely needs the default physics rate dropped to 96 kHz (stage 5 measured VE
-  changing by 0.03–0.1 % between the two) as well as the optimizations listed in
-  `docs/stage-05.md`.
+  (stage 5); the fired four with wall heat and the exhaust volumes, 1.8 µs natively and 2.4 µs in
+  WASM (stage 6). That's 2.9× real time natively at 192 kHz, and 47 % of a core in the browser,
+  before pipes. The target below likely needs the default physics rate dropped to 96 kHz (VE
+  changes by 0.03–0.1 % between the two, IMEP by under 0.1 %) as well as the optimizations
+  listed in `docs/stage-05.md` and `docs/stage-06.md`.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default
   quality, so it has headroom for WASM in the browser.
 
@@ -354,7 +371,8 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
 #### Stage 22 — Knock, mechanical limits & engine damage
 - Knock model (end-gas pressure/temperature vs fuel octane, Livengood-Wu style) → audible knock + power
   loss; piston speed, valve float and over-rev limits; an optional "engine blows" state with a
-  warning UI and reset.
+  warning UI and reset. The end gas is the unburned share of stage 6's Wiebe burn. Stage 6 lets
+  50° of advance push the peak pressure to 82 bar; a real engine would knock long before that.
 - 3D effects: knock flashes inside the cylinder, glowing parts, smoke, and a thrown rod when the
   engine blows.
 - **Done when:** the silly combos (CR 16 + 3 bar boost on pump gas, 12k rpm on a long-stroke I6) are

@@ -14,7 +14,10 @@ typedef struct species_data {
     double hi[5];        /* cp fit 1000-4000 K                              */
 } species_data;
 
-/* Least-squares fits of the NASA Glenn data (Cantera 3.2, nasa_gas.yaml). */
+/* Least-squares fits of the NASA Glenn data (Cantera 3.2, nasa_gas.yaml).
+ * Above 1000 K the burned gas uses its *equilibrium* heat capacity at 40 bar
+ * (stage 6): hot CO2 and H2O partly dissociate, which soaks up energy that
+ * comes back as the gas cools. */
 static const species_data SPECIES[RB_NSPECIES] = {
     [RB_AIR] = {
         "air", 28.9603e-3,
@@ -29,7 +32,7 @@ static const species_data SPECIES[RB_NSPECIES] = {
     [RB_BURNED] = {
         "burned", 29.0081e-3,
         { 988.38783, 245.68805, -144.96926, 408.60824, -237.63136 },
-        { 899.87062, 505.00143, -169.35375, 26.036825, -1.4716242 },
+        { -1104.893625, 5480.652686, -4504.991818, 1556.015261, -173.479527 },
     },
 };
 
