@@ -78,6 +78,14 @@ void test_engine_walls_and_residuals(void);
 void test_engine_trapped_charge(void);
 void test_engine_burn_stops_at_evo(void);
 void test_engine_settles_light_load(void);
+void test_engine_spark_change_mid_burn(void);
+void test_engine_friction(void);
+void test_engine_crank_books(void);
+void test_engine_cranks(void);
+void test_engine_drives_itself(void);
+void test_engine_free_matches_held(void);
+void test_engine_burns_at_rest(void);
+void test_engine_starter_motor(void);
 /* ---- native helpers (tests/test_wav.c, tests/test_csv.c) ---- */
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
@@ -147,6 +155,14 @@ static const struct {
     T(test_engine_trapped_charge),
     T(test_engine_burn_stops_at_evo),
     T(test_engine_settles_light_load),
+    T(test_engine_spark_change_mid_burn),
+    T(test_engine_friction),
+    T(test_engine_crank_books),
+    T(test_engine_cranks),
+    T(test_engine_drives_itself),
+    T(test_engine_free_matches_held),
+    T(test_engine_burns_at_rest),
+    T(test_engine_starter_motor),
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),

@@ -8,7 +8,9 @@
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
   Playwright test in both modes (dev and `E2E_PREVIEW=1`).
 - Check that new physics tests can fail: plant deliberate bugs in a copy (e.g. `$HOME/rb-mut`) and
-  note in the stage doc which tests catch them.
+  note in the stage doc which tests catch them. The suite takes ~20 s, so run a few bugs per call
+  under `timeout`, re-copy the sources before each batch (a killed run can leave a bug in place),
+  and never `pkill -f` a pattern that also matches your own command line.
 
 ## Core (C)
 - C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
@@ -23,21 +25,33 @@
   `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
   (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
   correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
-  area), `engine.c` (N cylinders + plenum + throttle + exhaust manifold → catalyst orifice → muffler
-  → tailpipe + two air reservoirs; fuel at IVC, spark, burn, walls; per-cycle IMEP, torque etc.).
+  area), `engine.c` (N cylinders + plenum + throttle + idle air valve + exhaust manifold → catalyst
+  orifice → muffler → tailpipe + two air reservoirs; fuel at IVC, spark, burn, walls; the crank,
+  held or free; friction, starter, the engine computer; per-cycle IMEP, BMEP, torque etc.).
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
   Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
   equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
-- Engine step order: events the crank passes during the step (an event counts if it's in
-  [angle, angle + step)): IVC injects the fuel and then notes the trapped charge, the spark sets the
-  burnable fuel, EVO stops the burn, overlap TDC closes the peak-pressure bookkeeping → set areas
+- Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
+  after the engine computer runs) → events the crank passes during the step (an event counts if
+  it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
+  cycle's spark timing, the spark sets the burnable fuel, EVO stops the burn, overlap TDC closes
+  the peak-pressure bookkeeping → set areas
   (throttle, valves) → all flows, Woschni wall heat and burning as rates from the current state,
-  integrated together (explicit Euler) → turn the crank and move the pistons (trapezoidal).
+  integrated together (explicit Euler) → turn the crank and move the pistons (trapezoidal); a free
+  crank's kinetic energy then changes by exactly the work done on it (gas, crankcase at ambient,
+  starter, friction, load), so `crank_books()` in the tests balances to 1e-9.
   Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
   a steady state of VE, plenum pressure and net work.
+- `hold_speed = 1` (the default after init) is the dyno-held crank of stages 5–6: the engine
+  computer (idle valve, fuel cut, rev limiter, cranking spark) only runs with `hold_speed = 0` and
+  the ignition on, so held runs keep stage 6's numbers. Below 100 rpm the burn and Woschni's gas
+  velocity keep a minimum pace (`RB_GAS_PACE_RPM`).
 - `rb_cli breathe` stays motored with adiabatic walls by default (stage 5's numbers; `--walls` adds
-  heat transfer); `rb_cli fire` has walls and fuel. In tests, `start()` (test_engine.c) is motored
-  and adiabatic, `start_fired()` the full engine.
+  heat transfer); `rb_cli fire` has walls and fuel; `rb_cli run` is the free engine's scripted
+  drive. In tests, `start()` (test_engine.c) is motored and adiabatic, `start_fired()` the full
+  engine held, `start_free()` the free crank at rest. Loops that wait for the engine must be
+  bounded (`run_cycles`, `run_to_angle`, `run_for`): a planted bug that stops the crank must fail
+  a test, not hang the suite.
 - Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
   360 + ICL), exhaust centerline before it (360 - ECL).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
@@ -52,8 +66,8 @@
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
-  ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power). The shared
-  style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
+  `tools/plot_run.py` the `rb_cli run` one. The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.

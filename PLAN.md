@@ -22,7 +22,7 @@ gets a one-line summary of anything that changed from the plan.
 | 4  | Single cylinder: slider-crank + motoring         | Physics core     | ✅     | Trapezoidal piston work: TDC within 1e-6 of the exact isentrope, no drift over 1000 revs |
 | 5  | Valvetrain, throttle & intake plenum             | Physics core     | ✅     | Motored 2.0 L four: VE 0.79–0.93 wide open, 28 kPa at idle throttle, pumping loss = p_amb − MAP |
 | 6  | Combustion (Wiebe) + heat transfer               | Physics core     | ✅     | 2.0 L four at 3000 rpm WOT: IMEP 12.0 bar, peak 58.8 bar at 12.7° ATDC at MBT (25°), 38.8 % indicated; low-speed VE 0.87 |
-| 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ⬜     | |
+| 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ✅     | Free crank with exact energy books; cranks at 238 rpm, idles at 800, limiter 6680–6830; brake 167 N m / 97 kW |
 | 8  | Engine layouts & presets                         | Physics core     | ⬜     | |
 | 9  | Dyno + validation against real engines           | Physics core     | ⬜     | |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ⬜     | |
@@ -207,6 +207,12 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   brake torque is that minus friction.
 - **Done when:** an I4 cranks, starts, idles stably (about 800 rpm), revs up and down with
   the throttle, bounces off the limiter, and shuts down when ignition is cut.
+- *Built:* in `engine.c`, a free crank (`hold_speed = 0`) whose kinetic energy changes by exactly
+  the work done on it: gas, crankcase, starter, friction and load. Also Chen-Flynn friction with
+  brake torque, BMEP and brake power, a DC starter with a one-way clutch, and an engine computer:
+  idle air valve, fuel cut on overrun, spark-cut rev limiter and a late cranking spark. The stage 6
+  review fixed spark timing changing mid-burn (it's now set at intake valve closing). `rb_cli run`
+  and `tools/plot_run.py` show a whole drive (details in `docs/stage-07.md`).
 
 #### Stage 8 — Engine layouts & presets
 - Layout description: inline / V (bank angle) / boxer, crank pin angles, firing order and
@@ -217,12 +223,18 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   angles, bore, stroke, rod length, valve sizes, cam timing) plus per-cylinder state (pressure,
   temperature, burn fraction, valve lifts). The control panel and the 3D view (stages 17–19) build
   themselves from it, so no engine geometry is duplicated in JavaScript.
+- Each preset needs its own crank inertia, starter, idle air valve size (roughly in proportion to
+  displacement) and idle controller gains: stage 7 tuned them on the 2.0 I4, and an eight with the
+  same settings hunts at idle.
 - **Done when:** every preset starts, idles and revs natively, and firing-event timing plots
   show correct spacing (for example, an even 90° spacing for a V8).
 
 #### Stage 9 — Dyno + validation
 - Absorbing dyno: hold RPM with a PI controller, cycle-averaged torque and power, and a sweep mode
-  (e.g. 1500→redline) → CSV torque/power curve + plot.
+  (e.g. 1500→redline) → CSV torque/power curve + plot. With stage 7 the controller acts on the free
+  crank's `load_torque`; the ideal hold (`hold_speed = 1`) stays for quick sweeps.
+- Calibrate friction (stage 7 uses Chen-Flynn's commonly used coefficients) against real engines:
+  10.5 bar of brake mean effective pressure is low for a modern 2.0 L.
 - Compare 2–3 presets against published real-engine numbers and tune the model's free factors
   (discharge coefficients, friction, burn duration).
 - Stage 6's knobs: burn duration and Wiebe shape (60° at every speed and load for now, so MBT
@@ -280,9 +292,12 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   in WASM (stage 4); one step of the whole breathing four, 1.0 µs natively and 1.4 µs in WASM
   (stage 5); the fired four with wall heat and the exhaust volumes, 1.8 µs natively and 2.4 µs in
   WASM (stage 6). That's 2.9× real time natively at 192 kHz, and 47 % of a core in the browser,
-  before pipes. The target below likely needs the default physics rate dropped to 96 kHz (VE
-  changes by 0.03–0.1 % between the two, IMEP by under 0.1 %) as well as the optimizations
-  listed in `docs/stage-05.md` and `docs/stage-06.md`.
+  before pipes. The free crank (stage 7) adds 5–15 %. The target below likely needs the default
+  physics rate dropped to 96 kHz (VE changes by 0.03–0.1 % between the two, IMEP by under 0.1 %,
+  and the free engine's idle not at all) as well as the optimizations listed in
+  `docs/stage-05.md` and `docs/stage-06.md`.
+- Benchmark with repeated runs: on this laptop (hybrid performance and efficiency cores) the same
+  step measured 1.8 µs in one session and 1.1 µs in another.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default
   quality, so it has headroom for WASM in the browser.
 
@@ -293,6 +308,8 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - Messages: ignition, starter, throttle (keyboard + slider), preset load. Telemetry: rpm, torque,
   manifold pressure, AFR, and a CPU-load meter (check which timing APIs each browser's
   AudioWorkletGlobalScope offers; `performance.now()` may be missing).
+- The engine runs with its crank free (`hold_speed = 0`). Ignition, starter and load map to the
+  engine's own fields; telemetry can also show the idle valve, spark cut and fuel cut.
 - Detect underruns and auto-drop quality if the CPU can't keep up.
 - **Done when:** in Chrome and Firefox you can start the engine, blip the throttle and hear it
   with no dropouts on Bernardo's machine.

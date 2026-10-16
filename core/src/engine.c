@@ -1,6 +1,6 @@
 /*
- * engine.c - cylinders, valves, throttle, plenum, fuel and spark stepped
- * together (see engine.h).
+ * engine.c - cylinders, valves, throttle, plenum, fuel, spark and the crank
+ * stepped together (see engine.h).
  */
 #include "engine.h"
 
@@ -17,6 +17,12 @@ static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
 /* Spark advance at start-up, degrees before firing TDC: about the best for
  * torque with the default engine wide open at 3000 rpm (stage 6). */
 #define RB_SPARK_DEFAULT 25.0
+
+/* Below this crank speed the gas sets its own pace: the flame burns at least
+ * as fast, and Woschni's gas velocity stays at least as high, as at this speed.
+ * It matters only while starting and stopping: a crank that stalls with a
+ * burn under way still finishes it, and the hot gas still cools. */
+#define RB_GAS_PACE_RPM 100.0
 
 void rb_engine_desc_default(rb_engine_desc *d)
 {
@@ -62,6 +68,32 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->combustion_efficiency = 0.98;
     d->heat_transfer = 1;
     d->wall_temperature = 430.0;   /* liner, head and piston crown, averaged */
+
+    /* The crank: an estimate for a 2.0 L car engine with its flywheel (about
+     * 0.09 kg m^2), clutch (0.04) and crankshaft with pulley and the rods'
+     * rotating ends (0.03). */
+    d->inertia = 0.16;
+    /* Friction in Chen and Flynn's form with commonly used coefficients
+     * (0.4 bar + 0.005 p_max + 0.09 bar per m/s + 0.0009 bar per (m/s)^2):
+     * about 0.7 bar at idle, 1.5 bar at 3000 rpm and 2.5 bar at 6000, wide open. */
+    d->fmep_constant = 0.4e5;
+    d->fmep_pressure = 0.005;
+    d->fmep_speed = 0.09e5;
+    d->fmep_speed2 = 0.0009e5;
+    /* A 1.3 kW starter, geared about 50:1 to the crank: 200 N m when stalled,
+     * enough to push a cylinder through its compression from rest, falling to
+     * nothing at 250 rpm. It cranks the engine at about 240 rpm. */
+    d->starter_torque = 200.0;
+    d->starter_free_rpm = 250.0;
+    /* The engine computer: idle at 800 rpm with an idle air valve of up to
+     * 40 mm^2 (about a 7 mm hole), the spark cut at 6800 rpm until 6700, and
+     * a late spark while cranking so the first firings don't kick back. */
+    d->idle_rpm = 800.0;
+    d->idle_valve_area = 40e-6;
+    d->rev_limit = 6800.0;
+    d->rev_limit_resume = 6700.0;
+    d->cranking_rpm = 400.0;
+    d->cranking_spark = 5.0;
 }
 
 int rb_engine_desc_check(const rb_engine_desc *d)
@@ -90,6 +122,18 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->combustion_efficiency > 0.0 && d->combustion_efficiency <= 1.0)) return -1;
     if (d->heat_transfer != 0 && d->heat_transfer != 1) return -1;
     if (!(d->wall_temperature > 250.0 && d->wall_temperature < 1000.0)) return -1;
+    if (!(d->inertia > 1e-4 && d->inertia < 100.0)) return -1;
+    if (!(d->fmep_constant >= 0.0 && d->fmep_constant < 1e6)) return -1;
+    if (!(d->fmep_pressure >= 0.0 && d->fmep_pressure < 0.1)) return -1;
+    if (!(d->fmep_speed >= 0.0 && d->fmep_speed < 1e6)) return -1;
+    if (!(d->fmep_speed2 >= 0.0 && d->fmep_speed2 < 1e5)) return -1;
+    if (!(d->starter_torque >= 0.0 && d->starter_torque < 1e4)) return -1;
+    if (!(d->starter_free_rpm > 0.0 && d->starter_free_rpm < 1e4)) return -1;
+    if (!(d->idle_rpm >= 0.0 && d->idle_rpm < 1e4)) return -1;
+    if (!(d->idle_valve_area >= 0.0 && d->idle_valve_area < 0.01)) return -1;
+    if (!(d->rev_limit_resume > 0.0 && d->rev_limit > d->rev_limit_resume && d->rev_limit < 1e5)) return -1;
+    if (!(d->cranking_rpm >= 0.0 && d->cranking_rpm < 1e4)) return -1;
+    if (!(d->cranking_spark >= -90.0 && d->cranking_spark <= 90.0)) return -1;
     return 0;
 }
 
@@ -112,6 +156,7 @@ static void start_cycle(rb_engine *e)
     e->acc_pmax = -INFINITY;
     e->acc_pump = e->acc_work = e->acc_time = 0.0;
     e->acc_fuel = e->acc_heat = e->acc_wall = e->acc_exh_m = e->acc_exh_mT = e->acc_pexh = 0.0;
+    e->acc_friction = 0.0;
 }
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
@@ -121,6 +166,7 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
     memset(e, 0, sizeof *e);
     e->desc = *d;
     e->dt = dt;
+    e->hold_speed = 1;
     e->throttle_pos = 1.0;
     e->ignition = 0;
     e->afr = RB_AFR_STOICH;
@@ -138,6 +184,7 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
     rb_orifice_init(&e->throttle, &e->intake_air, &e->plenum, 0.0, 1.0);
     rb_orifice_init(&e->catalyst, &e->manifold, &e->muffler, d->catalyst_area, 1.0);
     rb_orifice_init(&e->tailpipe, &e->muffler, &e->exhaust_air, d->tailpipe_area, 1.0);
+    rb_orifice_init(&e->idle_air, &e->intake_air, &e->plenum, 0.0, 1.0);
 
     for (int i = 0; i < d->cylinders; i++) {
         const double theta = rb_engine_cylinder_angle(e, i) * PI / 180.0;
@@ -145,6 +192,7 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
         /* The areas below are effective areas (Cd included), so cd = 1. */
         rb_orifice_init(&e->intake[i], &e->plenum, &e->cyl[i].gas, 0.0, 1.0);
         rb_orifice_init(&e->exhaust[i], &e->cyl[i].gas, &e->manifold, 0.0, 1.0);
+        e->burn[i].spark_angle = 720.0 - RB_SPARK_DEFAULT;
     }
     start_cycle(e);
     return 0;
@@ -218,6 +266,11 @@ static void finish_cycle(rb_engine *e)
     r->p_max = p_max / d->cylinders;
     r->angle_p_max = angle / d->cylinders;
     r->residual = residual / d->cylinders;
+    r->rpm = 120.0 / e->acc_time;               /* two turns per cycle */
+    r->fmep = e->acc_friction / v_all;
+    r->bmep = r->imep_net - r->fmep;
+    r->brake_torque = (r->net_work - e->acc_friction) / (4.0 * PI);
+    r->brake_power = (r->net_work - e->acc_friction) / e->acc_time;
 
     e->cycles++;
     start_cycle(e);
@@ -226,6 +279,7 @@ static void finish_cycle(rb_engine *e)
 /* What one step adds to the cycle's totals. */
 typedef struct step_share {
     double air[RB_MAX_CYLINDERS], throttle, p, rho, pump, work, heat, wall, exh_m, exh_mT, pexh, dt;
+    double friction;
 } step_share;
 
 static void add_share(rb_engine *e, const step_share *s, double f, int n)
@@ -238,6 +292,7 @@ static void add_share(rb_engine *e, const step_share *s, double f, int n)
     e->acc_work += f * s->work;
     e->acc_heat += f * s->heat;
     e->acc_wall += f * s->wall;
+    e->acc_friction += f * s->friction;
     e->acc_exh_m += f * s->exh_m;
     e->acc_exh_mT += f * s->exh_mT;
     e->acc_pexh += f * s->pexh * s->dt;
@@ -246,15 +301,29 @@ static void add_share(rb_engine *e, const step_share *s, double f, int n)
     if (s->p > e->acc_pmax) e->acc_pmax = s->p;
 }
 
+/* The spark advance to use (degrees before firing TDC): the setting, kept
+ * within 90 degrees of TDC so the spark always falls between the valves'
+ * events (NaN counts as 0). */
+static double spark_advance(double s)
+{
+    if (s > 90.0) return 90.0;
+    if (s < -90.0) return -90.0;
+    return (s == s) ? s : 0.0;
+}
+
 /* Intake valve closing: the charge is trapped. Inject the fuel for the
  * trapped air, as vapour at the charge's temperature, then note the trapped
  * charge, fuel and all: Woschni's reference for the motored pressure, and the
- * share of it that is old exhaust (the residual fraction, as Heywood counts it). */
+ * share of it that is old exhaust (the residual fraction, as Heywood counts it).
+ * The spark timing for this cycle is fixed here too, as an engine computer
+ * would: a change of setting can't move a burn already under way, or fire a
+ * cylinder twice. */
 static void close_intake(rb_engine *e, int i)
 {
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
-    const double fuel = (e->ignition && e->afr > 0.0) ? g->m[RB_AIR] / e->afr - g->m[RB_FUEL] : 0.0;
+    const double fuel = (e->ignition && e->afr > 0.0 && !e->fuel_cut)
+                      ? g->m[RB_AIR] / e->afr - g->m[RB_FUEL] : 0.0;
     if (fuel > 0.0) {
         const double u_fuel = rb_gas_u(&e->fuel_gas, g->T);
         g->m[RB_FUEL] += fuel;
@@ -268,6 +337,9 @@ static void close_intake(rb_engine *e, int i)
     b->V_ivc = g->V;
     b->T_ivc = g->T;
     b->residual = g->y[RB_BURNED];
+    const int cranking = !e->hold_speed && e->omega * 30.0 / PI < e->desc.cranking_rpm;
+    b->spark_angle = cycle_angle(720.0 - spark_advance(cranking ? e->desc.cranking_spark : e->spark));
+    b->spark_due = 1;
 }
 
 /* The spark: what can burn is the fuel, or as much of it as the air can burn,
@@ -277,22 +349,27 @@ static void spark(rb_engine *e, int i)
     const rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     b->burning = 0;
-    if (!e->ignition) return;
+    if (!e->ignition || e->spark_cut) return;   /* the rev limiter cuts the spark */
     b->burnable = rb_burnable_fuel(g->m[RB_FUEL], g->m[RB_AIR], e->desc.mixture_spread,
                                    e->desc.combustion_efficiency);
     b->fraction = 0.0;
     b->burning = (b->burnable > 0.0);
     b->after_spark = b->burning;
+    b->burn_angle = 0.0;
 }
 
-/* The fuel burned during this step (kg), turned into burned gas and heat. */
+/* The fuel burned during this step (kg), turned into burned gas and heat. The
+ * burn's clock is the crank angle since the spark (in the spark's own step,
+ * only the part after it), but it never runs slower than at RB_GAS_PACE_RPM. */
 static void burn_step(rb_engine *e, int i, double angle, double step, double q_fuel)
 {
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     const rb_engine_desc *d = &e->desc;
-    const double phi = cycle_angle(angle + step - (720.0 - e->spark));   /* degrees since the spark */
-    const double x = rb_wiebe(phi, d->burn_duration, d->wiebe_a, d->wiebe_m);
+    const double pace = 6.0 * RB_GAS_PACE_RPM * e->dt;   /* degrees per step */
+    if (b->burn_angle == 0.0) b->burn_angle = cycle_angle(angle + step - b->spark_angle);
+    else b->burn_angle += (step > pace) ? step : pace;
+    const double x = rb_wiebe(b->burn_angle, d->burn_duration, d->wiebe_a, d->wiebe_m);
     double fuel = (x - b->fraction) * b->burnable;
     b->fraction = x;
     if (x >= 1.0) b->burning = 0;
@@ -312,18 +389,159 @@ static void burn_step(rb_engine *e, int i, double angle, double step, double q_f
     e->heat_released += b->heat;
 }
 
+double rb_engine_fmep(const rb_engine *e, double omega)
+{
+    const rb_engine_desc *d = &e->desc;
+    double p_max = 0.0;
+    for (int i = 0; i < d->cylinders; i++) p_max += e->burn[i].last_p_max;
+    p_max /= d->cylinders;
+    const double sp = d->stroke * fabs(omega) / PI;    /* mean piston speed: 2 stroke rev/s */
+    return d->fmep_constant + d->fmep_pressure * p_max + d->fmep_speed * sp
+         + d->fmep_speed2 * sp * sp;
+}
+
+/* Starter motor torque at the crank (N m): a DC motor's straight line from
+ * its stall torque down to nothing at its free speed. Above that, its one-way
+ * clutch lets the engine run away from it. */
+static double starter_torque(const rb_engine *e)
+{
+    const double free_w = e->desc.starter_free_rpm * PI / 30.0;
+    if (!e->starter || !(e->omega < free_w)) return 0.0;
+    return e->desc.starter_torque * (1.0 - e->omega / free_w);
+}
+
+/* The gas's torque on the crank right now (N m): each piston's net force
+ * (cylinder pressure minus the crankcase's, which is at ambient) times how
+ * fast its cylinder grows with the crank angle. Only for predicting the next
+ * step: the energy books use the work each step actually does. */
+static double gas_torque_now(const rb_engine *e)
+{
+    double t = 0.0;
+    for (int i = 0; i < e->desc.cylinders; i++) {
+        const rb_cylinder *c = &e->cyl[i];
+        t += (c->gas.p - e->desc.p_ambient) * rb_cyl_dvolume(&c->geom, c->theta);
+    }
+    return t;
+}
+
+/* How far a free crank turns in this step (rad), from its speed and the
+ * torques on it now: omega dt + alpha dt^2 / 2. Friction and a load only
+ * resist motion, so a crank at rest stays there until the gas and the starter
+ * overcome them; it never turns backwards. */
+static double crank_turn(rb_engine *e)
+{
+    const rb_engine_desc *d = &e->desc;
+    const double w = e->omega, dt = e->dt;
+    const double load = (e->load_torque == e->load_torque) ? e->load_torque : 0.0;   /* NaN: none */
+    e->gas_torque = gas_torque_now(e);
+    e->starter_torque_now = starter_torque(e);
+    e->friction_torque = rb_engine_fmep(e, w) * rb_engine_displacement(e) / (4.0 * PI);
+    e->load_torque_now = load;
+    const double drive = e->gas_torque + e->starter_torque_now - (load < 0.0 ? load : 0.0);
+    const double resist = e->friction_torque + (load > 0.0 ? load : 0.0);
+
+    const double alpha = (drive - resist) / d->inertia;
+    if (alpha < 0.0 && w + alpha * dt < 0.0) return w * w / (-2.0 * alpha);   /* stops, or stays */
+    const double turn = w * dt + 0.5 * alpha * dt * dt;
+    return (turn > 0.0) ? turn : 0.0;
+}
+
+/* The engine computer (free crank only, ignition on), every step: the rev
+ * limiter, the fuel cut on overrun, and the idle air valve holding the idle
+ * speed. They look at the crank speed smoothed over a few firing pulses.
+ * Coasting with the foot off the pedal more than 700 rpm above idle, the
+ * injectors stop until the engine is back within 400 rpm of idle: no fuel is
+ * wasted, and the engine slows down faster. The idle valve opens in
+ * proportion to how far the engine is below its idle speed, around a position
+ * it learns while the engine idles: running, foot off the pedal, and its
+ * speed steady (the speed smoothed over 0.05 s within 50 rpm of the speed
+ * smoothed over 0.5 s). The learning is slow and counts at most 100 rpm of
+ * error, so coasting down from high rpm doesn't unlearn the idle position. */
+#define IDLE_VALVE_BASE 0.15      /* opening to start from                     */
+#define IDLE_GAIN_P     5.0e-4    /* opening per rpm below idle                */
+#define IDLE_GAIN_I     1.0e-3    /* opening learned per rpm per second        */
+#define IDLE_LEARN_MAX  100.0     /* rpm: most error the learning counts       */
+#define IDLE_STEADY     50.0      /* rpm: how steady the speed must be to learn */
+#define RPM_SMOOTHING   0.05      /* s: the speed's smoothing ...              */
+#define RPM_TREND       0.5       /* s: ... and a slower one, for its trend    */
+#define FUEL_CUT_ABOVE  700.0     /* rpm above idle: fuel cut on overrun ...   */
+#define FUEL_BACK_ABOVE 400.0     /* ... until the engine is back below this   */
+
+static void engine_computer(rb_engine *e)
+{
+    const rb_engine_desc *d = &e->desc;
+    const double rpm = e->omega * 30.0 / PI;
+    e->rpm_smooth += (rpm - e->rpm_smooth) * (e->dt / RPM_SMOOTHING);
+    e->rpm_trend += (e->rpm_smooth - e->rpm_trend) * (e->dt / RPM_TREND);
+    if (!e->ignition) {            /* switched off: the valve stays where it is */
+        e->spark_cut = e->fuel_cut = 0;
+        return;
+    }
+
+    if (rpm > d->rev_limit) e->spark_cut = 1;
+    else if (rpm < d->rev_limit_resume) e->spark_cut = 0;
+
+    if (!(d->idle_rpm > 0.0)) {
+        e->idle_valve = 0.0;
+        e->fuel_cut = 0;
+        return;
+    }
+    const int foot_off = e->throttle_pos < 0.01;   /* NaN counts as on */
+    if (foot_off && e->rpm_smooth > d->idle_rpm + FUEL_CUT_ABOVE) e->fuel_cut = 1;
+    else if (!foot_off || e->rpm_smooth < d->idle_rpm + FUEL_BACK_ABOVE) e->fuel_cut = 0;
+
+    const double error = d->idle_rpm - e->rpm_smooth;
+    if (e->rpm_smooth > d->cranking_rpm && foot_off
+        && fabs(e->rpm_smooth - e->rpm_trend) < IDLE_STEADY) {
+        const double counted = (error > IDLE_LEARN_MAX) ? IDLE_LEARN_MAX
+                             : (error < -IDLE_LEARN_MAX) ? -IDLE_LEARN_MAX : error;
+        e->idle_trim += IDLE_GAIN_I * counted * e->dt;
+        if (e->idle_trim < -IDLE_VALVE_BASE) e->idle_trim = -IDLE_VALVE_BASE;
+        if (e->idle_trim > 1.0 - IDLE_VALVE_BASE) e->idle_trim = 1.0 - IDLE_VALVE_BASE;
+    }
+    const double v = IDLE_VALVE_BASE + e->idle_trim + IDLE_GAIN_P * error;
+    e->idle_valve = (v > 0.0) ? ((v < 1.0) ? v : 1.0) : 0.0;
+}
+
+/* Books the air that came in through an inlet (throttle or idle valve) in
+ * this step; returns its mass (kg). */
+static double count_inflow(rb_engine *e, const rb_orifice *o)
+{
+    const rb_chamber *up = upstream(o);
+    const double m = o->mdot * e->dt;
+    e->mass_in += m;
+    e->energy_in += m * up->h;
+    for (int s = 0; s < RB_NSPECIES; s++) e->species_in[s] += m * up->y[s];
+    return m;
+}
+
 void rb_engine_step(rb_engine *e)
 {
     const rb_engine_desc *d = &e->desc;
     const int n = d->cylinders;
     const double dt = e->dt;
-    const double rpm = (e->rpm > 0.0) ? e->rpm : 0.0;   /* NaN too */
-    const double step_deg = 6.0 * rpm * dt;
     const double q_fuel = rb_fuel_heat();
-    const double piston_speed = 2.0 * d->stroke * rpm / 60.0;
     const double ivc = rb_valve_closes(&d->intake), evo = rb_valve_opens(&d->exhaust);
-    const double spark_angle = cycle_angle(720.0 - e->spark);
     double open[RB_MAX_CYLINDERS];
+
+    /* 0. How far the crank turns: rpm dt when it's held; when it's free, from
+     * its speed and the torques on it, after the engine computer's say. */
+    const double kinetic0 = e->kinetic;
+    double turn;   /* rad */
+    if (e->hold_speed) {
+        const double rpm = (e->rpm > 0.0) ? e->rpm : 0.0;   /* NaN too */
+        e->omega = rpm * PI / 30.0;
+        e->kinetic = 0.5 * d->inertia * e->omega * e->omega;
+        e->starter_torque_now = e->load_torque_now = 0.0;
+        e->friction_torque = rb_engine_fmep(e, e->omega) * rb_engine_displacement(e) / (4.0 * PI);
+        turn = e->omega * dt;
+    } else {
+        engine_computer(e);
+        turn = crank_turn(e);
+    }
+    const double step_deg = turn * 180.0 / PI;
+    const double pace = RB_GAS_PACE_RPM * PI / 30.0;
+    const double piston_speed = d->stroke * (e->omega > pace ? e->omega : pace) / PI;
 
     /* 1. Events the crank passes during this step. */
     for (int i = 0; i < n; i++) {
@@ -336,8 +554,12 @@ void rb_engine_step(rb_engine *e)
             b->p_max = 0.0;
         }
         if (passes(angle, step_deg, ivc)) close_intake(e, i);
-        if (passes(angle, step_deg, spark_angle)) spark(e, i);
+        if (b->spark_due && passes(angle, step_deg, b->spark_angle)) {
+            b->spark_due = 0;
+            spark(e, i);
+        }
         if (passes(angle, step_deg, evo)) {
+            b->spark_due = 0;
             b->after_spark = 0;
             b->burning = 0;        /* whatever hasn't burned by now leaves unburned */
         }
@@ -348,6 +570,7 @@ void rb_engine_step(rb_engine *e)
         e->throttle.area = rb_throttle_area(&d->throttle, e->throttle_pos);
         e->throttle_area_pos = e->throttle_pos;
     }
+    e->idle_air.area = e->idle_valve * d->idle_valve_area;
     for (int i = 0; i < n; i++) {
         const double angle = rb_engine_cylinder_angle(e, i);
         e->intake[i].area = rb_valve_area(&d->intake, rb_valve_lift(&d->intake, angle));
@@ -365,15 +588,12 @@ void rb_engine_step(rb_engine *e)
     for (int i = 0; i < n; i++) rb_chamber_clear_rates(&e->cyl[i].gas);
 
     rb_orifice_flow(&e->throttle, dt);
-    const rb_chamber *up = upstream(&e->throttle);
-    e->mass_in += e->throttle.mdot * dt;
-    e->energy_in += e->throttle.mdot * up->h * dt;
-    for (int s = 0; s < RB_NSPECIES; s++) e->species_in[s] += e->throttle.mdot * up->y[s] * dt;
-    share.throttle = e->throttle.mdot * dt;
+    rb_orifice_flow(&e->idle_air, dt);
+    share.throttle = count_inflow(e, &e->throttle) + count_inflow(e, &e->idle_air);
 
     rb_orifice_flow(&e->catalyst, dt);
     rb_orifice_flow(&e->tailpipe, dt);
-    up = upstream(&e->tailpipe);
+    const rb_chamber *up = upstream(&e->tailpipe);
     e->mass_out += e->tailpipe.mdot * dt;
     e->energy_out += e->tailpipe.mdot * up->h * dt;
     for (int s = 0; s < RB_NSPECIES; s++) e->species_out[s] += e->tailpipe.mdot * up->y[s] * dt;
@@ -415,18 +635,50 @@ void rb_engine_step(rb_engine *e)
 
     /* 4. Turn the crank and move the pistons. A step's work counts as pumping
      * if the cylinder is between BDC (180) and BDC (540), on its exhaust and
-     * intake strokes. Each cylinder's peak pressure is noted on the way. */
+     * intake strokes. Each cylinder's peak pressure is noted on the way. The
+     * pistons' undersides push on the crankcase air, at ambient pressure. */
+    double gas_work = 0.0, case_work = 0.0;
     for (int i = 0; i < n; i++) {
         const double angle = rb_engine_cylinder_angle(e, i);
-        const double w = rb_cylinder_move(&e->cyl[i], (angle + step_deg) * PI / 180.0);
+        const double v0 = e->cyl[i].gas.V;
+        const double w = (turn > 0.0) ? rb_cylinder_move(&e->cyl[i], (angle + step_deg) * PI / 180.0)
+                                      : 0.0;
         e->work_on_gas += w;
         share.work += w;
+        gas_work -= w;
+        case_work += d->p_ambient * (e->cyl[i].gas.V - v0);
         if (angle >= 180.0 && angle < 540.0) share.pump += w;
         rb_burn *b = &e->burn[i];
         if (e->cyl[i].gas.p > b->p_max) {
             b->p_max = e->cyl[i].gas.p;
             b->angle_p_max = after_firing_tdc(cycle_angle(angle + step_deg));
         }
+    }
+
+    /* The crank: its kinetic energy changes by exactly the work done on it.
+     * Held, the motor or dyno makes up the difference. */
+    const double friction_w = e->friction_torque * turn;
+    const double starter_w = e->starter_torque_now * turn;
+    const double load_w = e->load_torque_now * turn;
+    const double crank_in = gas_work - case_work + starter_w - friction_w - load_w;
+    e->crank_gas_work += gas_work;
+    e->crank_case_work += case_work;
+    e->starter_work += starter_w;
+    e->friction_work += friction_w;
+    e->load_work += load_w;
+    share.friction = friction_w;
+    if (turn > 0.0) e->gas_torque = (gas_work - case_work) / turn;
+    if (e->hold_speed) {
+        e->hold_work += (e->kinetic - kinetic0) - crank_in;
+    } else {
+        double k = e->kinetic + crank_in;
+        if (!(k > 0.0)) {                  /* it stopped part-way through the step */
+            if (k == k) e->stop_energy -= k;
+            k = 0.0;
+        }
+        e->kinetic = k;
+        e->omega = sqrt(2.0 * k / d->inertia);
+        e->rpm = e->omega * 30.0 / PI;
     }
 
     /* 5. Add the step to the cycle; a step across the end of the cycle is

@@ -5,11 +5,12 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 6 of 26 done. The C core plays in the browser through an AudioWorklet
+**Status:** stage 7 of 26 done. The C core plays in the browser through an AudioWorklet
 (still a test tone). The physics so far: gas properties, chambers and flow through openings,
 a cylinder with a crank and piston, a four-cylinder engine breathing through its cams,
-valves, throttle and intake plenum, and now burning fuel, with heat lost to the walls (held
-at a set speed by a dyno, so no friction or flywheel yet). See [PLAN.md](PLAN.md) for the
+valves, throttle and intake plenum, burning fuel with heat lost to the walls, and now a crank
+that turns on its own: friction, a starter motor, and an engine computer that idles it, cuts
+the fuel when coasting and stops it at the rev limit. See [PLAN.md](PLAN.md) for the
 roadmap and progress, [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes
 and equations per stage.
 
@@ -64,7 +65,9 @@ build/rb_cli breathe --sweep   # its volumetric efficiency map, ~35 s (renders/v
 build/rb_cli fire          # physics demo: the engine running on fuel (renders/fire.csv);
                            # try --spark 40, --afr 13, --throttle 0.06, --motored, --help
 build/rb_cli fire --spark-sweep    # torque against spark advance (renders/spark.csv)
-build/rb_cli fire --rpm-sweep      # the wide-open power curve (renders/power.csv)
+build/rb_cli fire --rpm-sweep      # the wide-open power curve, brake and indicated (renders/power.csv)
+build/rb_cli run           # the engine on its own: started, idling, revved, rev limiter, off
+                           # (renders/run.csv); try --load 10, --inertia 0.08, --help
 make SAN=1 test            # tests with AddressSanitizer + UBSan
 make help                  # all make targets
 ```
@@ -78,6 +81,7 @@ python3 tools/plot_breathe.py map            # renders/ve.csv → renders/ve.png
 python3 tools/plot_fire.py cycle             # renders/fire.csv (+ fire-motored.csv) → renders/fire.png
 python3 tools/plot_fire.py spark             # renders/spark.csv → renders/spark.png
 python3 tools/plot_fire.py power             # renders/power.csv → renders/power.png
+python3 tools/plot_run.py                    # renders/run.csv → renders/run.png
 ```
 
 ## Rebuilding the WebAssembly core

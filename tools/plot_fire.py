@@ -11,7 +11,8 @@ files that `rb_cli fire` writes:
         torque and peak pressure against spark advance (rb_cli fire --spark-sweep)
                                                       -> renders/spark.png
     python3 tools/plot_fire.py power renders/power.csv
-        wide-open torque and power against rpm (rb_cli fire --rpm-sweep)
+        wide-open torque and power against rpm (rb_cli fire --rpm-sweep): brake
+        and indicated when the CSV has the brake columns (stage 7 on)
                                                       -> renders/power.png
 
 Needs matplotlib (sudo apt install python3-matplotlib).
@@ -228,8 +229,7 @@ def plot_spark(path, out):
 def plot_power(path, out):
     d = read_csv(path, ("rpm", "torque_Nm", "power_kW", "spark_deg"), "plot_fire")
     rpm = d["rpm"]
-    i_t = max(range(len(rpm)), key=d["torque_Nm"].__getitem__)
-    i_p = max(range(len(rpm)), key=d["power_kW"].__getitem__)
+    brake = "brake_torque_Nm" in d and "brake_power_kW" in d   # rb_cli from stage 7 on
 
     setup()
     fig = plt.figure(figsize=(8.0, 3.9), dpi=135, facecolor=SURFACE)
@@ -237,21 +237,43 @@ def plot_power(path, out):
     ax_t, ax_p = (fig.add_subplot(gs[0, k]) for k in range(2))
     for ax in (ax_t, ax_p):
         style(ax)
-    titles(fig, "First power curve: the 2.0 L four, wide open",
-           f"Indicated, before friction (stage 7 takes that off), spark {d['spark_deg'][0]:g}° "
-           "before TDC, stoichiometric.\nThe torque curve is nearly flat: there are no pressure "
-           "waves in the pipes yet (stage 10) to tune it.", top=0.94)
-    for ax, y, name, unit, i in ((ax_t, d["torque_Nm"], "indicated torque (N m)", "N m", i_t),
-                                 (ax_p, d["power_kW"], "indicated power (kW)", "kW", i_p)):
+    if brake:
+        f_lo, f_hi = d["fmep_bar"][0], d["fmep_bar"][-1]
+        titles(fig, "Power curve at the crank: the 2.0 L four, wide open",
+               f"Friction takes {f_lo:.1f} bar of mean pressure at {rpm[0]:.0f} rpm and "
+               f"{f_hi:.1f} bar at {rpm[-1]:.0f}, so the brake torque\npeaks lower and earlier "
+               "than the gas's own (indicated) torque. "
+               f"Spark {d['spark_deg'][0]:g}° before TDC, stoichiometric.", top=0.94)
+        handles = [Line2D([], [], color=BLUE, lw=2, marker="o", ms=3.5, label="brake (at the crank)"),
+                   Line2D([], [], color=MUTED, lw=1.4, ls=DASH, label="indicated (before friction)")]
+        fig.legend(handles=handles, loc="lower right", bbox_to_anchor=(0.975, 0.72), ncol=2,
+                   frameon=False, fontsize=8.5, labelcolor=INK_2, handlelength=2.2)
+        panels = ((ax_t, d["brake_torque_Nm"], d["torque_Nm"], "torque (N m)", "N m"),
+                  (ax_p, d["brake_power_kW"], d["power_kW"], "power (kW)", "kW"))
+    else:
+        titles(fig, "First power curve: the 2.0 L four, wide open",
+               f"Indicated, before friction (stage 7 takes that off), spark {d['spark_deg'][0]:g}° "
+               "before TDC, stoichiometric.\nThe torque curve is nearly flat: there are no pressure "
+               "waves in the pipes yet (stage 10) to tune it.", top=0.94)
+        panels = ((ax_t, d["torque_Nm"], None, "indicated torque (N m)", "N m"),
+                  (ax_p, d["power_kW"], None, "indicated power (kW)", "kW"))
+    for ax, y, ref, name, unit in panels:
+        if ref is not None:
+            ax.plot(rpm, ref, color=MUTED, lw=1.4, ls=DASH, zorder=2)
         ax.plot(rpm, y, color=BLUE, lw=2, marker="o", ms=3.5, zorder=3)
+        i = max(range(len(rpm)), key=y.__getitem__)
         ax.scatter([rpm[i]], [y[i]], s=34, color=BLUE, edgecolor=SURFACE, lw=1.5, zorder=4)
-        last = i == len(rpm) - 1   # at the right edge: put the label to the left
-        label(ax, f"{y[i]:.0f} {unit} at {rpm[i]:.0f} rpm", (rpm[i], y[i]),
-              (-6, 6) if last else (0, 8), ha="right" if last else "center", va="bottom")
+        text = f"{y[i]:.0f} {unit} at {rpm[i]:.0f} rpm"
+        if i == len(rpm) - 1:   # at the right edge: below the curve, with a leader
+            ax.annotate(text, (rpm[i], y[i]), xytext=(-4, -46), textcoords="offset points",
+                        ha="right", va="top", fontsize=8.5, color=INK_2,
+                        arrowprops=dict(arrowstyle="-", color=MUTED, lw=0.8, shrinkA=0, shrinkB=4))
+        else:
+            label(ax, text, (rpm[i], y[i]), (0, -10), ha="center", va="top")
         ax.set_xlabel("engine speed (rpm)")
         ax.set_ylabel(name)
         ax.set_xlim(0, max(rpm) * 1.04)
-        ax.set_ylim(0, max(y) * 1.18)
+        ax.set_ylim(0, max(max(y), max(ref) if ref is not None else 0) * 1.18)
 
     fig.savefig(out, facecolor=SURFACE)
     print(f"wrote {out}")

@@ -37,6 +37,29 @@ static void start_fired(double rpm, double throttle)
     e.ignition = 1;
 }
 
+/* Bounded loops, so that a broken engine fails a test instead of hanging it. */
+
+/* Steps until the engine has finished n more cycles, giving up after 2 s of
+ * simulated time per cycle. 1 if it got there. */
+static int run_cycles(long n)
+{
+    const long target = e.cycles + n, most = lround(2.0 * n / DT);
+    for (long k = 0; k < most && e.cycles < target; k++) rb_engine_step(&e);
+    return e.cycles >= target;
+}
+
+/* Steps until cylinder 1's crank angle is in [lo, hi), giving up after 1 s.
+ * 1 if it got there. */
+static int run_to_angle(double lo, double hi)
+{
+    for (long k = 0; k < lround(1.0 / DT); k++) {
+        const double a = rb_engine_cylinder_angle(&e, 0);
+        if (a >= lo && a < hi) return 1;
+        rb_engine_step(&e);
+    }
+    return 0;
+}
+
 /* Everything inside the engine: mass, sensible energy, mass of each species
  * and the count of repaired states. */
 typedef struct contents {
@@ -293,7 +316,7 @@ void test_engine_pressures_dont_zigzag(void)
         int flips[7] = { 0 };
         for (int j = 0; j < 7; j++) prev[j] = watched_p(j);
         const long c = e.cycles;
-        while (e.cycles == c) {
+        for (long n = 0; e.cycles == c && n < lround(2.0 / DT); n++) {
             rb_engine_step(&e);
             for (int j = 0; j < 7; j++) {
                 const double p = watched_p(j);
@@ -384,8 +407,7 @@ void test_engine_mixture_strength(void)
         e.afr = afr[k];
         rb_engine_settle(&e, 100, 1e-4);
         const double fuel0 = e.species_out[RB_FUEL], all0 = e.mass_out;
-        const long c = e.cycles;
-        while (e.cycles == c) rb_engine_step(&e);
+        CHECK(run_cycles(1));
         imep[k] = e.result.imep_net;
         eff[k] = e.result.efficiency;
         unburned[k] = (e.species_out[RB_FUEL] - fuel0) / (e.mass_out - all0);
@@ -458,8 +480,7 @@ void test_engine_burn_stops_at_evo(void)
     e.spark = -90.0;
     rb_engine_settle(&e, 100, 1e-4);
     const books b0 = snapshot();
-    const long c = e.cycles;
-    while (e.cycles == c) rb_engine_step(&e);
+    CHECK(run_cycles(1));
     const books b1 = snapshot();
     const rb_engine_desc *d = &e.desc;
     const double evo = rb_valve_opens(&d->exhaust), a = rb_engine_cylinder_angle(&e, 0);
@@ -483,8 +504,309 @@ void test_engine_settles_light_load(void)
     start_fired(800.0, 0.02);
     const int cycles = rb_engine_settle(&e, 150, 1e-4);
     const double w = e.result.net_work;
-    const long c = e.cycles;
-    while (e.cycles == c) rb_engine_step(&e);
+    CHECK(run_cycles(1));
     CHECK(cycles > 0 && cycles < 100);
     CHECK(fabs(e.result.net_work - w) <= 2e-4 * (fabs(w) + 1.0));
+}
+
+void test_engine_spark_change_mid_burn(void)
+{
+    /* The spark timing is fixed for each cycle at intake valve closing, as an
+     * engine computer does: changing the setting while a cylinder burns
+     * neither shifts its burn nor lights it again. The next cycle uses it. */
+    start_fired(3000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-4);
+    const double p_max_25 = e.result.p_max;
+    const rb_burn *b = &e.burn[0];
+    CHECK(run_to_angle(705.0, 706.0));            /* 10 degrees after a 25-degree spark */
+    CHECK(b->burning && b->fraction > 0.0);
+
+    const double burnable = b->burnable;
+    double x = b->fraction, biggest = 0.0, smallest = 1.0;
+    e.spark = 40.0;                               /* the burn mustn't jump 15 degrees ahead */
+    for (long k = 0; k < 20000 && rb_engine_cylinder_angle(&e, 0) < 712.0; k++) {
+        rb_engine_step(&e);
+        if (b->fraction - x > biggest) biggest = b->fraction - x;
+        if (b->fraction - x < smallest) smallest = b->fraction - x;
+        x = b->fraction;
+    }
+    e.spark = 5.0;                                /* nor light again at 5 degrees before TDC */
+    for (long k = 0; k < 20000 && rb_engine_cylinder_angle(&e, 0) > 700.0; k++) {
+        rb_engine_step(&e);
+        if (b->fraction - x > biggest) biggest = b->fraction - x;
+        if (b->fraction - x < smallest) smallest = b->fraction - x;
+        x = b->fraction;
+    }
+    CHECK(biggest < 0.005);                       /* a normal step's worth: at most 0.0031 */
+    CHECK(smallest >= 0.0);
+    CHECK(b->burnable == burnable);               /* never lit again */
+
+    e.spark = 40.0;                               /* from the next cycle on, it counts */
+    CHECK(run_cycles(3));
+    CHECK(e.result.p_max > p_max_25 + 10e5);
+}
+
+/* ---- the free crank (stage 7) ---- */
+
+/* The default engine with its crank free and the throttle shut, as a car's
+ * engine sits before it's started. */
+static void start_free(void)
+{
+    rb_engine_desc d;
+    rb_engine_desc_default(&d);
+    rb_engine_init(&e, &d, DT);
+    e.hold_speed = 0;
+    e.throttle_pos = 0.0;
+}
+
+/* What the crank's books say its kinetic energy should be. */
+static double crank_books(void)
+{
+    return e.crank_gas_work - e.crank_case_work + e.starter_work - e.friction_work - e.load_work
+         + e.stop_energy + e.hold_work;
+}
+
+/* Runs the engine for t seconds; returns the lowest and highest rpm seen. */
+static void run_for(double t, double *lo, double *hi)
+{
+    const long steps = lround(t / DT);
+    double a = INFINITY, b = 0.0;
+    for (long k = 0; k < steps; k++) {
+        rb_engine_step(&e);
+        if (e.rpm < a) a = e.rpm;
+        if (e.rpm > b) b = e.rpm;
+    }
+    if (lo) *lo = a;
+    if (hi) *hi = b;
+}
+
+void test_engine_friction(void)
+{
+    /* Friction follows Chen and Flynn's formula, and the brake numbers are
+     * the indicated ones minus it. Wide open at 3000 rpm that's about 1.5 bar,
+     * and twice as much at twice the speed. */
+    start_fired(3000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-5);
+    const rb_engine_cycle *r = &e.result;
+    const rb_engine_desc *d = &e.desc;
+    const double sp = 2.0 * d->stroke * 3000.0 / 60.0;
+    const double expected = d->fmep_constant + d->fmep_pressure * r->p_max + d->fmep_speed * sp
+                          + d->fmep_speed2 * sp * sp;
+    const double w = 3000.0 * 3.14159265358979323846 / 30.0;
+    CHECK_NEAR(r->fmep, expected, 1e-4 * expected);
+    CHECK_NEAR(rb_engine_fmep(&e, w), expected, 1e-4 * expected);
+    CHECK(r->fmep > 1.3e5 && r->fmep < 1.8e5);
+    CHECK(rb_engine_fmep(&e, 2.0 * w) > 1.5 * r->fmep);
+    CHECK_NEAR(r->bmep, r->imep_net - r->fmep, 1e-9 * r->imep_net);
+    CHECK_NEAR(r->brake_torque, r->torque - r->fmep * rb_engine_displacement(&e) / (4.0 * 3.14159265358979323846),
+               1e-6 * r->torque);
+    CHECK_NEAR(r->brake_power, r->brake_torque * w, 1e-3 * r->brake_power);
+    CHECK_NEAR(r->rpm, 3000.0, 1e-6);
+}
+
+void test_engine_crank_books(void)
+{
+    /* Starting from rest, the crank's kinetic energy is exactly the work done
+     * on it: by the gas through the pistons, the crankcase air under them, the
+     * starter, friction and any load. */
+    start_free();
+    e.ignition = 1;
+    e.starter = 1;
+    e.load_torque = 5.0;
+    const books b0 = snapshot();
+    double v0 = 0.0;
+    for (int i = 0; i < e.desc.cylinders; i++) v0 += e.cyl[i].gas.V;
+    /* While cranking, the computer sets a late spark (no kickback). */
+    int due = -1;
+    for (long k = 0; k < lround(1.0 / DT) && due < 0; k++) {
+        rb_engine_step(&e);
+        for (int i = 0; i < e.desc.cylinders; i++)
+            if (e.burn[i].spark_due) due = i;
+    }
+    CHECK(due >= 0);
+    if (due < 0) return;
+    CHECK(e.rpm < e.desc.cranking_rpm);
+    CHECK_NEAR(e.burn[due].spark_angle, 720.0 - e.desc.cranking_spark, 1e-9);
+    double idle_air = 0.0;
+    for (long k = 0; k < 192000; k++) {
+        rb_engine_step(&e);
+        if (e.idle_air.mdot > idle_air) idle_air = e.idle_air.mdot;
+    }
+    CHECK(e.rpm > 500.0);
+    /* The gas's books balance too, idle air valve and all. */
+    const books b1 = snapshot();
+    CHECK(idle_air > 0.0);
+    CHECK_EQ_INT(species_unbalanced(&b0, &b1), 0);
+    CHECK_NEAR(b1.c.U - b0.c.U, b1.energy - b0.energy, 1e-9 * (b1.heat - b0.heat));
+    CHECK_NEAR(e.kinetic, crank_books(), 1e-9 * fabs(e.crank_gas_work));
+    /* The pistons' undersides push the crankcase air (at ambient pressure) out
+     * of the way of the cylinders' total volume. */
+    double v1 = 0.0;
+    for (int i = 0; i < e.desc.cylinders; i++) v1 += e.cyl[i].gas.V;
+    CHECK(fabs(v1 - v0) > 1e-6);
+    CHECK_NEAR(e.crank_case_work, e.desc.p_ambient * (v1 - v0), 1e-12 * e.desc.p_ambient);
+    CHECK_NEAR(e.crank_gas_work, -e.work_on_gas, 1e-9 * fabs(e.crank_gas_work));
+    CHECK_NEAR(e.kinetic, 0.5 * e.desc.inertia * e.omega * e.omega, 1e-12 * e.kinetic);
+    CHECK(e.starter_work > 0.0 && e.friction_work > 0.0 && e.load_work > 0.0);
+    CHECK(e.hold_work == 0.0);
+}
+
+void test_engine_cranks(void)
+{
+    /* With the ignition off, the starter turns the engine at a typical
+     * cranking speed, slowing on every compression and speeding up after. */
+    double lo, hi;
+    start_free();
+    e.starter = 1;
+    run_for(1.0, NULL, NULL);
+    const long c = e.cycles;
+    run_for(1.0, &lo, &hi);
+    CHECK(e.cycles > c);
+    CHECK(e.result.rpm > 150.0 && e.result.rpm < 350.0);
+    CHECK(hi - lo > 50.0);
+    CHECK(lo > 50.0);
+    CHECK_NEAR(e.kinetic, crank_books(), 1e-9 * fabs(e.crank_gas_work));
+}
+
+void test_engine_drives_itself(void)
+{
+    /* The plan's check for stage 7, as a driver would do it: turn the key,
+     * let go when it runs, let it idle, blip the throttle, floor it into the
+     * rev limiter, let go, switch off. */
+    double lo, hi;
+    const double limit = 6800.0;
+    start_free();
+    e.ignition = 1;
+    e.starter = 1;
+    for (int k = 0; k < 192000 && e.starter; k++) {           /* at most a second */
+        rb_engine_step(&e);
+        if (e.rpm_smooth > 600.0) e.starter = 0;
+    }
+    CHECK(!e.starter);                                         /* it started */
+    run_for(4.0, &lo, &hi);
+    CHECK(lo > 600.0);                                         /* no stall settling down */
+    run_for(1.0, &lo, &hi);
+    CHECK_NEAR(e.result.rpm, 800.0, 15.0);                     /* idles ... */
+    CHECK(hi - lo < 100.0);                                    /* ... smoothly */
+    CHECK(e.result.bmep > -0.2e5 && e.result.bmep < 0.2e5);    /* doing no work */
+
+    e.throttle_pos = 0.3;                                      /* a blip */
+    run_for(0.3, NULL, &hi);
+    CHECK(hi > 2500.0);
+    e.throttle_pos = 0.0;
+    const double fuel = e.fuel_in;
+    int fuel_cut = 0;
+    for (long k = 0; k < 96000; k++) {                         /* coasting down, */
+        rb_engine_step(&e);
+        if (e.fuel_cut) fuel_cut = 1;
+    }
+    CHECK(fuel_cut && e.fuel_in - fuel < 0.05 * fuel / 5.5);   /* the injectors are off */
+    run_for(2.5, &lo, NULL);
+    CHECK(lo > 600.0);                                         /* back down without stalling */
+    run_for(0.5, NULL, NULL);
+    CHECK_NEAR(e.result.rpm, 800.0, 30.0);
+
+    e.throttle_pos = 1.0;                                      /* floored */
+    const double trim = e.idle_trim;
+    int cut = 0;
+    for (long k = 0; k < 2 * 192000; k++) {
+        rb_engine_step(&e);
+        if (e.spark_cut) cut = 1;
+    }
+    run_for(0.5, &lo, &hi);
+    CHECK(cut);
+    CHECK(e.idle_trim == trim);                                /* learns only with the foot off */
+    CHECK(hi < limit + 150.0 && lo > limit - 400.0);           /* bouncing off the limiter, */
+    CHECK(lo < limit - 60.0);                                  /* down to where the spark resumes */
+    e.throttle_pos = 0.0;
+    run_for(3.5, &lo, NULL);
+    CHECK(lo > 600.0);
+    run_for(0.5, NULL, NULL);
+    CHECK_NEAR(e.result.rpm, 800.0, 40.0);                     /* idling again */
+
+    e.ignition = 0;                                            /* switched off */
+    run_for(3.0, NULL, NULL);
+    CHECK(e.rpm == 0.0 && e.omega == 0.0);
+    const double theta = e.theta;
+    run_for(0.2, NULL, &hi);
+    CHECK(hi == 0.0 && e.theta == theta);                      /* and it stays stopped, */
+    double torque = 0.0;                                       /* the gas pushing on each piston */
+    for (int i = 0; i < e.desc.cylinders; i++)
+        torque += (e.cyl[i].gas.p - e.desc.p_ambient) * rb_cyl_dvolume(&e.cyl[i].geom, e.cyl[i].theta);
+    CHECK_NEAR(e.gas_torque, torque, 1e-3 * fabs(torque) + 1e-3);
+    CHECK(torque < e.friction_torque);                         /* (friction holds it; it never turns back) */
+    CHECK_NEAR(e.kinetic, crank_books(), 1e-9 * fabs(e.crank_gas_work));
+    CHECK(isfinite(e.plenum.p) && isfinite(e.cyl[0].gas.T));
+}
+
+void test_engine_free_matches_held(void)
+{
+    /* Held at 3000 rpm wide open by a dyno, the engine delivers some brake
+     * torque. Let go of the crank with a load that takes exactly that torque
+     * at 3000 rpm (and more above, less below, like a fan), and the crank
+     * stays at 3000 rpm. */
+    start_fired(3000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-5);
+    const double torque = e.result.brake_torque;
+    const double w0 = 3000.0 * 3.14159265358979323846 / 30.0;
+    e.hold_speed = 0;
+    const long steps = 192000;
+    double sum = 0.0;
+    for (long k = 0; k < 2 * steps; k++) {
+        e.load_torque = torque * (e.omega / w0) * (e.omega / w0);
+        rb_engine_step(&e);
+        if (k >= steps) sum += e.rpm;
+    }
+    CHECK_NEAR(sum / steps, 3000.0, 15.0);
+    CHECK_NEAR(e.kinetic, crank_books(), 1e-9 * fabs(e.crank_gas_work));
+}
+
+void test_engine_burns_at_rest(void)
+{
+    /* Below 100 rpm the gas sets its own pace: a crank that stops with a burn
+     * under way still finishes it, and the hot gas still cools on the walls. */
+    start_fired(3000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-4);
+    CHECK(run_to_angle(705.0, 706.0));            /* 10 degrees after the spark */
+    const rb_burn *b = &e.burn[0];
+    CHECK(b->burning && b->fraction < 0.2);
+    e.rpm = 0.0;                                  /* the crank stops dead */
+    run_for(0.05, NULL, NULL);
+    const double T = e.cyl[0].gas.T;
+    run_for(0.15, NULL, NULL);
+    CHECK(b->fraction == 1.0 && !b->burning);     /* 60 degrees at 100 rpm take 0.1 s */
+    CHECK(e.cyl[0].gas.T < T - 100.0);
+
+    /* A charge stopped part-way through its compression, no flame in it, cools too. */
+    start_fired(3000.0, 1.0);
+    rb_engine_settle(&e, 100, 1e-4);
+    CHECK(run_to_angle(680.0, 681.0));
+    CHECK(!e.burn[0].after_spark && e.cyl[0].gas.T > 550.0);
+    e.rpm = 0.0;
+    const double T0 = e.cyl[0].gas.T;
+    run_for(0.5, NULL, NULL);
+    CHECK(e.cyl[0].gas.T < T0 - 25.0);
+}
+
+void test_engine_starter_motor(void)
+{
+    /* The starter is a DC motor geared to the crank: its full torque when
+     * stalled, falling in a straight line to nothing at its free speed, and
+     * nothing above that (its one-way clutch lets the engine run away). */
+    static const double share[4] = { 0.0, 0.5, 0.9, 1.2 };
+    start_free();
+    const double free_w = e.desc.starter_free_rpm * 3.14159265358979323846 / 30.0;
+    const double stall = e.desc.starter_torque;
+    for (int k = 0; k < 4; k++) {
+        e.starter = 1;
+        e.omega = share[k] * free_w;
+        e.kinetic = 0.5 * e.desc.inertia * e.omega * e.omega;
+        rb_engine_step(&e);
+        CHECK_NEAR(e.starter_torque_now, share[k] < 1.0 ? stall * (1.0 - share[k]) : 0.0, 1e-9 * stall);
+    }
+    e.starter = 0;
+    e.omega = 0.0;
+    e.kinetic = 0.0;
+    rb_engine_step(&e);
+    CHECK(e.starter_torque_now == 0.0);
 }
