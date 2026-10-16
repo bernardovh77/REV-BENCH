@@ -1,0 +1,23 @@
+# build output
+build/
+build-san/
+*.o
+*.d
+
+# renders/ holds regenerated output (make render, the rb_cli demos, tools/);
+# the images used by the docs live in docs/
+renders/*
+!renders/.gitkeep
+
+# python caches (tools/)
+__pycache__/
+
+# zig compiler caches
+.zig-cache/
+zig-cache/
+
+# web
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/

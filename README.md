@@ -1,0 +1,103 @@
+# REV-BENCH
+
+A browser-based combustion engine test bench: pick an engine, change displacement,
+compression, cams, headers and turbo size, and hear and see the difference in real time,
+with a 3D view of the engine running. The sound is generated from a physics simulation of
+the gas moving through the engine, not from recordings.
+
+**Status:** stage 5 of 26 done. The C core plays in the browser through an AudioWorklet
+(still a test tone). The physics so far: gas properties, chambers and flow through openings,
+a cylinder with a crank and piston, and now a whole four-cylinder engine breathing through
+its cams, valves, throttle and intake plenum (turned by a motor; no fuel yet). See [PLAN.md](PLAN.md) for the
+roadmap and progress, [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes
+and equations per stage.
+
+## Try it in the browser
+
+You need Node.js 22.12 or newer (`node --version`; in WSL, `nvm install 22` is an easy
+way to get it).
+
+```bash
+cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH/web
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173> in your normal Windows browser (WSL forwards it), turn the
+volume down, press **Start** and move the pitch slider.
+
+Run `npm install` and `npm run dev` in the same environment (both in WSL, or both in
+Windows): some build tools are native programs built for one system.
+
+Other web commands (inside `web/`):
+
+```bash
+npm test             # unit tests of the WebAssembly core (Node)
+npm run build        # production build in web/dist
+npm run test:e2e     # browser test; the first time run: npx playwright install chromium
+```
+
+## Native tools (WSL / Linux)
+
+You need `gcc` and `make` (`sudo apt install build-essential`).
+
+```bash
+cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH
+make            # builds build/rb_cli
+make test       # runs the C unit tests
+make render     # writes renders/test.wav (+ renders/test.csv)
+```
+
+Open `renders\test.wav` from Windows Explorer to listen.
+
+More:
+
+```bash
+build/rb_cli info          # list the core's parameters and telemetry
+build/rb_cli tone --help   # options for the test render
+build/rb_cli blowdown      # physics demo: a tank emptying (renders/blowdown.csv)
+build/rb_cli motor         # physics demo: one cylinder turned by a motor (renders/motor.csv)
+build/rb_cli breathe       # physics demo: the engine breathing (renders/breathe.csv);
+                           # try --throttle 0.1, --rpm 800, --intake 280/11/105, --help
+build/rb_cli breathe --sweep   # its volumetric efficiency map, ~35 s (renders/ve.csv)
+make SAN=1 test            # tests with AddressSanitizer + UBSan
+make help                  # all make targets
+```
+
+To chart the demos you need matplotlib (`sudo apt install python3-matplotlib`):
+
+```bash
+python3 tools/plot_cycle.py                  # renders/motor.csv → renders/motor.png
+python3 tools/plot_breathe.py cycle          # renders/breathe.csv → renders/breathe.png
+python3 tools/plot_breathe.py map            # renders/ve.csv → renders/ve.png
+```
+
+## Rebuilding the WebAssembly core
+
+The compiled core (`web/src/wasm/rb_core.wasm`) is committed, so the web app works without
+a C-to-WebAssembly compiler. After changing anything in `core/`, rebuild it:
+
+```bash
+make wasm
+```
+
+This needs zig: either a `zig` on your PATH, or the pip package
+(`python3 -m pip install --user ziglang`; on newer Ubuntu put it in a venv and run
+`make wasm ZIG="path/to/venv/bin/python -m ziglang"`). `npm test` fails if the C code
+changed since the last `make wasm`, so a stale core can't sneak into the browser.
+
+## Project layout
+
+```
+core/      C11 simulation core (physics + sound). Only depends on libm.
+native/    Command-line harness, WAV and CSV writers.
+tests/     C unit tests (make test).
+web/       Browser app (Vite + TypeScript): src/core wraps the WASM core, src/audio runs it
+           in an AudioWorklet, tests/ has unit and browser tests.
+docs/      One note per stage: what was built and the equations used.
+renders/   Output of make render, the rb_cli demos and tools/ (git-ignored).
+tools/     Python scripts that chart the CSV output.
+```
+
+Stack: C11 physics core → WebAssembly in an AudioWorklet · Vite + TypeScript UI ·
+static hosting (Vercel).

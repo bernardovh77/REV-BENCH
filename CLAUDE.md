@@ -1,0 +1,79 @@
+# REV-BENCH — notes for Claude
+
+## Workflow
+- The roadmap lives in `PLAN.md`. When asked to "do stage N" or "next stage", read `PLAN.md` first,
+  do only that stage, then update its tracker row (status + one-line note) and write `docs/stage-NN.md`.
+- Validate physics natively (tests, CSV plots, WAV renders) before wiring anything into the browser.
+  Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
+- Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
+  Playwright test in both modes (dev and `E2E_PREVIEW=1`).
+- Check that new physics tests can fail: plant deliberate bugs in a copy (e.g. `$HOME/rb-mut`) and
+  note in the stage doc which tests catch them.
+
+## Core (C)
+- C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
+  for hosts), NaN/inf guards.
+- Inputs are parameter ids + doubles (enum in `core/include/rb.h`, metadata row in
+  `core/src/rb_params.c`); outputs are telemetry ids + doubles. New C tests go in `tests/test_main.c`.
+- Internal physics modules: `gas.c` (species RB_AIR/RB_FUEL/RB_BURNED, two-range cp fits, u(T), T(u)),
+  `chamber.c` (0D control volume: clear rates, add flows/heat, integrate; `rb_chamber_set_volume` does
+  piston work with the time-symmetric trapezoidal rule and splits changes over 2 %), `flow.c` (nozzle
+  formula, orifices with the equalisation limit, `rb_network_step`), `cylinder.c` (slider-crank
+  geometry; `rb_cylinder` = chamber + geometry + crank angle, `rb_cylinder_move` returns the work),
+  `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
+  (butterfly plate + shaft), `engine.c` (N cylinders + plenum + throttle + two air reservoirs).
+  The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
+  Claude's cloud workspace; see docs/stage-03.md.
+- Engine step order: set areas (throttle, valves) → all flows from the current state, integrated
+  (explicit Euler) → turn the crank and move the pistons (trapezoidal). Per-cycle totals share the
+  step that crosses 720° between both cycles. `rb_engine_settle` runs to a steady state.
+- Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
+  360 + ICL), exhaust centerline before it (360 - ECL).
+- Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
+  TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
+- New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
+  in `web/src/core/rb-core.ts` if JS uses them).
+- Bernardo wants a 3D view of the engine running (stages 17–19). Physics stages must expose what it
+  needs through the API: the engine description (geometry, layout, crank pin angles, valve/cam data,
+  pipe geometry) and per-cylinder / per-pipe-cell state. Never duplicate engine geometry in JavaScript.
+- After any change in `core/`, run `make wasm`. It rewrites `web/src/wasm/rb_core.wasm` and
+  `rb_core.sources.sha256`; the web unit tests fail on a stale core.
+
+## Tools and charts
+- `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
+  ones (cycle, map). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
+  ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
+  Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
+
+## Web
+- Vite 8 + TypeScript 7 + Vitest 5 + Playwright 1.63, pinned exactly (pick versions at least two
+  weeks old). `web/.npmrc` sets `legacy-peer-deps=true` because npm 10 crashes on vitest's optional peers.
+- The worklet gets the wasm bytes in `processorOptions` and compiles its own instance synchronously.
+  Nothing may allocate inside `process()`.
+- 3D view: Three.js `WebGPURenderer` (automatic WebGL 2 fallback, `await renderer.init()`), shaders in
+  TSL, geometry generated procedurally; motion from a display-rate snapshot streamed by the worklet,
+  delayed by the audio output latency.
+
+## Environment (device bridge)
+- Deleting files in the project folder is blocked by default, so build with
+  `make BUILD=$HOME/rb-build ...` (outside the mounted folder) and only write deliverables
+  (source, docs, renders) into the project. `git commit` also needs delete permission (lock files).
+- Commits: one per stage, at its end, on the `rev-bench` branch (don't commit to `main`). Author as
+  in Bernardo's history: `git -c user.name=bernardovh77 -c user.email=you@example.com commit ...`.
+  Never add Co-Authored-By or session lines to commit messages (Bernardo's request).
+  Read git state with `git --no-optional-locks ...`.
+- Never `npm install` inside the mounted folder. Copy REV-BENCH (without node_modules) to $HOME,
+  `npm ci` in its web/, run tests there, and copy `package-lock.json` back if it changed.
+- The bridge VM has gcc 11, make, node 22, python3 + numpy, zig 0.17 (`python3 -m ziglang`), git;
+  no sudo. GitHub, PyPI and npm are reachable; storage.googleapis.com is not (so no Emscripten SDK).
+  Its clock trails the mounted folder slightly, so make prints harmless clock-skew warnings.
+- The browser e2e test runs in Claude's cloud workspace: stage the web/ files there, `npm ci`, then
+  `PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test`
+  (add `E2E_PREVIEW=1` for the production build).
+- The desktop app's built-in browser can't open servers Claude starts, so Bernardo runs
+  `npm run dev` himself to listen.
+- `REV-BENCH` is a subfolder of the `Personal-Projects` git repo, so don't run `git init` here.
+
+## Bernardo
+- Windows + WSL. CS student, strongest in C, so keep the C readable and well commented.

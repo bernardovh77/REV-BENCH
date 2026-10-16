@@ -1,0 +1,6 @@
+# Always LF line endings, even when checked out on Windows: a Makefile or
+# shell script with CRLF endings breaks under WSL.
+* text=auto eol=lf
+*.wav binary
+*.png binary
+*.wasm binary
