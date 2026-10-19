@@ -27,7 +27,8 @@ gets a one-line summary of anything that changed from the plan.
 | 9  | Dyno + validation against real engines           | Physics core     | ✅     | Absorbing dyno on the free crank; the four, six and boxer within 5 % of the 1AZ-FE, M54B30 and FB20; lumped intake runners brought forward from stage 10 |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ✅     | Runners, headers, collectors, exhaust pipes and tailpipes are 1D pipes; a pulse runs at c (−0.16 %) and echoes inverted from an open end; the idle computer looks ahead |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ✅     | A microphone hears the tailpipes' volume flow; anti-alias FIR, DC blocker, soft limiter, TPDF dither; four clean renders. Listening checkpoint |
-| 12 | Muffler, intake & mechanical sound, mix 🎧        | Sound            | ⬜     | Listening checkpoint |
+| 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Listening checkpoint |
+| 12b| Mechanical & flow noise, in-car listener 🎧       | Sound            | ⬜     | Split from stage 12. Listening checkpoint |
 | 13 | Performance & stability pass                     | Sound            | ⬜     | |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
@@ -339,21 +340,47 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   at order 1. The single-volume muffler booms at 1500–2500 rpm and keeps a pull from getting louder
   above it. Details in `docs/stage-11.md`.
 
-#### Stage 12 — Muffler, intake & mechanical sound, mix 🎧
+#### Stage 12 — Mufflers, intake & listener 🎧
 - Muffler/resonator (expansion chamber + perforated-pipe approximation, or a convolution
   with a synthesized muffler impulse response) and a "straight pipe" option.
-- Intake mouth sound, valvetrain/mechanical noise tied to crank angle, flow turbulence noise.
-- A mixer with listener position (behind the car, engine bay, in-car) and an optional room/outdoor
-  reverb (done later with a Web Audio `ConvolverNode` in the browser).
+- Intake mouth sound.
+- A listener with a position (behind the car, beside it, in the engine bay).
 - From stage 11: the muffler is one volume, which booms near its ring (1500–2500 rpm in the four),
   filters the firing orders by 12 dB an octave above it (a pull doesn't get louder), and on the
   overrun leaves a sharp exhaust resonance (643 Hz in the four). Each tailpipe needs its own place
   and delay: at a microphone between them the cross-plane V8's half orders cancel. The intake
   mouth's flow changes every physics step, unlike the tailpipes', so the anti-alias filter will
   matter there.
+- Split (working agreement 2): the mechanical and flow noise and the in-car listener moved to
+  stage 12b.
 - **Done when:** the new renders sound noticeably more like a real car than in stage 11, and the
   equal- vs unequal-length header renders sound different.
 - **Bernardo checks:** listen and give feedback; the sound tuning knobs get adjusted from that.
+- *Built:* each exhaust system's muffler is a pipe: a chambered can (an expansion chamber, left
+  through baffles with a laminar loss), a straight-through (the tailpipe's bore, packed: a laminar
+  loss on the flow's swings only, which takes nothing from the steady flow), or a straight pipe.
+  Pipes can go straight on into each other (joined through a volume, a straight pipe lost two
+  velocity heads and cost more back pressure than the can). The air comes in through a snorkel,
+  the filter (a laminar loss) and an air box; the engine's books count at the snorkel's mouth, whose
+  flow is a source too (the throttle's flow changes every physics step, the snorkel's mouth only once
+  a pipe step, like the tailpipes'). A listener stands 3 m behind the car (the default), a metre
+  behind a tailpipe, beside the car or over the bonnet, and hears each tailpipe and the mouth at its
+  own distance and delay, and off the ground. A pull now gets louder: a metre from the four's
+  tailpipe, 85–91 dBA below 1600 rpm and 99–109 above 5500 (stage 11's: 84–93 all the way). The
+  boxer's unequal headers put every half order in its exhaust; equal ones leave only the firing's.
+  Away from the middle of its twin exhaust, the cross-plane V8's half orders come through. The boom
+  at 1500–2500 rpm is the whole exhaust's lowest ring (about 63 Hz), not the muffler's. The four,
+  six and boxer lose about 3 % of their torque and power to the filter and mufflers, and stay
+  within 9 % of their real engines. Details in `docs/stage-12.md`.
+
+#### Stage 12b — Mechanical & flow noise, in-car listener 🎧
+- Valvetrain/mechanical noise tied to crank angle, flow turbulence noise (the throttle's hiss, the
+  tailpipe's jet).
+- The in-car listener (the cabin's walls between it and the engine and exhaust), and an optional
+  room/outdoor reverb (done later with a Web Audio `ConvolverNode` in the browser).
+- **Done when:** idling and revving renders have the engine's mechanical sound under the exhaust's,
+  and the in-car render sounds like it's from inside.
+- **Bernardo checks:** listen.
 
 #### Stage 13 — Performance & stability pass
 - Profile the native build. Optimize memory layout and pipe cell counts, and add a quality setting (sim rate).

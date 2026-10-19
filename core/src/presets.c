@@ -88,6 +88,22 @@ static void exhaust(rb_engine_desc *d, const double *header, double header_diame
     d->tailpipe_diameter = tailpipe_diameter;
 }
 
+/* The muffler (stage 12): what it is (rb.h: rb_muffler_type) and how long;
+ * the volume (exhaust()) is a chambered one's. */
+static void muffler(rb_engine_desc *d, int type, double length)
+{
+    d->muffler_type = type;
+    d->muffler_length = length;
+}
+
+/* The way in (stage 12): the air box and the snorkel it draws through. */
+static void airbox(rb_engine_desc *d, double volume, double snorkel, double snorkel_diameter)
+{
+    d->airbox_volume = volume;
+    d->snorkel_length = snorkel;
+    d->snorkel_diameter = snorkel_diameter;
+}
+
 /* The crank, the starter, and the engine computer's idle and rev limit. Each
  * idle valve is sized so that the warm engine idles with it about 15 % open,
  * where the engine computer starts it, and each engine's idle gains are tuned
@@ -138,9 +154,11 @@ static void inline6(rb_engine_desc *d)
     layout(d, 1, 0.0, 0.0, bank, pin, position, order);
     d->intake = valve(2, 32 * MM, 9.7 * MM, 250.0, 110.0, 1);
     d->exhaust = valve(2, 27 * MM, 9.3 * MM, 250.0, 110.0, 0);
+    airbox(d, 10 * L, 400 * MM, 90 * MM);
     intake(d, 70 * MM, 3 * MM2, 4.0 * L);
     runners(d, 420 * MM, 40 * MM);
     exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 16 * CM2, 15 * L, 28 * CM2, 0.7, 60 * MM);
+    muffler(d, RB_MUFFLER_CHAMBERED, 550 * MM);
     running(d, 0.20, 250.0, 250.0, 700.0, 44 * MM2, 5.0e-4, 4.0e-4, 7000.0);
 }
 
@@ -167,9 +185,11 @@ static void v8_cross(rb_engine_desc *d)
     layout(d, 2, 45.0, -45.0, bank, pin, position, order);
     d->intake = valve(2, 36 * MM, 11.0 * MM, 260.0, 112.0, 1);
     d->exhaust = valve(2, 31 * MM, 10.5 * MM, 260.0, 112.0, 0);
+    airbox(d, 12 * L, 400 * MM, 90 * MM);
     intake(d, 80 * MM, 4 * MM2, 6.0 * L);
     runners(d, 450 * MM, 45 * MM);
     exhaust(d, header, 40 * MM, bank, 2.0, 55 * MM, 2, 20 * CM2, 10 * L, 20 * CM2, 0.8, 60 * MM);
+    muffler(d, RB_MUFFLER_STRAIGHT, 450 * MM);
     running(d, 0.30, 350.0, 220.0, 650.0, 81 * MM2, 6.0e-4, 3.0e-4, 7000.0);
 }
 
@@ -195,9 +215,11 @@ static void v8_flat(rb_engine_desc *d)
     layout(d, 2, 45.0, -45.0, bank, pin, position, order);
     d->intake = valve(2, 38 * MM, 12.0 * MM, 270.0, 108.0, 1);
     d->exhaust = valve(2, 32 * MM, 11.0 * MM, 270.0, 108.0, 0);
+    airbox(d, 12 * L, 300 * MM, 90 * MM);
     intake(d, 90 * MM, 4 * MM2, 6.0 * L);
     runners(d, 300 * MM, 50 * MM);
     exhaust(d, header, 42 * MM, bank, 1.4, 60 * MM, 2, 23 * CM2, 9 * L, 23 * CM2, 0.5, 70 * MM);
+    muffler(d, RB_MUFFLER_STRAIGHT, 400 * MM);
     running(d, 0.18, 300.0, 250.0, 1000.0, 114 * MM2, 5.0e-4, 4.0e-4, 9000.0);
 }
 

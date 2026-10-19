@@ -6,6 +6,7 @@
 
 #include "combustion.h"
 #include "heat.h"
+#include "rb.h"   /* RB_MUFFLER_* */
 
 #include <math.h>
 #include <string.h>
@@ -41,9 +42,25 @@ static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
 #define TAILPIPE_ENTRY   0.5
 /* A catalyst's laminar loss (pipe.h), Pa per m/s of its exhaust pipe's gas:
  * a 400-cell substrate 12 cm long and five times the pipe's area across
- * costs about 2.5 kPa at 100 m/s, near full power. It also damps the
- * exhaust's slowest ring (the muffler on its tailpipe, about 40 Hz). */
+ * costs about 2.5 kPa at 100 m/s, near full power. */
 #define CATALYST_LAMINAR 25.0
+/* The mufflers (stage 12; rb.h: rb_muffler_type). A chambered one's baffles
+ * are perforated: besides their restriction (muffler_area) they cost a
+ * laminar loss, Pa per m/s of the tailpipe's gas, which damps the exhaust's
+ * rings a little (its lowest, the boom at 1500-2500 rpm in the four, by 2 dB
+ * at three times this) and costs 3.7 kPa of back pressure at the four's full
+ * power. A straight-through one's packing, Pa per m/s of the swings per
+ * metre, takes the swings faster than about 640 Hz (settling in 0.25 ms),
+ * 10 dB over 45 cm of hot gas, and less of the slower ones. */
+#define BAFFLE_LAMINAR   30.0
+#define PACKING          1500.0
+#define PACKING_SETTLE   2.5e-4
+/* The way in (stage 12): air drawn into the snorkel's flared mouth (an entry
+ * loss of 0.2 velocity heads), then through the air box's clean paper filter:
+ * a laminar loss, Pa per m/s of the snorkel's air, about 1.4 kPa at the
+ * four's full power. */
+#define SNORKEL_ENTRY    0.2
+#define FILTER_LAMINAR   60.0
 /* Darcy friction factors: smooth intake runners, rougher exhaust pipes. */
 #define RUNNER_FRICTION  0.02
 #define EXHAUST_FRICTION 0.025
@@ -52,6 +69,7 @@ static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
 #define RUNNER_WALL      330.0
 #define HEADER_WALL      650.0
 #define EXHAUST_WALL     550.0
+#define MUFFLER_WALL     450.0
 #define TAILPIPE_WALL    400.0
 
 void rb_engine_desc_default(rb_engine_desc *d)
@@ -82,6 +100,11 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->intake = (rb_valve){ 2, 0.033, 0.85 * 0.033, 0.0095, 250.0, 360.0 + 110.0, 0.7 };
     d->exhaust = (rb_valve){ 2, 0.028, 0.85 * 0.028, 0.0090, 250.0, 360.0 - 110.0, 0.7 };
 
+    /* An 8 L air box behind a 35 cm snorkel of 70 mm (stage 12), then the
+     * throttle and the plenum. */
+    d->airbox_volume = 8e-3;
+    d->snorkel_length = 0.35;
+    d->snorkel_diameter = 0.070;
     d->throttle = (rb_throttle){ 0.060, 0.008, 7.0, 0.8, 2e-6 };
     d->plenum_volume = 2.5e-3;
     /* Intake runners, plenum to valve: 330 mm long, 40 mm across. The air in
@@ -90,9 +113,8 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->runner_length = 0.33;
     d->runner_diameter = 0.040;
     /* The exhaust: 450 mm headers of 36 mm into one collector, a 50 mm pipe
-     * 1.8 m long to the catalyst and a 10 L muffler, and a 60 cm tailpipe.
-     * The catalyst and the muffler's way through act like one 15 cm^2
-     * opening: with the pipes, about 0.2 bar of back pressure at full power. */
+     * 1.8 m long to the catalyst and a chambered muffler, 10 L and 45 cm long
+     * (17 cm across), and a 60 cm tailpipe. */
     for (int i = 0; i < 4; i++) {
         d->header_length[i] = 0.45;
         d->collector[i] = 0;
@@ -102,7 +124,9 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->exhaust_pipe_diameter = 0.050;
     d->exhaust_systems = 1;
     d->catalyst_area = 21e-4;
+    d->muffler_type = RB_MUFFLER_CHAMBERED;
     d->muffler_volume = 10e-3;
+    d->muffler_length = 0.45;
     d->muffler_area = 21e-4;
     d->tailpipe_length = 0.6;
     d->tailpipe_diameter = 0.050;
@@ -217,6 +241,14 @@ int rb_engine_layout_inline(rb_engine_desc *d, int n)
     return 0;
 }
 
+/* A muffler pipe's bore (m): a chambered one's can, as wide as its volume
+ * over its length makes it; otherwise the tailpipe's. */
+static double muffler_width(const rb_engine_desc *d)
+{
+    if (d->muffler_type != RB_MUFFLER_CHAMBERED) return d->tailpipe_diameter;
+    return sqrt(4.0 * d->muffler_volume / (PI * d->muffler_length));
+}
+
 int rb_engine_desc_check(const rb_engine_desc *d)
 {
     rb_cyl_geom g;
@@ -232,6 +264,9 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     const double heads = d->intake.count * d->intake.diameter * d->intake.diameter
                        + d->exhaust.count * d->exhaust.diameter * d->exhaust.diameter;
     if (!(heads <= 0.8 * d->bore * d->bore)) return -1;
+    if (!(d->airbox_volume > 0.0 && d->airbox_volume < 1.0)) return -1;
+    if (!(d->snorkel_length >= 0.05 && d->snorkel_length <= 10.0)) return -1;
+    if (!(d->snorkel_diameter > 0.01 && d->snorkel_diameter < 0.5)) return -1;
     if (rb_throttle_check(&d->throttle) != 0) return -1;
     if (!(d->plenum_volume > 0.0 && d->plenum_volume < 1.0)) return -1;
     /* No runners (0: the valves draw straight from the plenum, as in stages
@@ -254,7 +289,11 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->exhaust_pipe_diameter > 0.01 && d->exhaust_pipe_diameter < 0.5)) return -1;
     if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2 && joined[1]))) return -1;
     if (!(d->catalyst_area > 0.0 && d->catalyst_area < 0.1)) return -1;
+    if (d->muffler_type < RB_MUFFLER_NONE || d->muffler_type > RB_MUFFLER_CHAMBERED) return -1;
     if (!(d->muffler_volume > 0.0 && d->muffler_volume < 1.0)) return -1;
+    if (!(d->muffler_length >= 0.05 && d->muffler_length <= 10.0)) return -1;
+    if (d->muffler_type == RB_MUFFLER_CHAMBERED
+        && !(muffler_width(d) > 0.01 && muffler_width(d) < 1.0)) return -1;
     if (!(d->muffler_area > 0.0 && d->muffler_area < 0.1)) return -1;
     if (!(d->tailpipe_length >= 0.05 && d->tailpipe_length <= 10.0)) return -1;
     if (!(d->tailpipe_diameter > 0.01 && d->tailpipe_diameter < 0.5)) return -1;
@@ -350,23 +389,35 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
     rb_cyl_geom_init(&g, d->bore, d->stroke, d->rod, d->cr);
     rb_chamber_init_reservoir(&e->intake_air, d->p_ambient, d->T_ambient, AIR);
     rb_chamber_init_reservoir(&e->exhaust_air, d->p_ambient, d->T_ambient, AIR);
+    rb_chamber_init(&e->airbox, d->airbox_volume, d->p_ambient, d->T_ambient, AIR);
     rb_chamber_init(&e->plenum, d->plenum_volume, d->p_ambient, d->T_ambient, AIR);
-    rb_orifice_init(&e->throttle, &e->intake_air, &e->plenum, 0.0, 1.0);
-    rb_orifice_init(&e->idle_air, &e->intake_air, &e->plenum, 0.0, 1.0);
+    rb_orifice_init(&e->throttle, &e->airbox, &e->plenum, 0.0, 1.0);
+    rb_orifice_init(&e->idle_air, &e->airbox, &e->plenum, 0.0, 1.0);
 
     /* The pipes' cells. If they'd want more than the pool has, each still
      * gets one, and a share of the rest of what it wants (new_pipe): never
-     * more than the pool, however many short pipes there are (at most 36). */
+     * more than the pool, however many short pipes there are (at most 39). */
     const int runners = d->runner_length > 0.0;
-    const int pipes = (runners ? 2 : 1) * d->cylinders + e->collectors + e->systems;
-    int want = 0, used = 0;
+    const int pipes = rb_engine_pipe_count(e);
+    int want = rb_pipe_cells_for(d->snorkel_length, SHORT_CELL, e->pipe_dt), used = 0;
     for (int i = 0; i < d->cylinders; i++)
         want += rb_pipe_cells_for(d->header_length[i], SHORT_CELL, e->pipe_dt)
               + (runners ? rb_pipe_cells_for(d->runner_length, SHORT_CELL, e->pipe_dt) : 0);
     want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, LONG_CELL, e->pipe_dt)
-          + e->systems * rb_pipe_cells_for(d->tailpipe_length, LONG_CELL, e->pipe_dt);
+          + e->systems * (rb_pipe_cells_for(d->muffler_length, LONG_CELL, e->pipe_dt)
+                          + rb_pipe_cells_for(d->tailpipe_length, LONG_CELL, e->pipe_dt));
     const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
     const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
+
+    /* The way in (stage 12): the snorkel draws from the open air through its
+     * mouth and opens into the air box through the filter at its end, a
+     * laminar loss. The air box is stepped with the plenum and the throttle
+     * every physics step, and so is the snorkel's face into it. */
+    new_pipe(e, &e->snorkel, &used, d->snorkel_length, d->snorkel_diameter, SHORT_CELL, room, over,
+             d->T_ambient, RUNNER_FRICTION);
+    rb_pipe_join(&e->snorkel, 0, &e->intake_air, SNORKEL_ENTRY, 0);
+    rb_pipe_join(&e->snorkel, 1, &e->airbox, 0.0, 1);
+    rb_pipe_resist(&e->snorkel, 1, FILTER_LAMINAR);
 
     /* Each collector merges its headers into its exhaust pipe through a cone
      * about two pipe diameters long. */
@@ -378,8 +429,6 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
         const double volume = d->exhaust_pipe_diameter * (headers * header_area + pipe_area);
         rb_chamber_init(&e->collector[c], volume, d->p_ambient, d->T_ambient, AIR);
     }
-    for (int s = 0; s < e->systems; s++)
-        rb_chamber_init(&e->muffler[s], d->muffler_volume, d->p_ambient, d->T_ambient, AIR);
 
     /* The areas of the valves, catalysts and mufflers are effective areas
      * (Cd included), so cd = 1. */
@@ -412,25 +461,47 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
         e->burn[i].spark_angle = 720.0 - RB_SPARK_DEFAULT;
         e->burn[i].duration = d->burn_duration;
     }
-    /* Each collector's exhaust pipe, into its system's muffler through the
-     * catalyst at its end; each muffler's tailpipe, through the muffler's
-     * baffles and out into the open air. The catalyst and the baffles are
-     * restrictions at the pipes' ends (pipe.h). */
+    /* Each system's muffler (stage 12; rb.h: rb_muffler_type) is a pipe:
+     * none, a straight one the tailpipe's size; straight-through, that pipe
+     * packed (pipe.h); chambered, a wide can. */
+    for (int s = 0; s < e->systems; s++) {
+        rb_pipe *m = &e->muffler[s];
+        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), LONG_CELL, room, over,
+                 MUFFLER_WALL, EXHAUST_FRICTION);
+        if (d->muffler_type == RB_MUFFLER_STRAIGHT) rb_pipe_pack(m, PACKING, PACKING_SETTLE);
+    }
+    /* Each collector's exhaust pipe runs through the catalyst at its end
+     * into its system's muffler, and each muffler into its tailpipe, which
+     * opens into the open air. Into a chambered muffler's can the gas spreads
+     * out, losing its speed, and leaves it through the baffles: the pipes are
+     * joined to the can's end cells as to volumes. A straight pipe or a
+     * straight-through goes straight on from its exhaust pipe (unless two
+     * exhaust pipes meet there: then they open into its first cell) and on
+     * into its tailpipe (pipe.h). The catalyst and the baffles are
+     * restrictions with a laminar loss at the pipes' ends. */
+    const int straight = d->muffler_type != RB_MUFFLER_CHAMBERED;
+    const int alone = e->systems == e->collectors;   /* each muffler has one exhaust pipe */
     for (int c = 0; c < e->collectors; c++) {
-        rb_pipe *x = &e->exhaust_pipe[c];
+        rb_pipe *x = &e->exhaust_pipe[c], *m = &e->muffler[system_of(e, c)];
         new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, LONG_CELL, room, over,
                  EXHAUST_WALL, EXHAUST_FRICTION);
         rb_pipe_join(x, 0, &e->collector[c], COLLECTOR_ENTRY, 0);
-        rb_pipe_join(x, 1, &e->muffler[system_of(e, c)], 0.0, 0);
+        if (!(straight && alone && rb_pipe_onward(x, m) == 0))
+            rb_pipe_join(x, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
         rb_pipe_restrict(x, 1, d->catalyst_area);
         rb_pipe_resist(x, 1, CATALYST_LAMINAR);
     }
     for (int s = 0; s < e->systems; s++) {
-        rb_pipe *t = &e->tailpipe[s];
+        rb_pipe *t = &e->tailpipe[s], *m = &e->muffler[s];
         new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, LONG_CELL, room, over,
                  TAILPIPE_WALL, EXHAUST_FRICTION);
-        rb_pipe_join(t, 0, &e->muffler[s], 0.0, 0);
-        rb_pipe_restrict(t, 0, d->muffler_area);
+        if (!(straight && rb_pipe_onward(m, t) == 0)) {
+            rb_pipe_join(t, 0, rb_pipe_end_cell(m, 1), 0.0, 0);
+            if (!straight) {
+                rb_pipe_restrict(t, 0, d->muffler_area);
+                rb_pipe_resist(t, 0, BAFFLE_LAMINAR);
+            }
+        }
         rb_pipe_join(t, 1, &e->exhaust_air, TAILPIPE_ENTRY, 0);
     }
     start_cycle(e);
@@ -440,7 +511,7 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
 int rb_engine_pipe_count(const rb_engine *e)
 {
     const int n = e->desc.cylinders;
-    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + e->systems;
+    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + 2 * e->systems + 1;
 }
 
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
@@ -456,6 +527,10 @@ const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
     if (k < e->collectors) return &e->exhaust_pipe[k];
     k -= e->collectors;
     if (k < e->systems) return &e->tailpipe[k];
+    k -= e->systems;
+    if (k < e->systems) return &e->muffler[k];
+    k -= e->systems;
+    if (k == 0) return &e->snorkel;
     return NULL;
 }
 
@@ -463,12 +538,12 @@ void rb_engine_contents(const rb_engine *e, double *mass, double *energy,
                         double species[RB_NSPECIES])
 {
     double m = 0.0, u = 0.0, y[RB_NSPECIES] = { 0.0 };
-    const rb_chamber *volumes[RB_MAX_CYLINDERS + 1 + 2 * RB_MAX_COLLECTORS];
+    const rb_chamber *volumes[RB_MAX_CYLINDERS + 2 + RB_MAX_COLLECTORS];
     int count = 0;
+    volumes[count++] = &e->airbox;
     volumes[count++] = &e->plenum;
     for (int i = 0; i < e->desc.cylinders; i++) volumes[count++] = &e->cyl[i].gas;
     for (int c = 0; c < e->collectors; c++) volumes[count++] = &e->collector[c];
-    for (int s = 0; s < e->systems; s++) volumes[count++] = &e->muffler[s];
     for (int k = 0; k < count; k++) {
         m += volumes[k]->mass;
         u += volumes[k]->U;
@@ -492,14 +567,6 @@ double rb_engine_pipe_heat(const rb_engine *e)
     double q = 0.0;
     for (int k = 0; k < rb_engine_pipe_count(e); k++) q += rb_engine_pipe(e, k)->heat;
     return q;
-}
-
-/* The upstream chamber of an orifice's last flow: a if the flow went a -> b,
- * otherwise b. Its state is the one the flow carried until the chambers are
- * integrated. */
-static const rb_chamber *upstream(const rb_orifice *o)
-{
-    return (o->mdot >= 0.0) ? o->a : o->b;
 }
 
 /* 1 if a crank turning `step` degrees from `angle` passes `event` (all in
@@ -931,18 +998,6 @@ static void engine_computer(rb_engine *e)
     e->idle_valve = (v > 0.0) ? ((v < 1.0) ? v : 1.0) : 0.0;
 }
 
-/* Books the air that came in through an inlet (throttle or idle valve) in
- * this step; returns its mass (kg). */
-static double count_inflow(rb_engine *e, const rb_orifice *o)
-{
-    const rb_chamber *up = upstream(o);
-    const double m = o->mdot * e->dt;
-    e->mass_in += m;
-    e->energy_in += m * up->h;
-    for (int s = 0; s < RB_NSPECIES; s++) e->species_in[s] += m * up->y[s];
-    return m;
-}
-
 /* Mean pressure in the exhaust collectors. */
 static double exhaust_pressure(const rb_engine *e)
 {
@@ -951,27 +1006,40 @@ static double exhaust_pressure(const rb_engine *e)
     return p / e->collectors;
 }
 
-/* The slow gas: the pipes but for their fast cells, the collectors and the
- * mufflers, stepped every pipe_every steps (pipe.h, two rates). When a block
- * of steps begins (step 3), their rates. */
+/* The slow gas: the pipes but for their fast cells, and the collectors,
+ * stepped every pipe_every steps (pipe.h, two rates). When a block of steps
+ * begins (step 3), their rates: all of them cleared before any flows, since
+ * one pipe's gas goes into another's cells (an exhaust pipe opens into its
+ * muffler's first cell, or goes straight on into it). */
 static void slow_flows(rb_engine *e)
 {
     const double dt = e->pipe_dt;
     const int pipes = rb_engine_pipe_count(e);
     for (int c = 0; c < e->collectors; c++) rb_chamber_clear_rates(&e->collector[c]);
-    for (int s = 0; s < e->systems; s++) rb_chamber_clear_rates(&e->muffler[s]);
     for (int k = 0; k < pipes; k++) rb_pipe_clear((rb_pipe *)rb_engine_pipe(e, k), 0);
     for (int k = 0; k < pipes; k++) rb_pipe_flows((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }
 
-/* When the block ends (step 5): what leaves through the tailpipes' open ends
- * (or is drawn in) is counted, everything slow is integrated over the block,
- * and the faces between slow cells get their new flows. */
+/* When the block ends (step 5): what came in through the snorkel's mouth and
+ * what left through the tailpipes' open ends (either way) is counted,
+ * everything slow is integrated over the block, and the faces between slow
+ * cells get their new flows. Each open end's flow is also kept as a volume,
+ * at the density of the gas at the pipe's end (as it was while it moved: the
+ * cells are integrated below), whichever way it flows: the sound's sources.
+ * What a reversing flow draws back in at first is the gas that has just
+ * left, not the outside air: switching to the air's density there would kink
+ * the volume flow at every reversal, and the sound (its derivative) would
+ * click. */
 static void slow_step(rb_engine *e, step_share *share)
 {
     const double dt = e->pipe_dt;
     const int pipes = rb_engine_pipe_count(e);
-    e->tail_flow = 0.0;
+    const rb_face *mouth = &e->snorkel.end_face[0];   /* from the air (a) into the pipe (b) */
+    const double m_in = mouth->moved * dt;
+    e->mass_in += m_in;
+    e->energy_in += m_in * mouth->moved_h;
+    for (int j = 0; j < RB_NSPECIES; j++) e->species_in[j] += m_in * mouth->moved_y[j];
+    e->mouth_flow = (mouth->b->rho > 0.0) ? -mouth->moved / mouth->b->rho : 0.0;
     for (int s = 0; s < e->systems; s++) {
         const rb_face *out = &e->tailpipe[s].end_face[1];
         const double m = out->moved * dt;
@@ -982,17 +1050,10 @@ static void slow_step(rb_engine *e, step_share *share)
             share->tail_m += m;
             share->tail_mT += m * out->a->T;
         }
-        /* As a volume, at the density of the gas at the pipe's end (as it
-         * was while it moved: the cells are integrated below), whichever way
-         * it flows. What a reversing flow draws back in at first is the gas
-         * that has just left, not the outside air: switching to the air's
-         * density there would kink the volume flow at every reversal, and
-         * the sound (its derivative) would click. */
-        const double rho = out->a->rho;
-        if (rho > 0.0) e->tail_flow += out->moved / rho;
+        e->tail_flow[s] = (out->a->rho > 0.0) ? out->moved / out->a->rho : 0.0;
     }
+    e->pipe_steps++;
     for (int c = 0; c < e->collectors; c++) rb_chamber_integrate(&e->collector[c], dt);
-    for (int s = 0; s < e->systems; s++) rb_chamber_integrate(&e->muffler[s], dt);
     for (int k = 0; k < pipes; k++) rb_pipe_integrate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
     for (int k = 0; k < pipes; k++) rb_pipe_accelerate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }
@@ -1064,15 +1125,16 @@ void rb_engine_step(rb_engine *e)
         open[i] = (e->intake[i].area > 0.0 || e->exhaust[i].area > 0.0);
     }
 
-    /* 3. Everything that changes the fast gas (the cylinders, the plenum and
-     * the pipes' cells at the valves), computed from the current state, then
-     * integrated together. What crosses the boundary is counted before the
-     * chambers change. The slow gas's rates first, if a block of steps
-     * begins. */
+    /* 3. Everything that changes the fast gas (the cylinders, the air box,
+     * the plenum and the pipes' cells at the valves), computed from the
+     * current state, then integrated together. The slow gas's rates first,
+     * if a block of steps begins. */
     step_share share = { .p = e->plenum.p, .rho = e->plenum.rho, .pexh = exhaust_pressure(e), .dt = dt };
     const int runners = d->runner_length > 0.0;
     if (e->pipe_phase == 0) slow_flows(e);
+    rb_chamber_clear_rates(&e->airbox);
     rb_chamber_clear_rates(&e->plenum);
+    rb_pipe_clear(&e->snorkel, 1);
     for (int i = 0; i < n; i++) {
         rb_chamber_clear_rates(&e->cyl[i].gas);
         if (runners) rb_pipe_clear(&e->runner[i], 1);
@@ -1081,7 +1143,8 @@ void rb_engine_step(rb_engine *e)
 
     rb_orifice_flow(&e->throttle, dt);
     rb_orifice_flow(&e->idle_air, dt);
-    share.throttle = count_inflow(e, &e->throttle) + count_inflow(e, &e->idle_air);
+    share.throttle = (e->throttle.mdot + e->idle_air.mdot) * dt;
+    rb_pipe_flows(&e->snorkel, 1, dt);   /* through the filter into the air box */
 
     for (int i = 0; i < n; i++) {
         rb_chamber *g = &e->cyl[i].gas;
@@ -1116,7 +1179,9 @@ void rb_engine_step(rb_engine *e)
         rb_pipe_flows(&e->header[i], 1, dt);
     }
 
+    rb_chamber_integrate(&e->airbox, dt);
     rb_chamber_integrate(&e->plenum, dt);
+    rb_pipe_integrate(&e->snorkel, 1, dt);
     for (int i = 0; i < n; i++) {
         rb_chamber_integrate(&e->cyl[i].gas, dt);
         if (runners) rb_pipe_integrate(&e->runner[i], 1, dt);
@@ -1178,6 +1243,7 @@ void rb_engine_step(rb_engine *e)
         e->pipe_phase = 0;
         slow_step(e, &share);
     }
+    rb_pipe_accelerate(&e->snorkel, 1, dt);
     for (int i = 0; i < n; i++) {
         if (runners) rb_pipe_accelerate(&e->runner[i], 1, dt);
         rb_pipe_accelerate(&e->header[i], 1, dt);

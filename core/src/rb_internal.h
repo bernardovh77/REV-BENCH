@@ -21,11 +21,11 @@
  * (a slider jump, a level change) never produce clicks. */
 #define RB_SMOOTH_TAU_S 0.010
 
-/* What the microphone hears. Until stage 14 the browser plays stage 1's test
+/* What the listener hears. Until stage 14 the browser plays stage 1's test
  * tone; native tools (rb_cli sound, the tests) switch to the engine. */
 enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE };
 
-/* The most the microphone's signal may be, in full-scale units (2e7 Pa):
+/* The most the listener's signal may be, in full-scale units (4e7 Pa):
  * beyond any real engine, it keeps the filters' sums finite. */
 #define RB_MIC_MAX 1e6
 
@@ -47,16 +47,18 @@ struct rb_sim {
     uint64_t  nonfinite;    /* samples replaced by the NaN/inf guard      */
     uint64_t  limited;      /* samples the soft limiter bent              */
 
-    /* ---- the sound (stage 11, audio.h) ---- */
+    /* ---- the sound (stages 11 and 12, audio.h) ---- */
     int           source;      /* RB_SOURCE_TONE or RB_SOURCE_ENGINE      */
-    rb_mic        microphone;  /* hears the engine's tailpipes            */
+    int           hear;        /* where the listener stands: RB_HEAR_*    */
+    rb_listener   listener;    /* hears the engine's pipe ends            */
+    long          pipe_steps_heard;   /* the engine's pipe steps it has   */
     rb_decimator  aa;          /* physics rate -> audio rate              */
     rb_dc_blocker dc;
 
     /* ---- model ----
      * Stage 1: a placeholder oscillator that proves the plumbing; stage 11
-     * adds the engine (see `source`). `mic` is what the virtual microphone
-     * hears at the current substep, in full-scale units. */
+     * adds the engine (see `source`). `mic` is what the listener hears at
+     * the current substep, in full-scale units. */
     double    tone_phase;   /* rad, kept in [0, 2pi)                      */
     double    tone_level_s; /* smoothed level                             */
     double    mic;
@@ -71,5 +73,11 @@ struct rb_sim {
 
 /* Coefficient a for the smoother  y += a * (target - y)  run every dt. */
 double rb_onepole_coef(double dt, double tau);
+
+/* Puts the listener at sim->hear around the engine the sim has now (its
+ * tailpipes, its pipes' step, its air's speed of sound), hearing the engine's
+ * pipe ends as they are: call it whenever the engine is built, or the
+ * listener moves. Nothing jumps. */
+void rb_sim_listen(rb_sim *sim);
 
 #endif /* RB_INTERNAL_H */

@@ -129,6 +129,35 @@ void rb_pipe_resist(rb_pipe *p, int end, double laminar)
     p->end_face[end ? 1 : 0].laminar = (laminar > 0.0) ? laminar : 0.0;
 }
 
+int rb_pipe_onward(rb_pipe *a, rb_pipe *b)
+{
+    if (!a || !b || a == b || a->cells < 2 || b->cells < 2 || a->fast[1] || b->fast[0]) return -1;
+    rb_face *f = &a->end_face[1];
+    rb_chamber *from = rb_pipe_end_cell(a, 1), *to = rb_pipe_end_cell(b, 0);
+    /* half of each cell, the narrower bore */
+    const double area = (a->area < b->area) ? a->area : b->area;
+    const double friction = 0.5 * (a->friction_factor * a->dx / a->diameter
+                                 + b->friction_factor * b->dx / b->diameter);
+    face_init(f, from, to, area, 0.5 * (a->dx + b->dx), friction);
+    f->pipe_end = 1;
+    a->end[1] = (rb_pipe_end){ .kind = RB_PIPE_ONWARD, .chamber = to, .pipe = b };
+    b->end[0] = (rb_pipe_end){ .kind = RB_PIPE_ONWARD_FROM, .chamber = from, .pipe = a };
+    sort_faces(a);
+    sort_faces(b);
+    return 0;
+}
+
+void rb_pipe_pack(rb_pipe *p, double resistance, double settle_time)
+{
+    const int on = resistance > 0.0 && settle_time > 0.0;
+    for (int k = 0; k + 1 < p->cells; k++) {
+        rb_face *f = &p->face[k];
+        f->packing = on ? resistance * f->length : 0.0;
+        f->settle_time = on ? settle_time : 0.0;
+        f->settled = f->mdot;
+    }
+}
+
 void rb_pipe_attach(rb_pipe *p, int end, rb_chamber *chamber, const rb_orifice *o)
 {
     rb_pipe_end *e = &p->end[end ? 1 : 0];
@@ -150,11 +179,13 @@ void rb_pipe_set_fast(rb_pipe *p, int end)
 }
 
 /* The mass flow (kg/s) along the pipe at an end: its face's, its orifice's
- * (turned to run along the pipe), or none when closed. */
+ * (turned to run along the pipe), the face from the pipe it goes on from, or
+ * none when closed. */
 static double end_flow(const rb_pipe *p, int end)
 {
     const rb_pipe_end *e = &p->end[end];
-    if (e->kind == RB_PIPE_JOINED) return p->end_face[end].mdot;
+    if (e->kind == RB_PIPE_JOINED || e->kind == RB_PIPE_ONWARD) return p->end_face[end].mdot;
+    if (e->kind == RB_PIPE_ONWARD_FROM) return e->pipe->end_face[1].mdot;
     if (e->kind == RB_PIPE_ORIFICE) return e->sign * e->orifice->mdot;
     return 0.0;
 }
@@ -300,6 +331,8 @@ void rb_pipe_flows(rb_pipe *p, int fast, double dt)
     for (int end = 0; end < 2; end++)   /* the chambers' gas is still */
         if (p->end[end].kind == RB_PIPE_JOINED && !p->end_face[end].fast)
             move_gas(&p->end_face[end], dt, 0, end ? ke[n - 1] : 0.0, end ? 0.0 : ke[0]);
+    if (p->end[1].kind == RB_PIPE_ONWARD)   /* the next pipe's gas moves */
+        move_gas(&p->end_face[1], dt, 0, ke[n - 1], kinetic_energy(p->end[1].pipe, 0));
 }
 
 void rb_pipe_contents(const rb_pipe *p, double *mass, double *energy, double species[RB_NSPECIES])
@@ -344,12 +377,13 @@ void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
 }
 
 /* A face's new flow: the pressure difference along it (a to b) less the
- * losses (`heads` velocity heads at the density rho, and its laminar loss),
- * plus the momentum flowing in at a's end less what flows out at b's. The
- * column is never taken shorter than `shortest`, which keeps a pipe shorter
- * than a stable cell stable at a slow step (pipe.h: rb_pipe_cells_for). The
- * laminar loss, A laminar u = laminar mdot / rho, is taken at the new flow
- * (implicitly), so it can't overshoot however strong it is. */
+ * losses (`heads` velocity heads at the density rho, its laminar loss and its
+ * packing's), plus the momentum flowing in at a's end less what flows out at
+ * b's. The column is never taken shorter than `shortest`, which keeps a pipe
+ * shorter than a stable cell stable at a slow step (pipe.h:
+ * rb_pipe_cells_for). The laminar loss, A laminar u = laminar mdot / rho, and
+ * the packing's, packing (mdot - settled) / rho, are taken at the new flow
+ * (implicitly), so they can't overshoot however strong they are. */
 static void push(rb_face *f, double heads, double rho, double flux_a, double flux_b,
                  double shortest, double since, double dt)
 {
@@ -358,10 +392,18 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
                     - (f->direct_b ? rb_chamber_pressure_now(f->b, since) : f->b->p);
     const double r = (rho > 1e-6) ? rho : 1e-6;
     const double u = f->mdot / (r * f->area);
-    const double force = f->area * (dp - heads * 0.5 * r * u * fabs(u)) + flux_a - flux_b;
+    /* The packing's loss is on the swing that's left once the settled flow
+     * has followed the new flow by `lag` of the way (backward Euler, which
+     * never overshoots): (1 - lag) (mdot - settled). */
+    const double lag = (f->packing > 0.0) ? dt / (f->settle_time + dt) : 0.0;
+    const double packing = f->packing * (1.0 - lag);
+    const double force = f->area * (dp - heads * 0.5 * r * u * fabs(u)) + flux_a - flux_b
+                       + packing * f->settled / r;
     const double length = (f->length > shortest) ? f->length : shortest;
-    const double mdot = (f->mdot + dt * force / length) / (1.0 + dt * f->laminar / (r * length));
+    const double mdot = (f->mdot + dt * force / length)
+                      / (1.0 + dt * (f->laminar + packing) / (r * length));
     f->mdot = (mdot == mdot && fabs(mdot) < 1e6) ? mdot : 0.0;   /* NaN: start from rest */
+    f->settled += lag * (f->mdot - f->settled);
 }
 
 /* The momentum flowing through cell k's centre (N), given the flows through
@@ -394,6 +436,21 @@ static void push_face(rb_pipe *p, int k, double flux_a, double flux_b, double sh
     push(f, f->friction, 0.5 * (f->a->rho + f->b->rho), flux_a, flux_b, shortest, p->since, dt);
 }
 
+/* The face on into the next pipe: like one of the pipe's own, with the next
+ * pipe's first cell's momentum beyond it, and a narrowing's loss either way:
+ * the jet through it spreads out again, (A / A_e - 1)^2 velocity heads
+ * (rb_pipe_restrict keeps (A / A_e)^2 - 1 in `exit`). */
+static void push_onward(rb_pipe *p, double shortest, double dt)
+{
+    rb_face *f = &p->end_face[1];
+    const rb_pipe *b = p->end[1].pipe;
+    const int n = p->cells;
+    const double r = sqrt(1.0 + f->exit);
+    push(f, f->friction + (r - 1.0) * (r - 1.0), 0.5 * (f->a->rho + f->b->rho),
+         momentum_flux(p, n - 1, side_flow(p, n - 1, 0), side_flow(p, n - 1, 1)),
+         momentum_flux(b, 0, side_flow(b, 0, 0), side_flow(b, 0, 1)), shortest, p->since, dt);
+}
+
 void rb_pipe_accelerate(rb_pipe *p, int fast, double dt)
 {
     const int n = p->cells;
@@ -424,4 +481,5 @@ void rb_pipe_accelerate(rb_pipe *p, int fast, double dt)
         if (!p->face[k].fast) push_face(p, k, flux[k], flux[k + 1], shortest, dt);
     for (int end = 0; end < 2; end++)
         if (p->end[end].kind == RB_PIPE_JOINED && !p->end_face[end].fast) push_end(p, end, shortest, dt);
+    if (p->end[1].kind == RB_PIPE_ONWARD) push_onward(p, shortest, dt);
 }

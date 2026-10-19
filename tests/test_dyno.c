@@ -194,9 +194,10 @@ void test_calibration_matches_real_engines(void)
 {
     /* Stage 9's "done when": wide open, with the spark at best torque, each
      * preset's peak brake torque and power are within 15 % of its real
-     * engine's (the model's come out within 5 %), the torque peaks in the mid
-     * range and the power near the top, and the curves pass within 15 % of
-     * the real peaks at the real peaks' speeds. */
+     * engine's (the model's come out within 9 %, a few % low since stage 12's
+     * air filter and mufflers), the torque peaks in the mid range and the
+     * power near the top, and the curves pass within 15 % of the real peaks
+     * at the real peaks' speeds. */
     for (int r = 0; r < (int)(sizeof REAL / sizeof REAL[0]); r++) {
         const real_engine *x = &REAL[r];
         rb_engine_desc d;

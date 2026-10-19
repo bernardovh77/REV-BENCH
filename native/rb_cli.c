@@ -14,7 +14,7 @@
  *   rb_cli run [opts]        stage-7 demo: the engine started, idled, revved and stopped (CSV)
  *   rb_cli dyno [opts]       stage-9 demo: the engine on a dyno (CSV)
  *   rb_cli pipes [opts]      stage-10 demo: pressure waves in the pipes (CSV)
- *   rb_cli sound [opts]      stage 11: the engine's sound, as a microphone hears it (WAV)
+ *   rb_cli sound [opts]      stages 11-12: the engine's sound, as a listener around it hears it (WAV)
  *
  * The native tools may use the core's internal headers (chamber.h, ...) to
  * exercise pieces of the physics on their own.
@@ -67,7 +67,7 @@ static void usage(FILE *f)
         "  pipes [options]       physics demo: pressure waves in the pipes. A pulse in a 2 m\n"
         "                        pipe (--pulse), or one cycle of the engine's runner, header,\n"
         "                        exhaust pipe and tailpipe, cell by cell (CSV)\n"
-        "  sound [options]       the engine's sound as a microphone behind the tailpipe hears it,\n"
+        "  sound [options]       the engine's sound as a listener around the car hears it,\n"
         "                        through the same chain as the browser (WAV)\n"
         "\n",
         f);
@@ -165,8 +165,8 @@ static void usage(FILE *f)
         "                        cycle, every 2 degrees (renders/pipes.csv)\n"
         "      --csv FILE        output CSV\n"
         "\n"
-        "sound options (a microphone 1 m from the tailpipe, the anti-alias filter, DC blocker\n"
-        "and soft limiter; full scale is 40 Pa, 126 dB SPL):\n"
+        "sound options (a listener around the car, the anti-alias filter, DC blocker and soft\n"
+        "limiter; full scale is 40 Pa, 126 dB SPL):\n"
         "      --preset KEY      the engine                 (default i4)\n"
         "      --idle            started with the key, then left to idle (the default)\n"
         "      --sweep           wide open from 1000 rpm (held there for 1.5 s first) into the\n"
@@ -178,7 +178,12 @@ static void usage(FILE *f)
         "      --inertia KGM2    for --sweep: crank, flywheel and the car (default 3)\n"
         "  -s, --seconds S       how long                   (default: 8 idle, 5 hold; the sweep\n"
         "                        ends 2 s after the foot comes off)\n"
-        "      --distance M      the microphone's distance  (default 1)\n"
+        "      --muffler TYPE    none (a straight pipe), straight (straight-through, packed) or\n"
+        "                        chambered                  (default: the preset's)\n"
+        "      --equal-headers   every exhaust header as long as their mean\n"
+        "      --listener WHERE  behind: someone 3 m behind the car (the default); tailpipe: a\n"
+        "                        microphone 1 m behind the (right) tailpipe; side: 4 m to its\n"
+        "                        side; front: leaning over the bonnet, by the intake's mouth\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
@@ -1709,8 +1714,9 @@ static int pipes_pulse(const char *path)
  * every 2 degrees, from -360 to 360 (overlap TDC to overlap TDC, firing TDC
  * in the middle). Pipes: 0 its runner (x from the plenum), 1 its header
  * (from the valve), 2 its exhaust pipe (from the collector), 3 its tailpipe
- * (from the muffler); pipe -1 holds the volumes between them, cell 0 the
- * cylinder, 1 the plenum, 2 the collector, 3 the muffler. */
+ * (from the muffler), 4 its muffler (from its inlet), 5 the snorkel (from its
+ * mouth); pipe -1 holds the volumes, cell 0 the cylinder, 1 the plenum, 2 the
+ * collector, 3 the air box. */
 static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char *path)
 {
     printf("pipes: %s held at %.0f rpm by a dyno, throttle %.0f %%\n", engine_name, op->rpm,
@@ -1723,10 +1729,11 @@ static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char 
            "plenum %.1f kPa\n", r->ve, r->brake_torque, r->p_exhaust / 1e3, r->map / 1e3);
 
     const int c = d->collector[0], s = (engine.systems == 2) ? c : 0;
-    const rb_pipe *pipes[4] = { d->runner_length > 0.0 ? &engine.runner[0] : NULL, &engine.header[0],
-                                &engine.exhaust_pipe[c], &engine.tailpipe[s] };
+    const rb_pipe *pipes[6] = { d->runner_length > 0.0 ? &engine.runner[0] : NULL, &engine.header[0],
+                                &engine.exhaust_pipe[c], &engine.tailpipe[s], &engine.muffler[s],
+                                &engine.snorkel };
     const rb_chamber *volumes[4] = { &engine.cyl[0].gas, &engine.plenum, &engine.collector[c],
-                                     &engine.muffler[s] };
+                                     &engine.airbox };
     const char *cols[] = { "crank_deg", "pipe", "cell", "x_m", "p_kPa", "T_K", "u_m_s",
                            "intake_lift_mm", "exhaust_lift_mm" };
     csv_writer *csv = csv_open(path, cols, 9);
@@ -1748,7 +1755,7 @@ static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char 
                 double row[9] = { angle, -1, j, 0.0, volumes[j]->p / 1e3, volumes[j]->T, 0.0, in, ex };
                 csv_row(csv, row);
             }
-            for (int j = 0; j < 4; j++) {
+            for (int j = 0; j < 6; j++) {
                 const rb_pipe *p = pipes[j];
                 for (int k = 0; p && k < p->cells; k++) {
                     double row[9] = { angle, j, k, (k + 0.5) * p->dx, p->cell[k].p / 1e3,
@@ -1759,8 +1766,9 @@ static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char 
         }
         rb_engine_step(&engine);
     }
-    printf("  cylinder 1's pipes: runner %d cells, header %d, exhaust pipe %d, tailpipe %d\n",
-           pipes[0] ? pipes[0]->cells : 0, pipes[1]->cells, pipes[2]->cells, pipes[3]->cells);
+    printf("  cylinder 1's pipes: runner %d cells, header %d, exhaust pipe %d, muffler %d, "
+           "tailpipe %d; the snorkel %d\n", pipes[0] ? pipes[0]->cells : 0, pipes[1]->cells,
+           pipes[2]->cells, pipes[4]->cells, pipes[3]->cells, pipes[5]->cells);
     printf("wrote %s\n", path);
     return csv_close(csv) ? 1 : 0;
 }
@@ -1810,9 +1818,16 @@ static int cmd_pipes(int argc, char **argv)
     return pipes_engine(&d, &op, csv_path ? csv_path : "renders/pipes.csv");
 }
 
-/* ---- sound: what a microphone behind the tailpipe hears (stage 11) ---- */
+/* ---- sound: what a listener around the car hears (stages 11 and 12) ---- */
 
 enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD };
+
+/* The listener's places (RB_HEAR_*, audio.h), by name. */
+static const char *const LISTENERS[RB_HEAR_COUNT] = { "tailpipe", "behind", "side", "front" };
+
+/* The mufflers (RB_MUFFLER_*, rb.h), by name, and as the summary says them. */
+static const char *const MUFFLERS[3] = { "none", "straight", "chambered" };
+static const char *const MUFFLER_SAYS[3] = { "no muffler", "straight-through muffler", "chambered muffler" };
 
 #define SOUND_SETTLE   1.5    /* s a held engine runs before the recording starts  */
 #define SWEEP_FROM     1000.0 /* rpm                                               */
@@ -1823,9 +1838,9 @@ static int cmd_sound(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *out_path = "renders/sound.wav", *csv_path = NULL;
-    double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0, distance = RB_MIC_DISTANCE;
+    double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
     double gain = 1.0, os = 4.0;
-    int drive = DRIVE_IDLE, use_float = 0;
+    int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0;
     rb_config cfg;
 
     rb_config_default(&cfg);
@@ -1853,8 +1868,24 @@ static int cmd_sound(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &inertia);
         else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
             ok = !to_double(take_value(argc, argv, &i), &seconds);
-        else if (!strcmp(a, "--distance"))
-            ok = !to_double(take_value(argc, argv, &i), &distance);
+        else if (!strcmp(a, "--listener")) {
+            const char *v = take_value(argc, argv, &i);
+            where = -1;
+            for (int k = 0; v && k < RB_HEAR_COUNT; k++)
+                if (!strcmp(v, LISTENERS[k])) where = k;
+            ok = where >= 0;
+        }
+        else if (!strcmp(a, "--muffler")) {
+            const char *v = take_value(argc, argv, &i);
+            ok = 0;
+            for (int k = 0; v && k < 3; k++)
+                if (!strcmp(v, MUFFLERS[k])) {
+                    d.muffler_type = k;
+                    ok = 1;
+                }
+        }
+        else if (!strcmp(a, "--equal-headers"))
+            equal = 1;
         else if (!strcmp(a, "--gain"))
             ok = !to_double(take_value(argc, argv, &i), &gain);
         else if (!strcmp(a, "--float"))
@@ -1884,10 +1915,8 @@ static int cmd_sound(int argc, char **argv)
         fprintf(stderr, "rb_cli sound: --rpm must be in [300, 20000] and --throttle in [0, 1]\n");
         return 2;
     }
-    if (!(inertia >= 0.01 && inertia <= 100.0) || !(distance >= 0.1 && distance <= 100.0)
-        || !(gain >= 0.0 && gain <= 4.0)) {
-        fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 100] kg m^2, --distance in "
-                "[0.1, 100] m and --gain in [0, 4]\n");
+    if (!(inertia >= 0.01 && inertia <= 100.0) || !(gain >= 0.0 && gain <= 4.0)) {
+        fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 100] kg m^2 and --gain in [0, 4]\n");
         return 2;
     }
     if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
@@ -1896,6 +1925,15 @@ static int cmd_sound(int argc, char **argv)
     }
     cfg.oversample = (int)os;
     if (drive == DRIVE_SWEEP) d.inertia = inertia;
+    if (equal) {   /* every header as long as their mean */
+        double mean = 0.0;
+        for (int i = 0; i < d.cylinders; i++) mean += d.header_length[i] / d.cylinders;
+        for (int i = 0; i < d.cylinders; i++) d.header_length[i] = mean;
+    }
+    if (rb_engine_desc_check(&d) != 0) {
+        fprintf(stderr, "rb_cli sound: that engine can't be built\n");
+        return 2;
+    }
 
     rb_sim *sim = rb_create(&cfg);
     if (!sim) {
@@ -1906,7 +1944,8 @@ static int cmd_sound(int argc, char **argv)
     rb_engine *e = &sim->engine;
     rb_engine_init(e, &d, sim->dt);
     sim->source = RB_SOURCE_ENGINE;
-    sim->microphone.distance = distance;
+    sim->hear = where;
+    rb_sim_listen(sim);
     rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
     e->ignition = 1;
     if (drive == DRIVE_HOLD) {
@@ -1940,9 +1979,16 @@ static int cmd_sound(int argc, char **argv)
         }
     }
 
-    printf("sound: %s, %d cylinder%s, %.2f L; a microphone %.2g m from the tailpipe%s\n", engine_name,
-           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3, distance,
-           e->systems > 1 ? "s" : "");
+    printf("sound: %s, %d cylinder%s, %.2f L, %s%s%s; heard from %s: ", engine_name,
+           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3,
+           MUFFLER_SAYS[d.muffler_type], e->systems > 1 ? "s" : "", equal ? ", equal headers" : "",
+           LISTENERS[where]);
+    if (e->systems > 1)
+        printf("the tailpipes %.2f and %.2f m away", rb_listener_distance(&sim->listener, 0),
+               rb_listener_distance(&sim->listener, 1));
+    else
+        printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
+    printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
     float buf[BLOCK_FRAMES];
     const double fs = cfg.sample_rate;
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
@@ -1956,6 +2002,7 @@ static int cmd_sound(int argc, char **argv)
     }
 
     const long long total = llround(seconds * fs);
+    const double limited0 = rb_get_telemetry(sim, RB_TLM_LIMITED);   /* settling's aren't heard */
     double peak = 0.0, sumsq = 0.0, lo = INFINITY, hi = 0.0;
     double released = -1.0, on_limiter = -1.0, lifted = -1.0;
     long long frames = 0;
@@ -2010,9 +2057,9 @@ static int cmd_sound(int argc, char **argv)
             printf(": no rev limiter within %.0f s\n", recorded);
     }
     const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
-    printf("  %.2f s recorded: peak %.3f (%.1f dBFS), rms %.4f: %.1f dB SPL at the microphone\n", recorded,
+    printf("  %.2f s recorded: peak %.3f (%.1f dBFS), rms %.4f: %.1f dB SPL at the listener\n", recorded,
            peak, peak > 0.0 ? 20.0 * log10(peak) : -INFINITY, rms, pa > 0.0 ? 20.0 * log10(pa / 2e-5) : 0.0);
-    printf("  soft-limited samples %.0f, non-finite %.0f\n", rb_get_telemetry(sim, RB_TLM_LIMITED),
+    printf("  soft-limited samples %.0f, non-finite %.0f\n", rb_get_telemetry(sim, RB_TLM_LIMITED) - limited0,
            rb_get_telemetry(sim, RB_TLM_NONFINITE));
     if (cpu > 0.0) printf("  cpu %.1f s (%.2fx real time)\n", cpu, recorded / cpu);
 

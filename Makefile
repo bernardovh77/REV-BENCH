@@ -2,9 +2,14 @@
 #
 #   make              build the command-line tool (build/rb_cli)
 #   make test         build and run the unit tests
-#   make render       render the engine's sound (stage 11): the four starting and
-#                     idling, a wide-open pull, and both V8s at 3000 rpm, to
-#                     renders/*.wav (about a minute), and the test tone
+#   make render       render the engine's sound (stages 11 and 12) to
+#                     renders/*.wav (about three minutes): the four starting and
+#                     idling and pulling, heard from behind the car; the four at
+#                     3000 rpm with each muffler, 1 m from its tailpipe; both V8s
+#                     at 3000 rpm, the cross-plane one from every place around
+#                     the car and pulling (at half gain: it's loud enough to
+#                     reach the soft limiter); the boxer with its unequal
+#                     headers and with equal ones; and the test tone
 #   make wasm         build the core for the browser (web/src/wasm/rb_core.wasm)
 #   make clean        delete build output
 #   make help         show this text
@@ -67,8 +72,17 @@ render: $(CLI)
 	$(CLI) tone --out renders/test.wav --csv renders/test.csv
 	$(CLI) sound --preset i4 --idle --out renders/i4-idle.wav
 	$(CLI) sound --preset i4 --sweep --out renders/i4-sweep.wav --csv renders/i4-sweep.csv
-	$(CLI) sound --preset v8-cross --hold --rpm 3000 --out renders/v8-cross-3000.wav
+	for m in none straight chambered; do \
+	  $(CLI) sound --preset i4 --hold --rpm 3000 --muffler $$m --listener tailpipe \
+	    --out renders/i4-3000-$$m.wav || exit 1; done
+	for l in behind tailpipe side front; do \
+	  $(CLI) sound --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.5 \
+	    --out renders/v8-cross-3000-$$l.wav || exit 1; done
+	$(CLI) sound --preset v8-cross --sweep --gain 0.5 --out renders/v8-cross-sweep.wav \
+	  --csv renders/v8-cross-sweep.csv
 	$(CLI) sound --preset v8-flat --hold --rpm 3000 --out renders/v8-flat-3000.wav
+	$(CLI) sound --preset boxer4 --hold --rpm 3000 --out renders/boxer4-3000.wav
+	$(CLI) sound --preset boxer4 --hold --rpm 3000 --equal-headers --out renders/boxer4-3000-equal.wav
 
 # ---- WebAssembly build for the browser ----------------------------------
 # A standalone module: libc/libm are compiled in, it needs no imports and has

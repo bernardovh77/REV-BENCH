@@ -1,10 +1,11 @@
 /*
- * test_audio.c - stage 11: the microphone, the anti-alias filter that takes
- * the physics rate down to the audio rate, the DC blocker and the soft
- * limiter.
+ * test_audio.c - stages 11 and 12: the listener (stage 11's microphone, put
+ * around the car), the anti-alias filter that takes the physics rate down to
+ * the audio rate, the DC blocker and the soft limiter.
  */
 #include "audio.h"
 #include "engine.h"
+#include "presets.h"
 #include "rb.h"
 #include "rb_internal.h"   /* the sim's sound source and its engine */
 #include "rb_test.h"
@@ -160,35 +161,121 @@ void test_audio_soft_limit(void)
     CHECK(isnan(rb_soft_limit(NAN)));   /* left for the guard after it */
 }
 
-void test_audio_microphone(void)
+void test_audio_listener_monopole(void)
 {
-    /* A flow Q0 sin(w t) out of a small opening: at r the microphone hears
-     * rho0 w Q0 / (4 pi r) cos(w t), half as much twice as far away. The
-     * first step after a reset hears nothing, whatever the flow. */
-    const double rho0 = 1.18, q0 = 0.01, w = 2.0 * PI * 100.0, dt = 1.0 / 192000.0;
+    /* One source, a flow Q0 sin(w t) out of a small opening, changing once a
+     * pipe step (every 4 physics steps): r away, with no ground, each pipe
+     * step's physics steps hear rho0 / (4 pi r) (Q_k - Q_k-1) / pipe_dt
+     * between them, rho0 w Q0 / (4 pi r) cos(w t) to 1e-4: half as much twice
+     * as far away. Primed with a flow, it hears nothing until it changes. */
+    const double rho0 = 1.18, q0 = 0.01, w = 2.0 * PI * 100.0, dt = 1.0 / 192000.0, pipe_dt = 4.0 * dt;
+    static rb_listener l;
     for (int k = 1; k <= 2; k++) {
-        rb_mic m;
-        rb_mic_init(&m, k * 1.0);
+        const double src[3] = { 0.0, 0.0, 1.0 }, at[3] = { 0.0, k * 1.0, 1.0 };
+        const double *pos[RB_LISTEN_SOURCES] = { src, NULL, NULL };
+        rb_listener_set(&l, pos, at, 0.0, 343.0, pipe_dt);
+        CHECK_NEAR(rb_listener_distance(&l, 0), k * 1.0, 1e-12);
+        CHECK_NEAR(rb_listener_distance(&l, 1), 0.0, 0.0);
+        const double q[RB_LISTEN_SOURCES] = { 0.05, 0.0, 0.0 };
+        rb_listener_prime(&l, q);
+        CHECK(rb_listener_hear(&l, rho0, dt) == 0.0);
+        const double zero[RB_LISTEN_SOURCES] = { 0.0 };
+        rb_listener_prime(&l, zero);
         double worst = 0.0;
-        CHECK(rb_mic_hear(&m, 0.05, rho0, dt) == 0.0);   /* primes it */
-        rb_mic_reset(&m);
-        for (int n = 0; n < 1920; n++) {
-            const double p = rb_mic_hear(&m, q0 * sin(w * n * dt), rho0, dt);
-            const double expected = rho0 * w * q0 / (4.0 * PI * k) * cos(w * (n - 0.5) * dt);
-            if (n > 0) worst = fmax(worst, fabs(p - expected));
+        for (int n = 1; n < 480; n++) {
+            const double qn[RB_LISTEN_SOURCES] = { q0 * sin(w * n * pipe_dt), 0.0, 0.0 };
+            rb_listener_push(&l, qn);
+            double mean = 0.0;
+            for (int i = 0; i < 4; i++) mean += 0.25 * rb_listener_hear(&l, rho0, dt);
+            const double expected = rho0 * w * q0 / (4.0 * PI * k) * cos(w * (n - 0.5) * pipe_dt);
+            worst = fmax(worst, fabs(mean - expected));
         }
-        CHECK(worst < 1e-6 * rho0 * w * q0 / (4.0 * PI * k));
+        CHECK(worst < 1e-4 * rho0 * w * q0 / (4.0 * PI * k));
     }
 }
 
+void test_audio_listener_paths(void)
+{
+    /* Two sources 1 m and about 2.5 m away, 0.35 m up, the listener 0.5 m
+     * up, the ground reflecting 0.9: each source is heard straight and off
+     * the ground, the nearest path at once, the others (r - 1) / c later (in
+     * pipe steps, read between steps), each at its 1 / r. A flow switched on
+     * in both arrives path by path, as those say, and adds up to every path's
+     * 1 / r. */
+    static rb_listener l;
+    const double c = 343.0, pipe_dt = 1.0 / 48000.0, at[3] = { 0.0, 1.0, 0.5 };
+    const double s0[3] = { 0.0, 1.0 - sqrt(1.0 - 0.15 * 0.15), 0.35 };   /* 1 m away exactly */
+    const double s1[3] = { 0.0, 1.0 + 2.5, 0.35 };
+    const double *pos[RB_LISTEN_SOURCES] = { s0, s1, NULL };
+    rb_listener_set(&l, pos, at, 0.9, c, pipe_dt);
+    const double r0 = 1.0, r1 = sqrt(2.5 * 2.5 + 0.15 * 0.15);
+    const double g0 = sqrt(1.0 - 0.15 * 0.15), g1 = 2.5;   /* horizontal distances */
+    const double i0 = sqrt(g0 * g0 + 0.85 * 0.85), i1 = sqrt(g1 * g1 + 0.85 * 0.85);   /* off the ground */
+    CHECK_NEAR(rb_listener_distance(&l, 0), r0, 1e-12);
+    CHECK_NEAR(1.0 / l.gain[1][0], r1, 1e-12);
+    CHECK_NEAR(l.gain[0][1], 0.9 / i0, 1e-12);
+    CHECK_NEAR(l.gain[1][1], 0.9 / i1, 1e-12);
+    CHECK_NEAR(l.delay[0][0], 0.0, 0.0);
+    CHECK_NEAR(l.delay[1][0], (r1 - r0) / (c * pipe_dt), 1e-9);
+    CHECK_NEAR(l.delay[0][1], (i0 - r0) / (c * pipe_dt), 1e-9);
+    CHECK_NEAR(l.delay[1][1], (i1 - r0) / (c * pipe_dt), 1e-9);
+
+    const double off[RB_LISTEN_SOURCES] = { 0.0 }, on[RB_LISTEN_SOURCES] = { 1.0, 1.0, 1.0 };
+    rb_listener_prime(&l, off);
+    int wrong = 0;
+    for (int n = 0; n < 1200; n++) {
+        rb_listener_push(&l, on);
+        double expected = 0.0;   /* each path: how much of the step has arrived after n steps */
+        for (int j = 0; j < 2; j++)
+            for (int k = 0; k < 2; k++) {
+                const double d = l.delay[j][k];
+                const double arrived = (n >= d) ? 1.0 : (n + 1 > d) ? n + 1 - d : 0.0;
+                expected += l.gain[j][k] * arrived;
+            }
+        wrong += fabs(l.sum - expected) > 1e-12;
+    }
+    CHECK_EQ_INT(wrong, 0);
+    CHECK_NEAR(l.sum, 1.0 / r0 + 1.0 / r1 + 0.9 / i0 + 0.9 / i1, 1e-12);
+}
+
+void test_audio_listener_places(void)
+{
+    /* Around the car: 1 m behind tailpipe 0 (stage 11's microphone, 15 cm
+     * higher), the other tailpipe of a twin exhaust a metre to the side; from
+     * beside the car both tailpipes, the second further away; over the bonnet,
+     * the intake's mouth nearest. One tailpipe: no second source. */
+    static rb_listener l;
+    const double c = 346.0, pipe_dt = 1.0 / 48000.0;
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_TAILPIPE, 2, c, pipe_dt), 0);
+    CHECK_NEAR(rb_listener_distance(&l, 0), sqrt(1.0 + 0.15 * 0.15), 1e-12);
+    CHECK_NEAR(rb_listener_distance(&l, 1), sqrt(1.0 + 1.0 + 0.15 * 0.15), 1e-12);
+    CHECK(rb_listener_distance(&l, 2) > 4.0);
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_TAILPIPE, 1, c, pipe_dt), 0);
+    CHECK_NEAR(rb_listener_distance(&l, 1), 0.0, 0.0);
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_SIDE, 2, c, pipe_dt), 0);
+    CHECK(rb_listener_distance(&l, 0) > 4.0 && rb_listener_distance(&l, 1) > rb_listener_distance(&l, 0) + 0.5);
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_FRONT, 1, c, pipe_dt), 0);
+    CHECK(rb_listener_distance(&l, 2) < 1.0 && rb_listener_distance(&l, 0) > 3.0);
+    CHECK_NEAR(l.delay[2][0], 0.0, 0.0);   /* the mouth's the nearest */
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_BEHIND, 1, c, pipe_dt), 0);
+    CHECK(rb_listener_distance(&l, 0) > 3.0 && rb_listener_distance(&l, 0) < 3.5);
+    CHECK_EQ_INT(rb_listener_place(&l, -1, 1, c, pipe_dt), -1);
+    CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_COUNT, 1, c, pipe_dt), -1);
+}
+
 /* A sim (48 kHz, oversample 4) whose sound is the default four held at
- * `rpm`, wide open, heard from `distance` m. */
-static rb_sim *engine_sim(double rpm, double distance)
+ * `rpm`, wide open, heard r m from its tailpipe, with nothing else and no
+ * ground. */
+static rb_sim *engine_sim(double rpm, double r)
 {
     rb_sim *sim = rb_create(NULL);
     if (!sim) return NULL;
     sim->source = RB_SOURCE_ENGINE;
-    sim->microphone.distance = distance;
+    const double src[3] = { 0.0, 0.0, 1.0 }, at[3] = { 0.0, r, 1.0 };
+    const double *pos[RB_LISTEN_SOURCES] = { src, NULL, NULL };
+    const double zero[RB_LISTEN_SOURCES] = { 0.0 };
+    rb_listener_set(&sim->listener, pos, at, 0.0, 346.0, sim->engine.pipe_dt);
+    rb_listener_prime(&sim->listener, zero);
     sim->engine.rpm = rpm;
     sim->engine.throttle_pos = 1.0;
     sim->engine.ignition = 1;
@@ -217,7 +304,7 @@ void test_audio_engine_sound(void)
 {
     /* The four held at 3000 rpm, wide open, through the sim's own chain (as
      * the browser will play it from stage 14). What comes out is what the
-     * microphone hears, rho0 / (4 pi r) dQ/dt over full scale: its RMS is the
+     * listener hears, rho0 / (4 pi r) dQ/dt over full scale: its RMS is the
      * one worked out from a twin engine's tailpipe flow, to 1 % (the DC
      * blocker takes 0.4 % off the lowest orders). Its loudest
      * line is the firing (order 2, 100 Hz); it has no DC, nothing limited or
@@ -246,7 +333,7 @@ void test_audio_engine_sound(void)
         CHECK_NEAR(rb_get_telemetry(one, RB_TLM_LIMITED), 0.0, 0.0);
         CHECK_NEAR(rb_get_telemetry(one, RB_TLM_NONFINITE), 0.0, 0.0);
 
-        /* The microphone by hand: the same engine, stepped on its own. */
+        /* The listener by hand: the same engine, stepped on its own. */
         rb_engine_init(&twin, &one->engine.desc, rb_physics_dt(one));
         twin.rpm = 3000.0;
         twin.throttle_pos = 1.0;
@@ -256,8 +343,8 @@ void test_audio_engine_sound(void)
         for (long k = 0; k < 4L * (SETTLE + N); k++) {
             rb_engine_step(&twin);
             if (twin.pipe_phase != 0) continue;   /* the flow changes once a pipe step */
-            const double p = twin.exhaust_air.rho / (4.0 * PI) * (twin.tail_flow - q) / twin.pipe_dt;
-            q = twin.tail_flow;
+            const double p = twin.exhaust_air.rho / (4.0 * PI) * (twin.tail_flow[0] - q) / twin.pipe_dt;
+            q = twin.tail_flow[0];
             if (k >= 4L * SETTLE) {
                 p2 += p * p;
                 n++;
@@ -265,7 +352,7 @@ void test_audio_engine_sound(void)
         }
         CHECK_NEAR(rms * RB_FULL_SCALE_PA, sqrt(p2 / n), 0.01 * sqrt(p2 / n));
 
-        /* What the microphone hears is the volume flow: over whole cycles,
+        /* What the listener hears is the volume flow: over whole cycles,
          * wide open (where it never turns round), the air and fuel the engine
          * takes in, at the density of the gas leaving, (air + fuel) R T / p,
          * to 0.1 % (it comes out at 0.03 %). */
@@ -275,7 +362,7 @@ void test_audio_engine_sound(void)
         while (twin.cycles < c0 + 4) {
             rb_engine_step(&twin);
             if (twin.cycles > c0) {
-                volume += twin.tail_flow;
+                volume += twin.tail_flow[0];
                 m++;
             }
         }
@@ -305,7 +392,7 @@ void test_audio_engine_sound(void)
 void test_audio_engine_rebuilt_quietly(void)
 {
     /* Loading another engine while the sound plays starts it again at rest:
-     * the sound stops, but the microphone forgets the old flow, so the jump
+     * the sound stops, but the listener forgets the old flow, so the jump
      * to none makes no click (without that the first step would hear
      * 4500 Pa). The test tone is what a new sim plays (the browser's, until
      * stage 14). */
@@ -414,4 +501,221 @@ void test_audio_engine_reversal_quiet(void)
     }
     rb_destroy(sim);
     free(x);
+}
+
+/* ---- stage 12: the mufflers, the intake's mouth, the listener and the
+ * headers, through the tailpipes' and the mouth's flows ---- */
+
+/* The amplitude of engine order `order` (per turn of the crank) in x[0..n),
+ * sampled every pipe step of an engine at `rpm` (n whole cycles' worth). */
+static double order_amplitude(const double *x, long n, double order, double rpm, double pipe_dt)
+{
+    const double w = 2.0 * PI * order * rpm / 60.0 * pipe_dt;   /* rad per sample */
+    double re = 0.0, im = 0.0;
+    for (long i = 0; i < n; i++) {
+        re += x[i] * cos(w * i);
+        im += x[i] * sin(w * i);
+    }
+    return 2.0 * sqrt(re * re + im * im) / n;
+}
+
+/* The power of x[0..n) in a band of orders [lo, hi), in steps of half an
+ * order (every line a 720-degree cycle can have). */
+static double band_power(const double *x, long n, double lo, double hi, double rpm, double pipe_dt)
+{
+    double p = 0.0;
+    for (double k = lo; k < hi; k += 0.5) {
+        const double a = order_amplitude(x, n, k, rpm, pipe_dt);
+        p += 0.5 * a * a;
+    }
+    return p;
+}
+
+static double flows[2][4 * 1920];   /* 4 cycles at 3000 rpm, every pipe step */
+
+/* Runs `twin` (set up by the caller) held wide open at 3000 rpm for `settle`
+ * seconds, then keeps each tailpipe's sound source, the change of its volume
+ * flow over each pipe step, for 4 cycles. Returns the samples kept. */
+static long record_tailpipes(double settle)
+{
+    twin.rpm = 3000.0;
+    twin.throttle_pos = 1.0;
+    twin.ignition = 1;
+    for (long k = 0; k < lround(settle / twin.dt); k++) rb_engine_step(&twin);
+    double prev[2] = { twin.tail_flow[0], twin.tail_flow[1] };
+    long n = 0;
+    while (n < 4 * 1920) {
+        rb_engine_step(&twin);
+        if (twin.pipe_phase != 0) continue;   /* a pipe step has just ended */
+        for (int s = 0; s < 2; s++) {
+            flows[s][n] = twin.tail_flow[s] - prev[s];
+            prev[s] = twin.tail_flow[s];
+        }
+        n++;
+    }
+    return n;
+}
+
+void test_audio_mufflers(void)
+{
+    /* The four held wide open at 3000 rpm (orders 2, 4, 6, ... at 100, 200,
+     * 300 Hz) with each muffler, the tailpipe's sound source compared. A
+     * chambered one, the can and its baffles, takes everything above the
+     * exhaust's lowest ring (about 63 Hz) down: 14 dB in all, at least 8. A
+     * straight-through one passes the firing (order 2 within 1 dB of the
+     * straight pipe's) but its packing takes 6 dB off orders 16 to 32
+     * (800-1600 Hz; at least 4), and 3 dB off orders 8 to 16. */
+    double all[3], firing[3], mid[3];
+    for (int type = RB_MUFFLER_NONE; type <= RB_MUFFLER_CHAMBERED; type++) {
+        rb_engine_desc d;
+        rb_engine_desc_default(&d);
+        d.muffler_type = type;
+        rb_engine_init(&twin, &d, 1.0 / 192000.0);
+        const long n = record_tailpipes(0.5);
+        all[type] = band_power(flows[0], n, 0.5, 40.0, 3000.0, twin.pipe_dt);
+        firing[type] = order_amplitude(flows[0], n, 2.0, 3000.0, twin.pipe_dt);
+        mid[type] = band_power(flows[0], n, 16.0, 32.0, 3000.0, twin.pipe_dt);
+    }
+    const double db = 10.0 / log(10.0);
+    CHECK(db * log(all[RB_MUFFLER_NONE] / all[RB_MUFFLER_CHAMBERED]) > 8.0);
+    CHECK(fabs(20.0 / log(10.0) * log(firing[RB_MUFFLER_STRAIGHT] / firing[RB_MUFFLER_NONE])) < 1.0);
+    CHECK(db * log(mid[RB_MUFFLER_NONE] / mid[RB_MUFFLER_STRAIGHT]) > 4.0);
+}
+
+void test_audio_intake_mouth(void)
+{
+    /* The intake's mouth (stage 12) is a source like the tailpipes: its
+     * volume flow, at the density of the air at the snorkel's end. Wide open
+     * at 4000 rpm, over whole cycles it's the air the engine takes in, at the
+     * outside air's density (to 1 %: the air speeds up into the mouth, and
+     * thins a little). Nearly shut, the throttle is choked: the plenum's swings
+     * can't get through it, and the mouth's flow holds still (its swings 60 dB
+     * below wide open's). */
+    double swing[2];
+    for (int k = 0; k < 2; k++) {
+        rb_engine_desc d;
+        rb_engine_desc_default(&d);
+        rb_engine_init(&twin, &d, 1.0 / 192000.0);
+        twin.rpm = 4000.0;
+        twin.throttle_pos = k ? 0.04 : 1.0;
+        twin.ignition = 1;
+        if (k == 0) CHECK(rb_engine_settle(&twin, 100, 1e-4) > 0);   /* ends as a cycle does */
+        else
+            while (twin.cycles < 10) rb_engine_step(&twin);   /* choked within a few cycles */
+        double sum = 0.0, sq = 0.0;
+        long n = 0;
+        const long c0 = twin.cycles;
+        while (twin.cycles < c0 + 4) {
+            rb_engine_step(&twin);
+            if (twin.pipe_phase != 0) continue;
+            sum += twin.mouth_flow;
+            sq += twin.mouth_flow * twin.mouth_flow;
+            n++;
+        }
+        const double mean = sum / n;
+        swing[k] = sqrt(sq / n - mean * mean);
+        if (k == 0) {
+            const double rho = d.p_ambient / (twin.intake_air.gas.R * d.T_ambient);
+            CHECK(mean < 0.0);   /* drawing in */
+            CHECK_NEAR(-mean, twin.result.air_flow / rho, 0.01 * twin.result.air_flow / rho);
+        }
+    }
+    CHECK(swing[1] < 1e-3 * swing[0]);
+}
+
+void test_audio_headers_rumble(void)
+{
+    /* The plan's check for stage 12: equal- and unequal-length headers sound
+     * different. The boxer's headers are 45 and 75 cm, so its four pulses a
+     * cycle reach the collector unevenly, and its exhaust carries every half
+     * order: order 1.5 within 25 dB of the firing (order 2; 17 dB at the
+     * listener). With equal headers its pulses come evenly, every 180
+     * degrees, and only the firing and its multiples are left: order 1.5 at
+     * least 60 dB down. */
+    double rel[2];
+    for (int equal = 0; equal < 2; equal++) {
+        rb_engine_desc d;
+        rb_preset_desc(rb_preset_find("boxer4"), &d);
+        if (equal)
+            for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.6;
+        rb_engine_init(&twin, &d, 1.0 / 192000.0);
+        const long n = record_tailpipes(0.4);
+        rel[equal] = order_amplitude(flows[0], n, 1.5, 3000.0, twin.pipe_dt)
+                   / order_amplitude(flows[0], n, 2.0, 3000.0, twin.pipe_dt);
+    }
+    CHECK(rel[0] > 0.056);   /* -25 dB */
+    CHECK(rel[1] < 1e-3);    /* -60 dB */
+}
+
+void test_audio_listener_hears_each_tailpipe(void)
+{
+    /* The cross-plane V8's banks fire the same uneven pattern, one turn of
+     * the crank apart. Heard from the middle of its twin exhaust, the half
+     * orders of one tailpipe cancel the other's, as in stage 11 (60 dB below
+     * the firing, order 4). Heard from 1 m behind one tailpipe (the listener's
+     * RB_HEAR_TAILPIPE), the other's arrives later and weaker, and they don't:
+     * the strongest of orders 0.5 to 3.5 is within 25 dB of the firing. */
+    static double heard[4 * 1920];
+    rb_engine_desc d;
+    rb_preset_desc(rb_preset_find("v8-cross"), &d);
+    rb_engine_init(&twin, &d, 1.0 / 192000.0);
+    const long n = record_tailpipes(0.3);
+    static rb_listener l;
+    const double c = 346.0;
+    double half[2], fire[2];
+    for (int where = 0; where < 2; where++) {
+        if (where == 0) {   /* the middle: both tailpipes 1.1 m away */
+            const double t0[3] = { 0.5, 0.0, 0.35 }, t1[3] = { -0.5, 0.0, 0.35 }, at[3] = { 0.0, -1.0, 0.5 };
+            const double *pos[RB_LISTEN_SOURCES] = { t0, t1, NULL };
+            rb_listener_set(&l, pos, at, RB_GROUND, c, twin.pipe_dt);
+        } else {
+            rb_listener_place(&l, RB_HEAR_TAILPIPE, 2, c, twin.pipe_dt);
+            l.gain[2][0] = l.gain[2][1] = 0.0;   /* the tailpipes alone */
+        }
+        const double zero[RB_LISTEN_SOURCES] = { 0.0 };
+        rb_listener_prime(&l, zero);
+        double q[RB_LISTEN_SOURCES] = { 0.0 };
+        for (long i = 0; i < n; i++) {
+            q[0] += flows[0][i];   /* the flows themselves, back from their changes */
+            q[1] += flows[1][i];
+            rb_listener_push(&l, q);
+            heard[i] = rb_listener_hear(&l, 1.2, twin.pipe_dt);
+        }
+        /* the last 3 cycles: the history's longest delay has filled */
+        const long from = n - 3 * 1920;
+        half[where] = 0.0;
+        for (double k = 0.5; k < 4.0; k += 1.0)
+            half[where] = fmax(half[where], order_amplitude(heard + from, 3 * 1920, k, 3000.0, twin.pipe_dt));
+        fire[where] = order_amplitude(heard + from, 3 * 1920, 4.0, 3000.0, twin.pipe_dt);
+    }
+    CHECK(half[0] < 1e-3 * fire[0]);
+    CHECK(half[1] > 0.056 * fire[1]);
+}
+
+void test_audio_sim_hears_every_source(void)
+{
+    /* The sim's listener (stage 12) stands behind the car until told
+     * otherwise, and hears every one of the engine's sources: each pipe step
+     * it gets both tailpipes' flows and the intake mouth's, as they are. A
+     * rebuilt engine with one tailpipe has no second source. */
+    rb_sim *sim = rb_create(NULL);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK_EQ_INT(sim->hear, RB_HEAR_BEHIND);
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("v8-cross")), RB_OK);
+    sim->source = RB_SOURCE_ENGINE;
+    sim->engine.rpm = 3000.0;
+    sim->engine.throttle_pos = 1.0;
+    sim->engine.ignition = 1;
+    static float x[4800];
+    rb_render_block(sim, x, 4800);
+    const rb_listener *l = &sim->listener;
+    CHECK(sim->engine.pipe_steps > 1000);
+    CHECK(l->flow[0][l->pos] == sim->engine.tail_flow[0] && l->flow[0][l->pos] != 0.0);
+    CHECK(l->flow[1][l->pos] == sim->engine.tail_flow[1] && l->flow[1][l->pos] != 0.0);
+    CHECK(l->flow[2][l->pos] == sim->engine.mouth_flow && l->flow[2][l->pos] < 0.0);
+    CHECK(rb_listener_distance(l, 0) > 3.0 && rb_listener_distance(l, 1) > 3.0 && rb_listener_distance(l, 2) > 6.0);
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("i4")), RB_OK);
+    CHECK(rb_listener_distance(&sim->listener, 0) > 3.0 && rb_listener_distance(&sim->listener, 1) == 0.0);
+    rb_destroy(sim);
 }

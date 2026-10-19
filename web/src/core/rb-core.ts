@@ -105,6 +105,8 @@ export const RB_PIPE_RUNNER = 0;
 export const RB_PIPE_HEADER = 1;
 export const RB_PIPE_EXHAUST = 2;
 export const RB_PIPE_TAILPIPE = 3;
+export const RB_PIPE_MUFFLER = 4;
+export const RB_PIPE_SNORKEL = 5;
 /* What a pipe's end opens into (rb_pipe_place): its "from" and "to" fields. */
 export const RB_PLACE_AIR = 0;
 export const RB_PLACE_PLENUM = 1;
@@ -112,6 +114,12 @@ export const RB_PLACE_INTAKE_VALVE = 2;
 export const RB_PLACE_EXHAUST_VALVE = 3;
 export const RB_PLACE_COLLECTOR = 4;
 export const RB_PLACE_MUFFLER = 5;
+export const RB_PLACE_MUFFLER_OUTLET = 6;
+export const RB_PLACE_AIRBOX = 7;
+/* What a muffler is (rb_muffler_type): the "muffler_type" engine field. */
+export const RB_MUFFLER_NONE = 0;
+export const RB_MUFFLER_STRAIGHT = 1;
+export const RB_MUFFLER_CHAMBERED = 2;
 
 export interface ParamInfo {
   id: number;

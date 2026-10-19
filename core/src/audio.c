@@ -1,5 +1,5 @@
 /*
- * audio.c - the microphone and the chain to the audio rate (see audio.h).
+ * audio.c - the listener and the chain to the audio rate (see audio.h).
  */
 #include "audio.h"
 
@@ -13,30 +13,115 @@
  * designed for 101 dB, the filters for factors 2 to 32 reach 100.4-101.4. */
 #define AA_ATTENUATION 101.0   /* dB */
 
-/* ---- the microphone ---- */
+/* ---- the listener ---- */
 
-void rb_mic_init(rb_mic *m, double distance)
+/* The car, in metres: x to the right, y forwards from the rear bumper, z up
+ * from the ground. A front-engined car about 4.5 m long. Its tailpipes stick
+ * out 5 cm under the bumper, 35 cm up: one on the right, or one each side.
+ * The intake's mouth (its snorkel) is behind the grille. */
+static const double TAILPIPE[2][3] = { { 0.5, -0.05, 0.35 }, { -0.5, -0.05, 0.35 } };
+static const double MOUTH[3] = { -0.3, 3.7, 0.75 };
+
+/* Where the listener stands: its ears, or the microphone. */
+static const double PLACE[RB_HEAR_COUNT][3] = {
+    [RB_HEAR_TAILPIPE] = { 0.5, -1.05, 0.5 },   /* 1 m behind tailpipe 0, 15 cm higher */
+    [RB_HEAR_BEHIND]   = { 0.6, -3.0, 1.6 },    /* 3 m behind, a little to the right   */
+    [RB_HEAR_SIDE]     = { 4.0, 2.2, 1.6 },     /* 4 m to the right of the middle      */
+    [RB_HEAR_FRONT]    = { -0.1, 3.4, 1.3 },    /* over the bonnet, near the mouth     */
+};
+
+static double distance(const double a[3], const double b[3])
 {
-    m->distance = distance;
-    rb_mic_reset(m);
+    const double dx = a[0] - b[0], dy = a[1] - b[1], dz = a[2] - b[2];
+    return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
-void rb_mic_reset(rb_mic *m)
+void rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES],
+                     const double at[3], double ground, double c, double pipe_dt)
 {
-    m->q = 0.0;
-    m->primed = 0;
+    /* Each path's length: straight, and off the ground (from the source's
+     * image, as far below the ground as the source is above it). */
+    double r[RB_LISTEN_SOURCES][2], nearest = INFINITY;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
+        r[j][0] = r[j][1] = 0.0;
+        if (!pos[j]) continue;
+        const double image[3] = { pos[j][0], pos[j][1], -pos[j][2] };
+        r[j][0] = distance(pos[j], at);
+        r[j][1] = distance(image, at);
+        if (r[j][0] < nearest) nearest = r[j][0];
+    }
+    memset(l, 0, sizeof *l);
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
+        if (!pos[j]) continue;
+        for (int k = 0; k < 2; k++) {
+            const double g = (k == 0) ? 1.0 : ground;
+            /* A source closer than 10 cm is heard as if from 10 cm: 1 / r
+             * holds only away from the pipe's end. */
+            const double rr = (r[j][k] > 0.1) ? r[j][k] : 0.1;
+            double delay = (r[j][k] - nearest) / (c * pipe_dt);
+            if (delay > RB_LISTEN_HISTORY - 2) delay = RB_LISTEN_HISTORY - 2;   /* 14 m on */
+            l->gain[j][k] = g / rr;
+            l->delay[j][k] = delay;
+        }
+    }
 }
 
-double rb_mic_hear(rb_mic *m, double q, double rho0, double dt)
+int rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double pipe_dt)
 {
-    /* A monopole: p = rho0 / (4 pi r) dQ/dt. The flow's change over the step
-     * is its derivative: where the flow is a staircase (the pipes move their
-     * gas every few physics steps), each stair is an impulse, which the
-     * decimator's filter turns back into the smooth derivative. */
-    const double dq = m->primed ? q - m->q : 0.0;
-    m->q = q;
-    m->primed = 1;
-    return rho0 / (4.0 * PI * m->distance) * dq / dt;
+    if (where < 0 || where >= RB_HEAR_COUNT) return -1;
+    const double *pos[RB_LISTEN_SOURCES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH };
+    rb_listener_set(l, pos, PLACE[where], RB_GROUND, c, pipe_dt);
+    return 0;
+}
+
+double rb_listener_distance(const rb_listener *l, int j)
+{
+    if (j < 0 || j >= RB_LISTEN_SOURCES || !(l->gain[j][0] > 0.0)) return 0.0;
+    return 1.0 / l->gain[j][0];
+}
+
+/* What arrives now: each path's source as it was `delay` pipe steps ago, read
+ * between the two steps it falls between. */
+static double arriving(const rb_listener *l)
+{
+    double sum = 0.0;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
+        const double *q = l->flow[j];
+        for (int k = 0; k < 2; k++) {
+            if (l->gain[j][k] == 0.0) continue;
+            const int whole = (int)l->delay[j][k];
+            const double part = l->delay[j][k] - whole;
+            const int a = (l->pos - whole + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
+            const int b = (a - 1 + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
+            sum += l->gain[j][k] * ((1.0 - part) * q[a] + part * q[b]);
+        }
+    }
+    return sum;
+}
+
+void rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES])
+{
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+        for (int n = 0; n < RB_LISTEN_HISTORY; n++) l->flow[j][n] = q[j];
+    l->sum = l->heard = arriving(l);
+}
+
+void rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES])
+{
+    l->pos = (l->pos + 1) % RB_LISTEN_HISTORY;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) l->flow[j][l->pos] = q[j];
+    l->sum = arriving(l);
+}
+
+double rb_listener_hear(rb_listener *l, double rho0, double dt)
+{
+    /* A monopole each: p = rho0 / (4 pi) d/dt (Q / r), summed over the paths.
+     * The sum's change over the step is its derivative: where it changes only
+     * once a pipe step, each change is an impulse, which the decimator's
+     * filter turns back into the smooth derivative. */
+    const double change = l->sum - l->heard;
+    l->heard = l->sum;
+    return rho0 / (4.0 * PI) * change / dt;
 }
 
 /* ---- the decimator ---- */

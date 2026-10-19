@@ -5,17 +5,21 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 11 of 26 done. The C core plays in the browser through an AudioWorklet
-(still a test tone); natively it renders the engine's own sound to WAV files, as a microphone
-behind the tailpipe hears it. The physics so far: gas properties, chambers and flow through openings,
+**Status:** stage 12 of 26 done. The C core plays in the browser through an AudioWorklet
+(still a test tone); natively it renders the engine's own sound to WAV files, as a listener
+around the car hears it: behind it, beside it, over the bonnet or a metre from a tailpipe,
+each tailpipe and the intake's mouth at their own distance and off the ground. The physics so
+far: gas properties, chambers and flow through openings,
 a cylinder with a crank and piston, an engine breathing through its cams, valves, throttle
 and intake plenum, burning fuel with heat lost to the walls, and a crank that turns on its
 own: friction, a starter motor, and an engine computer that idles it, cuts the fuel when
-coasting and stops it at the rev limit. Its intake runners, exhaust headers, exhaust pipes
-and tailpipes are 1D pipes, where pressure waves run at the speed of sound and tune the
-engine's breathing. Engines can be inline, V or boxer with any crank and firing order, and
-five come ready-made: a 2.0 L four, a 3.0 L six, a cross-plane and a flat-plane V8 (each
-bank its own exhaust), and a 2.0 L flat four with unequal headers. On the dyno, the four, the
+coasting and stops it at the rev limit. Its intake snorkel and runners, exhaust headers,
+exhaust pipes, mufflers and tailpipes are 1D pipes, where pressure waves run at the speed of
+sound and tune the engine's breathing and its sound. A muffler can be a chambered can, a
+straight-through packed with wool, or a straight pipe. Engines can be inline, V or boxer
+with any crank and firing order, and five come ready-made: a 2.0 L four, a 3.0 L six, a
+cross-plane and a flat-plane V8 (each bank its own exhaust), and a 2.0 L flat four with
+unequal headers. On the dyno, the four, the
 six and the flat four make close to the torque and power of the real engines they stand for
 (Toyota's 1AZ-FE, BMW's M54B30 and Subaru's FB20). See [PLAN.md](PLAN.md) for the roadmap and progress,
 [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
@@ -53,8 +57,11 @@ You need `gcc` and `make` (`sudo apt install build-essential`).
 cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH
 make            # builds build/rb_cli
 make test       # runs the C unit tests
-make render     # the engine's sound (about a minute): renders/i4-idle.wav, i4-sweep.wav,
-                # v8-cross-3000.wav and v8-flat-3000.wav, and the test tone (test.wav)
+make render     # the engine's sound (about three minutes) in renders/: the four idling and
+                # pulling (i4-idle.wav, i4-sweep.wav), with each muffler (i4-3000-*.wav), the
+                # cross-plane V8 from each place around the car (v8-cross-3000-*.wav) and
+                # pulling (v8-cross-sweep.wav), the flat-plane V8 (v8-flat-3000.wav), the
+                # boxer with unequal and equal headers (boxer4-3000*.wav), and the test tone
 ```
 
 Open the WAVs in `renders\` from Windows Explorer to listen, on headphones or speakers with
@@ -86,7 +93,8 @@ build/rb_cli run           # the engine on its own: started, idling, revved, rev
                            # (renders/run.csv); try --load 10, --inertia 0.08, --help
 build/rb_cli run --preset v8-flat   # breathe, fire and run take any preset (rb_cli presets)
 build/rb_cli sound         # the engine's sound, started and idling (renders/sound.wav); try
-                           # --preset v8-cross, --sweep, --hold --rpm 3000 --throttle 0.3, --help
+                           # --preset v8-cross, --sweep, --hold --rpm 3000 --throttle 0.3,
+                           # --listener front, --muffler none, --equal-headers, --help
 make SAN=1 test            # tests with AddressSanitizer + UBSan
 make help                  # all make targets
 ```
@@ -106,8 +114,10 @@ python3 tools/plot_dyno.py curves renders/dyno-i4.csv ...   # dyno sweeps agains
 python3 tools/plot_pipes.py pulse renders/pulse.csv          # the pulse, where it is when
 python3 tools/plot_pipes.py engine renders/pipes.csv         # the waves in a runner and a header
 python3 tools/plot_sound.py check renders/*.wav              # levels, DC, clicks, lines
-python3 tools/plot_sound.py spectrograms renders/i4-idle.wav renders/v8-cross-3000.wav
+python3 tools/plot_sound.py spectrograms renders/i4-idle.wav renders/v8-flat-3000.wav
 python3 tools/plot_sound.py sweep renders/i4-sweep.wav renders/i4-sweep.csv
+python3 tools/plot_sound.py orders renders/boxer4-3000.wav renders/boxer4-3000-equal.wav --rpm 3000
+python3 tools/plot_sound.py levels renders/i4-sweep.wav renders/i4-sweep.csv   # dBA against rpm
 ```
 
 ## Rebuilding the WebAssembly core

@@ -40,16 +40,43 @@
  *     (A / A_e)^2 - 1 more velocity heads flowing out (the jet through it is
  *     faster) and 1 + (A / A_e - 1)^2 flowing in (speeding up through it,
  *     then the Borda-Carnot loss as it spreads into the pipe). A catalyst's
- *     narrow channels also cost a laminar loss, a pressure drop in
- *     proportion to the speed: unlike the velocity heads, which vanish for
- *     small flows, it damps even the smallest swings of the gas;
+ *     narrow channels, or a baffle's perforations, also cost a laminar loss,
+ *     a pressure drop in proportion to the speed: unlike the velocity heads,
+ *     which vanish for small flows, it damps even the smallest swings of the
+ *     gas;
  *   - joined through an orifice (a valve, the catalyst): its owner computes
  *     the orifice's flow (flow.h) and the pipe reads it, for the momentum it
- *     brings.
+ *     brings;
+ *   - going straight on into another pipe (stage 12: a straight pipe after
+ *     the catalyst, a tailpipe after a straight-through muffler). The face
+ *     between their end cells is like one between two of a pipe's own: half
+ *     of each cell long, the gas's momentum on both sides, nothing lost but
+ *     the walls' friction (and a narrowing's spreading out again,
+ *     (A / A_e - 1)^2 velocity heads). Joined to the next pipe's end cell
+ *     as to a volume instead, the gas would lose its speed there and pay
+ *     to get it back: two velocity heads, 7.5 kPa more back pressure at the
+ *     four's full power.
  *
  * The walls: heat flows between the gas and the pipe's wall (at a fixed
  * temperature) by Reynolds' analogy, h = St rho |u| cp with Colburn's
  * St = (f / 8) Pr^(-2/3).
+ *
+ * Packing (stage 12): a straight-through muffler is a perforated pipe in a
+ * can of glass or steel wool. The gas flows straight through, but a sound
+ * wave's pressure pushes gas in and out through the holes, and the wool's
+ * fibres take its energy. Along the pipe that's a laminar loss on the flow's
+ * swings only, what's faster than a settling time tau:
+ *
+ *   a face's loss = R dx (mdot - mdot_settled) / rho    (R: Pa per m/s per metre)
+ *
+ * mdot_settled following mdot with tau's lag. It takes nothing from the
+ * steady flow (no back pressure), it damps fast swings by R / (2 rho c)
+ * nepers a metre, and slow ones less, as (omega tau)^2 below 1 / tau: the
+ * same shape as the loss of the perforations and the wool behind them (a
+ * resistance in series with the can's compliance). It isn't the can, though:
+ * below 1 / tau the settled flow drags a swing along with it, as if the gas
+ * were R tau / (1 + (omega tau)^2) per m^3 heavier (the can would make room
+ * instead, as if the pipe were wider). Keep R tau under the gas's density.
  *
  * Two rates. A pipe's end cell can be fast, stepped with the cylinders every
  * physics step, while the rest of the pipe is stepped every few steps (the
@@ -92,7 +119,11 @@ typedef struct rb_face {
     double exit;        /* and flowing out of it, on top of the jet's dynamic
                            head (0 for a plain end)                            */
     double laminar;     /* Pa per m/s of the pipe's gas, either way: a laminar
-                           loss (0 but at a catalyst)                          */
+                           loss (0 but at a catalyst or a muffler's baffle)    */
+    double packing;     /* Pa per m/s of the flow's swings: a muffler's packing
+                           (0 elsewhere) ...                                   */
+    double settle_time; /* ... which lets through what's slower than this (s) */
+    double settled;     /* kg/s: the flow's slow part, lagging mdot by that    */
     int    pipe_end;    /* -1 between two cells; 0 or 1: the face at that end,
                            with the chamber on its a side (end 0) or b (end 1) */
     int    fast;        /* moved in the fast pass (it touches something fast)  */
@@ -105,12 +136,18 @@ typedef struct rb_face {
     double moved_y[RB_NSPECIES];   /* and its composition                      */
 } rb_face;
 
-enum { RB_PIPE_CLOSED = 0, RB_PIPE_JOINED, RB_PIPE_ORIFICE };
+enum { RB_PIPE_CLOSED = 0, RB_PIPE_JOINED, RB_PIPE_ORIFICE, RB_PIPE_ONWARD, RB_PIPE_ONWARD_FROM };
+
+struct rb_pipe;
 
 typedef struct rb_pipe_end {
-    int         kind;       /* RB_PIPE_CLOSED, _JOINED (a face to a chamber) or
-                               _ORIFICE                                          */
-    rb_chamber *chamber;    /* what's beyond the end (NULL when closed)          */
+    int         kind;       /* RB_PIPE_CLOSED, _JOINED (a face to a chamber),
+                               _ORIFICE, _ONWARD (end 1: going on into another
+                               pipe, its face this pipe's) or _ONWARD_FROM (end 0:
+                               going on from another pipe's end 1)               */
+    rb_chamber *chamber;    /* what's beyond the end (NULL when closed): the
+                               other pipe's end cell when going on               */
+    struct rb_pipe *pipe;   /* the other pipe, when going on                     */
     const rb_orifice *orifice;   /* the orifice, for an _ORIFICE end             */
     double      sign;       /* +1 if the orifice's positive flow runs from end 0
                                towards end 1 along the pipe, -1 if against it    */
@@ -165,6 +202,18 @@ void rb_pipe_restrict(rb_pipe *p, int end, double area);
 /* Adds a laminar loss at a joined end: `laminar` Pa per m/s of the gas in
  * the pipe, whichever way it flows. */
 void rb_pipe_resist(rb_pipe *p, int end, double laminar);
+
+/* Joins end 1 of pipe a straight on to end 0 of pipe b (see above): the face
+ * between them is a's end 1 face, which can then be narrowed
+ * (rb_pipe_restrict) or resisted (rb_pipe_resist) like any of a's end faces.
+ * Both end cells must be slow, and neither pipe a one-cell pipe. Returns 0,
+ * or -1 if it can't be done. */
+int  rb_pipe_onward(rb_pipe *a, rb_pipe *b);
+
+/* Packs the pipe (see above): `resistance` Pa per m/s of the flow's swings
+ * per metre of pipe, on the faces between its cells, for swings faster than
+ * `settle_time` (s). */
+void rb_pipe_pack(rb_pipe *p, double resistance, double settle_time);
 
 /* Joins end `end` through an orifice, which must join `chamber` and the end's
  * cell (either way round). */

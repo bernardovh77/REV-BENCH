@@ -6,6 +6,7 @@
  */
 #include "combustion.h"
 #include "engine.h"
+#include "rb.h"   /* RB_MUFFLER_* */
 #include "rb_test.h"
 
 #include <math.h>
@@ -70,10 +71,9 @@ typedef struct contents {
 /* Repairs: the times a chamber's state had to be mended. */
 static int repairs(void)
 {
-    int n = e.plenum.repairs;
+    int n = e.airbox.repairs + e.plenum.repairs;
     for (int i = 0; i < e.desc.cylinders; i++) n += e.cyl[i].gas.repairs;
     for (int c = 0; c < e.collectors; c++) n += e.collector[c].repairs;
-    for (int s = 0; s < e.systems; s++) n += e.muffler[s].repairs;
     for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
         const rb_pipe *p = rb_engine_pipe(&e, k);
         for (int j = 0; j < p->cells; j++) n += p->cell[j].repairs;
@@ -178,15 +178,16 @@ void test_engine_description(void)
     CHECK_EQ_INT(rb_engine_init(&e, &d, NAN), -1);
 
     /* Sixteen cylinders with 4.9 m runners and 5 cm headers, and 10 m of
-     * exhaust pipe and tailpipe, want 1168 cells: more than the pool holds.
-     * Every pipe still gets one, the rest share what's left, and it runs. */
+     * exhaust pipe and tailpipe, want 1181 cells (with the muffler and the
+     * snorkel): more than the pool holds. Every pipe still gets one, the rest
+     * share what's left, and it runs. */
     bad = d;
     CHECK_EQ_INT(rb_engine_layout_inline(&bad, 16), 0);
     bad.runner_length = 4.9;
     for (int i = 0; i < 16; i++) bad.header_length[i] = 0.05;
     bad.exhaust_pipe_length = bad.tailpipe_length = 10.0;
     CHECK_EQ_INT(rb_engine_init(&e, &bad, DT), 0);
-    CHECK_EQ_INT(rb_engine_pipe_count(&e), 34);
+    CHECK_EQ_INT(rb_engine_pipe_count(&e), 36);
     int cells = 0, fewest = RB_PIPE_MAX_CELLS;
     for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
         cells += rb_engine_pipe(&e, k)->cells;
@@ -306,7 +307,9 @@ void test_engine_throttle_response(void)
     /* Closing the throttle at 2000 rpm: the plenum pressure and the air drawn
      * in fall, and the pumping loss grows. (Settled to 1e-4: throttled, the
      * pumping work heats the little air that flows, and it takes the exhaust
-     * pipes and muffler, 17 L, more than 100 cycles to warm through.) */
+     * pipes and muffler, 17 L, more than 100 cycles to warm through.) Wide
+     * open, the plenum is about 1 kPa down, mostly across the air filter
+     * (stage 12). */
     static const double pos[4] = { 1.0, 0.15, 0.04, 0.0 };
     double map[4], ve[4], pmep[4];
     int wrong = 0;
@@ -320,9 +323,57 @@ void test_engine_throttle_response(void)
         if (k > 0 && !(map[k] < map[k - 1] && ve[k] < ve[k - 1] && pmep[k] > pmep[k - 1])) wrong++;
     }
     CHECK_EQ_INT(wrong, 0);
-    CHECK(map[0] > 0.99 * e.desc.p_ambient);   /* wide open: hardly any vacuum */
+    CHECK(map[0] > 0.985 * e.desc.p_ambient);   /* wide open: hardly any vacuum */
     CHECK(map[3] < 0.20 * e.desc.p_ambient);   /* shut: deep vacuum */
     CHECK(ve[3] < 0.05);
+}
+
+void test_engine_intake_losses(void)
+{
+    /* Stage 12's way in: the air drawn into the snorkel's mouth speeds up
+     * (and loses a fifth of a velocity head more), then pushes through the
+     * air box's filter (a laminar loss). Wide open at 6000 rpm, 22 m/s in
+     * the snorkel, that's 0.4 kPa and 1.35 kPa: the air box sits 1.75 kPa
+     * (1-2.5) below the outside air over a cycle, and the plenum lower
+     * still. */
+    start(6000.0, 1.0);
+    CHECK(rb_engine_settle(&e, 100, 1e-4) > 0);
+    double box = 0.0;
+    long n = 0;
+    const long c0 = e.cycles;
+    while (e.cycles == c0) {
+        rb_engine_step(&e);
+        box += e.airbox.p;
+        n++;
+    }
+    const double drop = e.desc.p_ambient - box / n;
+    CHECK(drop > 1000.0 && drop < 2500.0);
+    CHECK(e.result.map < box / n);
+}
+
+void test_engine_muffler_back_pressure(void)
+{
+    /* Wide open at 6000 rpm (fired, held), the gas leaving the four at about
+     * 100 m/s: through a straight pipe the collector is 16 kPa over the
+     * outside air; a chambered muffler, the gas spreading into its can and
+     * squeezing out through the baffles, costs 7 kPa more (at least 5), and
+     * a straight-through, its packing taking nothing from a steady flow, no
+     * more than the straight pipe (to 1 kPa). (Joined to the next pipe as
+     * through a volume, a straight pipe cost as much as the can.) */
+    double back[3];
+    for (int type = RB_MUFFLER_NONE; type <= RB_MUFFLER_CHAMBERED; type++) {
+        rb_engine_desc d;
+        rb_engine_desc_default(&d);
+        d.muffler_type = type;
+        CHECK_EQ_INT(rb_engine_init(&e, &d, DT), 0);
+        e.rpm = 6000.0;
+        e.throttle_pos = 1.0;
+        e.ignition = 1;
+        CHECK(rb_engine_settle(&e, 100, 1e-4) > 0);
+        back[type] = e.result.p_exhaust - d.p_ambient;
+    }
+    CHECK(back[RB_MUFFLER_CHAMBERED] > back[RB_MUFFLER_NONE] + 5000.0);
+    CHECK_NEAR(back[RB_MUFFLER_STRAIGHT], back[RB_MUFFLER_NONE], 1000.0);
 }
 
 void test_engine_choked_throttle(void)
@@ -365,16 +416,18 @@ void test_engine_pumping_loss(void)
 }
 
 /* Pressure of chamber j: the four cylinders, then the plenum, the collector,
- * the muffler, and cylinder 1's runner and header cells at its valves. */
+ * the muffler's first cell (where the exhaust pipe opens into it), cylinder
+ * 1's runner and header cells at its valves, and the air box. */
 static double watched_p(int j)
 {
     if (j < 4) return e.cyl[j].gas.p;
     switch (j) {
     case 4:  return e.plenum.p;
     case 5:  return e.collector[0].p;
-    case 6:  return e.muffler[0].p;
+    case 6:  return rb_pipe_end_cell(&e.muffler[0], 0)->p;
     case 7:  return rb_pipe_end_cell(&e.runner[0], 1)->p;
-    default: return rb_pipe_end_cell(&e.header[0], 0)->p;
+    case 8:  return rb_pipe_end_cell(&e.header[0], 0)->p;
+    default: return e.airbox.p;
     }
 }
 
@@ -395,13 +448,13 @@ void test_engine_pressures_dont_zigzag(void)
         if (cases[k][2] > 0.0) start_fired(cases[k][0], cases[k][1]);
         else start(cases[k][0], cases[k][1]);
         rb_engine_settle(&e, 100, 1e-4);
-        double prev[9], dprev[9] = { 0 };
-        int flips[9] = { 0 };
-        for (int j = 0; j < 9; j++) prev[j] = watched_p(j);
+        double prev[10], dprev[10] = { 0 };
+        int flips[10] = { 0 };
+        for (int j = 0; j < 10; j++) prev[j] = watched_p(j);
         const long c = e.cycles;
         for (long n = 0; e.cycles == c && n < lround(2.0 / DT); n++) {
             rb_engine_step(&e);
-            for (int j = 0; j < 9; j++) {
+            for (int j = 0; j < 10; j++) {
                 const double p = watched_p(j);
                 double dp = p - prev[j];
                 if (fabs(dp) < 1e-5 * p) dp = 0.0;   /* too small to count */

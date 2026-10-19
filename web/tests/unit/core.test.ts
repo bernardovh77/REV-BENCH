@@ -8,8 +8,9 @@ import { describe, expect, it } from 'vitest';
 import {
   RB_CLAMPED, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE, RB_EF_PER_BANK, RB_EF_PER_CYLINDER,
   RB_EF_READONLY, RB_ERR_ARG, RB_ERR_ID, RB_ERR_READONLY, RB_ERR_VALUE, RB_OK, RB_PIPE_EXHAUST,
-  RB_PIPE_HEADER, RB_PIPE_RUNNER, RB_PIPE_TAILPIPE, RB_PLACE_AIR, RB_PLACE_COLLECTOR,
-  RB_PLACE_EXHAUST_VALVE, RB_PLACE_INTAKE_VALVE, RB_PLACE_MUFFLER, RB_PLACE_PLENUM, RbCore,
+  RB_MUFFLER_CHAMBERED, RB_MUFFLER_STRAIGHT, RB_PIPE_HEADER, RB_PIPE_MUFFLER, RB_PIPE_RUNNER,
+  RB_PIPE_SNORKEL, RB_PIPE_TAILPIPE, RB_PLACE_AIR, RB_PLACE_AIRBOX, RB_PLACE_COLLECTOR,
+  RB_PLACE_EXHAUST_VALVE, RB_PLACE_INTAKE_VALVE, RB_PLACE_MUFFLER, RB_PLACE_MUFFLER_OUTLET, RB_PLACE_PLENUM, RbCore,
   REQUIRED_EXPORTS, type RbSim,
 } from '../../src/core/rb-core';
 
@@ -153,15 +154,21 @@ describe('the pipes through the API (stage 10)', () => {
     expect(pipes.map((p) => p.kind)).toEqual([
       RB_PIPE_RUNNER, RB_PIPE_RUNNER, RB_PIPE_RUNNER, RB_PIPE_RUNNER,
       RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_EXHAUST, RB_PIPE_TAILPIPE,
+      RB_PIPE_MUFFLER, RB_PIPE_SNORKEL,
     ]);
     const runner = pipes[2] as Record<string, number>, header = pipes[6] as Record<string, number>;
     expect(runner).toMatchObject({ number: 2, from: RB_PLACE_PLENUM, to: RB_PLACE_INTAKE_VALVE, to_number: 2 });
     expect(runner.length).toBeCloseTo(0.33, 12);
     expect(header).toMatchObject({ number: 2, from: RB_PLACE_EXHAUST_VALVE, from_number: 2, to: RB_PLACE_COLLECTOR });
     expect(pipes[8]).toMatchObject({ from: RB_PLACE_COLLECTOR, to: RB_PLACE_MUFFLER, to_number: 0 });
-    expect(pipes[9]).toMatchObject({ from: RB_PLACE_MUFFLER, to: RB_PLACE_AIR });
+    expect(pipes[9]).toMatchObject({ from: RB_PLACE_MUFFLER_OUTLET, to: RB_PLACE_AIR });
     expect(Math.abs((pipes[8]?.length as number) / (pipes[8]?.cells as number) - 0.075)).toBeLessThan(0.01);
-    expect(sim.getPipe(10, 0)).toBeNaN();
+    // stage 12: the muffler between them, a can 17 cm across, and the snorkel into the air box
+    expect(pipes[10]).toMatchObject({ from: RB_PLACE_MUFFLER, to: RB_PLACE_MUFFLER_OUTLET });
+    expect(pipes[10]?.diameter as number).toBeCloseTo(0.168, 3);
+    expect(pipes[11]).toMatchObject({ from: RB_PLACE_AIR, to: RB_PLACE_AIRBOX });
+    expect(sim.getPipe(12, 0)).toBeNaN();
+    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_CHAMBERED);
     sim.destroy();
   });
 
@@ -169,11 +176,13 @@ describe('the pipes through the API (stage 10)', () => {
     const sim = core.createSim(FS, 4);
     expect(sim.loadPreset(core.presetId('v8-cross'))).toBe(RB_OK);
     const pipes = sim.pipes();
-    expect(pipes.length).toBe(8 + 8 + 2 + 2);
+    expect(pipes.length).toBe(8 + 8 + 2 + 2 + 2 + 1);
     const bank = sim.engine().bank as number[];
     for (let c = 0; c < 8; c++) expect(pipes[8 + c]?.to_number).toBe(bank[c]);   // header c joins its bank's collector
     expect(pipes[17]).toMatchObject({ kind: RB_PIPE_EXHAUST, number: 1, to: RB_PLACE_MUFFLER, to_number: 1 });
     expect(pipes[19]).toMatchObject({ kind: RB_PIPE_TAILPIPE, number: 1, from_number: 1 });
+    expect(pipes[21]).toMatchObject({ kind: RB_PIPE_MUFFLER, number: 1, from_number: 1, to_number: 1 });
+    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_STRAIGHT);
     sim.destroy();
   });
 
@@ -229,6 +238,8 @@ describe('the engine through the API (stage 8)', () => {
     expect(f('header_length')).toMatchObject({ unit: 'm', flags: RB_EF_PER_CYLINDER, min: 0.1, max: 2 });
     expect(f('collector')?.flags).toBe(RB_EF_PER_CYLINDER | RB_EF_INTEGER);
     expect(f('exhaust_systems')).toMatchObject({ flags: RB_EF_INTEGER, min: 1, max: 2 });
+    expect(f('muffler_type')).toMatchObject({ flags: RB_EF_INTEGER, min: 0, max: 2 });   // stage 12
+    expect(f('airbox_volume')).toMatchObject({ unit: 'm^3', flags: 0 });
     expect(info.pipeFields.map((x) => x.name)).toEqual([
       'kind', 'number', 'length', 'diameter', 'cells', 'from', 'from_number', 'to', 'to_number',
     ]);

@@ -8,7 +8,8 @@
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
   Playwright test in both modes (dev and `E2E_PREVIEW=1`).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
-  which tests catch them. `$HOME/rb-mut9/m9.py WORKDIR NAME...` applies each named bug to a copy of
+  which tests catch them. `$HOME/rb-mut12/m12.py WORKDIR NAME...` (each stage's runner has its own
+  table of bugs; copy the last one) applies each named bug to a copy of
   the sources in WORKDIR, rebuilds only the test binary, runs a filtered set of tests and puts the
   file back; two work dirs run two bugs at once. The whole suite takes 60-80 s (~140 s with the
   sanitizers, so run that in three filtered parts), and processes started in the background die
@@ -26,18 +27,24 @@
   piston work with the time-symmetric trapezoidal rule and splits changes over 2 %), `flow.c` (nozzle
   formula, orifices with the equalisation limit, `rb_network_step`), `pipe.c` (stage 10's 1D pipe:
   cells = chambers on a staggered grid, faces whose ṁ is a state; ends closed, joined to a volume
-  with the end correction, restricted, laminar loss, or on an orifice; two rates), `cylinder.c` (slider-crank
+  (or another pipe's cell) with the end correction, restricted, laminar loss, or on an orifice, or
+  going straight on into another pipe (`rb_pipe_onward`, stage 12); two rates; stage 12's packing,
+  a laminar loss on the flow's swings only), `cylinder.c` (slider-crank
   geometry; `rb_cylinder` = chamber + geometry + crank angle, `rb_cylinder_move` returns the work),
   `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
   (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
   correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
-  area), `audio.c` (stage 11: the microphone, a monopole from the tailpipes' volume flow; the
-  Kaiser-window anti-alias FIR and decimator; the DC blocker; the soft limiter), `engine.c` (N
-  cylinders + plenum + throttle + idle air valve, a runner per cylinder (pipe) → intake valve,
-  exhaust valve → header (pipe) → one of up to two collectors (volumes) → each collector's exhaust
-  pipe → catalyst (a restriction + laminar loss at its end) → muffler (volume) → tailpipe (pipe) →
-  the air, one or two systems; two air reservoirs; fuel at IVC, spark, burn, walls; the crank, held
-  or free; friction, starter, the engine computer; per-cycle IMEP, BMEP, torque etc.).
+  area), `audio.c` (the listener: stage 11's monopoles, the tailpipes' and since stage 12 the
+  intake mouth's volume flow, heard from a place around the car, each at its distance and delay
+  and off the ground; the Kaiser-window anti-alias FIR and decimator; the DC blocker; the soft
+  limiter), `engine.c` (N cylinders, the air → snorkel (pipe; the filter a laminar loss at its
+  end) → air box (volume) → throttle + idle air valve → plenum, a runner per cylinder (pipe) →
+  intake valve, exhaust valve → header (pipe) → one of up to two collectors (volumes) → each
+  collector's exhaust pipe → catalyst (a restriction + laminar loss at its end) → muffler (pipe:
+  a chambered can, a packed straight-through or a straight pipe) → tailpipe (pipe; a chambered
+  muffler's baffles at its start) → the air, one or two systems; two air reservoirs; fuel at IVC,
+  spark, burn, walls; the crank, held or free; friction, starter, the engine computer;
+  per-cycle IMEP, BMEP, torque etc.).
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
   Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
   equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
@@ -72,17 +79,36 @@
   outside air's density for a reversing flow kinks it, a click every firing. A rebuilt engine
   resets the microphone. 16-bit WAVs are TPDF-dithered by default (`wav_set_dither(w, 0)` for exact
   values).
+- Stage 12 made the microphone a listener (`rb_listener`, `sim->hear`, `rb_sim_listen` after any
+  rebuild): it stands at an `RB_HEAR_*` place (default `RB_HEAR_BEHIND`, 3 m behind the car: a loud
+  V8 a metre from its tailpipe passes full scale) and hears tailpipe 0, tailpipe 1 and the intake's
+  mouth (`mouth_flow`, < 0 drawing in) each at its 1/r and delay, and again off the ground (an image
+  source, `RB_GROUND` 0.9). Their flows are kept at the pipe rate in a 2048-step ring. The muffler
+  is a pipe (`muffler_type`: none, a straight pipe the tailpipe's bore; straight-through, that pipe
+  packed, `PACKING` and `PACKING_SETTLE` in engine.c; chambered, a can as wide as `muffler_volume`
+  over `muffler_length`, left through `muffler_area` with `BAFFLE_LAMINAR`). A can's exhaust pipes
+  open into its first cell and its tailpipe starts from its last, joined as to volumes; a straight
+  pipe or straight-through goes straight on (`rb_pipe_onward`) from its exhaust pipe, unless two
+  meet there, and into its tailpipe. Joined through a volume, a straight pipe lost two velocity
+  heads and cost more back pressure than the can. The intake: snorkel → air box (fast, with
+  the plenum) → throttle; the engine's books (`mass_in` etc.) count at the snorkel's mouth, not the
+  throttle. Pipes: runners, headers, exhaust pipes, tailpipes, then mufflers and the snorkel (new
+  kinds and places appended, so old indices hold). Packing adds weight to slow swings
+  (R τ per m³: keep it under the gas's density). The boom at 1500–2500 rpm in the four is the whole
+  exhaust's lowest ring (~63 Hz), not the can's alone; the rasp above 2 kHz with a straight pipe or
+  straight-through is made at the tailpipe's open end, where the flow turns round every firing.
 - Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
   after the engine computer runs) → events the crank passes during the step (an event counts if
   it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
   cycle's burn length and spark timing, the spark sets the burnable fuel, EVO stops the burn,
   overlap TDC closes the peak-pressure bookkeeping → set areas (throttle, valves) → when a block of
-  `pipe_every` steps begins, the slow gas's rates (`slow_flows`: the pipes' slow faces, collectors,
-  mufflers) → all fast flows (throttle, valves, the pipes' fast faces with their current ṁ),
-  Woschni wall heat and burning as rates from the current state, integrated together (explicit
-  Euler) → turn the crank and move the pistons (trapezoidal) → when the block ends, the slow gas
-  integrated over it, its tailpipe outflow counted, its faces' ṁ updated (`slow_step`) → the fast
-  faces' ṁ from the new pressures. A free crank's kinetic energy changes by exactly the work done
+  `pipe_every` steps begins, the slow gas's rates (`slow_flows`: the pipes' slow faces and the
+  collectors, all cleared before any flows) → all fast flows (throttle, valves, the pipes' fast
+  faces with their current ṁ, the snorkel's into the air box), Woschni wall heat and burning as
+  rates from the current state, integrated together (explicit Euler) → turn the crank and move the
+  pistons (trapezoidal) → when the block ends, the slow gas integrated over it, the snorkel's
+  inflow and the tailpipes' outflow counted, its faces' ṁ updated (`slow_step`) → the fast faces'
+  ṁ from the new pressures. A free crank's kinetic energy changes by exactly the work done
   on it (gas, crankcase at ambient, starter, friction, load), so `crank_books()` in the tests
   balances to 1e-9.
   Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
@@ -137,10 +163,11 @@
   idle), `tools/plot_pipes.py` the `rb_cli pipes` ones (pulse, engine) and a stage-to-stage
   `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and
   `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
-  WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; two engines by
-  order). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
-  #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
-  ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
+  WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; engines by
+  order; pulls' dBA against rpm; 16-bit WAVs only, so render without `--float`). The shared style
+  lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted #898781, grid #e1e0d9,
+  series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered categories, and the
+  Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
 
 ## Web

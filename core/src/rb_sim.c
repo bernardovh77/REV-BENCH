@@ -4,9 +4,9 @@
  * The plumbing: parameters -> physics substeps -> reduction to the audio rate
  * -> output stage. Stage 1's model is a placeholder sine oscillator, which
  * the browser plays until stage 14. Stage 11 adds the engine as a source (the
- * sim holds it since stage 8, rb_engine_api.c): a microphone hears its
- * tailpipes, and the reduction to the audio rate is an anti-alias filter
- * (audio.h).
+ * sim holds it since stage 8, rb_engine_api.c): a listener hears its pipe
+ * ends (stage 12: from a place around the car), and the reduction to the
+ * audio rate is an anti-alias filter (audio.h).
  */
 #include "rb_internal.h"
 
@@ -70,7 +70,7 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
     _Static_assert(RB_MAX_OVERSAMPLE <= RB_DECIMATOR_MAX_FACTOR,
                    "the decimator must take every oversampling factor");
     sim->source = RB_SOURCE_TONE;
-    rb_mic_init(&sim->microphone, RB_MIC_DISTANCE);
+    sim->hear = RB_HEAR_BEHIND;
     rb_decimator_init(&sim->aa, c.oversample);
     rb_dc_blocker_init(&sim->dc, RB_DC_CUTOFF, c.sample_rate);
 
@@ -98,7 +98,6 @@ void rb_reset(rb_sim *sim)
     sim->out_rms   = 0.0;
     sim->nonfinite = 0;
     sim->limited   = 0;
-    rb_mic_reset(&sim->microphone);
     rb_decimator_reset(&sim->aa);
     rb_dc_blocker_reset(&sim->dc);
 
@@ -110,17 +109,34 @@ void rb_reset(rb_sim *sim)
      * is always a possible engine, so this can't fail. */
     const rb_engine_desc d = sim->engine.desc;
     rb_engine_init(&sim->engine, &d, sim->dt);
+    rb_sim_listen(sim);
 }
 
-/* One physics substep of the model: the engine and what the microphone hears
+void rb_sim_listen(rb_sim *sim)
+{
+    const rb_engine *e = &sim->engine;
+    const rb_chamber *air = &e->exhaust_air;
+    const double cv = rb_gas_cv(&air->gas, air->T);
+    const double c = sqrt((cv + air->gas.R) / cv * air->gas.R * air->T);
+    const double q[RB_LISTEN_SOURCES] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+    rb_listener_place(&sim->listener, sim->hear, e->systems, c, e->pipe_dt);
+    rb_listener_prime(&sim->listener, q);
+    sim->pipe_steps_heard = e->pipe_steps;
+}
+
+/* One physics substep of the model: the engine and what the listener hears
  * of it, or stage 1's phase-continuous sine. */
 static inline void model_step(rb_sim *sim)
 {
     if (sim->source == RB_SOURCE_ENGINE) {
         rb_engine *e = &sim->engine;
         rb_engine_step(e);
-        sim->mic = rb_mic_hear(&sim->microphone, e->tail_flow, e->exhaust_air.rho, sim->dt)
-                 / RB_FULL_SCALE_PA;
+        if (e->pipe_steps != sim->pipe_steps_heard) {   /* the pipe ends' new flows */
+            const double q[RB_LISTEN_SOURCES] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            rb_listener_push(&sim->listener, q);
+            sim->pipe_steps_heard = e->pipe_steps;
+        }
+        sim->mic = rb_listener_hear(&sim->listener, e->exhaust_air.rho, sim->dt) / RB_FULL_SCALE_PA;
         return;
     }
 
@@ -152,7 +168,7 @@ int rb_render_block(rb_sim *sim, float *out, int frames)
 
     for (int i = 0; i < frames; i++) {
         /* 1. Run the physics `os` substeps for this audio sample, feeding
-         *    what the microphone hears to the anti-alias filter. A NaN or inf
+         *    what the listener hears to the anti-alias filter. A NaN or inf
          *    becomes silence (and is counted) before it reaches the filters'
          *    memories, and RB_MIC_MAX keeps their sums finite. */
         for (int k = 0; k < os; k++) {

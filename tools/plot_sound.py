@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-plot_sound.py - what the engine sounds like (stage 11), from rb_cli sound's WAVs:
+plot_sound.py - what the engine sounds like (stages 11 and 12), from rb_cli sound's WAVs:
 
     python3 tools/plot_sound.py check WAV...
-        for each file: its level (dB SPL and dBA at the microphone, full scale
+        for each file: its level (dB SPL and dBA at the listener, full scale
         being 40 Pa), DC, peak, how much of it is above 5 kHz, its loudest
         5 ms there (a click would stand out) and its strongest line above 2 kHz
     python3 tools/plot_sound.py spectrograms WAV...
@@ -11,12 +11,16 @@ plot_sound.py - what the engine sounds like (stage 11), from rb_cli sound's WAVs
     python3 tools/plot_sound.py sweep WAV CSV
         a rev sweep (rb_cli sound --sweep --csv CSV): its spectrogram with the
         firing orders over it, and its level     -> renders/sweep.png
-    python3 tools/plot_sound.py orders WAV WAV --rpm N
-        two engines held at the same speed: their spectra by engine order
+    python3 tools/plot_sound.py orders WAV WAV... --rpm N
+        engines held at the same speed: their spectra by engine order
                                                  -> renders/orders.png
+    python3 tools/plot_sound.py levels WAV CSV [WAV CSV...]
+        wide-open pulls (rb_cli sound --sweep --csv CSV): each one's dBA
+        against the speed, while the throttle is open -> renders/levels.png
 
--o FILE writes the chart somewhere else. Needs matplotlib and numpy (sudo apt
-install python3-matplotlib).
+-o FILE writes the chart somewhere else; --gain G undoes a render's rb_cli sound
+--gain G in the levels. Needs matplotlib and numpy (sudo apt install
+python3-matplotlib).
 """
 import argparse
 import os
@@ -30,7 +34,7 @@ from matplotlib.colors import LinearSegmentedColormap
 from rbplot import (AXIS, BLUE, DASH, INK, INK_2, MUTED, ORANGE, SURFACE, label, read_csv, setup,
                     style, titles)
 
-FULL_SCALE_PA = 40.0   # Pa at the microphone for a sample of 1 (core/src/audio.h)
+FULL_SCALE_PA = 40.0   # Pa at the listener for a sample of 1 (core/src/audio.h)
 P_REF = 2e-5           # Pa: 0 dB SPL
 FLOOR_DB = -130.0      # dBFS: the bottom of the charts' colour scale
 TOP_DB = -10.0
@@ -40,8 +44,12 @@ LEVELS = LinearSegmentedColormap.from_list(
     "levels", [SURFACE, "#dfe9f7", "#86b6ef", BLUE, "#0d366b", INK])
 
 
+GAIN = 1.0   # the renders' --gain, undone by read_wav (main sets it)
+
+
 def read_wav(path):
-    """Samples (floats, full scale 1) and the sample rate of a mono WAV."""
+    """Samples (floats, full scale 1, without the render's gain) and the sample
+    rate of a mono WAV."""
     try:
         w = wave.open(path)
     except (OSError, wave.Error) as e:
@@ -49,7 +57,7 @@ def read_wav(path):
     if w.getnchannels() != 1 or w.getsampwidth() != 2:
         sys.exit(f"plot_sound: {path} isn't mono 16-bit PCM (rb_cli sound without --float)")
     x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float) / 32767.0
-    return x, w.getframerate()
+    return x / GAIN, w.getframerate()
 
 
 def a_weighting(f):
@@ -61,7 +69,7 @@ def a_weighting(f):
 
 
 def levels(x, fs):
-    """dB SPL and dBA at the microphone of a whole signal."""
+    """dB SPL and dBA at the listener of a whole signal."""
     X = np.fft.rfft(x)
     f = np.fft.rfftfreq(len(x), 1 / fs)
     power = np.abs(X) ** 2
@@ -98,7 +106,7 @@ def check(args):
         above = f > 2000
         line = int(np.argmax(X[above]))
         print(f"{path}: {len(x) / fs:.2f} s")
-        print(f"  level {spl:.1f} dB SPL, {dba:.1f} dBA at the microphone; rms {20 * np.log10(rms):.1f} dBFS, "
+        print(f"  level {spl:.1f} dB SPL, {dba:.1f} dBA at the listener; rms {20 * np.log10(rms):.1f} dBFS, "
               f"peak {20 * np.log10(np.abs(x).max()):.1f} dBFS")
         print(f"  DC {x.mean():.1e} ({20 * np.log10(abs(x.mean()) / rms + 1e-30):.0f} dB below the rms)")
         print(f"  above 5 kHz: {100 * np.mean(hp ** 2) / np.mean(x ** 2):.4f} % of the power; its loudest 5 ms "
@@ -153,8 +161,8 @@ def spectrograms(args):
     bar.set_label("dB of full scale", color=INK_2, fontsize=8.5)
     bar.ax.tick_params(colors=AXIS, labelcolor=MUTED, labelsize=8)
     bar.outline.set_edgecolor(AXIS)
-    titles(fig, "What the microphone hears, the whole band",
-           "1 m from the tailpipe, through the anti-alias filter (flat to 20 kHz, 100 dB down from 28 kHz); "
+    titles(fig, args.title or "What the listener hears, the whole band",
+           args.subtitle or "through the anti-alias filter (flat to 20 kHz, 100 dB down from 28 kHz); "
            "16-bit, dithered", top=1 - 0.42 / fig.get_figheight())
     save(fig, args.out or "renders/spectrograms.png")
 
@@ -204,7 +212,7 @@ def sweep(args):
     lv.plot(tl, [s[1] for s in spl], color=ORANGE, linewidth=1.3)
     label(lv, "dB SPL", (tl[-1], spl[-1][0]), (5, 5), color=BLUE)
     label(lv, "dBA", (tl[-1], spl[-1][1]), (5, -5), color=ORANGE)
-    lv.set_ylabel("level at 1 m")
+    lv.set_ylabel("level at the listener")
     lv.set_xlabel("time (s)")
     sp = lv.twinx()
     sp.plot(t, rpm, color=MUTED, linewidth=1.0, linestyle=DASH)
@@ -213,7 +221,7 @@ def sweep(args):
     for side in ("top", "left", "bottom"):
         sp.spines[side].set_visible(False)
     sp.spines["right"].set_color(AXIS)
-    titles(fig, args.title or "A wide-open pull, as the microphone hears it",
+    titles(fig, args.title or "A wide-open pull, as the listener hears it",
            f"{args.subtitle or 'the spectrogram with the engine orders over it (dashed); below, the level and speed'}")
     save(fig, args.out or "renders/sweep.png")
 
@@ -239,7 +247,7 @@ def orders(args):
         keep = f / base <= top + 0.25
         ax.plot(f[keep] / base, db[keep], color=BLUE if k == 0 else ORANGE, linewidth=0.9)
         ax.set_xlim(0, top + 0.25)
-        ax.set_ylim(0, 120)
+        ax.set_ylim(0, 130 if db[keep].max() > 110 else 120)   # room for the loudest line's label
         ax.set_xticks(np.arange(0, top + 0.01, 1.0))
         ax.set_xticks(np.arange(0.5, top + 0.01, 1.0), minor=True)
         ax.set_ylabel("dB SPL")
@@ -250,9 +258,37 @@ def orders(args):
                 label(ax, f"{o:g}", (o, db[i]), (0, 6), ha="center", va="bottom",
                       color=BLUE if k == 0 else ORANGE, size=7.5)
     axes[-1].set_xlabel("engine order (multiples of the crank's speed)")
-    titles(fig, args.title or f"Two engines held at {float(args.rpm):.0f} rpm, by engine order",
-           args.subtitle or "each line's level at the microphone, 1 m from the tailpipes")
+    titles(fig, args.title or f"Engines held at {float(args.rpm):.0f} rpm, by engine order",
+           args.subtitle or "each line's level at the listener")
     save(fig, args.out or "renders/orders.png")
+
+
+def levels_chart(args):
+    if len(args.files) % 2:
+        sys.exit("plot_sound levels: give each pull's WAV and its CSV")
+    names = args.titles.split("|") if args.titles else [os.path.basename(p) for p in args.files[::2]]
+    fig, ax = plt.subplots(figsize=(10, 4.6), facecolor=SURFACE)
+    fig.subplots_adjust(left=0.085, right=0.83, top=0.8, bottom=0.12)
+    style(ax)
+    colours = (BLUE, ORANGE, INK_2, MUTED)
+    for k in range(len(args.files) // 2):
+        x, fs = read_wav(args.files[2 * k])
+        d = read_csv(args.files[2 * k + 1], ("t_s", "rpm", "throttle"), "plot_sound")
+        t, rpm, throttle = np.array(d["t_s"]), np.array(d["rpm"]), np.array(d["throttle"])
+        n = int(0.1 * fs)
+        seg = x[: len(x) // n * n].reshape(-1, n)
+        tl = (np.arange(len(seg)) + 0.5) * n / fs
+        dba = np.array([levels(s, fs)[1] for s in seg])
+        speed = np.interp(tl, t, rpm)
+        pulling = (np.interp(tl, t, throttle) > 0.5) & (np.interp(tl, t, rpm) < np.max(rpm) - 150)
+        colour = colours[k % len(colours)]
+        ax.plot(speed[pulling], dba[pulling], color=colour, linewidth=1.3)
+        label(ax, names[k], (speed[pulling][-1], dba[pulling][-1]), (6, 0), color=colour, va="center")
+    ax.set_xlabel("rpm")
+    ax.set_ylabel("dBA at the listener")
+    titles(fig, args.title or "Wide-open pulls: how loud, against the speed",
+           args.subtitle or "the level in 0.1 s windows, while the throttle is open")
+    save(fig, args.out or "renders/levels.png")
 
 
 def save(fig, out):
@@ -263,7 +299,7 @@ def save(fig, out):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("chart", choices=("check", "spectrograms", "sweep", "orders"))
+    parser.add_argument("chart", choices=("check", "spectrograms", "sweep", "orders", "levels"))
     parser.add_argument("files", nargs="+")
     parser.add_argument("-o", "--out")
     parser.add_argument("--rpm", help="orders: the speed both engines were held at")
@@ -273,13 +309,17 @@ def main():
     parser.add_argument("--cylinders", type=int, default=4, help="sweep: the engine's cylinders (default 4)")
     parser.add_argument("--top", type=float, default=1000.0, help="sweep: the highest frequency shown (Hz)")
     parser.add_argument("--max-order", type=float, default=12.0, help="orders: the highest order shown")
+    parser.add_argument("--gain", type=float, default=1.0, help="the renders' rb_cli sound --gain (default 1)")
     args = parser.parse_args()
+    global GAIN
+    GAIN = args.gain
     if args.chart == "sweep" and len(args.files) != 2:
         parser.error("sweep needs the WAV and its CSV")
     if args.chart == "orders" and len(args.files) < 2:
         parser.error("orders needs two WAVs or more")
     setup()
-    {"check": check, "spectrograms": spectrograms, "sweep": sweep, "orders": orders}[args.chart](args)
+    {"check": check, "spectrograms": spectrograms, "sweep": sweep, "orders": orders,
+     "levels": levels_chart}[args.chart](args)
 
 
 if __name__ == "__main__":

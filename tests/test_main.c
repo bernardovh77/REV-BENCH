@@ -48,17 +48,26 @@ void test_pipe_walls(void);
 void test_pipe_conserves_everything(void);
 void test_pipe_two_rates_agree(void);
 void test_pipe_rings(void);
+void test_pipe_packing(void);
+void test_pipe_onward(void);
 /* ---- audio (tests/test_audio.c) ---- */
 void test_audio_decimator_filter(void);
 void test_audio_decimator_tones(void);
 void test_audio_dc_blocker(void);
 void test_audio_soft_limit(void);
-void test_audio_microphone(void);
+void test_audio_listener_monopole(void);
+void test_audio_listener_paths(void);
+void test_audio_listener_places(void);
 void test_audio_engine_sound(void);
 void test_audio_engine_rebuilt_quietly(void);
 void test_audio_chain_blocks_dc(void);
 void test_audio_chain_survives_nan(void);
 void test_audio_engine_reversal_quiet(void);
+void test_audio_mufflers(void);
+void test_audio_intake_mouth(void);
+void test_audio_headers_rumble(void);
+void test_audio_listener_hears_each_tailpipe(void);
+void test_audio_sim_hears_every_source(void);
 /* ---- cylinder (tests/test_cylinder.c) ---- */
 void test_cylinder_geometry(void);
 void test_compression_matches_isentrope(void);
@@ -88,6 +97,8 @@ void test_engine_cycle_totals_dont_jitter(void);
 void test_engine_cylinders_breathe_alike(void);
 void test_engine_pipes_two_rates(void);
 void test_engine_throttle_response(void);
+void test_engine_intake_losses(void);
+void test_engine_muffler_back_pressure(void);
 void test_engine_choked_throttle(void);
 void test_engine_pumping_loss(void);
 void test_engine_pressures_dont_zigzag(void);
@@ -170,16 +181,25 @@ static const struct {
     T(test_pipe_conserves_everything),
     T(test_pipe_two_rates_agree),
     T(test_pipe_rings),
+    T(test_pipe_packing),
+    T(test_pipe_onward),
     T(test_audio_decimator_filter),
     T(test_audio_decimator_tones),
     T(test_audio_dc_blocker),
     T(test_audio_soft_limit),
-    T(test_audio_microphone),
+    T(test_audio_listener_monopole),
+    T(test_audio_listener_paths),
+    T(test_audio_listener_places),
     T(test_audio_engine_sound),
     T(test_audio_engine_rebuilt_quietly),
     T(test_audio_chain_blocks_dc),
     T(test_audio_chain_survives_nan),
     T(test_audio_engine_reversal_quiet),
+    T(test_audio_mufflers),
+    T(test_audio_intake_mouth),
+    T(test_audio_headers_rumble),
+    T(test_audio_listener_hears_each_tailpipe),
+    T(test_audio_sim_hears_every_source),
     T(test_cylinder_geometry),
     T(test_compression_matches_isentrope),
     T(test_compression_converges_with_step_size),
@@ -205,6 +225,8 @@ static const struct {
     T(test_engine_cylinders_breathe_alike),
     T(test_engine_pipes_two_rates),
     T(test_engine_throttle_response),
+    T(test_engine_intake_losses),
+    T(test_engine_muffler_back_pressure),
     T(test_engine_choked_throttle),
     T(test_engine_pumping_loss),
     T(test_engine_pressures_dont_zigzag),

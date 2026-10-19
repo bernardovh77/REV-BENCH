@@ -3,7 +3,8 @@
  * of sound, comes back from a closed end as it went and from an open end
  * inverted; waves ride a flow at c + u and c - u; a steady flow loses what
  * Darcy and Weisbach say; the walls warm or cool the gas as Colburn says; mass,
- * species and energy are conserved exactly, on one rate or two.
+ * species and energy are conserved exactly, on one rate or two. Stage 12: a
+ * packed pipe damps fast swings and lets a steady flow through.
  */
 #include "pipe.h"
 #include "rb_test.h"
@@ -152,8 +153,10 @@ void test_pipe_pulse_travels_at_the_speed_of_sound(void)
 /* Air between two big tanks dp apart: a pipe 2 m long and 40 mm across, with
  * friction f = 0.02, an entry loss of 0.5, a laminar loss (Pa per m/s) at its
  * far end, and both ends narrowed to 1 / narrow of its area (1: not at all),
- * run for a second (the pipe's own ringing dies down eightfold every 0.1 s). */
-static double steady(double dp, int n, double laminar, double narrow)
+ * run for a second (the pipe's own ringing dies down eightfold every 0.1 s).
+ * Packed (stage 12) with `packing` Pa per m/s per metre, settling in 0.3 ms
+ * (a muffler's). */
+static double steady(double dp, int n, double laminar, double narrow, double packing)
 {
     static rb_chamber in, out;
     rb_chamber_init_reservoir(&in, P0 + dp, 300.0, AIR);
@@ -162,6 +165,7 @@ static double steady(double dp, int n, double laminar, double narrow)
     rb_pipe_join(&pipe, 0, &in, 0.5, 0);
     rb_pipe_join(&pipe, 1, &out, 0.0, 0);
     rb_pipe_resist(&pipe, 1, laminar);
+    rb_pipe_pack(&pipe, packing, 3e-4);
     if (narrow > 1.0) {
         rb_pipe_restrict(&pipe, 0, pipe.area / narrow);
         rb_pipe_restrict(&pipe, 1, pipe.area / narrow);
@@ -178,27 +182,27 @@ void test_pipe_friction(void)
      * laminar loss or narrowed ends add. */
     const double rho = (P0 + 250.0) / (287.0985 * 300.0);   /* the mean */
     const double want = sqrt(2.0 * 500.0 / (rho * (1.0 + 0.5 + 0.02 * 2.0 / 0.04)));
-    CHECK_NEAR(steady(500.0, 40, 0.0, 1.0), want, 0.003 * want);  /* 18.4 m/s, Mach 0.05 */
+    CHECK_NEAR(steady(500.0, 40, 0.0, 1.0, 0.0), want, 0.003 * want);  /* 18.4 m/s, Mach 0.05 */
     int uneven = 0;
     for (int k = 0; k < pipe.cells - 1; k++)
         uneven += fabs(pipe.face[k].mdot - pipe.end_face[0].mdot) > 1e-9 * pipe.end_face[0].mdot;
     CHECK_EQ_INT(uneven, 0);
-    CHECK_NEAR(steady(500.0, 6, 0.0, 1.0), want, 0.003 * want);
+    CHECK_NEAR(steady(500.0, 6, 0.0, 1.0, 0.0), want, 0.003 * want);
     /* A laminar loss of 10 Pa per m/s on top: a v^2 + 10 v = dp. */
     const double a = 0.5 * rho * (1.0 + 0.5 + 0.02 * 2.0 / 0.04);
     const double slow = (-10.0 + sqrt(100.0 + 4.0 * a * 500.0)) / (2.0 * a);
-    CHECK_NEAR(steady(500.0, 40, 10.0, 1.0), slow, 0.003 * slow);  /* 11.5 m/s */
+    CHECK_NEAR(steady(500.0, 40, 10.0, 1.0, 0.0), slow, 0.003 * slow);  /* 11.5 m/s */
     /* Both ends narrowed to 80 % of the pipe's area, a catalyst's or a muffler's
      * way through: in, the gas speeds up through the narrowing and spreads out
      * again, (A/A_e - 1)^2 more velocity heads; out, its jet is faster,
      * (A/A_e)^2 - 1 more. */
     const double r = 1.25, heads = 1.0 + 0.5 + (r - 1.0) * (r - 1.0) + 0.02 * 2.0 / 0.04 + r * r - 1.0;
     const double narrowed = sqrt(2.0 * 500.0 / (rho * heads));
-    CHECK_NEAR(steady(500.0, 40, 0.0, r), narrowed, 0.003 * narrowed);   /* 16.4 m/s */
+    CHECK_NEAR(steady(500.0, 40, 0.0, r, 0.0), narrowed, 0.003 * narrowed);   /* 16.4 m/s */
     /* At Mach 0.17 the gas thins along the pipe and speeds up: a little less
      * flow than the incompressible formula says. */
     const double fast = sqrt(2.0 * 5000.0 / ((P0 + 2500.0) / (287.0985 * 300.0) * (1.0 + 0.5 + 0.02 * 2.0 / 0.04)));
-    const double v = steady(5000.0, 40, 0.0, 1.0);
+    const double v = steady(5000.0, 40, 0.0, 1.0, 0.0);
     CHECK(v < fast && v > 0.97 * fast);
 }
 
@@ -407,4 +411,178 @@ void test_pipe_rings(void)
     const double runner = 2.0 * pi / (c * lo);
     CHECK_NEAR(ring(1e-4, lo), runner, 0.01 * runner);
     CHECK(runner > 1.8 / 277.0);
+}
+
+/* Rings a pipe `length` m long and 40 mm across, closed at both ends, packed
+ * with `packing` Pa per m/s per metre for swings faster than `settle` (s),
+ * for 0.1 s from the shape of its slowest ring, p = 1 bar + 20 Pa
+ * cos(pi x / L) (c / 2L; small, so it doesn't steepen). Returns how fast the
+ * swings at end 0 fade (1/s), from the first and last of their peaks.
+ * *energy: how much the pipe's energy changed, over all of it. */
+static double packed_ring(double length, double packing, double settle, double *energy)
+{
+    rb_pipe_init(&pipe, cells, faces, 20, length, 0.04, 1e5, 300.0, AIR, 300.0, 0.0);
+    rb_pipe_pack(&pipe, packing, settle);
+    for (int j = 0; j < pipe.cells; j++) {
+        rb_chamber_init(&pipe.cell[j], pipe.area * pipe.dx, 1e5, 300.0, AIR);
+        squeeze(&pipe, j, 1e5 + 20.0 * cos(3.14159265358979323846 * (j + 0.5) / pipe.cells), 300.0);
+    }
+    double e0, e1;
+    rb_pipe_contents(&pipe, NULL, &e0, NULL);
+    const long steps = lround(0.1 / SLOW_DT);
+    for (long n = 0; n < steps; n++) {
+        step(&pipe, SLOW_DT);
+        trace[0][n] = pipe.cell[0].p - 1e5;
+    }
+    rb_pipe_contents(&pipe, NULL, &e1, NULL);
+    *energy = fabs(e1 - e0) / e0;
+    long first = -1, last = -1;   /* the first and last peaks of the swing */
+    for (long n = 1; n + 1 < steps; n++)
+        if (trace[0][n] > trace[0][n - 1] && trace[0][n] >= trace[0][n + 1] && trace[0][n] > 4.0) {
+            if (first < 0) first = n;
+            last = n;
+        }
+    if (first < 0 || last <= first) return NAN;
+    return log(trace[0][first] / trace[0][last]) / ((last - first) * SLOW_DT);
+}
+
+/* How fast a packing (R Pa per m/s per metre, settling in tau) makes a ring
+ * of gas of density rho at omega fade (1/s): its loss, R (omega tau)^2 /
+ * (1 + (omega tau)^2), over twice the gas's weight and the packing's, which
+ * is R tau / (1 + (omega tau)^2) (pipe.h), at the slower omega that weight
+ * rings it at. */
+static double packing_fade(double R, double tau, double rho, double omega)
+{
+    const double x0 = omega * tau;
+    const double w = omega * sqrt(rho / (rho + R * tau / (1.0 + x0 * x0))), x = w * tau;
+    return R * x * x / (1.0 + x * x) / (2.0 * (rho + R * tau / (1.0 + x * x)));
+}
+
+void test_pipe_packing(void)
+{
+    /* A muffler's packing (stage 12). A ring much faster than the settling
+     * time (173 Hz, settling in 10 ms) dies away as a laminar loss R makes it,
+     * its swings falling as exp(-R t / (2 rho)), and its energy stays in the
+     * gas, warming it. One much slower (43 Hz, settling in 0.4 ms) gets only
+     * (omega tau)^2 / (1 + (omega tau)^2) of the loss, 1.1 %: with five times
+     * the packing it keeps 95 % over 0.1 s, where the same laminar loss would
+     * leave 0.01 %. Both to 1 %, counting the weight the packing adds to slow
+     * swings (3 % here). The unpacked pipe keeps its ring. A steady flow goes
+     * through as if the pipe weren't packed. */
+    const double rho = 1e5 / (287.0985 * 300.0), c = sqrt(1.4 * 287.0985 * 300.0), pi = 3.14159265358979323846;
+    double energy;
+    const double bare = packed_ring(1.0, 0.0, 0.0, &energy), bare4 = packed_ring(4.0, 0.0, 0.0, &energy);
+    CHECK(fabs(bare) < 0.03 && fabs(bare4) < 0.03);   /* 1/s: under 0.3 % in 0.1 s */
+    const double fast = packed_ring(1.0, 20.0, 0.01, &energy) - bare;
+    const double want_fast = packing_fade(20.0, 0.01, rho, pi * c);   /* 8.5/s */
+    CHECK_NEAR(fast, want_fast, 0.01 * want_fast);
+    CHECK(energy < 1e-12);
+    const double slow = packed_ring(4.0, 100.0, 4e-4, &energy) - bare4;
+    const double want_slow = packing_fade(100.0, 4e-4, rho, pi * c / 4.0);   /* 0.47/s */
+    CHECK_NEAR(slow, want_slow, 0.01 * want_slow);
+    CHECK(exp(-slow * 0.1) > 0.95);
+
+    const double open = steady(500.0, 40, 0.0, 1.0, 0.0), packed = steady(500.0, 40, 0.0, 1.0, 1500.0);
+    CHECK_NEAR(packed, open, 1e-6 * open);
+}
+
+static rb_chamber cells2[RB_PIPE_MAX_CELLS];
+static rb_face faces2[RB_PIPE_MAX_CELLS];
+static rb_pipe pipe2;
+
+/* One slow step of two pipes, a going on into b (or joined to it: the clear
+ * of both before either's flows). */
+static void step2(rb_pipe *a, rb_pipe *b, double dt)
+{
+    rb_pipe_clear(a, 0);
+    rb_pipe_clear(b, 0);
+    rb_pipe_flows(a, 0, dt);
+    rb_pipe_flows(b, 0, dt);
+    rb_pipe_integrate(a, 0, dt);
+    rb_pipe_integrate(b, 0, dt);
+    rb_pipe_accelerate(a, 0, dt);
+    rb_pipe_accelerate(b, 0, dt);
+}
+
+/* A 2 m pipe, 40 mm across, of still air at 300 K, closed at both ends: as
+ * two 1 m pipes of 32 cells, a going on into b (how = 1) or joined to b's
+ * first cell as to a volume (how = 0), or as one pipe of 64 cells (how = 2).
+ * A 200 Pa pulse starts 0.5 m along, as in pulse(); trace 0 is the pressure
+ * 0.266 m along (where an echo off the joint would pass), trace 1 1.516 m. */
+static void pulse_across(int how)
+{
+    if (how == 2) {
+        rb_pipe_init(&pipe, cells, faces, 64, 2.0, 0.04, P0, 300.0, AIR, 300.0, 0.0);
+    } else {
+        rb_pipe_init(&pipe, cells, faces, 32, 1.0, 0.04, P0, 300.0, AIR, 300.0, 0.0);
+        rb_pipe_init(&pipe2, cells2, faces2, 32, 1.0, 0.04, P0, 300.0, AIR, 300.0, 0.0);
+        if (how == 1) rb_pipe_onward(&pipe, &pipe2);
+        else rb_pipe_join(&pipe, 1, rb_pipe_end_cell(&pipe2, 0), 0.0, 0);
+    }
+    for (int k = 0; k < 32; k++) {
+        const double x = (k + 0.5) * pipe.dx - 0.5;
+        squeeze(&pipe, k, P0 + 200.0 * exp(-(x / 0.1) * (x / 0.1)), 300.0);
+    }
+    for (long i = 0; i < lround(0.006 / SLOW_DT); i++) {
+        if (how == 2) step(&pipe, SLOW_DT);
+        else step2(&pipe, &pipe2, SLOW_DT);
+        trace[0][i] = pipe.cell[8].p - P0;                                   /* 0.266 m */
+        trace[1][i] = (how == 2 ? pipe.cell[48].p : pipe2.cell[16].p) - P0;   /* 1.516 m */
+    }
+}
+
+void test_pipe_onward(void)
+{
+    /* Two pipes going on into each other (stage 12) are one pipe: a pulse
+     * crosses where they meet as it crosses any face, in the time one pipe
+     * takes and as big (to 0.01 %), and what comes back past 0.266 m is one
+     * pipe's own 0.2 % (joined as through a volume, the joint echoes 1.9 %).
+     * A steady flow between two tanks loses what it would in one pipe (to
+     * 0.1 %), and mass and energy are conserved exactly. */
+    const double c = sqrt(1.4 * 287.0985 * 300.0);
+    double t[3], size[3], echo[3];
+    for (int how = 0; how < 3; how++) {
+        pulse_across(how);
+        /* the half going right passes 1.516 m 1.016 m / c after it set off; an
+         * echo off the joint (at 1 m) would pass 0.266 m 1.234 m / c after */
+        t[how] = extreme(1, SLOW_DT, 2.0e-3, 4.5e-3, 1.0, &size[how]);
+        echo[how] = 0.0;
+        for (long i = lround((1.234 - 0.15) / c / SLOW_DT); i < lround((1.234 + 0.15) / c / SLOW_DT); i++)
+            echo[how] = fmax(echo[how], fabs(trace[0][i]) / 100.0);
+    }
+    CHECK_NEAR(t[1], t[2], 1e-4 * t[2]);
+    CHECK_NEAR(size[1], size[2], 1e-4 * size[2]);
+    CHECK(echo[1] < 1.1 * echo[2] && echo[2] < 0.003);
+    CHECK(echo[0] > 5.0 * echo[2]);
+    /* steady, between two tanks 500 Pa apart: as test_pipe_friction's 2 m pipe */
+    static rb_chamber in, out;
+    rb_chamber_init_reservoir(&in, P0 + 500.0, 300.0, AIR);
+    rb_chamber_init_reservoir(&out, P0, 300.0, AIR);
+    rb_pipe_init(&pipe, cells, faces, 20, 1.0, 0.04, P0, 300.0, AIR, 300.0, 0.02);
+    rb_pipe_init(&pipe2, cells2, faces2, 20, 1.0, 0.04, P0, 300.0, AIR, 300.0, 0.02);
+    rb_pipe_join(&pipe, 0, &in, 0.5, 0);
+    CHECK_EQ_INT(rb_pipe_onward(&pipe, &pipe2), 0);
+    rb_pipe_join(&pipe2, 1, &out, 0.0, 0);
+    double m0, e0, m1, e1;
+    for (long i = 0; i < lround(1.0 / SLOW_DT); i++) step2(&pipe, &pipe2, SLOW_DT);
+    const double two = pipe.end_face[0].mdot;
+    const double u_a = rb_pipe_cell_velocity(&pipe, pipe.cells - 1), u_b = rb_pipe_cell_velocity(&pipe2, 0);
+    CHECK_NEAR(u_b, u_a, 0.01 * u_a);   /* the gas goes on at the speed it had */
+    const double one = steady(500.0, 40, 0.0, 1.0, 0.0);
+    CHECK_NEAR(two / (0.5 * (in.rho + out.rho) * pipe.area), one, 0.001 * one);
+
+    /* closed at both outer ends, with a pressure step: the books are exact */
+    rb_pipe_init(&pipe, cells, faces, 12, 0.6, 0.035, 2e5, 900.0, BURNED, 600.0, 0.025);
+    rb_pipe_init(&pipe2, cells2, faces2, 9, 0.6, 0.035, P0, 300.0, AIR, 400.0, 0.025);
+    rb_pipe_onward(&pipe, &pipe2);
+    rb_pipe_contents(&pipe, &m0, &e0, NULL);
+    rb_pipe_contents(&pipe2, &m1, &e1, NULL);
+    const double mass = m0 + m1, energy = e0 + e1;
+    for (long i = 0; i < 2000; i++) step2(&pipe, &pipe2, SLOW_DT);
+    rb_pipe_contents(&pipe, &m0, &e0, NULL);
+    rb_pipe_contents(&pipe2, &m1, &e1, NULL);
+    CHECK_NEAR(m0 + m1, mass, 1e-14 * mass);
+    CHECK_NEAR(e0 + e1 - pipe.heat - pipe2.heat, energy, 1e-11 * energy);
+    CHECK(pipe2.cell[0].y[RB_BURNED] > 0.1);   /* the burned gas got across */
+    CHECK_EQ_INT(rb_pipe_onward(&pipe, &pipe), -1);
 }

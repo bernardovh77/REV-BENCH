@@ -1,23 +1,38 @@
 /*
- * audio.h - from the gas to the sound (stage 11): the microphone, and the
- * chain that takes its signal down to the audio rate.
+ * audio.h - from the gas to the sound: the listener (stages 11 and 12), and
+ * the chain that takes what it hears down to the audio rate.
  *
- * The microphone. The engine's sound is the gas leaving its tailpipes. An
- * open pipe end small against the wavelengths it radiates (a 50 mm pipe
- * against 0.3-3 m) radiates like a pulsating sphere: a monopole, whose
- * strength is the volume flow Q out of it, the gas the outside air has to
- * make room for. In the open, at a distance r (Kinsler et al., chapter 7),
+ * The sources. The engine's sound is the gas leaving and entering its pipes'
+ * open ends: the tailpipes, and the intake's mouth (stage 12). An open pipe
+ * end small against the wavelengths it radiates (a 50 mm pipe against
+ * 0.3-3 m) radiates like a pulsating sphere: a monopole, whose strength is
+ * the volume flow Q out of it, the gas the outside air has to make room for.
+ * In the open, at a distance r (Kinsler et al., chapter 7),
  *
- *     p(r, t) = rho0 / (4 pi r) dQ/dt,     Q = mdot / rho
+ *     p(r, t) = rho0 / (4 pi r) dQ/dt(t - r / c),     Q = mdot / rho
  *
- * rho0 the outside air's density, mdot and rho the flow out of the pipe and
- * the density of the gas leaving it (the outside air's, when the pipe draws
- * air in). The sound takes r / c to arrive; with one source that's only a
- * delay, so it's left out. Several tailpipes at the same place add up.
+ * rho0 and c the outside air's density and speed of sound, mdot the flow out
+ * of the pipe and rho the density of the gas at its end, whichever way it
+ * flows (engine.h: tail_flow).
+ *
+ * The listener (stage 12) stands somewhere around the car: behind it, beside
+ * it, over its bonnet. Each source is a place on the car; the listener hears
+ * it r / c later, at 1 / r, and once more off the ground, as if from its
+ * image below the ground, RB_GROUND as strong (asphalt reflects most of it):
+ *
+ *     p(t) = rho0 / (4 pi) d/dt sum_j [ Q_j(t - r_j / c) / r_j + G Q_j(t - r'_j / c) / r'_j ]
+ *
+ * Only the differences between the paths' delays matter, so the nearest
+ * path's is 0. The sources' flows change once a pipe step (48 kHz), so that's
+ * when they're kept; a delay between two pipe steps is read between them.
+ * Where the paths' lengths differ the sources no longer cancel: a twin
+ * exhaust's two tailpipes, heard from beside one, let through what each bank
+ * makes on its own (stage 11's cross-plane V8).
  *
  * The chain, at each audio frame:
  *
- *   the microphone, every physics step (RB_FULL_SCALE_PA is an output of 1)
+ *   what the listener hears, every physics step (RB_FULL_SCALE_PA is an
+ *   output of 1)
  *     -> decimator: an anti-alias filter, then every `factor`-th value
  *     -> DC blocker -> gain -> soft limiter -> the sample
  *
@@ -30,30 +45,70 @@
 #ifndef RB_AUDIO_H
 #define RB_AUDIO_H
 
-#define RB_FULL_SCALE_PA  40.0   /* Pa at the microphone for an output of 1:
-                                    126 dB SPL. The loudest preset peaks at 19 Pa
-                                    (the flat-plane V8, 3000 rpm, wide open)    */
-#define RB_MIC_DISTANCE   1.0    /* m from the tailpipes, by default            */
+#define RB_FULL_SCALE_PA  40.0   /* Pa at the listener for an output of 1:
+                                    126 dB SPL. Heard from behind the car, the
+                                    loudest preset (the cross-plane V8, wide
+                                    open at 6000 rpm) peaks at 33 Pa            */
 #define RB_DC_CUTOFF      10.0   /* Hz: the DC blocker's corner                 */
 #define RB_LIMIT_KNEE     0.8    /* the soft limiter leaves samples below this  */
 
-/* ---- the microphone ---- */
+/* ---- the listener ---- */
 
-typedef struct rb_mic {
-    double distance;   /* m from the sources                                     */
-    double q;          /* m^3/s: their volume flow at the last step              */
-    int    primed;     /* q holds a flow (the first step can't have a derivative) */
-} rb_mic;
+#define RB_LISTEN_SOURCES 3      /* tailpipe 0, tailpipe 1 (twin exhausts) and
+                                    the intake's mouth                          */
+#define RB_LISTEN_HISTORY 2048   /* pipe steps of each source's flow kept: 42 ms
+                                    at 48 kHz, 14 m of path difference         */
+#define RB_GROUND         0.9    /* the ground's reflection, of the pressure    */
 
-void   rb_mic_init(rb_mic *m, double distance);
+/* Where the listener stands (rb_listener_place). A sim starts behind the
+ * car: a metre from its tailpipe the cross-plane V8 at full power peaks at
+ * 95 Pa, more than twice full scale. */
+enum {
+    RB_HEAR_TAILPIPE = 0,   /* a microphone 1 m behind tailpipe 0 (stage 11's)   */
+    RB_HEAR_BEHIND,         /* someone standing 3 m behind the car (the default) */
+    RB_HEAR_SIDE,           /* someone standing 4 m to the side of its middle    */
+    RB_HEAR_FRONT,          /* leaning over the open bonnet                       */
+    RB_HEAR_COUNT
+};
 
-/* Forgets the last flow: the next step hears nothing, so a source that jumps
- * (an engine rebuilt) doesn't click. */
-void   rb_mic_reset(rb_mic *m);
+typedef struct rb_listener {
+    double gain[RB_LISTEN_SOURCES][2];    /* 1 / r of each source's paths (direct,
+                                             off the ground), 1/m; 0: no source  */
+    double delay[RB_LISTEN_SOURCES][2];   /* pipe steps, the nearest path's 0    */
+    double flow[RB_LISTEN_SOURCES][RB_LISTEN_HISTORY];   /* each source's volume
+                                             flow out (m^3/s), a ring           */
+    int    pos;                           /* the newest pipe step's place in it  */
+    double sum;                           /* what arrives now, m^2/s             */
+    double heard;                         /* ... as it was at the last physics step */
+} rb_listener;
 
-/* The pressure (Pa) the microphone hears over a step of dt (s), given the
- * sources' volume flow q (m^3/s) now and the outside air's density rho0. */
-double rb_mic_hear(rb_mic *m, double q, double rho0, double dt);
+/* The listener at `at` and the sources at pos[0..sources-1] (m; z up from the
+ * ground at 0), the ground reflecting `ground` of the pressure (0: none); c
+ * (m/s) the speed of sound, pipe_dt (s) how often the sources' flows change.
+ * A source can be left out with a NULL position. Clears what was heard. */
+void   rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES],
+                       const double at[3], double ground, double c, double pipe_dt);
+
+/* The listener at one of the RB_HEAR_ places around a front-engined car with
+ * `tailpipes` tailpipes (1 or 2) and its intake's mouth behind the grille
+ * (audio.c has the car's measurements). Returns 0, or -1 for a bad place. */
+int    rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double pipe_dt);
+
+/* How far source j's direct path is (m), 0 if there's no such source. */
+double rb_listener_distance(const rb_listener *l, int j);
+
+/* Fills every source's history with the flows q (m^3/s), as if they had
+ * always been so: nothing jumps (a new engine, a new place). */
+void   rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
+
+/* One pipe step's flows out of the sources (m^3/s). */
+void   rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
+
+/* The pressure (Pa) heard over a physics step of dt (s), the outside air's
+ * density rho0: rho0 / (4 pi) d(sum)/dt. Between pipe steps the sum doesn't
+ * change, so a pipe step's change comes out at the physics step after its
+ * push; the decimator's filter smooths that back to the derivative. */
+double rb_listener_hear(rb_listener *l, double rho0, double dt);
 
 /* ---- the decimator ---- */
 

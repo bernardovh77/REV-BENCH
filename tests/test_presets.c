@@ -689,8 +689,8 @@ void test_api_pipes(void)
     /* The pipes through the API (stage 10), for the 3D view: what each pipe
      * is and where its ends open, and each cell's state, the engine's own.
      * The cross-plane V8 has eight runners, eight headers into a collector
-     * per bank, and a twin exhaust: two exhaust pipes, mufflers and
-     * tailpipes. Run as in test_api_cylinder_state. */
+     * per bank, and a twin exhaust: two exhaust pipes, tailpipes and (stage
+     * 12) mufflers; then the snorkel. Run as in test_api_cylinder_state. */
     CHECK_EQ_INT(rb_pipe_field_count(), RB_PIPE_FIELD_COUNT);
     CHECK_EQ_INT(rb_pipe_cell_field_count(), RB_CELL_COUNT);
     for (int f = 0; f < RB_PIPE_FIELD_COUNT; f++)
@@ -708,9 +708,9 @@ void test_api_pipes(void)
     rb_load_preset(s, rb_preset_find("v8-cross"));
     rb_engine *en = &s->engine;
     const rb_engine_desc *d = &en->desc;
-    CHECK_EQ_INT(rb_pipe_count(s), 20);
+    CHECK_EQ_INT(rb_pipe_count(s), 23);
     int wrong = 0;
-    for (int k = 0; k < 20; k++) {
+    for (int k = 0; k < 23; k++) {
         const rb_pipe *p = rb_engine_pipe(en, k);
         const int kind = (int)rb_get_pipe(s, k, RB_PIPE_KIND), number = (int)rb_get_pipe(s, k, RB_PIPE_NUMBER);
         const int from = (int)rb_get_pipe(s, k, RB_PIPE_FROM), from_number = (int)rb_get_pipe(s, k, RB_PIPE_FROM_NUMBER);
@@ -726,15 +726,36 @@ void test_api_pipes(void)
                        && from == RB_PLACE_EXHAUST_VALVE && from_number == k - 8
                        && to == RB_PLACE_COLLECTOR && to_number == d->bank[k - 8]
                        && p->end[1].chamber == &en->collector[d->bank[k - 8]]);   /* really */
-        else if (k < 18)  /* each bank's exhaust pipe into its own muffler */
+        else if (k < 18)  /* each bank's exhaust pipe into its own muffler's inlet, */
             wrong += !(kind == RB_PIPE_EXHAUST && number == k - 16 && from == RB_PLACE_COLLECTOR
-                       && from_number == k - 16 && to == RB_PLACE_MUFFLER && to_number == k - 16);
-        else              /* and its tailpipe out into the air */
-            wrong += !(kind == RB_PIPE_TAILPIPE && number == k - 18 && from == RB_PLACE_MUFFLER
-                       && from_number == k - 18 && to == RB_PLACE_AIR);
+                       && from_number == k - 16 && to == RB_PLACE_MUFFLER && to_number == k - 16
+                       && p->end[1].chamber == rb_pipe_end_cell(&en->muffler[k - 16], 0));
+        else if (k < 20)  /* its tailpipe from the muffler's outlet out into the air, */
+            wrong += !(kind == RB_PIPE_TAILPIPE && number == k - 18 && from == RB_PLACE_MUFFLER_OUTLET
+                       && from_number == k - 18 && to == RB_PLACE_AIR
+                       && p->end[0].chamber == rb_pipe_end_cell(&en->muffler[k - 18], 1));
+        else if (k < 22)  /* the muffler between them, */
+            wrong += !(kind == RB_PIPE_MUFFLER && number == k - 20 && p == &en->muffler[k - 20]
+                       && from == RB_PLACE_MUFFLER && from_number == k - 20
+                       && to == RB_PLACE_MUFFLER_OUTLET && to_number == k - 20);
+        else              /* and the snorkel from the air into the air box */
+            wrong += !(kind == RB_PIPE_SNORKEL && number == 0 && p == &en->snorkel && from == RB_PLACE_AIR
+                       && to == RB_PLACE_AIRBOX && p->end[1].chamber == &en->airbox);
     }
     CHECK_EQ_INT(wrong, 0);
-    CHECK(isnan(rb_get_pipe(s, 20, RB_PIPE_KIND)) && isnan(rb_get_pipe(s, -1, RB_PIPE_KIND)));
+    CHECK(isnan(rb_get_pipe(s, 23, RB_PIPE_KIND)) && isnan(rb_get_pipe(s, -1, RB_PIPE_KIND)));
+    /* The V8's straight-throughs go on into their pipes; the four's chambered
+     * can takes its exhaust pipe at its first cell and gives its tailpipe its
+     * last (stage 12). */
+    CHECK(en->exhaust_pipe[0].end[1].kind == RB_PIPE_ONWARD && en->tailpipe[0].end[0].kind == RB_PIPE_ONWARD_FROM);
+    static rb_engine four;
+    rb_engine_desc d4;
+    rb_engine_desc_default(&d4);
+    CHECK_EQ_INT(rb_engine_init(&four, &d4, rb_physics_dt(s)), 0);
+    CHECK(four.exhaust_pipe[0].end[1].kind == RB_PIPE_JOINED
+          && four.exhaust_pipe[0].end[1].chamber == rb_pipe_end_cell(&four.muffler[0], 0));
+    CHECK(four.tailpipe[0].end[0].kind == RB_PIPE_JOINED
+          && four.tailpipe[0].end[0].chamber == rb_pipe_end_cell(&four.muffler[0], 1));
     CHECK(isnan(rb_get_pipe(s, 0, RB_PIPE_FIELD_COUNT)) && isnan(rb_get_pipe(s, 0, -1)));
 
     en->rpm = 3000.0;
@@ -743,14 +764,14 @@ void test_api_pipes(void)
     const long cycle = lround(720.0 / (6.0 * en->rpm * rb_physics_dt(s)));
     for (long k = 0; k < 2 * cycle + 123; k++) rb_engine_step(en);
     int differ = 0, burned = 0, waves = 0;
-    for (int k = 0; k < 20; k++) {
+    for (int k = 0; k < 23; k++) {
         const rb_pipe *p = rb_engine_pipe(en, k);
         for (int c = 0; c < p->cells; c++) {
             differ += rb_get_pipe_cell(s, k, c, RB_CELL_PRESSURE) != p->cell[c].p;
             differ += rb_get_pipe_cell(s, k, c, RB_CELL_TEMPERATURE) != p->cell[c].T;
             differ += rb_get_pipe_cell(s, k, c, RB_CELL_VELOCITY) != rb_pipe_cell_velocity(p, c);
             differ += rb_get_pipe_cell(s, k, c, RB_CELL_BURNED_GAS) != p->cell[c].y[RB_BURNED];
-            burned += (k >= 8) && rb_get_pipe_cell(s, k, c, RB_CELL_BURNED_GAS) > 0.9;
+            burned += (k >= 8 && k < 22) && rb_get_pipe_cell(s, k, c, RB_CELL_BURNED_GAS) > 0.9;
             waves += fabs(rb_get_pipe_cell(s, k, c, RB_CELL_PRESSURE) - d->p_ambient) > 2000.0;
         }
         CHECK(isnan(rb_get_pipe_cell(s, k, p->cells, RB_CELL_PRESSURE)));
@@ -760,6 +781,6 @@ void test_api_pipes(void)
     CHECK(burned > 50);   /* the exhaust side is full of burned gas ...    */
     CHECK(waves > 20);    /* ... and the pipes are anything but still      */
     CHECK(en->collector[0].y[RB_BURNED] > 0.9 && en->collector[1].y[RB_BURNED] > 0.9);   /* both banks' */
-    CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 20, 0, RB_CELL_PRESSURE)));
+    CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 23, 0, RB_CELL_PRESSURE)));
     rb_destroy(s);
 }

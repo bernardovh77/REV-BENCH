@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-#define RB_VERSION_STRING "0.10.0"
+#define RB_VERSION_STRING "0.12.0"
 
 /* Limits for rb_config. */
 #define RB_MIN_SAMPLE_RATE  8000.0
@@ -214,8 +214,25 @@ typedef enum rb_engine_field {
     RB_ENG_MUFFLER_VOLUME,      /* m^3, each muffler                               */
     RB_ENG_TAILPIPE_LENGTH,     /* m, each                                         */
     RB_ENG_TAILPIPE_DIAMETER,   /* m                                               */
+    RB_ENG_MUFFLER_TYPE,        /* an rb_muffler_type (stage 12)                   */
+    RB_ENG_MUFFLER_LENGTH,      /* m, each: with the volume, a chambered one's
+                                   width                                           */
+    RB_ENG_AIRBOX_VOLUME,       /* m^3: the air box the throttle draws through its
+                                   filter (stage 12)                               */
+    RB_ENG_SNORKEL_LENGTH,      /* m: the air box's intake pipe, from the open air */
+    RB_ENG_SNORKEL_DIAMETER,    /* m                                               */
     RB_ENG_COUNT
 } rb_engine_field;
+
+/* What each muffler is (stage 12), between the catalyst and the tailpipe. */
+typedef enum rb_muffler_type {
+    RB_MUFFLER_NONE = 0,        /* a straight pipe the tailpipe's size: no muffler */
+    RB_MUFFLER_STRAIGHT,        /* straight-through: that pipe perforated, in a can
+                                   of wool that takes the fast swings (pipe.h:
+                                   packing), loud and deep                         */
+    RB_MUFFLER_CHAMBERED        /* a wide can (the muffler's volume over its
+                                   length) the gas leaves through baffles: quiet   */
+} rb_muffler_type;
 
 /* Engine field flags. */
 enum {
@@ -275,16 +292,19 @@ const char *rb_cylinder_field_unit(int field);
 /* ---- the pipes (stage 10) --------------------------------------------
  * Pressure waves run along the engine's pipes. In order: the intake runners
  * (one per cylinder, if the engine has runners), the exhaust headers (one
- * per cylinder), the exhaust pipes (one per collector) and the tailpipes
- * (one per exhaust system). Each runs from its end 0 to its end 1, cut into
- * cells of equal length, cell 0 at end 0. Gas flows from end 0 to end 1 in
- * the normal way of things: from the plenum to the intake valve, from the
+ * per cylinder), the exhaust pipes (one per collector), the tailpipes (one
+ * per exhaust system), and since stage 12 the mufflers (one per system) and
+ * the intake's snorkel. Each runs from its end 0 to its end 1, cut into cells
+ * of equal length, cell 0 at end 0. Gas flows from end 0 to end 1 in the
+ * normal way of things: from the open air to the intake valve, from the
  * exhaust valve to the open air. */
 typedef enum rb_pipe_kind {
     RB_PIPE_RUNNER = 0,         /* plenum -> intake valve                          */
     RB_PIPE_HEADER,             /* exhaust valve -> collector                      */
     RB_PIPE_EXHAUST,            /* collector -> catalyst and muffler               */
-    RB_PIPE_TAILPIPE            /* muffler -> the open air                         */
+    RB_PIPE_TAILPIPE,           /* muffler -> the open air                         */
+    RB_PIPE_MUFFLER,            /* the muffler: its inlet -> its outlet (stage 12) */
+    RB_PIPE_SNORKEL             /* the open air -> the air box (stage 12)          */
 } rb_pipe_kind;
 
 /* What a pipe's end opens into. */
@@ -294,8 +314,12 @@ typedef enum rb_pipe_place {
     RB_PLACE_INTAKE_VALVE,      /* a cylinder's intake valves (number: cylinder)   */
     RB_PLACE_EXHAUST_VALVE,     /* a cylinder's exhaust valves (number: cylinder)  */
     RB_PLACE_COLLECTOR,         /* an exhaust collector (number: collector)        */
-    RB_PLACE_MUFFLER            /* a muffler (number: exhaust system); an exhaust
-                                   pipe opens into it through its catalyst         */
+    RB_PLACE_MUFFLER,           /* a muffler's inlet (number: exhaust system): its
+                                   exhaust pipes open into it through their
+                                   catalysts                                       */
+    RB_PLACE_MUFFLER_OUTLET,    /* a muffler's outlet (number: system), where its
+                                   tailpipe starts (stage 12)                      */
+    RB_PLACE_AIRBOX             /* the air box, through its filter (stage 12)      */
 } rb_pipe_place;
 
 /* A pipe's description. */

@@ -93,6 +93,11 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_MUFFLER_VOLUME]    = { "muffler_volume",    "m^3",    0,             0.001,   0.05,    DBL(muffler_volume) },
     [RB_ENG_TAILPIPE_LENGTH]   = { "tailpipe_length",   "m",      0,             0.1,     3.0,     DBL(tailpipe_length) },
     [RB_ENG_TAILPIPE_DIAMETER] = { "tailpipe_diameter", "m",      0,             0.025,   0.15,    DBL(tailpipe_diameter) },
+    [RB_ENG_MUFFLER_TYPE]      = { "muffler_type",      "",       WHOLE,         0.0,     2.0,     INT(muffler_type) },
+    [RB_ENG_MUFFLER_LENGTH]    = { "muffler_length",    "m",      0,             0.1,     1.5,     DBL(muffler_length) },
+    [RB_ENG_AIRBOX_VOLUME]     = { "airbox_volume",     "m^3",    0,             0.001,   0.03,    DBL(airbox_volume) },
+    [RB_ENG_SNORKEL_LENGTH]    = { "snorkel_length",    "m",      0,             0.05,    1.5,     DBL(snorkel_length) },
+    [RB_ENG_SNORKEL_DIAMETER]  = { "snorkel_diameter",  "m",      0,             0.03,    0.15,    DBL(snorkel_diameter) },
 };
 
 typedef struct cylinder_field_info {
@@ -138,7 +143,7 @@ int rb_load_preset(rb_sim *sim, int preset)
     if (!sim) return RB_ERR_ARG;
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
     rb_engine_init(&sim->engine, &d, sim->dt);   /* presets are possible engines */
-    rb_mic_reset(&sim->microphone);              /* a new engine: no jump in its flow */
+    rb_sim_listen(sim);                          /* a new engine: no jump in its flows */
     sim->preset = preset;
     return RB_OK;
 }
@@ -254,7 +259,7 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
     else {
         rb_engine_init(&sim->engine, &d, sim->dt);
-        rb_mic_reset(&sim->microphone);
+        rb_sim_listen(sim);
     }
     return rc;
 }
@@ -319,7 +324,7 @@ const char *rb_pipe_field_unit(int field)
 }
 
 /* Pipe k's kind and number, and where its ends open (rb_engine_pipe's order:
- * runners, headers, exhaust pipes, tailpipes). */
+ * runners, headers, exhaust pipes, tailpipes, mufflers, the snorkel). */
 static void describe_pipe(const rb_engine *e, int k, double out[RB_PIPE_FIELD_COUNT])
 {
     const rb_engine_desc *d = &e->desc;
@@ -336,9 +341,15 @@ static void describe_pipe(const rb_engine *e, int k, double out[RB_PIPE_FIELD_CO
         kind = RB_PIPE_EXHAUST, number = k - runners - n;
         from = RB_PLACE_COLLECTOR, from_number = number;
         to = RB_PLACE_MUFFLER, to_number = (e->systems == 2) ? number : 0;
-    } else {
+    } else if (k < runners + n + e->collectors + e->systems) {
         kind = RB_PIPE_TAILPIPE, number = k - runners - n - e->collectors;
-        from = RB_PLACE_MUFFLER, from_number = number, to = RB_PLACE_AIR, to_number = 0;
+        from = RB_PLACE_MUFFLER_OUTLET, from_number = number, to = RB_PLACE_AIR, to_number = 0;
+    } else if (k < runners + n + e->collectors + 2 * e->systems) {
+        kind = RB_PIPE_MUFFLER, number = k - runners - n - e->collectors - e->systems;
+        from = RB_PLACE_MUFFLER, from_number = number, to = RB_PLACE_MUFFLER_OUTLET, to_number = number;
+    } else {
+        kind = RB_PIPE_SNORKEL, number = 0;
+        from = RB_PLACE_AIR, from_number = 0, to = RB_PLACE_AIRBOX, to_number = 0;
     }
     const rb_pipe *p = rb_engine_pipe(e, k);
     out[RB_PIPE_KIND] = kind;
