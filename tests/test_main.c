@@ -86,6 +86,14 @@ void test_engine_drives_itself(void);
 void test_engine_free_matches_held(void);
 void test_engine_burns_at_rest(void);
 void test_engine_starter_motor(void);
+/* ---- layouts, presets and the engine API (tests/test_presets.c) ---- */
+void test_presets_table(void);
+void test_presets_fire_where_the_layout_says(void);
+void test_layout_rules(void);
+void test_presets_run_on_their_own(void);
+void test_api_engine_fields(void);
+void test_api_engine_changes(void);
+void test_api_cylinder_state(void);
 /* ---- native helpers (tests/test_wav.c, tests/test_csv.c) ---- */
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
@@ -163,6 +171,13 @@ static const struct {
     T(test_engine_free_matches_held),
     T(test_engine_burns_at_rest),
     T(test_engine_starter_motor),
+    T(test_presets_table),
+    T(test_presets_fire_where_the_layout_says),
+    T(test_layout_rules),
+    T(test_presets_run_on_their_own),
+    T(test_api_engine_fields),
+    T(test_api_engine_changes),
+    T(test_api_cylinder_state),
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),

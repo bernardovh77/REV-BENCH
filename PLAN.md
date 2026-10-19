@@ -23,7 +23,7 @@ gets a one-line summary of anything that changed from the plan.
 | 5  | Valvetrain, throttle & intake plenum             | Physics core     | ✅     | Motored 2.0 L four: VE 0.79–0.93 wide open, 28 kPa at idle throttle, pumping loss = p_amb − MAP |
 | 6  | Combustion (Wiebe) + heat transfer               | Physics core     | ✅     | 2.0 L four at 3000 rpm WOT: IMEP 12.0 bar, peak 58.8 bar at 12.7° ATDC at MBT (25°), 38.8 % indicated; low-speed VE 0.87 |
 | 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ✅     | Free crank with exact energy books; cranks at 238 rpm, idles at 800, limiter 6680–6830; brake 167 N m / 97 kW |
-| 8  | Engine layouts & presets                         | Physics core     | ⬜     | |
+| 8  | Engine layouts & presets                         | Physics core     | ✅     | I4, I6, cross- and flat-plane V8, boxer-4 start, idle and rev; firings every 180/120/90°; engine and cylinder state in the API |
 | 9  | Dyno + validation against real engines           | Physics core     | ⬜     | |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ⬜     | |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ⬜     | Listening checkpoint |
@@ -228,6 +228,14 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   same settings hunts at idle.
 - **Done when:** every preset starts, idles and revs natively, and firing-event timing plots
   show correct spacing (for example, an even 90° spacing for a V8).
+- *Built:* layouts in `engine.c`: banks and bank angles, each cylinder's bank, crank pin and
+  position, and a firing order, from which `rb_engine_layout` works out the firing angles (and
+  refuses layouts that can't work). Five presets in `presets.c`, each with its own idle valve and
+  idle gains (`idle_gain_p`, `idle_gain_i`, now part of the description; the four's proportional
+  gain came down to 0.000375). The sim holds an engine, and the public API gives the presets, 34
+  description fields with names, units and flags, and 8 numbers of each cylinder's state
+  (`rb_engine_api.c`, wrapped in `rb-core.ts`). The stage 7 review fixed the engine computer's
+  state when the crank switches between held and free. Details in `docs/stage-08.md`.
 
 #### Stage 9 — Dyno + validation
 - Absorbing dyno: hold RPM with a PI controller, cycle-averaged torque and power, and a sweep mode
@@ -251,6 +259,9 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - 1D compressible pipe model (finite-volume with a stable flux scheme, or a lossy waveguide if
   performance demands it). Open-end and closed-end boundaries, area changes, friction/damping.
 - Per-cylinder primaries → collector(s) → tailpipe, with configurable lengths and diameters.
+  The V8s and the boxer need one collector per bank (the API's `bank` field): the cross-plane's
+  burble comes from each bank's uneven pulses meeting there, and the boxer's rumble from
+  unequal-length primaries.
 - Expose the pipe geometry (lengths, diameters, how pipes connect) and per-cell pressure, for the 3D
   exhaust view (stage 19).
 - Use the same pipe model for the intake runners. Stage 5's quasi-steady valves give VE no
@@ -295,7 +306,8 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   before pipes. The free crank (stage 7) adds 5–15 %. The target below likely needs the default
   physics rate dropped to 96 kHz (VE changes by 0.03–0.1 % between the two, IMEP by under 0.1 %,
   and the free engine's idle not at all) as well as the optimizations listed in
-  `docs/stage-05.md` and `docs/stage-06.md`.
+  `docs/stage-05.md` and `docs/stage-06.md`. The eights (stage 8) cost 2.0 µs per step natively,
+  1.8 times the four: about 40 % of a core at 192 kHz before pipes.
 - Benchmark with repeated runs: on this laptop (hybrid performance and efficiency cores) the same
   step measured 1.8 µs in one session and 1.1 µs in another.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default

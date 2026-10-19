@@ -32,12 +32,18 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->stroke = 0.086;
     d->rod = 0.143;
     d->cr = 10.0;
-    /* Firing order 1-3-4-2: cylinder 3 fires 180 degrees after cylinder 1,
-     * then 4, then 2. */
-    d->firing[0] = 0.0;
-    d->firing[1] = 540.0;
-    d->firing[2] = 180.0;
-    d->firing[3] = 360.0;
+    /* Inline, a flat crank (pins 1 and 4 up, 2 and 3 down), firing order
+     * 1-3-4-2: cylinder 3 fires 180 degrees after cylinder 1, then 4, then 2.
+     * The cylinders sit 96 mm apart. */
+    d->banks = 1;
+    static const double pins[4] = { 0.0, 180.0, 180.0, 0.0 };
+    static const int order[4] = { 0, 2, 3, 1 };
+    for (int i = 0; i < 4; i++) {
+        d->pin[i] = pins[i];
+        d->firing_order[i] = order[i];
+        d->position[i] = 0.096 * i;
+    }
+    rb_engine_layout(d);
 
     /* Typical modern street cams: 250 degrees (at zero lift), lobe
      * centerlines 110 degrees either side of overlap TDC. The intake opens
@@ -87,22 +93,85 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->starter_free_rpm = 250.0;
     /* The engine computer: idle at 800 rpm with an idle air valve of up to
      * 40 mm^2 (about a 7 mm hole), the spark cut at 6800 rpm until 6700, and
-     * a late spark while cranking so the first firings don't kick back. */
+     * a late spark while cranking so the first firings don't kick back. The
+     * idle gains are tuned for this engine's valve, flywheel and idle speed:
+     * on another engine they may make the idle hunt or wander. */
     d->idle_rpm = 800.0;
     d->idle_valve_area = 40e-6;
+    d->idle_gain_p = 3.75e-4;
+    d->idle_gain_i = 1.0e-3;
     d->rev_limit = 6800.0;
     d->rev_limit_resume = 6700.0;
     d->cranking_rpm = 400.0;
     d->cranking_spark = 5.0;
 }
 
+/* Crank angle (0..360) where cylinder i is at a TDC, relative to cylinder 1. */
+static double tdc_angle(const rb_engine_desc *d, int i)
+{
+    const double a = (d->bank_angle[d->bank[i]] - d->pin[i])
+                   - (d->bank_angle[d->bank[0]] - d->pin[0]);
+    const double m = fmod(a, 360.0);
+    return (m < 0.0) ? m + 360.0 : m;
+}
+
+int rb_engine_layout(rb_engine_desc *d)
+{
+    if (!d || d->cylinders < 1 || d->cylinders > RB_MAX_CYLINDERS) return -1;
+    if (d->banks != 1 && d->banks != 2) return -1;
+    for (int b = 0; b < d->banks; b++)
+        if (!(d->bank_angle[b] >= -180.0 && d->bank_angle[b] <= 180.0)) return -1;
+    int seen[RB_MAX_CYLINDERS] = { 0 };
+    for (int k = 0; k < d->cylinders; k++) {
+        const int i = d->firing_order[k];
+        if (i < 0 || i >= d->cylinders || seen[i]++) return -1;
+        if (d->bank[i] < 0 || d->bank[i] >= d->banks) return -1;
+        if (!(d->pin[i] >= -720.0 && d->pin[i] <= 720.0)) return -1;
+        if (!(fabs(d->position[i]) < 10.0)) return -1;
+    }
+    if (d->firing_order[0] != 0) return -1;
+
+    double firing[RB_MAX_CYLINDERS] = { 0.0 }, last = 0.0;
+    for (int k = 1; k < d->cylinders; k++) {
+        const int i = d->firing_order[k];
+        double a = tdc_angle(d, i);                /* its first TDC after the last firing */
+        while (!(a > last + 1e-9)) a += 360.0;
+        if (!(a < 720.0 - 1e-9)) return -1;        /* doesn't fit in the cycle */
+        firing[i] = last = a;
+    }
+    for (int i = 0; i < d->cylinders; i++) d->firing[i] = firing[i];
+    return 0;
+}
+
+int rb_engine_layout_inline(rb_engine_desc *d, int n)
+{
+    if (!d || n < 1 || n > RB_MAX_CYLINDERS) return -1;
+    rb_engine_desc x = *d;
+    x.cylinders = n;
+    x.banks = 1;
+    x.bank_angle[0] = x.bank_angle[1] = 0.0;
+    for (int i = 0; i < n; i++) {
+        double tdc = fmod(i * 720.0 / n, 360.0);   /* fires every 720/n degrees */
+        x.bank[i] = 0;
+        x.pin[i] = (tdc > 0.0) ? 360.0 - tdc : 0.0;
+        x.firing_order[i] = i;
+        x.position[i] = i * (x.bore + 0.010);
+    }
+    if (rb_engine_layout(&x) != 0) return -1;
+    *d = x;
+    return 0;
+}
+
 int rb_engine_desc_check(const rb_engine_desc *d)
 {
     rb_cyl_geom g;
+    rb_engine_desc laid;
     if (!d || d->cylinders < 1 || d->cylinders > RB_MAX_CYLINDERS) return -1;
     if (rb_cyl_geom_init(&g, d->bore, d->stroke, d->rod, d->cr) != 0) return -1;
+    laid = *d;
+    if (rb_engine_layout(&laid) != 0) return -1;
     for (int i = 0; i < d->cylinders; i++)
-        if (!(d->firing[i] >= 0.0 && d->firing[i] < 720.0)) return -1;
+        if (!(fabs(d->firing[i] - laid.firing[i]) < 1e-9)) return -1;   /* NaN fails too */
     if (rb_valve_check(&d->intake) != 0 || rb_valve_check(&d->exhaust) != 0) return -1;
     /* The valve heads must fit in the cylinder head: at most 80 % of the bore's area. */
     const double heads = d->intake.count * d->intake.diameter * d->intake.diameter
@@ -131,6 +200,8 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->starter_free_rpm > 0.0 && d->starter_free_rpm < 1e4)) return -1;
     if (!(d->idle_rpm >= 0.0 && d->idle_rpm < 1e4)) return -1;
     if (!(d->idle_valve_area >= 0.0 && d->idle_valve_area < 0.01)) return -1;
+    if (!(d->idle_gain_p >= 0.0 && d->idle_gain_p < 0.1)) return -1;
+    if (!(d->idle_gain_i >= 0.0 && d->idle_gain_i < 0.1)) return -1;
     if (!(d->rev_limit_resume > 0.0 && d->rev_limit > d->rev_limit_resume && d->rev_limit < 1e5)) return -1;
     if (!(d->cranking_rpm >= 0.0 && d->cranking_rpm < 1e4)) return -1;
     if (!(d->cranking_spark >= -90.0 && d->cranking_spark <= 90.0)) return -1;
@@ -452,14 +523,13 @@ static double crank_turn(rb_engine *e)
  * Coasting with the foot off the pedal more than 700 rpm above idle, the
  * injectors stop until the engine is back within 400 rpm of idle: no fuel is
  * wasted, and the engine slows down faster. The idle valve opens in
- * proportion to how far the engine is below its idle speed, around a position
- * it learns while the engine idles: running, foot off the pedal, and its
- * speed steady (the speed smoothed over 0.05 s within 50 rpm of the speed
- * smoothed over 0.5 s). The learning is slow and counts at most 100 rpm of
- * error, so coasting down from high rpm doesn't unlearn the idle position. */
+ * proportion to how far the engine is below its idle speed (idle_gain_p),
+ * around a position it learns while the engine idles (idle_gain_i): running,
+ * foot off the pedal, and its speed steady (the speed smoothed over 0.05 s
+ * within 50 rpm of the speed smoothed over 0.5 s). The learning is slow and
+ * counts at most 100 rpm of error, so coasting down from high rpm doesn't
+ * unlearn the idle position. */
 #define IDLE_VALVE_BASE 0.15      /* opening to start from                     */
-#define IDLE_GAIN_P     5.0e-4    /* opening per rpm below idle                */
-#define IDLE_GAIN_I     1.0e-3    /* opening learned per rpm per second        */
 #define IDLE_LEARN_MAX  100.0     /* rpm: most error the learning counts       */
 #define IDLE_STEADY     50.0      /* rpm: how steady the speed must be to learn */
 #define RPM_SMOOTHING   0.05      /* s: the speed's smoothing ...              */
@@ -495,11 +565,11 @@ static void engine_computer(rb_engine *e)
         && fabs(e->rpm_smooth - e->rpm_trend) < IDLE_STEADY) {
         const double counted = (error > IDLE_LEARN_MAX) ? IDLE_LEARN_MAX
                              : (error < -IDLE_LEARN_MAX) ? -IDLE_LEARN_MAX : error;
-        e->idle_trim += IDLE_GAIN_I * counted * e->dt;
+        e->idle_trim += d->idle_gain_i * counted * e->dt;
         if (e->idle_trim < -IDLE_VALVE_BASE) e->idle_trim = -IDLE_VALVE_BASE;
         if (e->idle_trim > 1.0 - IDLE_VALVE_BASE) e->idle_trim = 1.0 - IDLE_VALVE_BASE;
     }
-    const double v = IDLE_VALVE_BASE + e->idle_trim + IDLE_GAIN_P * error;
+    const double v = IDLE_VALVE_BASE + e->idle_trim + d->idle_gain_p * error;
     e->idle_valve = (v > 0.0) ? ((v < 1.0) ? v : 1.0) : 0.0;
 }
 
@@ -533,6 +603,10 @@ void rb_engine_step(rb_engine *e)
         e->omega = rpm * PI / 30.0;
         e->kinetic = 0.5 * d->inertia * e->omega * e->omega;
         e->starter_torque_now = e->load_torque_now = 0.0;
+        /* The engine computer is off while held: nothing of its stays cut, and
+         * its view of the speed is ready for when the crank is let go. */
+        e->spark_cut = e->fuel_cut = 0;
+        e->rpm_smooth = e->rpm_trend = rpm;
         e->friction_torque = rb_engine_fmep(e, e->omega) * rb_engine_displacement(e) / (4.0 * PI);
         turn = e->omega * dt;
     } else {

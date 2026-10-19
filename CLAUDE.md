@@ -7,10 +7,11 @@
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
   Playwright test in both modes (dev and `E2E_PREVIEW=1`).
-- Check that new physics tests can fail: plant deliberate bugs in a copy (e.g. `$HOME/rb-mut`) and
-  note in the stage doc which tests catch them. The suite takes ~20 s, so run a few bugs per call
-  under `timeout`, re-copy the sources before each batch (a killed run can leave a bug in place),
-  and never `pkill -f` a pattern that also matches your own command line.
+- Check that new physics tests can fail: plant deliberate bugs in a copy (e.g. `$HOME/rb-mut8`,
+  whose `mutate8.py` rebuilds only the test binary and runs a filtered set of tests) and note in
+  the stage doc which tests catch them. The whole suite takes ~35 s (~90 s with the sanitizers),
+  so run a few bugs per call under `timeout`, re-copy the sources before each batch (a killed run
+  can leave a bug in place), and never `pkill -f` a pattern that also matches your own command line.
 
 ## Core (C)
 - C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
@@ -54,6 +55,19 @@
   a test, not hang the suite.
 - Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
   360 + ICL), exhaust centerline before it (360 - ECL).
+- Layouts (stage 8): angles in the direction the crank turns; a piston is at TDC at crank angle
+  `bank_angle[bank[i]] - pin[i]`; `rb_engine_layout` derives `firing[]` from the firing order (each
+  cylinder fires at its first TDC after the previous firing, cylinder 1 first, all within 720°) and
+  `rb_engine_desc_check` refuses a `firing[]` that disagrees. Presets live in `presets.c` (V8s:
+  odd cylinders on bank 0, even on bank 1, cylinders 1 and 2 at the front). Each preset carries
+  its own idle valve and idle gains; tune new ones with a start, a 30 % blip and a 10 N m load at
+  idle, keeping room for gains 1.5 times stronger (docs/stage-08.md).
+- The public engine API (`rb_engine_api.c`): `rb_load_preset`, `rb_get_engine`/`rb_set_engine`
+  over a field table (offsets into `rb_engine_desc`, a few worked out), `rb_get_cylinder`.
+  `rb_set_engine` changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE fields,
+  changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`. The
+  sim holds the engine, but until stage 14 `rb_step` still plays the test tone; tests that need it
+  running step `sim->engine` directly (tests/test_presets.c).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
   TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
 - New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
@@ -67,7 +81,8 @@
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
   ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
-  `tools/plot_run.py` the `rb_cli run` one. The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  `tools/plot_run.py` the `rb_cli run` one, `tools/plot_presets.py` the presets' (firing, runs,
+  idle). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.

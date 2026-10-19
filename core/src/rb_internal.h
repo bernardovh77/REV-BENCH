@@ -9,6 +9,8 @@
 
 #include "rb.h"
 
+#include "engine.h"
+
 #include <stdint.h>
 
 #define RB_PI      3.14159265358979323846
@@ -42,6 +44,12 @@ struct rb_sim {
     double    tone_phase;   /* rad, kept in [0, 2pi)                      */
     double    tone_level_s; /* smoothed level                             */
     double    mic;
+
+    /* ---- the engine (stage 8): described and changed through the API
+     * (rb_engine_api.c); stage 14 puts it in the sound. Its description
+     * (engine.desc) is always a possible engine. */
+    int       preset;       /* the preset it was built from               */
+    rb_engine engine;       /* stays where rb_init put it (see engine.h)  */
 };
 
 /* Coefficient a for the smoother  y += a * (target - y)  run every dt. */

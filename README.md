@@ -5,14 +5,15 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 7 of 26 done. The C core plays in the browser through an AudioWorklet
+**Status:** stage 8 of 26 done. The C core plays in the browser through an AudioWorklet
 (still a test tone). The physics so far: gas properties, chambers and flow through openings,
-a cylinder with a crank and piston, a four-cylinder engine breathing through its cams,
-valves, throttle and intake plenum, burning fuel with heat lost to the walls, and now a crank
-that turns on its own: friction, a starter motor, and an engine computer that idles it, cuts
-the fuel when coasting and stops it at the rev limit. See [PLAN.md](PLAN.md) for the
-roadmap and progress, [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes
-and equations per stage.
+a cylinder with a crank and piston, an engine breathing through its cams, valves, throttle
+and intake plenum, burning fuel with heat lost to the walls, and a crank that turns on its
+own: friction, a starter motor, and an engine computer that idles it, cuts the fuel when
+coasting and stops it at the rev limit. Engines can be inline, V or boxer with any crank and
+firing order, and five come ready-made: a 2.0 L four, a 3.0 L six, a cross-plane and a
+flat-plane V8, and a 2.0 L flat four. See [PLAN.md](PLAN.md) for the roadmap and progress,
+[RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
 
 ## Try it in the browser
 
@@ -55,7 +56,9 @@ Open `renders\test.wav` from Windows Explorer to listen.
 More:
 
 ```bash
-build/rb_cli info          # list the core's parameters and telemetry
+build/rb_cli info          # list the core's parameters, telemetry, engine fields and presets
+build/rb_cli presets       # the five engines and how they fire; add a key (e.g. v8-cross)
+                           # for every field of one, as the browser sees it
 build/rb_cli tone --help   # options for the test render
 build/rb_cli blowdown      # physics demo: a tank emptying (renders/blowdown.csv)
 build/rb_cli motor         # physics demo: one cylinder turned by a motor (renders/motor.csv)
@@ -68,6 +71,7 @@ build/rb_cli fire --spark-sweep    # torque against spark advance (renders/spark
 build/rb_cli fire --rpm-sweep      # the wide-open power curve, brake and indicated (renders/power.csv)
 build/rb_cli run           # the engine on its own: started, idling, revved, rev limiter, off
                            # (renders/run.csv); try --load 10, --inertia 0.08, --help
+build/rb_cli run --preset v8-flat   # breathe, fire and run take any preset (rb_cli presets)
 make SAN=1 test            # tests with AddressSanitizer + UBSan
 make help                  # all make targets
 ```
@@ -82,6 +86,7 @@ python3 tools/plot_fire.py cycle             # renders/fire.csv (+ fire-motored.
 python3 tools/plot_fire.py spark             # renders/spark.csv → renders/spark.png
 python3 tools/plot_fire.py power             # renders/power.csv → renders/power.png
 python3 tools/plot_run.py                    # renders/run.csv → renders/run.png
+python3 tools/plot_presets.py firing         # rb_cli presets --csv renders/presets.csv first
 ```
 
 ## Rebuilding the WebAssembly core

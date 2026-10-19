@@ -21,6 +21,7 @@
 #include "csv.h"
 #include "cylinder.h"
 #include "engine.h"
+#include "presets.h"
 #include "flow.h"
 #include "rb.h"
 #include "wav.h"
@@ -41,7 +42,7 @@ static void usage(FILE *f)
         "usage: rb_cli <command> [options]\n"
         "\n"
         "commands:\n"
-        "  info                  list parameters and telemetry channels\n"
+        "  info                  list parameters, telemetry channels, engine fields and presets\n"
         "  tone [options]        render the stage-1 test tone (a sweep) to a WAV file\n"
         "  blowdown [options]    physics demo: 10 L of air at 5 bar emptying through a 1 cm^2\n"
         "                        hole into the atmosphere; writes p, T and flow as CSV\n"
@@ -53,6 +54,9 @@ static void usage(FILE *f)
         "                        a dyno; IMEP, torque, efficiency, peak pressure\n"
         "  run [options]         the engine on its own crank: started with the key, idling,\n"
         "                        revved, into the rev limiter and switched off (CSV)\n"
+        "  presets [KEY] [options]  the engines that come with REV-BENCH, with their layouts\n"
+        "                        and firing orders; with a KEY, every field of that engine as\n"
+        "                        the API gives it\n"
         "\n"
         "tone options:\n"
         "  -o, --out FILE        output WAV                 (default renders/test.wav)\n"
@@ -78,15 +82,17 @@ static void usage(FILE *f)
         "      --rod MM          connecting rod length      (default 143)\n"
         "      --cr R            compression ratio          (default 10)\n"
         "\n"
-        "breathe options (the default engine is a 2.0 L inline four):\n"
+        "breathe options:\n"
+        "      --preset KEY      the engine (rb_cli presets lists them) (default i4)\n"
         "      --rpm N           crank speed                (default 3000)\n"
         "      --throttle X      throttle opening, 0..1     (default 1)\n"
-        "      --cylinders N     1..16, firing evenly       (default 4, firing order 1-3-4-2)\n"
-        "      --plenum L        plenum volume in liters    (default 2.5)\n"
+        "      --cylinders N     1..16 inline, firing evenly in cylinder order, instead of the\n"
+        "                        preset's layout\n"
+        "      --plenum L        plenum volume in liters    (default: the preset's)\n"
         "      --intake D/L/C    intake cam: duration (deg), lift (mm), centerline (deg after\n"
-        "                        overlap TDC)               (default 250/9.5/110)\n"
+        "                        overlap TDC)               (default: the preset's)\n"
         "      --exhaust D/L/C   exhaust cam: same, centerline in deg before overlap TDC\n"
-        "                                                   (default 250/9/110)\n"
+        "                                                   (default: the preset's)\n"
         "      --csv FILE        one cycle of cylinder 1 and the plenum\n"
         "                                                   (default renders/breathe.csv)\n"
         "      --sweep           measure a whole map instead: rpm 800-7000 x 9 throttle\n"
@@ -95,22 +101,32 @@ static void usage(FILE *f)
         "\n",
         f);
     fputs(
-        "fire options (also --rpm, --throttle, --cylinders, --plenum, --intake, --exhaust):\n"
+        "fire options (also --preset, --rpm, --throttle, --cylinders, --plenum, --intake,\n"
+        "--exhaust):\n"
         "      --spark DEG       spark advance, degrees before TDC (default 25)\n"
         "      --afr R           air-fuel ratio by mass     (default 14.6, stoichiometric)\n"
         "      --motored         ignition off, for comparison\n"
         "      --no-walls        no heat flow to the walls\n"
         "      --csv FILE        one cycle of cylinder 1    (default renders/fire.csv)\n"
         "      --spark-sweep     torque and peak pressure for spark 0-50 deg (default renders/spark.csv)\n"
-        "      --rpm-sweep       wide-open torque and power, 1000-7000 rpm (default renders/power.csv)\n"
+        "      --rpm-sweep       wide-open torque and power, from 1000 rpm to the rev limit\n"
+        "                        (default renders/power.csv)\n"
         "\n"
         "run options (15 s: start, idle, a blip at 5 s, floored at 8.5 s, off at 13 s):\n"
         "      --csv FILE        every millisecond          (default renders/run.csv)\n"
         "      --load N          torque the crank drives, N m (default 0: in neutral)\n"
-        "      --inertia KGM2    crank, flywheel and clutch (default 0.16)\n"
-        "      --idle RPM        idle speed                 (default 800)\n"
-        "      --limit RPM       rev limit                  (default 6800)\n"
-        "      --cylinders N     1..16, firing evenly       (default 4, firing order 1-3-4-2)\n",
+        "      --inertia KGM2    crank, flywheel and clutch (default: the preset's)\n"
+        "      --idle RPM        idle speed                 (default: the preset's)\n"
+        "      --limit RPM       rev limit                  (default: the preset's)\n"
+        "      --idle-valve MM2  idle air valve area, fully open (default: the preset's)\n"
+        "      --idle-gains P/I  idle valve opening per rpm below idle / learned per rpm per\n"
+        "                        second, e.g. 0.000375/0.001 (default: the preset's)\n"
+        "      --preset KEY      the engine                 (default i4)\n"
+        "      --cylinders N     1..16 inline, firing evenly, instead of the preset's layout\n"
+        "\n"
+        "presets options:\n"
+        "      --csv FILE        also run each one held at 3000 rpm wide open and write one\n"
+        "                        cycle of every cylinder's pressure (renders/presets.csv)\n",
         f);
 }
 
@@ -151,6 +167,30 @@ static int cmd_info(void)
     printf("\ntelemetry:\n");
     for (int i = 0; i < rb_telemetry_count(); i++)
         printf("  %3d  %s\n", i, rb_telemetry_name(i));
+
+    printf("\nengine fields (rb_get_engine, rb_set_engine; values: rb_cli presets KEY):\n");
+    printf("  %3s  %-18s %-7s %-14s %s\n", "id", "name", "unit", "one for each", "flags");
+    for (int i = 0; i < rb_engine_field_count(); i++) {
+        const int fl = rb_engine_field_flags(i);
+        char line[160];
+        int n = snprintf(line, sizeof line, "  %3d  %-18s %-7s %-14s %s%s%s", i,
+                         rb_engine_field_name(i), rb_engine_field_unit(i),
+                         (fl & RB_EF_PER_BANK) ? "bank" : (fl & RB_EF_PER_CYLINDER) ? "cylinder"
+                         : (fl & RB_EF_IN_ORDER) ? "firing place" : "",
+                         (fl & RB_EF_READONLY) ? "read-only " : "",
+                         (fl & RB_EF_INTEGER) ? "whole " : "", (fl & RB_EF_LIVE) ? "live" : "");
+        while (n > 0 && line[n - 1] == ' ') line[--n] = '\0';   /* no trailing spaces */
+        puts(line);
+    }
+    printf("\ncylinder state (rb_get_cylinder):\n");
+    for (int i = 0; i < rb_cylinder_field_count(); i++) {
+        const char *unit = rb_cylinder_field_unit(i);
+        if (unit[0]) printf("  %3d  %-18s %s\n", i, rb_cylinder_field_name(i), unit);
+        else printf("  %3d  %s\n", i, rb_cylinder_field_name(i));
+    }
+    printf("\npresets (rb_load_preset):\n");
+    for (int i = 0; i < rb_preset_count(); i++)
+        printf("  %3d  %-18s %s\n", i, rb_preset_key(i), rb_preset_name(i));
     return 0;
 }
 
@@ -558,6 +598,40 @@ static void print_cam(const char *name, const rb_valve *v, int intake)
            dead_centre(rb_valve_opens(v), a, sizeof a), dead_centre(rb_valve_closes(v), b, sizeof b));
 }
 
+/* The engine a command runs: the preset named by --preset (i4 if none),
+ * looked up before the other options so that they can change it. */
+static const char *engine_name = "";
+
+static int engine_from_args(int argc, char **argv, const char *cmd, rb_engine_desc *d)
+{
+    const char *key = "i4";
+    for (int i = 1; i + 1 < argc; i++)
+        if (!strcmp(argv[i], "--preset")) key = argv[i + 1];
+    const int p = rb_preset_find(key);
+    if (p < 0) {
+        fprintf(stderr, "rb_cli %s: unknown preset '%s' (rb_cli presets lists them)\n", cmd, key);
+        return 2;
+    }
+    rb_preset_desc(p, d);
+    engine_name = rb_preset_name(p);
+    return 0;
+}
+
+/* --cylinders N: an inline engine of N cylinders firing evenly, instead of
+ * the preset's layout (0 = keep the preset's). Returns 0, or 2 after an error. */
+static int cylinders_option(double n, const char *cmd, rb_engine_desc *d)
+{
+    if (n == 0.0) return 0;
+    if (n != floor(n) || n < 1.0 || n > RB_MAX_CYLINDERS) {
+        fprintf(stderr, "rb_cli %s: --cylinders must be a whole number in [1, %d]\n", cmd,
+                RB_MAX_CYLINDERS);
+        return 2;
+    }
+    rb_engine_layout_inline(d, (int)n);
+    engine_name = "inline engine, evenly firing";
+    return 0;
+}
+
 /* One operating point: what the dyno and the driver set. */
 typedef struct op_point {
     double rpm, throttle, spark, afr;
@@ -674,10 +748,10 @@ static int cmd_breathe(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *csv_path = NULL;
-    double rpm = 3000.0, throttle = 1.0, cylinders = 4.0, plenum = -1.0;
+    double rpm = 3000.0, throttle = 1.0, cylinders = 0.0, plenum = -1.0;
     int do_sweep = 0;
 
-    rb_engine_desc_default(&d);
+    if (engine_from_args(argc, argv, "breathe", &d)) return 2;
     d.heat_transfer = 0;   /* stage 5 measured breathing with adiabatic walls */
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -690,6 +764,8 @@ static int cmd_breathe(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &throttle);
         else if (!strcmp(a, "--cylinders"))
             ok = !to_double(take_value(argc, argv, &i), &cylinders);
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--plenum"))
             ok = !to_double(take_value(argc, argv, &i), &plenum);
         else if (!strcmp(a, "--intake"))
@@ -720,15 +796,7 @@ static int cmd_breathe(int argc, char **argv)
         fprintf(stderr, "rb_cli breathe: --throttle must be in [0, 1]\n");
         return 2;
     }
-    if (cylinders != floor(cylinders) || cylinders < 1.0 || cylinders > RB_MAX_CYLINDERS) {
-        fprintf(stderr, "rb_cli breathe: --cylinders must be a whole number in [1, %d]\n",
-                RB_MAX_CYLINDERS);
-        return 2;
-    }
-    if ((int)cylinders != d.cylinders) {   /* evenly spaced, in cylinder order */
-        d.cylinders = (int)cylinders;
-        for (int i = 0; i < d.cylinders; i++) d.firing[i] = i * 720.0 / d.cylinders;
-    }
+    if (cylinders_option(cylinders, "breathe", &d)) return 2;
     if (plenum >= 0.0) d.plenum_volume = plenum * 1e-3;
     if (rb_engine_desc_check(&d) != 0) {
         fprintf(stderr, "rb_cli breathe: impossible engine (check the cams: duration 1..360 deg, "
@@ -740,8 +808,8 @@ static int cmd_breathe(int argc, char **argv)
 
     rb_engine_init(&engine, &d, 1.0 / 192000.0);
     const double litres = rb_engine_displacement(&engine) * 1e3;
-    printf("breathe: %d cylinder%s, %.2f L (%.1f x %.1f mm), turned by a motor at %.0f rpm, "
-           "throttle %.0f %%, %s walls\n", d.cylinders, d.cylinders > 1 ? "s" : "", litres,
+    printf("breathe: %s, %d cylinder%s, %.2f L (%.1f x %.1f mm), turned by a motor at %.0f rpm, "
+           "throttle %.0f %%, %s walls\n", engine_name, d.cylinders, d.cylinders > 1 ? "s" : "", litres,
            d.bore * 1e3, d.stroke * 1e3, rpm, throttle * 100.0,
            d.heat_transfer ? "warm" : "adiabatic");
     print_cam("intake", &d.intake, 1);
@@ -815,9 +883,11 @@ static int fire_sweep(const rb_engine_desc *d, op_point op, int by_spark, const 
         fprintf(stderr, "rb_cli fire: cannot write %s (does the folder exist?)\n", path);
         return 1;
     }
-    const double from = by_spark ? 0.0 : 1000.0, to = by_spark ? 50.0 : 7000.0;
+    /* rpm: from 1000 to the rev limit, rounded up to the next 500 */
+    const double from = by_spark ? 0.0 : 1000.0;
+    const double to = by_spark ? 50.0 : 500.0 * ceil(d->rev_limit / 500.0 - 1e-9);
     const double step = by_spark ? 2.5 : 500.0;
-    double best = -1e300, best_at = 0.0;
+    double best = -1e300, best_at = 0.0, brake = -1e300, brake_at = 0.0, power = -1e300, power_at = 0.0;
 
     printf("%s, %s\n", by_spark ? "spark sweep" : "wide-open rpm sweep",
            by_spark ? "torque against spark advance" : "indicated torque and power");
@@ -840,11 +910,20 @@ static int fire_sweep(const rb_engine_desc *d, op_point op, int by_spark, const 
             best = r->torque;
             best_at = x;
         }
+        if (r->brake_torque > brake) {
+            brake = r->brake_torque;
+            brake_at = x;
+        }
+        if (r->brake_power > power) {
+            power = r->brake_power;
+            power_at = x;
+        }
     }
     if (by_spark)
         printf("best torque (MBT) at %.1f deg before TDC\n", best_at);
     else
-        printf("peak torque at %.0f rpm\n", best_at);
+        printf("peak torque at %.0f rpm; at the crank (brake), %.0f N m at %.0f rpm and %.0f kW "
+               "at %.0f rpm\n", best_at, brake, brake_at, power / 1e3, power_at);
     printf("wrote %s\n", path);
     return csv_close(csv) ? 1 : 0;
 }
@@ -853,11 +932,11 @@ static int cmd_fire(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *csv_path = NULL;
-    double cylinders = 4.0, plenum = -1.0;
+    double cylinders = 0.0, plenum = -1.0;
     op_point op = { 3000.0, 1.0, 25.0, 14.6, 1 };
     int sweep_spark = 0, sweep_rpm = 0;
 
-    rb_engine_desc_default(&d);
+    if (engine_from_args(argc, argv, "fire", &d)) return 2;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         int ok = 1;
@@ -873,6 +952,8 @@ static int cmd_fire(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &op.afr);
         else if (!strcmp(a, "--cylinders"))
             ok = !to_double(take_value(argc, argv, &i), &cylinders);
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--plenum"))
             ok = !to_double(take_value(argc, argv, &i), &plenum);
         else if (!strcmp(a, "--intake"))
@@ -915,15 +996,7 @@ static int cmd_fire(int argc, char **argv)
         fprintf(stderr, "rb_cli fire: --afr must be in [6, 30]\n");
         return 2;
     }
-    if (cylinders != floor(cylinders) || cylinders < 1.0 || cylinders > RB_MAX_CYLINDERS) {
-        fprintf(stderr, "rb_cli fire: --cylinders must be a whole number in [1, %d]\n",
-                RB_MAX_CYLINDERS);
-        return 2;
-    }
-    if ((int)cylinders != d.cylinders) {
-        d.cylinders = (int)cylinders;
-        for (int i = 0; i < d.cylinders; i++) d.firing[i] = i * 720.0 / d.cylinders;
-    }
+    if (cylinders_option(cylinders, "fire", &d)) return 2;
     if (plenum >= 0.0) d.plenum_volume = plenum * 1e-3;
     if (rb_engine_desc_check(&d) != 0) {
         fprintf(stderr, "rb_cli fire: impossible engine (check the cams and the plenum)\n");
@@ -936,8 +1009,8 @@ static int cmd_fire(int argc, char **argv)
     }
 
     rb_engine_init(&engine, &d, 1.0 / 192000.0);
-    printf("fire: %d cylinder%s, %.2f L, held at %.0f rpm by a dyno, throttle %.0f %%\n",
-           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(&engine) * 1e3,
+    printf("fire: %s, %d cylinder%s, %.2f L, held at %.0f rpm by a dyno, throttle %.0f %%\n",
+           engine_name, d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(&engine) * 1e3,
            op.rpm, op.throttle * 100.0);
     if (op.ignition)
         printf("  spark %.1f deg before TDC, air-fuel ratio %.1f (lambda %.2f), walls %s\n",
@@ -977,9 +1050,10 @@ static int cmd_run(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *csv_path = "renders/run.csv";
-    double load = 0.0, cylinders = 4.0, inertia = -1.0, idle = -1.0, limit = -1.0;
+    double load = 0.0, cylinders = 0.0, inertia = -1.0, idle = -1.0, limit = -1.0;
+    double valve_mm2 = -1.0, gain_p = -1.0, gain_i = -1.0;
 
-    rb_engine_desc_default(&d);
+    if (engine_from_args(argc, argv, "run", &d)) return 2;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         int ok = 1;
@@ -993,8 +1067,16 @@ static int cmd_run(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &idle);
         else if (!strcmp(a, "--limit"))
             ok = !to_double(take_value(argc, argv, &i), &limit);
-        else if (!strcmp(a, "--cylinders"))
+        else if (!strcmp(a, "--idle-valve"))
+            ok = !to_double(take_value(argc, argv, &i), &valve_mm2);
+        else if (!strcmp(a, "--idle-gains")) {
+            const char *v = take_value(argc, argv, &i);
+            char tail;
+            ok = v && sscanf(v, "%lf/%lf%c", &gain_p, &gain_i, &tail) == 2;
+        } else if (!strcmp(a, "--cylinders"))
             ok = !to_double(take_value(argc, argv, &i), &cylinders);
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
             usage(stdout);
             return 0;
@@ -1011,23 +1093,21 @@ static int cmd_run(int argc, char **argv)
         fprintf(stderr, "rb_cli run: --load must be in [-100, 300] N m\n");
         return 2;
     }
-    if (cylinders != floor(cylinders) || cylinders < 1.0 || cylinders > RB_MAX_CYLINDERS) {
-        fprintf(stderr, "rb_cli run: --cylinders must be a whole number in [1, %d]\n",
-                RB_MAX_CYLINDERS);
-        return 2;
-    }
-    if ((int)cylinders != d.cylinders) {
-        d.cylinders = (int)cylinders;
-        for (int i = 0; i < d.cylinders; i++) d.firing[i] = i * 720.0 / d.cylinders;
-    }
+    if (cylinders_option(cylinders, "run", &d)) return 2;
     if (inertia >= 0.0) d.inertia = inertia;
     if (idle >= 0.0) d.idle_rpm = idle;
     if (limit >= 0.0) {
         d.rev_limit = limit;
         d.rev_limit_resume = limit - 100.0;
     }
+    if (valve_mm2 >= 0.0) d.idle_valve_area = valve_mm2 * 1e-6;
+    if (gain_p != -1.0 || gain_i != -1.0) {
+        d.idle_gain_p = gain_p;
+        d.idle_gain_i = gain_i;
+    }
     if (rb_engine_desc_check(&d) != 0) {
-        fprintf(stderr, "rb_cli run: impossible engine (check --inertia, --idle and --limit)\n");
+        fprintf(stderr, "rb_cli run: impossible engine (check --inertia, --idle, --idle-valve, "
+                "--idle-gains and --limit)\n");
         return 2;
     }
 
@@ -1047,8 +1127,8 @@ static int cmd_run(int argc, char **argv)
     e->ignition = 1;
     e->starter = 1;
     e->load_torque = load;
-    printf("run: %d cylinder%s, %.2f L, crank free (%.2f kg m^2), idle %.0f rpm, rev limit %.0f rpm",
-           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3, d.inertia,
+    printf("run: %s, %d cylinder%s, %.2f L, crank free (%.2f kg m^2), idle %.0f rpm, rev limit %.0f rpm",
+           engine_name, d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3, d.inertia,
            d.idle_rpm, d.rev_limit);
     if (load != 0.0) printf(", load %.0f N m", load);
     printf("\n  %5.2f s  ignition on, key to START: the starter cranks it\n", 0.0);
@@ -1145,6 +1225,139 @@ static int cmd_run(int argc, char **argv)
     return 0;
 }
 
+/* ---- presets: the engines that come with REV-BENCH (stage 8) ---- */
+
+/* The firing order, and how far apart the firings are: overall, and on each
+ * bank of a V or boxer. */
+static void print_firing(const rb_engine_desc *d)
+{
+    printf("            firing ");
+    for (int k = 0; k < d->cylinders; k++)
+        printf("%s%d", k ? "-" : "", d->firing_order[k] + 1);
+    for (int b = -1; b < (d->banks > 1 ? d->banks : 0); b++) {
+        double first = -1.0, prev = -1.0, gaps[RB_MAX_CYLINDERS];
+        int n = 0, even = 1;
+        for (int k = 0; k < d->cylinders; k++) {
+            const int i = d->firing_order[k];
+            if (b >= 0 && d->bank[i] != b) continue;
+            if (prev < 0.0) first = d->firing[i];
+            else gaps[n++] = d->firing[i] - prev;
+            prev = d->firing[i];
+        }
+        gaps[n++] = first + 720.0 - prev;
+        for (int k = 1; k < n; k++) even = even && fabs(gaps[k] - gaps[0]) < 1e-6;
+        printf(b < 0 ? ", " : "; bank %d ", b + 1);
+        if (even) printf("every %.0f deg", gaps[0]);
+        else
+            for (int k = 0; k < n; k++) printf("%s%.0f", k ? "-" : "", gaps[k]);
+    }
+    printf("\n");
+}
+
+/* Every field of one preset, read through the public API the way the browser
+ * reads it. */
+static int print_engine(const char *key)
+{
+    const int p = rb_preset_find(key);
+    if (p < 0) {
+        fprintf(stderr, "rb_cli presets: unknown preset '%s' (rb_cli presets lists them)\n", key);
+        return 2;
+    }
+    rb_sim *sim = rb_create(NULL);
+    if (!sim) {
+        fprintf(stderr, "rb_cli presets: out of memory\n");
+        return 1;
+    }
+    rb_load_preset(sim, p);
+    printf("%s, %s: every field (rb_get_engine; cylinders and banks count from 0)\n",
+           rb_preset_key(p), rb_preset_name(p));
+    for (int f = 0; f < rb_engine_field_count(); f++) {
+        const char *unit = rb_engine_field_unit(f);
+        printf("  %-18s ", rb_engine_field_name(f));
+        for (int i = 0; i < rb_engine_field_size(sim, f); i++)
+            printf("%s%.6g", i ? ", " : "", rb_get_engine(sim, f, i));
+        printf("%s%s\n", unit[0] ? " " : "", unit);
+    }
+    rb_destroy(sim);
+    return 0;
+}
+
+static int cmd_presets(int argc, char **argv)
+{
+    const char *csv_path = NULL, *key = NULL;
+    for (int i = 1; i < argc; i++) {
+        if (!strcmp(argv[i], "--csv")) {
+            if (!(csv_path = take_value(argc, argv, &i))) {
+                fprintf(stderr, "rb_cli presets: missing value for --csv\n");
+                return 2;
+            }
+        } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
+            usage(stdout);
+            return 0;
+        } else if (argv[i][0] != '-' && !key) {
+            key = argv[i];
+        } else {
+            fprintf(stderr, "rb_cli presets: unknown option '%s'\n", argv[i]);
+            return 2;
+        }
+    }
+    if (key) {
+        if (csv_path) {
+            fprintf(stderr, "rb_cli presets: --csv writes every preset, so it takes no KEY\n");
+            return 2;
+        }
+        return print_engine(key);
+    }
+
+    csv_writer *csv = NULL;
+    if (csv_path) {
+        const char *cols[] = { "preset", "cylinder", "bank", "firing_deg", "crank_deg", "p_bar" };
+        if (!(csv = csv_open(csv_path, cols, 6))) {
+            fprintf(stderr, "rb_cli presets: cannot write %s (does the folder exist?)\n", csv_path);
+            return 1;
+        }
+    }
+    for (int p = 0; p < rb_preset_count(); p++) {
+        rb_engine_desc d;
+        rb_preset_desc(p, &d);
+        rb_engine_init(&engine, &d, 1.0 / 192000.0);
+        printf("  %-9s %-22s %2d cyl %5.1f x %4.1f mm %5.0f cc  CR %4.1f  idle %4.0f, limit %4.0f rpm\n",
+               rb_preset_key(p), rb_preset_name(p), d.cylinders, d.bore * 1e3, d.stroke * 1e3,
+               rb_engine_displacement(&engine) * 1e6, d.cr, d.idle_rpm, d.rev_limit);
+        print_firing(&d);
+        if (!csv) continue;
+
+        /* One cycle at 3000 rpm wide open, from cylinder 1's firing TDC. */
+        engine.rpm = 3000.0;
+        engine.throttle_pos = 1.0;
+        engine.ignition = 1;
+        rb_engine_settle(&engine, 60, 1e-3);
+        while (engine.theta > 1.0) rb_engine_step(&engine);
+        double next = 0.0, turned = 0.0;
+        while (turned <= 720.0) {
+            if (turned >= next) {
+                for (int i = 0; i < d.cylinders; i++) {
+                    double row[6] = { p, i + 1, d.bank[i] + 1, d.firing[i], turned,
+                                      engine.cyl[i].gas.p / 1e5 };
+                    csv_row(csv, row);
+                }
+                next += 2.0;
+            }
+            const double before = engine.theta;
+            rb_engine_step(&engine);
+            turned += engine.theta - before + (engine.theta < before ? 720.0 : 0.0);
+        }
+    }
+    if (csv) {
+        if (csv_close(csv)) {
+            fprintf(stderr, "rb_cli presets: error writing %s\n", csv_path);
+            return 1;
+        }
+        printf("wrote %s (one cycle of every cylinder, held at 3000 rpm wide open)\n", csv_path);
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -1165,6 +1378,8 @@ int main(int argc, char **argv)
         return cmd_fire(argc - 1, argv + 1);
     if (!strcmp(argv[1], "run"))
         return cmd_run(argc - 1, argv + 1);
+    if (!strcmp(argv[1], "presets"))
+        return cmd_presets(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         usage(stdout);
         return 0;

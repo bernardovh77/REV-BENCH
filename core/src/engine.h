@@ -7,7 +7,9 @@
  * friction, the starter motor and whatever it drives, with an engine computer
  * holding the idle speed and cutting the spark at the rev limit (stage 7).
  * With the ignition off the engine only breathes (stage 5); with it on, fuel
- * is injected and burned (stage 6).
+ * is injected and burned (stage 6). The cylinders can stand in a row, in a V
+ * or flat (boxer), with any crank and firing order that fit together
+ * (stage 8); presets.c has the engines that come ready-made.
  *
  *   ambient air --> throttle --> plenum --> intake valves --> cylinder 1..N
  *                                                                  |
@@ -55,12 +57,27 @@
 
 #define RB_MAX_CYLINDERS 16
 
-/* Everything that defines an engine (stage 8 turns these into presets). */
+/* Everything that defines an engine. presets.c fills one in for each preset,
+ * and the public API reads and changes it field by field (rb_engine_api.c). */
 typedef struct rb_engine_desc {
     int    cylinders;                     /* 1..RB_MAX_CYLINDERS                      */
     double bore, stroke, rod, cr;         /* m, m, m, compression ratio (cylinder.h)  */
+    /* layout (stage 8): where each cylinder sits and when it fires. Angles are
+     * degrees, measured in the direction the crank turns. A cylinder's piston
+     * is at TDC when its crank pin points along its bank: at crank angle
+     * bank_angle[bank[i]] - pin[i] (mod 360). */
+    int    banks;                         /* 1 (inline), 2 (V or boxer)               */
+    double bank_angle[2];                 /* each bank's cylinder axis from vertical  */
+    int    bank[RB_MAX_CYLINDERS];        /* the bank each cylinder is in             */
+    double pin[RB_MAX_CYLINDERS];         /* each cylinder's crank pin, its angle on
+                                           * the crank                                */
+    double position[RB_MAX_CYLINDERS];    /* m along the crank from the front (for
+                                           * drawing it)                              */
+    int    firing_order[RB_MAX_CYLINDERS]; /* cylinders in firing order, 0 = cylinder 1,
+                                           * which comes first                        */
     double firing[RB_MAX_CYLINDERS];      /* degrees after cylinder 1 that each cylinder
-                                           * reaches its firing TDC (firing[0] = 0)   */
+                                           * reaches its firing TDC (firing[0] = 0):
+                                           * worked out by rb_engine_layout            */
     rb_valve    intake, exhaust;          /* each cylinder's valves (valve.h)         */
     rb_throttle throttle;                 /* throttle.h                               */
     double plenum_volume;                 /* m^3                                      */
@@ -93,6 +110,9 @@ typedef struct rb_engine_desc {
                                            * and no fuel cut on overrun)             */
     double idle_valve_area;               /* m^2: effective area of the idle air
                                            * valve beside the throttle, fully open    */
+    double idle_gain_p;                   /* idle valve opening per rpm below idle    */
+    double idle_gain_i;                   /* opening it learns per rpm per second of
+                                           * error, while idling                      */
     double rev_limit;                     /* rpm: the spark is cut above this ...     */
     double rev_limit_resume;              /* ... until the crank is back below this   */
     double cranking_rpm;                  /* below this the engine counts as cranking ... */
@@ -226,8 +246,22 @@ typedef struct rb_engine {
  * exhaust manifold and a 10 L muffler. */
 void   rb_engine_desc_default(rb_engine_desc *d);
 
-/* 0 if the description makes a possible engine, -1 otherwise. */
+/* 0 if the description makes a possible engine, -1 otherwise. That includes
+ * firing[] agreeing with the layout (see rb_engine_layout). */
 int    rb_engine_desc_check(const rb_engine_desc *d);
+
+/* Works out firing[] from the layout. Each cylinder in the firing order fires
+ * at its first TDC after the one before it; cylinder 1 fires at 0. Returns 0,
+ * or -1 if the layout can't work: a bad count, bank or angle, a cylinder
+ * missing from the firing order or in it twice, cylinder 1 not first, or an
+ * order that doesn't fit in one 720-degree cycle (d is then unchanged). */
+int    rb_engine_layout(rb_engine_desc *d);
+
+/* Gives d an inline layout of n cylinders (1..RB_MAX_CYLINDERS) firing evenly
+ * in the order 1, 2, ..., n, with a crank to match, the cylinders a bore and
+ * 10 mm apart. Returns 0, or -1 (d unchanged) for a bad n or a row of
+ * cylinders longer than 10 m. */
+int    rb_engine_layout_inline(rb_engine_desc *d, int n);
 
 /* Sets up the engine at rest with the crank at 0, all the gas at ambient
  * conditions, the ignition off, a stoichiometric mixture and the default

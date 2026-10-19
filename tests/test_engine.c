@@ -750,6 +750,8 @@ void test_engine_free_matches_held(void)
     const double torque = e.result.brake_torque;
     const double w0 = 3000.0 * 3.14159265358979323846 / 30.0;
     e.hold_speed = 0;
+    rb_engine_step(&e);
+    CHECK(e.idle_valve == 0.0);                   /* the computer knows the speed at once */
     const long steps = 192000;
     double sum = 0.0;
     for (long k = 0; k < 2 * steps; k++) {
@@ -759,6 +761,18 @@ void test_engine_free_matches_held(void)
     }
     CHECK_NEAR(sum / steps, 3000.0, 15.0);
     CHECK_NEAR(e.kinetic, crank_books(), 1e-9 * fabs(e.crank_gas_work));
+
+    /* Free into the rev limiter, then held by the dyno again: nothing stays cut. */
+    e.load_torque = 0.0;
+    double hi;
+    run_for(1.0, NULL, &hi);
+    CHECK(e.spark_cut || hi > e.desc.rev_limit);
+    e.hold_speed = 1;
+    e.rpm = 3000.0;
+    rb_engine_step(&e);
+    CHECK(!e.spark_cut && !e.fuel_cut);
+    CHECK(run_cycles(3));
+    CHECK(e.result.imep_net > 10e5);
 }
 
 void test_engine_burns_at_rest(void)

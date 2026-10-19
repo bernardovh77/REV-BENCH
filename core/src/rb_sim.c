@@ -3,10 +3,13 @@
  *
  * Stage 1: the model is a placeholder sine oscillator. It exists to prove
  * the plumbing (parameters -> physics substeps -> reduction to the audio
- * rate -> output stage) before any engine physics is written. Later
- * stages replace model_step() with the engine.
+ * rate -> output stage) before any engine physics is written. Stage 14
+ * replaces model_step() with the engine, which the sim already holds
+ * (stage 8, rb_engine_api.c).
  */
 #include "rb_internal.h"
+
+#include "presets.h"
 
 #include <math.h>
 #include <string.h>
@@ -64,6 +67,9 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
     for (int i = 0; i < RB_PARAM_COUNT; i++)
         sim->param[i] = rb_param_default(i);
 
+    sim->preset = 0;
+    rb_preset_desc(0, &sim->engine.desc);   /* rb_reset builds the engine from it */
+
     rb_reset(sim);
     return RB_OK;
 }
@@ -85,6 +91,11 @@ void rb_reset(rb_sim *sim)
     sim->tone_phase   = 0.0;
     sim->tone_level_s = 0.0;
     sim->mic          = 0.0;
+
+    /* The engine starts again at rest, as it's described. The description
+     * is always a possible engine, so this can't fail. */
+    const rb_engine_desc d = sim->engine.desc;
+    rb_engine_init(&sim->engine, &d, sim->dt);
 }
 
 /* One physics substep of the model. Stage 1: a phase-continuous sine. */
