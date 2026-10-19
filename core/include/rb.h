@@ -91,6 +91,7 @@ typedef enum rb_telemetry {
     RB_TLM_OUT_PEAK,     /* peak |sample| of the last rendered block   */
     RB_TLM_OUT_RMS,      /* RMS of the last rendered block             */
     RB_TLM_NONFINITE,    /* NaN/inf samples replaced by the guard      */
+    RB_TLM_LIMITED,      /* samples the soft limiter bent (stage 11)   */
     RB_TLM_COUNT
 } rb_telemetry;
 

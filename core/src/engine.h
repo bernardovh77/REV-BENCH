@@ -270,6 +270,10 @@ typedef struct rb_engine {
                                                     * many physics steps ...           */
     int         pipe_phase;                        /* ... and this many have passed     */
     double      pipe_dt;                           /* s: pipe_every dt                  */
+    double      tail_flow;                         /* m^3/s of gas the tailpipes let
+                                                    * out into the air over the last
+                                                    * slow step (< 0: they drew air
+                                                    * in): the sound's source (audio.h) */
     rb_chamber  cell_pool[RB_ENGINE_CELLS];        /* the pipes' cells ...             */
     rb_face     face_pool[RB_ENGINE_CELLS];        /* ... and the faces between them   */
     rb_gas      fuel_gas;                          /* pure fuel vapour, for injection  */

@@ -32,6 +32,7 @@ static const char *const TELEMETRY_NAMES[RB_TLM_COUNT] = {
     [RB_TLM_OUT_PEAK]  = "out_peak",
     [RB_TLM_OUT_RMS]   = "out_rms",
     [RB_TLM_NONFINITE] = "nonfinite",
+    [RB_TLM_LIMITED]   = "limited",
 };
 
 static int param_ok(int id)

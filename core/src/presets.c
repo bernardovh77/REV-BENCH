@@ -147,7 +147,7 @@ static void inline6(rb_engine_desc *d)
 /* 5.0 L 90-degree V8, 92 x 94 mm, with a cross-plane crank: four throws at
  * 0, 90, 270 and 180 degrees, each shared by a cylinder from each bank. It
  * fires every 90 degrees (1-8-4-3-6-5-7-2), but each bank on its own fires
- * unevenly, 90-270-180-180 degrees apart: the off-beat burble of an American
+ * unevenly, 90-180-270-180 degrees apart: the off-beat burble of an American
  * V8, which its twin exhaust (each bank its own collector, pipe, muffler and
  * tailpipe) keeps apart. */
 static void v8_cross(rb_engine_desc *d)

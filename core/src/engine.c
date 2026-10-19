@@ -971,6 +971,7 @@ static void slow_step(rb_engine *e, step_share *share)
 {
     const double dt = e->pipe_dt;
     const int pipes = rb_engine_pipe_count(e);
+    e->tail_flow = 0.0;
     for (int s = 0; s < e->systems; s++) {
         const rb_face *out = &e->tailpipe[s].end_face[1];
         const double m = out->moved * dt;
@@ -981,6 +982,14 @@ static void slow_step(rb_engine *e, step_share *share)
             share->tail_m += m;
             share->tail_mT += m * out->a->T;
         }
+        /* As a volume, at the density of the gas at the pipe's end (as it
+         * was while it moved: the cells are integrated below), whichever way
+         * it flows. What a reversing flow draws back in at first is the gas
+         * that has just left, not the outside air: switching to the air's
+         * density there would kink the volume flow at every reversal, and
+         * the sound (its derivative) would click. */
+        const double rho = out->a->rho;
+        if (rho > 0.0) e->tail_flow += out->moved / rho;
     }
     for (int c = 0; c < e->collectors; c++) rb_chamber_integrate(&e->collector[c], dt);
     for (int s = 0; s < e->systems; s++) rb_chamber_integrate(&e->muffler[s], dt);

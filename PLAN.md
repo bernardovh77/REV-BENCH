@@ -26,7 +26,7 @@ gets a one-line summary of anything that changed from the plan.
 | 8  | Engine layouts & presets                         | Physics core     | ✅     | I4, I6, cross- and flat-plane V8, boxer-4 start, idle and rev; firings every 180/120/90°; engine and cylinder state in the API |
 | 9  | Dyno + validation against real engines           | Physics core     | ✅     | Absorbing dyno on the free crank; the four, six and boxer within 5 % of the 1AZ-FE, M54B30 and FB20; lumped intake runners brought forward from stage 10 |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ✅     | Runners, headers, collectors, exhaust pipes and tailpipes are 1D pipes; a pulse runs at c (−0.16 %) and echoes inverted from an open end; the idle computer looks ahead |
-| 11 | Audio extraction → first WAV renders 🎧          | Sound            | ⬜     | Listening checkpoint |
+| 11 | Audio extraction → first WAV renders 🎧          | Sound            | ✅     | A microphone hears the tailpipes' volume flow; anti-alias FIR, DC blocker, soft limiter, TPDF dither; four clean renders. Listening checkpoint |
 | 12 | Muffler, intake & mechanical sound, mix 🎧        | Sound            | ⬜     | Listening checkpoint |
 | 13 | Performance & stability pass                     | Sound            | ⬜     | |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
@@ -325,6 +325,19 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - `make render` renders: I4 idle, an I4 rev sweep, and cross-plane vs flat-plane V8 at 3000 rpm.
 - **Done when:** the WAVs are clean (no clicks, no DC, no aliasing whine), with spectrograms in `docs/`.
 - **Bernardo checks:** listen. Does the V8 burble? Do the I4 and V8 sound obviously different?
+- *Built:* `audio.c`: a microphone 1 m from the tailpipes hears what a monopole radiates,
+  `ρ0/(4πr) dQ/dt`, from their volume flow (the plan said mass flow: the hot gas is twice the volume
+  per kilogram). A Kaiser-window FIR takes it from the physics rate to the audio rate (flat to
+  20 kHz, 100 dB down from 28 kHz), then a 10 Hz DC blocker and a soft limiter (a knee at 0.8, never
+  past full scale, which is 40 Pa); 16-bit WAVs get TPDF dither. `rb_render_block` runs the chain on
+  the tone or the engine (the browser keeps the tone until stage 14); `rb_cli sound` and
+  `make render` render the four idling and pulling and the two V8s at 3000 rpm, and
+  `tools/plot_sound.py` draws them. They're clean: no clicks, DC or whine. One click was in the
+  physics: when a tailpipe's flow turned round, its volume was taken at the outside air's density,
+  a kink at every firing; now it's the end cell's. At a microphone between its tailpipes the
+  cross-plane V8's half orders cancel (its banks fire the same pattern 360° apart), leaving a lope
+  at order 1. The single-volume muffler booms at 1500–2500 rpm and keeps a pull from getting louder
+  above it. Details in `docs/stage-11.md`.
 
 #### Stage 12 — Muffler, intake & mechanical sound, mix 🎧
 - Muffler/resonator (expansion chamber + perforated-pipe approximation, or a convolution
@@ -332,6 +345,12 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - Intake mouth sound, valvetrain/mechanical noise tied to crank angle, flow turbulence noise.
 - A mixer with listener position (behind the car, engine bay, in-car) and an optional room/outdoor
   reverb (done later with a Web Audio `ConvolverNode` in the browser).
+- From stage 11: the muffler is one volume, which booms near its ring (1500–2500 rpm in the four),
+  filters the firing orders by 12 dB an octave above it (a pull doesn't get louder), and on the
+  overrun leaves a sharp exhaust resonance (643 Hz in the four). Each tailpipe needs its own place
+  and delay: at a microphone between them the cross-plane V8's half orders cancel. The intake
+  mouth's flow changes every physics step, unlike the tailpipes', so the anti-alias filter will
+  matter there.
 - **Done when:** the new renders sound noticeably more like a real car than in stage 11, and the
   equal- vs unequal-length header renders sound different.
 - **Bernardo checks:** listen and give feedback; the sound tuning knobs get adjusted from that.

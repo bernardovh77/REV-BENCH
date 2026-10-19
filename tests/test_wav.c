@@ -92,7 +92,9 @@ void test_wav_pcm16_roundtrip(void)
             double e = fabs((double)d.samples[i] - (double)x[i]);
             if (e > maxerr) maxerr = e;
         }
-        CHECK(maxerr <= 2.0 / 32767.0);         /* quantisation error only */
+        /* Rounding and dither, up to 1.5 LSB, and the reader's 1/32768 for
+         * the writer's 32767 (0.8 LSB at this level). */
+        CHECK(maxerr <= 2.5 / 32767.0);
     }
     wav_free(&d);
     remove(path);
@@ -161,6 +163,7 @@ void test_wav_pcm16_clipping(void)
     w = wav_open(path, 48000, 1, WAV_PCM16);
     CHECK(w != NULL);
     if (!w) return;
+    wav_set_dither(w, 0);                       /* exact values */
     CHECK_EQ_INT(wav_write(w, x, 6), WAV_OK);
     CHECK_EQ_INT(wav_close(w), WAV_OK);
 
@@ -175,6 +178,83 @@ void test_wav_pcm16_clipping(void)
     }
     free(raw);
     remove(path);
+}
+
+/* Writes a 1 kHz tone of `lsb` LSB at 48 kHz, 1 s of it, as 16-bit PCM,
+ * dithered (1), not (0) or as wav_open leaves it (-1), and reads the
+ * integers back into q[]. */
+static int write_tone(const char *name, double lsb, int dither, long *q)
+{
+    enum { N = 48000 };
+    static float x[N];
+    char path[512];
+    long size;
+    for (int i = 0; i < N; i++) x[i] = (float)(lsb / 32767.0 * sin(2.0 * 3.14159265358979323846 * i / 48.0));
+    rbt_tmp_path(path, sizeof path, name);
+    wav_writer *w = wav_open(path, 48000, 1, WAV_PCM16);
+    if (!w) return -1;
+    if (dither >= 0) wav_set_dither(w, dither);
+    wav_write(w, x, N);
+    if (wav_close(w) != WAV_OK) return -1;
+    unsigned char *raw = slurp(path, &size);
+    if (!raw || size != 44 + 2 * N) {
+        free(raw);
+        return -1;
+    }
+    for (int i = 0; i < N; i++) {
+        q[i] = le16(raw + 44 + 2 * i);
+        if (q[i] >= 32768) q[i] -= 65536;
+    }
+    free(raw);
+    remove(path);
+    return 0;
+}
+
+/* The amplitude (LSB) of harmonic h of 1 kHz in q[] minus the tone: its
+ * Fourier coefficient over exactly 1000 periods. */
+static double harmonic(const long *q, double lsb, int h)
+{
+    double re = 0.0, im = 0.0;
+    for (int i = 0; i < 48000; i++) {
+        const double e = (double)q[i] - lsb * sin(2.0 * 3.14159265358979323846 * i / 48.0);
+        re += e * cos(2.0 * 3.14159265358979323846 * h * i / 48.0);
+        im += e * sin(2.0 * 3.14159265358979323846 * h * i / 48.0);
+    }
+    return 2.0 * sqrt(re * re + im * im) / 48000.0;
+}
+
+void test_wav_pcm16_dither(void)
+{
+    /* A 1 kHz tone 2.5 LSB high, the quietest thing a 16-bit file can say.
+     * Rounded as it is, the error follows the tone: harmonics of a tenth of
+     * an LSB and more. Dithered, the error is a steady hiss of 0.5 LSB RMS
+     * (1/6 + 1/12 LSB^2), with no harmonics above its own floor (0.005 LSB
+     * per coefficient over a second), no offset, and the tone intact. The
+     * same samples make the same file, and that's what wav_open does unless
+     * told otherwise. */
+    static long plain[48000], dith[48000], again[48000];
+    CHECK_EQ_INT(write_tone("rbt_plain.wav", 2.5, 0, plain), 0);
+    CHECK_EQ_INT(write_tone("rbt_dither.wav", 2.5, 1, dith), 0);
+    CHECK_EQ_INT(write_tone("rbt_again.wav", 2.5, -1, again), 0);
+
+    double worst_plain = 0.0, worst_dither = 0.0;
+    for (int h = 2; h <= 9; h++) {
+        worst_plain = fmax(worst_plain, harmonic(plain, 2.5, h));
+        worst_dither = fmax(worst_dither, harmonic(dith, 2.5, h));
+    }
+    CHECK(worst_plain > 0.1);
+    CHECK(worst_dither < 0.02);
+    double sum = 0.0, sumsq = 0.0, re = 0.0;
+    for (int i = 0; i < 48000; i++) {
+        const double e = dith[i] - 2.5 * sin(2.0 * 3.14159265358979323846 * i / 48.0);
+        sum += e;
+        sumsq += e * e;
+        re += dith[i] * sin(2.0 * 3.14159265358979323846 * i / 48.0);
+    }
+    CHECK_NEAR(sqrt(sumsq / 48000), 0.5, 0.01);
+    CHECK(fabs(sum / 48000) < 0.01);
+    CHECK_NEAR(2.0 * re / 48000, 2.5, 0.01);
+    CHECK(memcmp(dith, again, sizeof dith) == 0);
 }
 
 void test_wav_rejects_garbage(void)

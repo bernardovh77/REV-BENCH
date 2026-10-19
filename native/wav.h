@@ -22,11 +22,16 @@ enum {
 /* ---- writing ---- */
 typedef struct wav_writer wav_writer;
 
-/* Returns NULL on failure. */
+/* Returns NULL on failure. PCM16 files are dithered (see wav_set_dither). */
 wav_writer *wav_open(const char *path, int sample_rate, int channels, wav_format fmt);
 /* Appends `frames` frames of interleaved samples. NaN/inf are written as
  * 0; PCM16 clamps to [-1, 1]. Returns WAV_OK or WAV_ERR_IO. */
 int wav_write(wav_writer *w, const float *interleaved, size_t frames);
+/* PCM16 only: on (the default), each sample gets TPDF dither before it's
+ * rounded, so the rounding error is noise, not distortion of the signal
+ * (stage 11). The noise comes from a fixed seed: the same samples make the
+ * same file. Off, samples are rounded as they are. */
+void wav_set_dither(wav_writer *w, int on);
 /* Finalises the header and closes the file. Always frees `w`. */
 int wav_close(wav_writer *w);
 

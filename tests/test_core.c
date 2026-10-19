@@ -126,8 +126,12 @@ void test_core_param_set_get(void)
 
 void test_core_tone_frequency_and_level(void)
 {
+    /* A 440 Hz tone at 0.7, below the soft limiter's knee: it comes through
+     * the anti-alias filter and the DC blocker at its level (the blocker
+     * takes 0.03 % at 440 Hz). At full level the limiter bends its peaks
+     * (stage 11): they come out at 0.952. */
     enum { FS = 48000 };
-    rb_sim *s = make_tone(440.0, 1.0);
+    rb_sim *s = make_tone(440.0, 0.7);
     float *x = malloc(FS * sizeof *x);
     int crossings = 0;
     double peak = 0.0, sumsq = 0.0;
@@ -150,11 +154,21 @@ void test_core_tone_frequency_and_level(void)
     }
 
     CHECK(crossings >= 439 && crossings <= 441);       /* 440 Hz */
-    CHECK_NEAR(peak, 1.0, 2e-3);
-    CHECK_NEAR(sqrt(sumsq / FS), 1.0 / sqrt(2.0), 2e-3);
+    CHECK_NEAR(peak, 0.7, 2e-3);
+    CHECK_NEAR(sqrt(sumsq / FS), 0.7 / sqrt(2.0), 2e-3);
     CHECK_NEAR(rb_get_telemetry(s, RB_TLM_TIME_S), 1.25, 1e-9);
     CHECK_NEAR(rb_get_telemetry(s, RB_TLM_STEPS), 1.25 * FS * 4, 0.5);
     CHECK_NEAR(rb_get_telemetry(s, RB_TLM_NONFINITE), 0.0, 0.0);
+    CHECK_NEAR(rb_get_telemetry(s, RB_TLM_LIMITED), 0.0, 0.0);
+
+    rb_set_param(s, RB_PARAM_TEST_TONE_LEVEL, 1.0);
+    render(s, x, FS / 4, 128);
+    render(s, x, FS / 10, 128);
+    peak = 0.0;
+    for (int i = 0; i < FS / 10; i++)
+        if (fabs(x[i]) > peak) peak = fabs(x[i]);
+    CHECK_NEAR(peak, 0.8 + 0.2 * tanh(1.0), 2e-3);
+    CHECK(rb_get_telemetry(s, RB_TLM_LIMITED) > 0.0);
 
     rb_destroy(s);
     free(x);
@@ -167,7 +181,9 @@ void test_core_no_clicks_on_frequency_change(void)
     float *x = malloc(N * sizeof *x);
     double max_step = 0.0;
     /* A unit sine at f Hz changes by at most 2*pi*f/fs between samples.
-     * A phase jump would show up as a much bigger step (up to 2). */
+     * A phase jump would show up as a much bigger step (up to 2). The
+     * anti-alias filter (stage 11) rounds the corners where the frequency
+     * switches, overshooting the slope by 5 %. */
     const double limit = 2.0 * 3.14159265358979 * 2000.0 / 48000.0;
 
     CHECK(s != NULL && x != NULL);
@@ -187,7 +203,7 @@ void test_core_no_clicks_on_frequency_change(void)
         double d = fabs((double)x[i] - (double)x[i - 1]);
         if (d > max_step) max_step = d;
     }
-    CHECK(max_step <= limit * 1.01);
+    CHECK(max_step <= limit * 1.08);
 
     rb_destroy(s);
     free(x);
@@ -195,6 +211,7 @@ void test_core_no_clicks_on_frequency_change(void)
 
 void test_core_level_smoothing(void)
 {
+    /* A sudden jump in the tone's level, to 0.7, fades in over 10 ms. */
     rb_sim *s = make_tone(1000.0, 0.0);
     float x[480];
     double peak;
@@ -205,14 +222,15 @@ void test_core_level_smoothing(void)
     render(s, x, 480, 128);                                   /* silence */
     CHECK_NEAR(rb_get_telemetry(s, RB_TLM_OUT_PEAK), 0.0, 0.0);
 
-    rb_set_param(s, RB_PARAM_TEST_TONE_LEVEL, 1.0);           /* sudden jump */
+    rb_set_param(s, RB_PARAM_TEST_TONE_LEVEL, 0.7);           /* sudden jump */
     render(s, x, 48, 48);                                     /* first 1 ms  */
     peak = rb_get_telemetry(s, RB_TLM_OUT_PEAK);
-    /* tau = 10 ms, so after 1 ms the level is only ~1 - e^-0.1 = 0.095 */
-    CHECK(peak > 0.03 && peak < 0.11);
+    /* tau = 10 ms, so after 1 ms the level is only ~1 - e^-0.1 = 9.5 % of
+     * the way there; the anti-alias filter delays it 0.4 ms besides. */
+    CHECK(peak > 0.01 && peak < 0.11 * 0.7);
 
     for (int i = 0; i < 20; i++) render(s, x, 480, 480);      /* +200 ms */
-    CHECK_NEAR(rb_get_telemetry(s, RB_TLM_OUT_PEAK), 1.0, 5e-3);
+    CHECK_NEAR(rb_get_telemetry(s, RB_TLM_OUT_PEAK), 0.7, 5e-3);
 
     rb_destroy(s);
 }

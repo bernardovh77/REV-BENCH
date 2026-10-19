@@ -2,7 +2,9 @@
 #
 #   make              build the command-line tool (build/rb_cli)
 #   make test         build and run the unit tests
-#   make render       render the current test sound to renders/test.wav
+#   make render       render the engine's sound (stage 11): the four starting and
+#                     idling, a wide-open pull, and both V8s at 3000 rpm, to
+#                     renders/*.wav (about a minute), and the test tone
 #   make wasm         build the core for the browser (web/src/wasm/rb_core.wasm)
 #   make clean        delete build output
 #   make help         show this text
@@ -63,6 +65,10 @@ test: $(TESTS)
 render: $(CLI)
 	@mkdir -p renders
 	$(CLI) tone --out renders/test.wav --csv renders/test.csv
+	$(CLI) sound --preset i4 --idle --out renders/i4-idle.wav
+	$(CLI) sound --preset i4 --sweep --out renders/i4-sweep.wav --csv renders/i4-sweep.csv
+	$(CLI) sound --preset v8-cross --hold --rpm 3000 --out renders/v8-cross-3000.wav
+	$(CLI) sound --preset v8-flat --hold --rpm 3000 --out renders/v8-flat-3000.wav
 
 # ---- WebAssembly build for the browser ----------------------------------
 # A standalone module: libc/libm are compiled in, it needs no imports and has

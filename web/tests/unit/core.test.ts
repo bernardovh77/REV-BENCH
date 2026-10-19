@@ -78,25 +78,30 @@ describe('rb_core.wasm', () => {
       unit: 'Hz', min: 20, max: 20000, def: 220,
     });
     expect(info.telemetry).toEqual(
-      expect.arrayContaining(['time_s', 'steps', 'out_peak', 'out_rms', 'nonfinite']),
+      expect.arrayContaining(['time_s', 'steps', 'out_peak', 'out_rms', 'nonfinite', 'limited']),
     );
   });
 
-  it('renders a 440 Hz tone at full level', () => {
-    const { core, sim } = setup(440, 1);
+  it('renders a 440 Hz tone, and bends it softly at full level', () => {
+    const { core, sim, id } = setup(440, 0.7);
     const warmup = renderSeconds(sim, 0.25);  // let the fade-in settle (94 whole blocks)
     const x = renderSeconds(sim, 1);          // 375 blocks = exactly 1 s
+    const peakOf = (y: Float32Array) => y.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
     let crossings = 0;
-    let peak = 0;
     for (let i = 1; i < x.length; i++) if ((x[i - 1] as number) < 0 && (x[i] as number) >= 0) crossings++;
-    for (const v of x) peak = Math.max(peak, Math.abs(v));
     expect(crossings).toBeGreaterThanOrEqual(439);
     expect(crossings).toBeLessThanOrEqual(441);
-    expect(peak).toBeGreaterThan(0.998);
-    expect(peak).toBeLessThanOrEqual(1);
-    const timeId = core.telemetryNames().indexOf('time_s');
+    // Below the soft limiter's knee (0.8) the level comes through as it is.
+    expect(peakOf(x)).toBeCloseTo(0.7, 2);
+    const names = core.telemetryNames();
     // Simulated time = frames rendered / sample rate, exactly.
-    expect(sim.telemetry(timeId)).toBeCloseTo((warmup.length + x.length) / FS, 9);
+    expect(sim.telemetry(names.indexOf('time_s'))).toBeCloseTo((warmup.length + x.length) / FS, 9);
+    expect(sim.telemetry(names.indexOf('limited'))).toBe(0);
+    // At full level its peaks bend towards 1: 0.8 + 0.2 tanh(1) = 0.952.
+    sim.setParam(id('test_tone_level'), 1);
+    renderSeconds(sim, 0.25);
+    expect(peakOf(renderSeconds(sim, 0.1))).toBeCloseTo(0.8 + 0.2 * Math.tanh(1), 2);
+    expect(sim.telemetry(names.indexOf('limited'))).toBeGreaterThan(0);
   });
 
   it('clamps out-of-range values and rejects NaN', () => {

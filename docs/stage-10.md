@@ -197,7 +197,7 @@ The presets' exhausts (runners as in stage 9):
 | **v8-flat** | 8 × 600 mm, 42 mm | one per bank | 1.4 m × 60 mm | 23 cm² | 2 × 9 L, 23 cm² | 2 × 0.5 m × 70 mm | 196 |
 | **boxer4** | 450, 750, 450, 750 mm, 36 mm | one | 1.6 m × 50 mm | 21 cm² | 10 L, 21 cm² | 0.6 m × 50 mm | 101 |
 
-- **The cross-plane V8** keeps each bank's uneven pulses (90-270-180-180°) in its own exhaust.
+- **The cross-plane V8** keeps each bank's uneven pulses (90-180-270-180°) in its own exhaust.
 - **The six's** front and rear three fire 240° apart each, so one cylinder's exhaust pulse doesn't
   push against the next one's overlap.
 - **The boxer's second bank's headers are 30 cm longer** (they cross under the engine): its pulses

@@ -31,12 +31,13 @@
   `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
   (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
   correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
-  area), `engine.c` (N cylinders + plenum + throttle + idle air valve, a runner per cylinder (pipe)
-  → intake valve, exhaust valve → header (pipe) → one of up to two collectors (volumes) → each
-  collector's exhaust pipe → catalyst (a restriction + laminar loss at its end) → muffler (volume)
-  → tailpipe (pipe) → the air, one or two systems; two air reservoirs; fuel at IVC, spark, burn,
-  walls; the crank, held or free; friction, starter, the engine computer; per-cycle IMEP, BMEP,
-  torque etc.).
+  area), `audio.c` (stage 11: the microphone, a monopole from the tailpipes' volume flow; the
+  Kaiser-window anti-alias FIR and decimator; the DC blocker; the soft limiter), `engine.c` (N
+  cylinders + plenum + throttle + idle air valve, a runner per cylinder (pipe) → intake valve,
+  exhaust valve → header (pipe) → one of up to two collectors (volumes) → each collector's exhaust
+  pipe → catalyst (a restriction + laminar loss at its end) → muffler (volume) → tailpipe (pipe) →
+  the air, one or two systems; two air reservoirs; fuel at IVC, spark, burn, walls; the crank, held
+  or free; friction, starter, the engine computer; per-cycle IMEP, BMEP, torque etc.).
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
   Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
   equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
@@ -55,11 +56,22 @@
   physics steps), but the cells at the valves are fast, stepped every physics step; fast faces see a
   slow neighbour's pressure as it is by now (`rb_chamber_pressure_now`: the gas it took meanwhile and
   its rates since the block began). Get this wrong and the engine's VE moves up to 0.9 % between
-  384 and 96 kHz (docs/stage-10.md, "Two rates"; `test_engine_pipes_two_rates`). The engine computer's idle valve and idle spark act on the
-  speed half a second ahead (`idle_heading`), the spark 0.3° per rpm: with runners an idling engine
-  is unstable on its own (less exhaust pushed back into them the faster it turns). `heat_transfer
-  = 0` means adiabatic cylinders; the pipes' walls always trade heat. At 96 kHz the valves' 5 cm
-  cells are too stiff for the flow cap (10 % more pumping work motored); 192 kHz is converged.
+  384 and 96 kHz (docs/stage-10.md, "Two rates"; `test_engine_pipes_two_rates`). The engine
+  computer's idle valve and idle spark act on the speed half a second ahead (`idle_heading`), the
+  spark 0.3° per rpm: with runners an idling engine is unstable on its own (less exhaust pushed
+  back into them the faster it turns). `heat_transfer = 0` means adiabatic cylinders; the pipes'
+  walls always trade heat. At 96 kHz the valves' 5 cm cells are too stiff for the flow cap (10 %
+  more pumping work motored); 192 kHz is converged.
+- Stage 11 put the sound in `rb_render_block`. Every physics step the sim's source (`sim->source`,
+  internal: stage 1's tone by default, which the browser plays until stage 14, or
+  `RB_SOURCE_ENGINE`, which `rb_cli sound` and the tests set) gives the microphone's signal in
+  full-scale units (1 = 40 Pa, `RB_FULL_SCALE_PA`); a NaN becomes 0 there, before the filters. Then
+  the anti-alias FIR (157 taps at oversample 4: 0.4 ms), the 10 Hz DC blocker, the gain and the soft
+  limiter (knee 0.8: a full-level tone peaks at 0.952, so level tests use 0.7). The engine's
+  `tail_flow` is the tailpipes' volume flow at the end cell's density, whichever way it flows: the
+  outside air's density for a reversing flow kinks it, a click every firing. A rebuilt engine
+  resets the microphone. 16-bit WAVs are TPDF-dithered by default (`wav_set_dither(w, 0)` for exact
+  values).
 - Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
   after the engine computer runs) → events the crank passes during the step (an event counts if
   it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
@@ -123,8 +135,10 @@
   ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
   `tools/plot_run.py` the `rb_cli run` one, `tools/plot_presets.py` the presets' (firing, runs,
   idle), `tools/plot_pipes.py` the `rb_cli pipes` ones (pulse, engine) and a stage-to-stage
-  `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and `fire --rpm-sweep` comparisons (curves,
-  changes, spark). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and
+  `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
+  WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; two engines by
+  order). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.

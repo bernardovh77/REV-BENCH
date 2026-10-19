@@ -48,6 +48,17 @@ void test_pipe_walls(void);
 void test_pipe_conserves_everything(void);
 void test_pipe_two_rates_agree(void);
 void test_pipe_rings(void);
+/* ---- audio (tests/test_audio.c) ---- */
+void test_audio_decimator_filter(void);
+void test_audio_decimator_tones(void);
+void test_audio_dc_blocker(void);
+void test_audio_soft_limit(void);
+void test_audio_microphone(void);
+void test_audio_engine_sound(void);
+void test_audio_engine_rebuilt_quietly(void);
+void test_audio_chain_blocks_dc(void);
+void test_audio_chain_survives_nan(void);
+void test_audio_engine_reversal_quiet(void);
 /* ---- cylinder (tests/test_cylinder.c) ---- */
 void test_cylinder_geometry(void);
 void test_compression_matches_isentrope(void);
@@ -120,6 +131,7 @@ void test_calibration_idle_spark(void);
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
 void test_wav_pcm16_clipping(void);
+void test_wav_pcm16_dither(void);
 void test_wav_rejects_garbage(void);
 void test_csv_basic(void);
 
@@ -158,6 +170,16 @@ static const struct {
     T(test_pipe_conserves_everything),
     T(test_pipe_two_rates_agree),
     T(test_pipe_rings),
+    T(test_audio_decimator_filter),
+    T(test_audio_decimator_tones),
+    T(test_audio_dc_blocker),
+    T(test_audio_soft_limit),
+    T(test_audio_microphone),
+    T(test_audio_engine_sound),
+    T(test_audio_engine_rebuilt_quietly),
+    T(test_audio_chain_blocks_dc),
+    T(test_audio_chain_survives_nan),
+    T(test_audio_engine_reversal_quiet),
     T(test_cylinder_geometry),
     T(test_compression_matches_isentrope),
     T(test_compression_converges_with_step_size),
@@ -223,6 +245,7 @@ static const struct {
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),
+    T(test_wav_pcm16_dither),
     T(test_wav_rejects_garbage),
     T(test_csv_basic),
 };

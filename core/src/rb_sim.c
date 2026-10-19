@@ -1,11 +1,12 @@
 /*
  * rb_sim.c - lifecycle, the step/render loop and telemetry.
  *
- * Stage 1: the model is a placeholder sine oscillator. It exists to prove
- * the plumbing (parameters -> physics substeps -> reduction to the audio
- * rate -> output stage) before any engine physics is written. Stage 14
- * replaces model_step() with the engine, which the sim already holds
- * (stage 8, rb_engine_api.c).
+ * The plumbing: parameters -> physics substeps -> reduction to the audio rate
+ * -> output stage. Stage 1's model is a placeholder sine oscillator, which
+ * the browser plays until stage 14. Stage 11 adds the engine as a source (the
+ * sim holds it since stage 8, rb_engine_api.c): a microphone hears its
+ * tailpipes, and the reduction to the audio rate is an anti-alias filter
+ * (audio.h).
  */
 #include "rb_internal.h"
 
@@ -64,6 +65,15 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
     sim->smooth_a_step  = rb_onepole_coef(sim->dt, RB_SMOOTH_TAU_S);
     sim->smooth_a_frame = rb_onepole_coef(1.0 / c.sample_rate, RB_SMOOTH_TAU_S);
 
+    /* The sound's chain (the oversampling factor is within the decimator's
+     * range: RB_MAX_OVERSAMPLE). */
+    _Static_assert(RB_MAX_OVERSAMPLE <= RB_DECIMATOR_MAX_FACTOR,
+                   "the decimator must take every oversampling factor");
+    sim->source = RB_SOURCE_TONE;
+    rb_mic_init(&sim->microphone, RB_MIC_DISTANCE);
+    rb_decimator_init(&sim->aa, c.oversample);
+    rb_dc_blocker_init(&sim->dc, RB_DC_CUTOFF, c.sample_rate);
+
     for (int i = 0; i < RB_PARAM_COUNT; i++)
         sim->param[i] = rb_param_default(i);
 
@@ -87,6 +97,10 @@ void rb_reset(rb_sim *sim)
     sim->out_peak  = 0.0;
     sim->out_rms   = 0.0;
     sim->nonfinite = 0;
+    sim->limited   = 0;
+    rb_mic_reset(&sim->microphone);
+    rb_decimator_reset(&sim->aa);
+    rb_dc_blocker_reset(&sim->dc);
 
     sim->tone_phase   = 0.0;
     sim->tone_level_s = 0.0;
@@ -98,9 +112,18 @@ void rb_reset(rb_sim *sim)
     rb_engine_init(&sim->engine, &d, sim->dt);
 }
 
-/* One physics substep of the model. Stage 1: a phase-continuous sine. */
+/* One physics substep of the model: the engine and what the microphone hears
+ * of it, or stage 1's phase-continuous sine. */
 static inline void model_step(rb_sim *sim)
 {
+    if (sim->source == RB_SOURCE_ENGINE) {
+        rb_engine *e = &sim->engine;
+        rb_engine_step(e);
+        sim->mic = rb_mic_hear(&sim->microphone, e->tail_flow, e->exhaust_air.rho, sim->dt)
+                 / RB_FULL_SCALE_PA;
+        return;
+    }
+
     sim->tone_level_s += sim->smooth_a_step
                        * (sim->param[RB_PARAM_TEST_TONE_LEVEL] - sim->tone_level_s);
 
@@ -123,34 +146,44 @@ int rb_render_block(rb_sim *sim, float *out, int frames)
 {
     if (!sim || !out || frames < 0) return RB_ERR_ARG;
 
-    const int    os     = sim->cfg.oversample;
-    const double inv_os = 1.0 / (double)os;
+    const int os = sim->cfg.oversample;
     double peak  = 0.0;
     double sumsq = 0.0;
 
     for (int i = 0; i < frames; i++) {
-        /* 1. Run the physics `os` substeps for this audio sample. */
-        double acc = 0.0;
+        /* 1. Run the physics `os` substeps for this audio sample, feeding
+         *    what the microphone hears to the anti-alias filter. A NaN or inf
+         *    becomes silence (and is counted) before it reaches the filters'
+         *    memories, and RB_MIC_MAX keeps their sums finite. */
         for (int k = 0; k < os; k++) {
             model_step(sim);
-            acc += sim->mic;
+            double x = sim->mic;
+            if (!isfinite(x)) {
+                x = 0.0;
+                sim->nonfinite++;
+            } else if (fabs(x) > RB_MIC_MAX) {
+                x = (x > 0.0) ? RB_MIC_MAX : -RB_MIC_MAX;
+            }
+            rb_decimator_push(&sim->aa, x);
         }
         sim->steps += (uint64_t)os;
 
-        /* 2. Reduce to the audio rate. Averaging is fine for a test tone;
-         *    stage 11 replaces it with a proper anti-alias filter. */
-        double y = acc * inv_os;
+        /* 2. Reduce to the audio rate: the anti-alias filter's output, every
+         *    os-th substep. */
+        double y = rb_decimator_out(&sim->aa);
 
-        /* 3. Output stage: smoothed gain, NaN/inf guard, hard clamp. */
+        /* 3. Output stage: DC blocker, smoothed gain, soft limiter (never
+         *    past full scale), and a last guard. */
+        y = rb_dc_blocker_step(&sim->dc, y);
         sim->gain_s += sim->smooth_a_frame
                      * (sim->param[RB_PARAM_MASTER_GAIN] - sim->gain_s);
         y *= sim->gain_s;
+        if (fabs(y) > RB_LIMIT_KNEE) sim->limited++;
+        y = rb_soft_limit(y);
         if (!isfinite(y)) {
             y = 0.0;
             sim->nonfinite++;
         }
-        if (y > 1.0)       y = 1.0;
-        else if (y < -1.0) y = -1.0;
 
         out[i] = (float)y;
         if (fabs(y) > peak) peak = fabs(y);
@@ -171,6 +204,7 @@ double rb_get_telemetry(const rb_sim *sim, int id)
     case RB_TLM_OUT_PEAK:  return sim->out_peak;
     case RB_TLM_OUT_RMS:   return sim->out_rms;
     case RB_TLM_NONFINITE: return (double)sim->nonfinite;
+    case RB_TLM_LIMITED:   return (double)sim->limited;
     default:               return NAN;
     }
 }

@@ -138,6 +138,7 @@ int rb_load_preset(rb_sim *sim, int preset)
     if (!sim) return RB_ERR_ARG;
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
     rb_engine_init(&sim->engine, &d, sim->dt);   /* presets are possible engines */
+    rb_mic_reset(&sim->microphone);              /* a new engine: no jump in its flow */
     sim->preset = preset;
     return RB_OK;
 }
@@ -251,7 +252,10 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
 
     if (memcmp(&d, &sim->engine.desc, sizeof d) == 0) return rc;   /* the same engine */
     if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
-    else rb_engine_init(&sim->engine, &d, sim->dt);
+    else {
+        rb_engine_init(&sim->engine, &d, sim->dt);
+        rb_mic_reset(&sim->microphone);
+    }
     return rc;
 }
 

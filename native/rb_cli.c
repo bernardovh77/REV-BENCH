@@ -14,6 +14,7 @@
  *   rb_cli run [opts]        stage-7 demo: the engine started, idled, revved and stopped (CSV)
  *   rb_cli dyno [opts]       stage-9 demo: the engine on a dyno (CSV)
  *   rb_cli pipes [opts]      stage-10 demo: pressure waves in the pipes (CSV)
+ *   rb_cli sound [opts]      stage 11: the engine's sound, as a microphone hears it (WAV)
  *
  * The native tools may use the core's internal headers (chamber.h, ...) to
  * exercise pieces of the physics on their own.
@@ -27,6 +28,7 @@
 #include "presets.h"
 #include "flow.h"
 #include "rb.h"
+#include "rb_internal.h"   /* rb_cli sound drives the sim's own engine */
 #include "wav.h"
 
 #include <math.h>
@@ -65,7 +67,11 @@ static void usage(FILE *f)
         "  pipes [options]       physics demo: pressure waves in the pipes. A pulse in a 2 m\n"
         "                        pipe (--pulse), or one cycle of the engine's runner, header,\n"
         "                        exhaust pipe and tailpipe, cell by cell (CSV)\n"
-        "\n"
+        "  sound [options]       the engine's sound as a microphone behind the tailpipe hears it,\n"
+        "                        through the same chain as the browser (WAV)\n"
+        "\n",
+        f);
+    fputs(
         "tone options:\n"
         "  -o, --out FILE        output WAV                 (default renders/test.wav)\n"
         "      --csv FILE        also write per-block telemetry as CSV\n"
@@ -147,7 +153,9 @@ static void usage(FILE *f)
         "presets options:\n"
         "      --csv FILE        also run each one held at 3000 rpm wide open and write one\n"
         "                        cycle of every cylinder's pressure (renders/presets.csv)\n"
-        "\n"
+        "\n",
+        f);
+    fputs(
         "pipes options:\n"
         "      --pulse           a 1 kPa pulse in a 2 m pipe of 40 mm, closed at one end and open\n"
         "                        at the other: when it passes, and how it comes back (renders/pulse.csv)\n"
@@ -155,7 +163,27 @@ static void usage(FILE *f)
         "      --rpm N           ... at this speed      (default 3000)\n"
         "      --throttle X      ... and throttle, 0..1 (default 1): cylinder 1's pipes over one\n"
         "                        cycle, every 2 degrees (renders/pipes.csv)\n"
-        "      --csv FILE        output CSV\n",
+        "      --csv FILE        output CSV\n"
+        "\n"
+        "sound options (a microphone 1 m from the tailpipe, the anti-alias filter, DC blocker\n"
+        "and soft limiter; full scale is 40 Pa, 126 dB SPL):\n"
+        "      --preset KEY      the engine                 (default i4)\n"
+        "      --idle            started with the key, then left to idle (the default)\n"
+        "      --sweep           wide open from 1000 rpm (held there for 1.5 s first) into the\n"
+        "                        rev limiter with a car's inertia on the crank (a pull in third\n"
+        "                        gear), then the foot off\n"
+        "      --hold            held at --rpm and --throttle by a dyno (after 1.5 s to settle)\n"
+        "      --rpm N           for --hold                 (default 3000)\n"
+        "      --throttle X      for --hold, 0..1           (default 1)\n"
+        "      --inertia KGM2    for --sweep: crank, flywheel and the car (default 3)\n"
+        "  -s, --seconds S       how long                   (default: 8 idle, 5 hold; the sweep\n"
+        "                        ends 2 s after the foot comes off)\n"
+        "      --distance M      the microphone's distance  (default 1)\n"
+        "      --gain G          output gain, linear        (default 1)\n"
+        "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
+        "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
+        "      --csv FILE        a row per 128-frame block: speed, throttle, sound level\n"
+        "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n",
         f);
 }
 
@@ -364,7 +392,7 @@ static int cmd_tone(int argc, char **argv)
         printf("cpu %.3f s (%.0fx faster than real time)\n", cpu, seconds / cpu);
     else
         printf("cpu < 1 ms\n");
-    printf("wrote %s (%s)%s%s\n", out_path, use_float ? "32-bit float" : "16-bit PCM",
+    printf("wrote %s (%s)%s%s\n", out_path, use_float ? "32-bit float" : "16-bit PCM, dithered",
            csv_path ? " and " : "", csv_path ? csv_path : "");
 
     if (io_error) {
@@ -1782,6 +1810,224 @@ static int cmd_pipes(int argc, char **argv)
     return pipes_engine(&d, &op, csv_path ? csv_path : "renders/pipes.csv");
 }
 
+/* ---- sound: what a microphone behind the tailpipe hears (stage 11) ---- */
+
+enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD };
+
+#define SOUND_SETTLE   1.5    /* s a held engine runs before the recording starts  */
+#define SWEEP_FROM     1000.0 /* rpm                                               */
+#define SWEEP_LIMITER  1.0    /* s on the rev limiter before the foot comes off    */
+#define SWEEP_COAST    2.0    /* s of coasting after it, to the end               */
+
+static int cmd_sound(int argc, char **argv)
+{
+    rb_engine_desc d;
+    const char *out_path = "renders/sound.wav", *csv_path = NULL;
+    double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0, distance = RB_MIC_DISTANCE;
+    double gain = 1.0, os = 4.0;
+    int drive = DRIVE_IDLE, use_float = 0;
+    rb_config cfg;
+
+    rb_config_default(&cfg);
+    if (engine_from_args(argc, argv, "sound", &d)) return 2;
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int ok = 1;
+        if (!strcmp(a, "-o") || !strcmp(a, "--out"))
+            ok = (out_path = take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--csv"))
+            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+        else if (!strcmp(a, "--idle"))
+            drive = DRIVE_IDLE;
+        else if (!strcmp(a, "--sweep"))
+            drive = DRIVE_SWEEP;
+        else if (!strcmp(a, "--hold"))
+            drive = DRIVE_HOLD;
+        else if (!strcmp(a, "--rpm"))
+            ok = !to_double(take_value(argc, argv, &i), &rpm);
+        else if (!strcmp(a, "--throttle"))
+            ok = !to_double(take_value(argc, argv, &i), &throttle);
+        else if (!strcmp(a, "--inertia"))
+            ok = !to_double(take_value(argc, argv, &i), &inertia);
+        else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
+            ok = !to_double(take_value(argc, argv, &i), &seconds);
+        else if (!strcmp(a, "--distance"))
+            ok = !to_double(take_value(argc, argv, &i), &distance);
+        else if (!strcmp(a, "--gain"))
+            ok = !to_double(take_value(argc, argv, &i), &gain);
+        else if (!strcmp(a, "--float"))
+            use_float = 1;
+        else if (!strcmp(a, "-r") || !strcmp(a, "--rate"))
+            ok = !to_double(take_value(argc, argv, &i), &cfg.sample_rate);
+        else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
+            ok = !to_double(take_value(argc, argv, &i), &os);
+        else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
+            usage(stdout);
+            return 0;
+        } else {
+            fprintf(stderr, "rb_cli sound: unknown option '%s'\n", a);
+            return 2;
+        }
+        if (!ok) {
+            fprintf(stderr, "rb_cli sound: missing or bad value for %s\n", a);
+            return 2;
+        }
+    }
+    if (seconds < 0.0) seconds = (drive == DRIVE_HOLD) ? 5.0 : (drive == DRIVE_IDLE) ? 8.0 : 60.0;
+    if (!(seconds > 0.0 && seconds <= 600.0)) {
+        fprintf(stderr, "rb_cli sound: --seconds must be in (0, 600]\n");
+        return 2;
+    }
+    if (!(rpm >= 300.0 && rpm <= 20000.0) || !(throttle >= 0.0 && throttle <= 1.0)) {
+        fprintf(stderr, "rb_cli sound: --rpm must be in [300, 20000] and --throttle in [0, 1]\n");
+        return 2;
+    }
+    if (!(inertia >= 0.01 && inertia <= 100.0) || !(distance >= 0.1 && distance <= 100.0)
+        || !(gain >= 0.0 && gain <= 4.0)) {
+        fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 100] kg m^2, --distance in "
+                "[0.1, 100] m and --gain in [0, 4]\n");
+        return 2;
+    }
+    if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
+        fprintf(stderr, "rb_cli sound: --oversample must be an integer in [1, %d]\n", RB_MAX_OVERSAMPLE);
+        return 2;
+    }
+    cfg.oversample = (int)os;
+    if (drive == DRIVE_SWEEP) d.inertia = inertia;
+
+    rb_sim *sim = rb_create(&cfg);
+    if (!sim) {
+        fprintf(stderr, "rb_cli sound: invalid --rate (must be %g..%g Hz)\n",
+                RB_MIN_SAMPLE_RATE, RB_MAX_SAMPLE_RATE);
+        return 2;
+    }
+    rb_engine *e = &sim->engine;
+    rb_engine_init(e, &d, sim->dt);
+    sim->source = RB_SOURCE_ENGINE;
+    sim->microphone.distance = distance;
+    rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
+    e->ignition = 1;
+    if (drive == DRIVE_HOLD) {
+        e->rpm = rpm;
+        e->throttle_pos = throttle;
+    } else if (drive == DRIVE_SWEEP) {   /* held there to settle, then let go */
+        e->rpm = SWEEP_FROM;
+        e->throttle_pos = 1.0;
+    } else {
+        e->hold_speed = 0;
+        e->throttle_pos = 0.0;
+        e->starter = 1;
+    }
+
+    wav_writer *wav = wav_open(out_path, (int)cfg.sample_rate, 1, use_float ? WAV_FLOAT32 : WAV_PCM16);
+    if (!wav) {
+        fprintf(stderr, "rb_cli sound: cannot write %s (does the folder exist?)\n", out_path);
+        rb_destroy(sim);
+        return 1;
+    }
+    csv_writer *csv = NULL;
+    if (csv_path) {
+        const char *cols[] = { "t_s", "rpm", "throttle", "spark_cut", "fuel_cut", "out_peak", "out_rms",
+                               "spl_dB" };
+        csv = csv_open(csv_path, cols, 8);
+        if (!csv) {
+            fprintf(stderr, "rb_cli sound: cannot write %s\n", csv_path);
+            wav_close(wav);
+            rb_destroy(sim);
+            return 1;
+        }
+    }
+
+    printf("sound: %s, %d cylinder%s, %.2f L; a microphone %.2g m from the tailpipe%s\n", engine_name,
+           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3, distance,
+           e->systems > 1 ? "s" : "");
+    float buf[BLOCK_FRAMES];
+    const double fs = cfg.sample_rate;
+    if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
+        for (long k = 0; k < lround(SOUND_SETTLE * fs / BLOCK_FRAMES); k++)
+            rb_render_block(sim, buf, BLOCK_FRAMES);
+        if (drive == DRIVE_HOLD)
+            printf("  held at %.0f rpm, throttle %.0f %%, after %.1f s to settle\n", rpm,
+                   100.0 * throttle, SOUND_SETTLE);
+        else
+            e->hold_speed = 0;   /* the crank's speed and energy are the held ones: no jump */
+    }
+
+    const long long total = llround(seconds * fs);
+    double peak = 0.0, sumsq = 0.0, lo = INFINITY, hi = 0.0;
+    double released = -1.0, on_limiter = -1.0, lifted = -1.0;
+    long long frames = 0;
+    int io_error = 0;
+    clock_t c0 = clock();
+    while (frames < total) {
+        const double t = frames / fs;
+        /* the driver */
+        if (drive == DRIVE_IDLE && e->starter && (e->rpm_smooth > 0.75 * d.idle_rpm || t > 3.0)) {
+            e->starter = 0;
+            released = t;
+        }
+        if (drive == DRIVE_SWEEP) {
+            if (on_limiter < 0.0 && e->spark_cut) on_limiter = t;
+            if (lifted < 0.0 && on_limiter >= 0.0 && t >= on_limiter + SWEEP_LIMITER) {
+                e->throttle_pos = 0.0;
+                lifted = t;
+            }
+            if (lifted >= 0.0 && t >= lifted + SWEEP_COAST) break;
+        }
+
+        const int n = (int)(total - frames < BLOCK_FRAMES ? total - frames : BLOCK_FRAMES);
+        rb_render_block(sim, buf, n);
+        if (wav_write(wav, buf, (size_t)n) != WAV_OK) io_error = 1;
+        for (int i = 0; i < n; i++) {
+            if (fabs(buf[i]) > peak) peak = fabs(buf[i]);
+            sumsq += (double)buf[i] * buf[i];
+        }
+        frames += n;
+        if (e->rpm < lo) lo = e->rpm;
+        if (e->rpm > hi) hi = e->rpm;
+        if (csv) {
+            const double rms = rb_get_telemetry(sim, RB_TLM_OUT_RMS);
+            const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
+            double row[8] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
+                              rb_get_telemetry(sim, RB_TLM_OUT_PEAK), rms,
+                              (pa > 0.0) ? 20.0 * log10(pa / 2e-5) : 0.0 };
+            if (csv_row(csv, row) != 0) io_error = 1;
+        }
+    }
+    const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
+    const double recorded = frames / fs, rms = frames > 0 ? sqrt(sumsq / frames) : 0.0;
+
+    if (drive == DRIVE_IDLE) {
+        if (released >= 0.0) printf("  key to START; the starter lets go at %.2f s\n", released);
+        printf("  idling at %.0f rpm at the end (%.0f-%.0f rpm over the whole run)\n", e->result.rpm, lo, hi);
+    } else if (drive == DRIVE_SWEEP) {
+        printf("  wide open from %.0f rpm, %.1f kg m^2 on the crank", SWEEP_FROM, d.inertia);
+        if (on_limiter >= 0.0)
+            printf(": on the rev limiter after %.1f s, foot off at %.1f s\n", on_limiter, lifted);
+        else
+            printf(": no rev limiter within %.0f s\n", recorded);
+    }
+    const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
+    printf("  %.2f s recorded: peak %.3f (%.1f dBFS), rms %.4f: %.1f dB SPL at the microphone\n", recorded,
+           peak, peak > 0.0 ? 20.0 * log10(peak) : -INFINITY, rms, pa > 0.0 ? 20.0 * log10(pa / 2e-5) : 0.0);
+    printf("  soft-limited samples %.0f, non-finite %.0f\n", rb_get_telemetry(sim, RB_TLM_LIMITED),
+           rb_get_telemetry(sim, RB_TLM_NONFINITE));
+    if (cpu > 0.0) printf("  cpu %.1f s (%.2fx real time)\n", cpu, recorded / cpu);
+
+    if (wav_close(wav) != WAV_OK) io_error = 1;
+    if (csv && csv_close(csv) != 0) io_error = 1;
+    rb_destroy(sim);
+    printf("wrote %s (%s)%s%s\n", out_path, use_float ? "32-bit float" : "16-bit PCM, dithered",
+           csv_path ? " and " : "", csv_path ? csv_path : "");
+    if (io_error) {
+        fprintf(stderr, "rb_cli sound: write error\n");
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -1808,6 +2054,8 @@ int main(int argc, char **argv)
         return cmd_dyno(argc - 1, argv + 1);
     if (!strcmp(argv[1], "pipes"))
         return cmd_pipes(argc - 1, argv + 1);
+    if (!strcmp(argv[1], "sound"))
+        return cmd_sound(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         usage(stdout);
         return 0;

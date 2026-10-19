@@ -6,6 +6,15 @@
  * again with the real sizes by wav_close(). Every multi-byte field is
  * little-endian and written byte by byte, so this works on any host.
  *
+ * Dither (stage 11). Rounding to 16 bits makes an error that follows the
+ * signal: on a pure tone it comes out as harmonics, spurs about 97 dB down
+ * (stage 1). Adding noise with a triangular distribution before rounding,
+ * two uniform numbers in [0, 1) less 1, so -1 to 1 LSB, makes the error's
+ * mean and power independent of the signal (TPDF dither: Wannamaker, Lipshitz
+ * and Vanderkooy 2000): a steady, flat noise floor instead of distortion,
+ * 0.5 LSB RMS (1/6 LSB^2 of dither plus the 1/12 of rounding), about -96 dB
+ * of full scale.
+ *
  * Layout (PCM16, the classic 44-byte header):
  *   "RIFF" <file size - 8> "WAVE"
  *   "fmt " <16> format channels rate byte_rate block_align bits
@@ -32,7 +41,18 @@ struct wav_writer {
     wav_format fmt;
     uint32_t   data_bytes;
     int        failed;
+    int        dither;      /* PCM16: TPDF dither before rounding       */
+    uint64_t   rng;         /* its random numbers (xorshift64*)        */
 };
+
+/* A uniform random number in [0, 1), from xorshift64* (Vigna 2016). */
+static double uniform(wav_writer *w)
+{
+    w->rng ^= w->rng >> 12;
+    w->rng ^= w->rng << 25;
+    w->rng ^= w->rng >> 27;
+    return (double)((w->rng * 0x2545F4914F6CDD1Dull) >> 11) * (1.0 / 9007199254740992.0);
+}
 
 /* ---- little-endian helpers ---------------------------------------- */
 
@@ -119,6 +139,8 @@ wav_writer *wav_open(const char *path, int sample_rate, int channels, wav_format
     w->sample_rate = sample_rate;
     w->channels    = channels;
     w->fmt         = fmt;
+    w->dither      = 1;
+    w->rng         = 0x9E3779B97F4A7C15ull;   /* any fixed, non-zero seed */
 
     w->f = fopen(path, "wb");
     if (!w->f) {
@@ -159,7 +181,11 @@ int wav_write(wav_writer *w, const float *samples, size_t frames)
         if (w->fmt == WAV_PCM16) {
             if (x > 1.0f)  x = 1.0f;
             if (x < -1.0f) x = -1.0f;
-            long q = lrintf(x * 32767.0f);        /* round to nearest */
+            double v = (double)x * 32767.0;
+            if (w->dither) v += uniform(w) + uniform(w) - 1.0;   /* TPDF, +-1 LSB */
+            long q = lrint(v);                    /* round to nearest */
+            if (q > 32767)  q = 32767;
+            if (q < -32767) q = -32767;
             put_u16(buf + used, (uint16_t)(int16_t)q);
         } else {
             uint32_t bits;
@@ -178,6 +204,11 @@ int wav_write(wav_writer *w, const float *samples, size_t frames)
         }
     }
     return WAV_OK;
+}
+
+void wav_set_dither(wav_writer *w, int on)
+{
+    if (w) w->dither = on ? 1 : 0;
 }
 
 int wav_close(wav_writer *w)

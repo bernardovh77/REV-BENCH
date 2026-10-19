@@ -5,8 +5,9 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 10 of 26 done. The C core plays in the browser through an AudioWorklet
-(still a test tone). The physics so far: gas properties, chambers and flow through openings,
+**Status:** stage 11 of 26 done. The C core plays in the browser through an AudioWorklet
+(still a test tone); natively it renders the engine's own sound to WAV files, as a microphone
+behind the tailpipe hears it. The physics so far: gas properties, chambers and flow through openings,
 a cylinder with a crank and piston, an engine breathing through its cams, valves, throttle
 and intake plenum, burning fuel with heat lost to the walls, and a crank that turns on its
 own: friction, a starter motor, and an engine computer that idles it, cuts the fuel when
@@ -52,10 +53,12 @@ You need `gcc` and `make` (`sudo apt install build-essential`).
 cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH
 make            # builds build/rb_cli
 make test       # runs the C unit tests
-make render     # writes renders/test.wav (+ renders/test.csv)
+make render     # the engine's sound (about a minute): renders/i4-idle.wav, i4-sweep.wav,
+                # v8-cross-3000.wav and v8-flat-3000.wav, and the test tone (test.wav)
 ```
 
-Open `renders\test.wav` from Windows Explorer to listen.
+Open the WAVs in `renders\` from Windows Explorer to listen, on headphones or speakers with
+some bass: the four's idle is mostly 27 Hz.
 
 More:
 
@@ -82,6 +85,8 @@ build/rb_cli pipes         # one cycle of the four's runner, header and exhaust,
 build/rb_cli run           # the engine on its own: started, idling, revved, rev limiter, off
                            # (renders/run.csv); try --load 10, --inertia 0.08, --help
 build/rb_cli run --preset v8-flat   # breathe, fire and run take any preset (rb_cli presets)
+build/rb_cli sound         # the engine's sound, started and idling (renders/sound.wav); try
+                           # --preset v8-cross, --sweep, --hold --rpm 3000 --throttle 0.3, --help
 make SAN=1 test            # tests with AddressSanitizer + UBSan
 make help                  # all make targets
 ```
@@ -100,6 +105,9 @@ python3 tools/plot_presets.py firing         # rb_cli presets --csv renders/pres
 python3 tools/plot_dyno.py curves renders/dyno-i4.csv ...   # dyno sweeps against the real engines
 python3 tools/plot_pipes.py pulse renders/pulse.csv          # the pulse, where it is when
 python3 tools/plot_pipes.py engine renders/pipes.csv         # the waves in a runner and a header
+python3 tools/plot_sound.py check renders/*.wav              # levels, DC, clicks, lines
+python3 tools/plot_sound.py spectrograms renders/i4-idle.wav renders/v8-cross-3000.wav
+python3 tools/plot_sound.py sweep renders/i4-sweep.wav renders/i4-sweep.csv
 ```
 
 ## Rebuilding the WebAssembly core
