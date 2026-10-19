@@ -268,8 +268,8 @@ void test_presets_run_on_their_own(void)
 {
     /* Stage 8's "done when": every preset, with the crank free, is cranked by
      * its starter, starts, settles to its own idle speed and holds it without
-     * hunting (with the four's idle gains the six and the eights hunt 20 to
-     * 60 rpm), revs into its rev limiter floored, comes back to idle with the
+     * hunting (each with its own idle gains: with the four's, the six wanders
+     * 20 rpm), revs into its rev limiter floored, comes back to idle with the
      * foot off, and stops when the ignition is switched off. */
     for (int p = 0; p < rb_preset_count(); p++) {
         rb_engine_desc d;
@@ -304,11 +304,10 @@ void test_presets_run_on_their_own(void)
         CHECK(n >= 8);
         CHECK_NEAR(sum / n, d.idle_rpm, 10.0);
         CHECK(hi - lo < 15.0);
-        CHECK(e.idle_valve > 0.05 && e.idle_valve < 0.3);
+        CHECK(e.idle_valve > 0.12 && e.idle_valve < 0.18);   /* sized to idle about 15 % open */
 
         /* A blip, 30 % for a quarter of a second: back at idle without
-         * dipping much below it (with the four's proportional gain the six
-         * dips 70 rpm). */
+         * dipping much below it (with the four's gains the six dips 55 rpm). */
         double dip = INFINITY;
         e.throttle_pos = 0.3;
         for (long j = 0; j < lround(0.25 / DT_FAST); j++) rb_engine_step(&e);
@@ -346,6 +345,44 @@ void test_presets_run_on_their_own(void)
     }
 }
 
+void test_presets_idle_takes_a_load(void)
+{
+    /* A 10 N m load thrown on at idle, an air conditioner kicking in, say:
+     * the six sags about 300 rpm without stalling and is back within 30 rpm of
+     * its idle speed in under 7 s, the idle valve then open further. The
+     * engine computer keeps learning the valve's position while the engine is
+     * below idle, even before its speed steadies; waiting for it to steady
+     * took 10 s (stage 9). */
+    rb_engine_desc d;
+    rb_preset_desc(rb_preset_find("i6"), &d);
+    rb_engine_init(&e, &d, DT_FAST);
+    e.hold_speed = 0;
+    e.throttle_pos = 0.0;
+    e.ignition = 1;
+    e.starter = 1;
+    for (long k = 0; k < lround(4.0 / DT_FAST); k++) {
+        if (e.starter && e.rpm_smooth > 0.75 * d.idle_rpm) e.starter = 0;
+        rb_engine_step(&e);
+    }
+    CHECK_NEAR(e.result.rpm, d.idle_rpm, 15.0);
+    const double valve = e.idle_valve;
+
+    e.load_torque = 10.0;
+    double low = INFINITY, back = 0.0;
+    long cycles = e.cycles;
+    for (long k = 0; k < lround(10.0 / DT_FAST); k++) {
+        rb_engine_step(&e);
+        low = fmin(low, e.rpm);
+        if (e.cycles != cycles) {
+            cycles = e.cycles;
+            if (fabs(e.result.rpm - d.idle_rpm) > 30.0) back = (k + 1) * DT_FAST;
+        }
+    }
+    CHECK(low > d.idle_rpm - 400.0 && low < d.idle_rpm - 200.0);
+    CHECK(back > 1.0 && back < 7.0);
+    CHECK(e.idle_valve > valve + 0.04);
+}
+
 void test_api_engine_fields(void)
 {
     /* The field table is complete: names unique and found again, units, and
@@ -353,6 +390,7 @@ void test_api_engine_fields(void)
      * setting a field to the value it has is accepted (read-only ones
      * refused) and changes nothing: the engine isn't even rebuilt. */
     CHECK_EQ_INT(rb_engine_field_count(), RB_ENG_COUNT);
+    int bad_range = 0;
     for (int f = 0; f < RB_ENG_COUNT; f++) {
         const char *name = rb_engine_field_name(f);
         CHECK(name && name[0] && rb_engine_field_unit(f));
@@ -360,7 +398,13 @@ void test_api_engine_fields(void)
         CHECK((rb_engine_field_flags(f) & ~63) == 0);
         const int per = rb_engine_field_flags(f) & (RB_EF_PER_BANK | RB_EF_PER_CYLINDER | RB_EF_IN_ORDER);
         CHECK(per == 0 || per == RB_EF_PER_BANK || per == RB_EF_PER_CYLINDER || per == RB_EF_IN_ORDER);
+        /* A range for everything that can be set, none for the rest. */
+        const double lo = rb_engine_field_min(f), hi = rb_engine_field_max(f);
+        if (rb_engine_field_flags(f) & RB_EF_READONLY) bad_range += !(isnan(lo) && isnan(hi));
+        else bad_range += !(lo < hi);
     }
+    CHECK_EQ_INT(bad_range, 0);
+    CHECK(isnan(rb_engine_field_min(-1)) && isnan(rb_engine_field_max(RB_ENG_COUNT)));
     CHECK(rb_engine_field_name(-1) == NULL && rb_engine_field_name(RB_ENG_COUNT) == NULL);
     CHECK(rb_engine_field_unit(RB_ENG_COUNT) == NULL);
     CHECK_EQ_INT(rb_engine_field_flags(RB_ENG_COUNT), 0);
@@ -390,6 +434,8 @@ void test_api_engine_fields(void)
         CHECK(rb_get_engine(s, RB_ENG_EXHAUST_VALVES, 0) == d.exhaust.count);
         CHECK(rb_get_engine(s, RB_ENG_PLENUM_VOLUME, 0) == d.plenum_volume);
         CHECK(rb_get_engine(s, RB_ENG_REV_LIMIT, 0) == d.rev_limit);
+        CHECK(rb_get_engine(s, RB_ENG_RUNNER_LENGTH, 0) == d.runner_length);
+        CHECK(rb_get_engine(s, RB_ENG_RUNNER_DIAMETER, 0) == d.runner_diameter);
         CHECK_NEAR(rb_get_engine(s, RB_ENG_DISPLACEMENT, 0), rb_engine_displacement(&s->engine), 0.0);
         CHECK(rb_get_engine(s, RB_ENG_INTAKE_OPENS, 0) == rb_valve_opens(&d.intake));
         CHECK(rb_get_engine(s, RB_ENG_EXHAUST_CLOSES, 0) == rb_valve_closes(&d.exhaust));
@@ -408,6 +454,9 @@ void test_api_engine_fields(void)
         CHECK(isnan(rb_get_engine(s, RB_ENG_BORE, 1)) && isnan(rb_get_engine(s, RB_ENG_BORE, -1)));
         CHECK(isnan(rb_get_engine(s, RB_ENG_COUNT, 0)) && isnan(rb_get_engine(NULL, RB_ENG_BORE, 0)));
 
+        /* Every preset sits inside the fields' ranges (else the loop below
+         * gets RB_CLAMPED), and setting each field to the value it has is
+         * accepted and changes nothing. */
         s->engine.theta = 123.0;   /* a mark: rebuilding the engine would reset it */
         int refused = 0, wrong_code = 0;
         for (int f = 0; f < RB_ENG_COUNT; f++) {
@@ -449,15 +498,14 @@ void test_api_engine_changes(void)
 
     /* Refusals leave the engine exactly as it was. */
     const rb_engine_desc before = s->engine.desc;
-    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_REV_LIMIT, 0, 50.0), RB_ERR_VALUE);   /* the spark would never come back */
-    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_ROD, 0, 0.03), RB_ERR_VALUE);   /* shorter than the crank throw */
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_ROD, 0, 0.03), RB_ERR_VALUE);   /* even clamped, shorter than the stroke */
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BORE, 0, NAN), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BORE, 0, INFINITY), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_INTAKE_VALVES, 0, 2.5), RB_ERR_VALUE);
-    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_INTAKE_VALVES, 0, 5.0), RB_ERR_VALUE);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_INTAKE_DIAMETER, 0, 0.07), RB_ERR_VALUE);   /* 60 mm: won't fit */
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_INTAKE_DIAMETER, 0, 0.05), RB_ERR_VALUE);   /* won't fit */
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK, 2, 1.0), RB_ERR_VALUE);        /* there's one bank */
-    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK_ANGLE, 0, 270.0), RB_ERR_VALUE);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK, 2, 0.5), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_FIRING_ORDER, 1, 4.0), RB_ERR_VALUE);   /* no cylinder 5 */
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_FIRING_ORDER, 1, -1.0), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_FIRING_ORDER, 0, 1.0), RB_ERR_VALUE);   /* 1 must be first */
@@ -472,6 +520,34 @@ void test_api_engine_changes(void)
     CHECK_EQ_INT(rb_set_engine(NULL, RB_ENG_BORE, 0, 0.08), RB_ERR_ARG);
     CHECK(memcmp(&s->engine.desc, &before, sizeof before) == 0);
     CHECK(s->engine.theta == 123.0);
+
+    /* Out of range: clamped, if the engine still works. Angles around the
+     * crank wrap instead. */
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_REV_LIMIT, 0, 50.0), RB_CLAMPED);
+    CHECK(s->engine.desc.rev_limit == 2000.0 && s->engine.desc.rev_limit_resume == 1900.0);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_EXHAUST_VALVES, 0, 9.0), RB_CLAMPED);
+    CHECK_EQ_INT(rb_get_engine(s, RB_ENG_EXHAUST_VALVES, 0), 4);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_EXHAUST_VALVES, 0, 2.0), RB_OK);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_PIN, 1, -180.0), RB_OK);        /* = 180: as it was */
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_PIN, 2, 540.0), RB_OK);         /* = 180 */
+    CHECK(s->engine.desc.pin[1] == 180.0 && s->engine.desc.pin[2] == 180.0);
+    s->engine.theta = 55.0;
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_PIN, 0, -0.0), RB_OK);          /* = 0: nothing changes */
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_PIN, 0, -1e-17), RB_OK);
+    CHECK(s->engine.theta == 55.0 && !signbit(s->engine.desc.pin[0]));
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK_ANGLE, 0, 330.0), RB_OK);  /* = -30: a slanted four */
+    CHECK(s->engine.desc.bank_angle[0] == -30.0 && s->engine.desc.firing[1] == 540.0);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK_ANGLE, 0, 0.0), RB_OK);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_REV_LIMIT, 0, 6000.0), RB_OK);
+
+    /* The intake runners (stage 9): through the API, at least 5 cm of them. */
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_LENGTH, 0, 0.0), RB_CLAMPED);
+    CHECK(s->engine.runner[0].length == 0.05);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_DIAMETER, 0, 0.045), RB_OK);
+    CHECK_NEAR(s->engine.runner[3].area, PI / 4 * 0.045 * 0.045, 1e-18);
+    CHECK_NEAR(s->engine.port[3].V, 0.25 * s->engine.runner[3].area * 0.05, 1e-18);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_LENGTH, 0, 0.33), RB_OK);
+    CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_DIAMETER, 0, 0.04), RB_OK);
 
     /* Putting a cylinder somewhere in the firing order swaps it with the one
      * that was there, and the firing angles follow. */

@@ -45,6 +45,8 @@ export interface RbExports {
   rb_engine_field_name(field: number): number;
   rb_engine_field_unit(field: number): number;
   rb_engine_field_flags(field: number): number;
+  rb_engine_field_min(field: number): number;
+  rb_engine_field_max(field: number): number;
   rb_get_cylinder(sim: number, cylinder: number, field: number): number;
   rb_cylinder_field_count(): number;
   rb_cylinder_field_name(field: number): number;
@@ -64,6 +66,7 @@ export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
   'rb_preset_count', 'rb_preset_key', 'rb_preset_name', 'rb_load_preset', 'rb_get_preset',
   'rb_get_engine', 'rb_set_engine', 'rb_engine_field_size', 'rb_engine_field_count',
   'rb_engine_field_name', 'rb_engine_field_unit', 'rb_engine_field_flags',
+  'rb_engine_field_min', 'rb_engine_field_max',
   'rb_get_cylinder', 'rb_cylinder_field_count', 'rb_cylinder_field_name', 'rb_cylinder_field_unit',
   'rb_sample_rate', 'rb_oversample', 'rb_alloc_floats', 'rb_free_floats',
 ];
@@ -109,6 +112,8 @@ export interface FieldInfo {
   name: string;
   unit: string;
   flags: number;   // RB_EF_* bits; always 0 for cylinder fields
+  min: number;     // the range a control should offer; NaN when it can't be set
+  max: number;
 }
 
 /**
@@ -234,6 +239,8 @@ export class RbCore {
         name: this.cString(x.rb_engine_field_name(id)),
         unit: this.cString(x.rb_engine_field_unit(id)),
         flags: x.rb_engine_field_flags(id),
+        min: x.rb_engine_field_min(id),
+        max: x.rb_engine_field_max(id),
       });
     }
     return list;
@@ -255,6 +262,8 @@ export class RbCore {
         name: this.cString(x.rb_cylinder_field_name(id)),
         unit: this.cString(x.rb_cylinder_field_unit(id)),
         flags: 0,
+        min: Number.NaN,
+        max: Number.NaN,
       });
     }
     return list;
@@ -374,10 +383,11 @@ export class RbSim {
   }
 
   /**
-   * Changes an engine field. Returns RB_OK, or RB_ERR_ARG (bad index),
-   * RB_ERR_ID (unknown field), RB_ERR_READONLY, or RB_ERR_VALUE when the
-   * value would make an impossible engine (the engine stays as it was).
-   * Fields without RB_EF_LIVE rebuild the engine, at rest.
+   * Changes an engine field. Returns RB_OK, RB_CLAMPED (outside the field's
+   * min..max: the nearest end was used), or RB_ERR_ARG (bad index), RB_ERR_ID
+   * (unknown field), RB_ERR_READONLY, or RB_ERR_VALUE when the value would
+   * make an impossible engine (the engine stays as it was). Pin and bank
+   * angles wrap around. Fields without RB_EF_LIVE rebuild the engine, at rest.
    */
   setEngine(field: number, index: number, value: number): number {
     return this.core.exports.rb_set_engine(this.ptr, field, index, value);

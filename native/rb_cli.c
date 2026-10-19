@@ -20,6 +20,7 @@
 #include "combustion.h"
 #include "csv.h"
 #include "cylinder.h"
+#include "dyno.h"
 #include "engine.h"
 #include "presets.h"
 #include "flow.h"
@@ -54,6 +55,8 @@ static void usage(FILE *f)
         "                        a dyno; IMEP, torque, efficiency, peak pressure\n"
         "  run [options]         the engine on its own crank: started with the key, idling,\n"
         "                        revved, into the rev limiter and switched off (CSV)\n"
+        "  dyno [options]        the engine on a dyno, crank free: torque and power from a sweep\n"
+        "                        or held at each speed (CSV)\n"
         "  presets [KEY] [options]  the engines that come with REV-BENCH, with their layouts\n"
         "                        and firing orders; with a KEY, every field of that engine as\n"
         "                        the API gives it\n"
@@ -101,16 +104,17 @@ static void usage(FILE *f)
         "\n",
         f);
     fputs(
-        "fire options (also --preset, --rpm, --throttle, --cylinders, --plenum, --intake,\n"
+        "fire options (also --preset, --rpm, --throttle, --cylinders, --plenum, --cr, --intake,\n"
         "--exhaust):\n"
-        "      --spark DEG       spark advance, degrees before TDC (default 25)\n"
+        "      --spark DEG       a fixed spark advance, degrees before TDC (default: the engine\n"
+        "                        computer's, for the best torque)\n"
         "      --afr R           air-fuel ratio by mass     (default 14.6, stoichiometric)\n"
         "      --motored         ignition off, for comparison\n"
         "      --no-walls        no heat flow to the walls\n"
         "      --csv FILE        one cycle of cylinder 1    (default renders/fire.csv)\n"
         "      --spark-sweep     torque and peak pressure for spark 0-50 deg (default renders/spark.csv)\n"
-        "      --rpm-sweep       wide-open torque and power, from 1000 rpm to the rev limit\n"
-        "                        (default renders/power.csv)\n"
+        "      --rpm-sweep       torque and power from 1000 rpm to the rev limit, wide open\n"
+        "                        unless --throttle (default renders/power.csv)\n"
         "\n"
         "run options (15 s: start, idle, a blip at 5 s, floored at 8.5 s, off at 13 s):\n"
         "      --csv FILE        every millisecond          (default renders/run.csv)\n"
@@ -120,9 +124,20 @@ static void usage(FILE *f)
         "      --limit RPM       rev limit                  (default: the preset's)\n"
         "      --idle-valve MM2  idle air valve area, fully open (default: the preset's)\n"
         "      --idle-gains P/I  idle valve opening per rpm below idle / learned per rpm per\n"
-        "                        second, e.g. 0.000375/0.001 (default: the preset's)\n"
+        "                        second, e.g. 0.0004/0.0006 (default: the preset's)\n"
         "      --preset KEY      the engine                 (default i4)\n"
         "      --cylinders N     1..16 inline, firing evenly, instead of the preset's layout\n"
+        "\n"
+        "dyno options (a sweep, or --step; wide open unless --throttle):\n"
+        "      --preset KEY      the engine                 (default i4)\n"
+        "      --from RPM        first speed                (default 1500)\n"
+        "      --to RPM          last speed                 (default: 200 below the rev limit)\n"
+        "      --rate RPM/S      how fast the sweep climbs  (default 100)\n"
+        "      --step RPM        hold each speed in turn, this far apart, instead of sweeping\n"
+        "      --throttle X      0..1                       (default 1)\n"
+        "      --cr R, --intake D/L/C, --exhaust D/L/C   compression ratio and cams, as for\n"
+        "                        breathe                    (default: the preset's)\n"
+        "      --csv FILE        a row per cycle (sweep) or per speed (default renders/dyno.csv)\n"
         "\n"
         "presets options:\n"
         "      --csv FILE        also run each one held at 3000 rpm wide open and write one\n"
@@ -169,12 +184,15 @@ static int cmd_info(void)
         printf("  %3d  %s\n", i, rb_telemetry_name(i));
 
     printf("\nengine fields (rb_get_engine, rb_set_engine; values: rb_cli presets KEY):\n");
-    printf("  %3s  %-18s %-7s %-14s %s\n", "id", "name", "unit", "one for each", "flags");
+    printf("  %3s  %-18s %-7s %9s %9s  %-14s %s\n", "id", "name", "unit", "min", "max",
+           "one for each", "flags");
     for (int i = 0; i < rb_engine_field_count(); i++) {
         const int fl = rb_engine_field_flags(i);
-        char line[160];
-        int n = snprintf(line, sizeof line, "  %3d  %-18s %-7s %-14s %s%s%s", i,
-                         rb_engine_field_name(i), rb_engine_field_unit(i),
+        char line[200], range[32] = "";
+        if (!(fl & RB_EF_READONLY))
+            snprintf(range, sizeof range, "%9g %9g", rb_engine_field_min(i), rb_engine_field_max(i));
+        int n = snprintf(line, sizeof line, "  %3d  %-18s %-7s %-19s  %-14s %s%s%s", i,
+                         rb_engine_field_name(i), rb_engine_field_unit(i), range,
                          (fl & RB_EF_PER_BANK) ? "bank" : (fl & RB_EF_PER_CYLINDER) ? "cylinder"
                          : (fl & RB_EF_IN_ORDER) ? "firing place" : "",
                          (fl & RB_EF_READONLY) ? "read-only " : "",
@@ -563,7 +581,7 @@ static int cmd_motor(int argc, char **argv)
 
 /* ---- breathe: the stage-5 engine, turned by a motor --------------------- */
 
-static rb_engine engine;   /* about 10 KB: not on the stack */
+static rb_engine engine;   /* about 20 KB: not on the stack */
 
 /* Parses a cam as "duration/lift/centerline", e.g. "250/9.5/110": degrees,
  * mm, and degrees from overlap TDC (after it for an intake lobe, before it
@@ -632,10 +650,11 @@ static int cylinders_option(double n, const char *cmd, rb_engine_desc *d)
     return 0;
 }
 
-/* One operating point: what the dyno and the driver set. */
+/* One operating point: what the dyno and the driver set. The spark is the
+ * engine computer's (spark_map) unless the driver fixes it. */
 typedef struct op_point {
     double rpm, throttle, spark, afr;
-    int    ignition;
+    int    ignition, spark_map;
 } op_point;
 
 /* Runs the engine from rest to a steady state at one operating point (to
@@ -647,6 +666,7 @@ static int settle_at(const rb_engine_desc *d, const op_point *op)
     engine.throttle_pos = op->throttle;
     engine.ignition = op->ignition;
     engine.spark = op->spark;
+    engine.spark_map = op->spark_map;
     engine.afr = op->afr;
     return rb_engine_settle(&engine, 300, 1e-4);
 }
@@ -666,6 +686,10 @@ static int write_cycle(const char *path)
     const double step_deg = 6.0 * engine.rpm * engine.dt;
     const long stride = lround(0.5 / step_deg) > 1 ? lround(0.5 / step_deg) : 1;
     while (engine.theta < 360.0) rb_engine_step(&engine);   /* to overlap TDC */
+    /* Cylinder 1's spark this cycle, in degrees before TDC (fixed at its
+     * intake valve closing, before the logged cycle's spark). */
+    const double sa = engine.burn[0].spark_angle;
+    const double advance = (sa >= 360.0) ? 720.0 - sa : -sa;
 
     /* The logged angle runs on from about -360 instead of wrapping, so the
      * trace is one continuous line. */
@@ -685,9 +709,9 @@ static int write_cycle(const char *path)
                                engine.plenum.p / 1e3, engine.rpm, engine.throttle_pos,
                                /* 0 until this cycle's spark: before it the burn record
                                 * still holds the last cycle's 1.0 */
-                               start + n * step_deg + engine.spark >= 0.0 ? b->fraction : 0.0,
+                               start + n * step_deg + advance >= 0.0 ? b->fraction : 0.0,
                                b->heat / step_deg, b->wall_heat / step_deg,
-                               engine.spark, engine.ignition };
+                               advance, engine.ignition };
             csv_row(csv, row);
         }
         rb_engine_step(&engine);
@@ -714,7 +738,7 @@ static int sweep(const rb_engine_desc *d, const char *path)
     fprintf(stderr, "measuring %d operating points", NR * NT);
     for (int i = 0; i < NR; i++) {
         for (int j = 0; j < NT; j++) {
-            const op_point op = { rpms[i], throttles[j], 25.0, RB_AFR_STOICH, 0 };
+            const op_point op = { rpms[i], throttles[j], 25.0, RB_AFR_STOICH, 0, 0 };
             const int cycles = settle_at(d, &op);
             const rb_engine_cycle *r = &engine.result;
             double row[10] = { rpms[i], throttles[j], r->ve, r->ve_plenum, r->map / 1e3,
@@ -820,7 +844,7 @@ static int cmd_breathe(int argc, char **argv)
     else
         printf("  no overlap: the exhaust closes %.0f deg before the intake opens\n", -overlap);
 
-    const op_point op = { rpm, throttle, 25.0, RB_AFR_STOICH, 0 };
+    const op_point op = { rpm, throttle, 25.0, RB_AFR_STOICH, 0, 0 };
     const int cycles = settle_at(&d, &op);
     const rb_engine_cycle *r = &engine.result;
     if (cycles < 0)
@@ -865,6 +889,9 @@ static void print_point(const rb_engine_cycle *r, double rpm)
         printf("  heat to the walls      %.0f %% of the fuel's energy\n",
                100.0 * r->wall_loss / fuel_energy);
     }
+    if (r->fuel_flow > 0.0)
+        printf("  spark                  %.1f deg before TDC; the burn takes %.1f deg\n", r->spark,
+               r->burn_duration);
     printf("  peak pressure          %.1f bar, %.1f deg %s TDC\n", r->p_max / 1e5,
            fabs(r->angle_p_max), r->angle_p_max < 0.0 ? "before" : "after");
     printf("  exhaust gas            %.0f K leaving the valves; the trapped charge is %.1f %% burned gas\n",
@@ -877,8 +904,8 @@ static int fire_sweep(const rb_engine_desc *d, op_point op, int by_spark, const 
     const char *cols[] = { "rpm", "throttle", "spark_deg", "afr", "imep_net_bar", "imep_gross_bar",
                            "pmep_bar", "torque_Nm", "power_kW", "efficiency", "p_max_bar",
                            "angle_p_max", "ve", "t_exhaust_K", "cycles", "fmep_bar", "bmep_bar",
-                           "brake_torque_Nm", "brake_power_kW" };
-    csv_writer *csv = csv_open(path, cols, 19);
+                           "brake_torque_Nm", "brake_power_kW", "burn_deg" };
+    csv_writer *csv = csv_open(path, cols, 20);
     if (!csv) {
         fprintf(stderr, "rb_cli fire: cannot write %s (does the folder exist?)\n", path);
         return 1;
@@ -889,23 +916,29 @@ static int fire_sweep(const rb_engine_desc *d, op_point op, int by_spark, const 
     const double step = by_spark ? 2.5 : 500.0;
     double best = -1e300, best_at = 0.0, brake = -1e300, brake_at = 0.0, power = -1e300, power_at = 0.0;
 
-    printf("%s, %s\n", by_spark ? "spark sweep" : "wide-open rpm sweep",
-           by_spark ? "torque against spark advance" : "indicated torque and power");
-    printf("  %8s %9s %9s %9s %10s %9s %10s\n", by_spark ? "spark" : "rpm", "torque", "power", "IMEP",
-           "peak p", "at", "brake");
+    if (by_spark) {
+        op.spark_map = 0;
+        printf("spark sweep at %.0f rpm, torque against spark advance\n", op.rpm);
+    } else {
+        printf("rpm sweep at %.0f %% throttle, indicated torque and power%s\n",
+               op.throttle * 100.0, op.spark_map ? ", spark for the best torque" : "");
+    }
+    printf("  %8s %9s %9s %9s %10s %9s %10s %7s\n", by_spark ? "spark" : "rpm", "torque", "power",
+           "IMEP", "peak p", "at", "brake", "spark");
     for (double x = from; x <= to + 1e-9; x += step) {
         if (by_spark) op.spark = x;
         else op.rpm = x;
         const int cycles = settle_at(d, &op);
         const rb_engine_cycle *r = &engine.result;
-        double row[19] = { op.rpm, op.throttle, op.spark, op.afr, r->imep_net / 1e5,
+        double row[20] = { op.rpm, op.throttle, r->spark, op.afr, r->imep_net / 1e5,
                            r->imep_gross / 1e5, r->pmep / 1e5, r->torque, r->power / 1e3,
                            r->efficiency, r->p_max / 1e5, r->angle_p_max, r->ve, r->t_exhaust,
                            cycles, r->fmep / 1e5, r->bmep / 1e5, r->brake_torque,
-                           r->brake_power / 1e3 };
+                           r->brake_power / 1e3, r->burn_duration };
         csv_row(csv, row);
-        printf("  %8.1f %7.1f Nm %6.1f kW %5.2f bar %6.1f bar %5.1f deg %6.1f Nm\n", x, r->torque,
-               r->power / 1e3, r->imep_net / 1e5, r->p_max / 1e5, r->angle_p_max, r->brake_torque);
+        printf("  %8.1f %7.1f Nm %6.1f kW %5.2f bar %6.1f bar %5.1f deg %6.1f Nm %5.1f\n", x,
+               r->torque, r->power / 1e3, r->imep_net / 1e5, r->p_max / 1e5, r->angle_p_max,
+               r->brake_torque, r->spark);
         if (r->torque > best) {
             best = r->torque;
             best_at = x;
@@ -933,7 +966,7 @@ static int cmd_fire(int argc, char **argv)
     rb_engine_desc d;
     const char *csv_path = NULL;
     double cylinders = 0.0, plenum = -1.0;
-    op_point op = { 3000.0, 1.0, 25.0, 14.6, 1 };
+    op_point op = { 3000.0, 1.0, 25.0, 14.6, 1, 1 };
     int sweep_spark = 0, sweep_rpm = 0;
 
     if (engine_from_args(argc, argv, "fire", &d)) return 2;
@@ -946,9 +979,10 @@ static int cmd_fire(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &op.rpm);
         else if (!strcmp(a, "--throttle"))
             ok = !to_double(take_value(argc, argv, &i), &op.throttle);
-        else if (!strcmp(a, "--spark"))
+        else if (!strcmp(a, "--spark")) {
             ok = !to_double(take_value(argc, argv, &i), &op.spark);
-        else if (!strcmp(a, "--afr"))
+            op.spark_map = 0;
+        } else if (!strcmp(a, "--afr"))
             ok = !to_double(take_value(argc, argv, &i), &op.afr);
         else if (!strcmp(a, "--cylinders"))
             ok = !to_double(take_value(argc, argv, &i), &cylinders);
@@ -956,6 +990,8 @@ static int cmd_fire(int argc, char **argv)
             ok = take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--plenum"))
             ok = !to_double(take_value(argc, argv, &i), &plenum);
+        else if (!strcmp(a, "--cr"))
+            ok = !to_double(take_value(argc, argv, &i), &d.cr);
         else if (!strcmp(a, "--intake"))
             ok = !parse_cam(take_value(argc, argv, &i), &d.intake, 1);
         else if (!strcmp(a, "--exhaust"))
@@ -999,20 +1035,20 @@ static int cmd_fire(int argc, char **argv)
     if (cylinders_option(cylinders, "fire", &d)) return 2;
     if (plenum >= 0.0) d.plenum_volume = plenum * 1e-3;
     if (rb_engine_desc_check(&d) != 0) {
-        fprintf(stderr, "rb_cli fire: impossible engine (check the cams and the plenum)\n");
+        fprintf(stderr, "rb_cli fire: impossible engine (check --cr, the cams and the plenum)\n");
         return 2;
     }
     if (sweep_spark) return fire_sweep(&d, op, 1, csv_path ? csv_path : "renders/spark.csv");
-    if (sweep_rpm) {
-        op.throttle = 1.0;
-        return fire_sweep(&d, op, 0, csv_path ? csv_path : "renders/power.csv");
-    }
+    if (sweep_rpm) return fire_sweep(&d, op, 0, csv_path ? csv_path : "renders/power.csv");
 
     rb_engine_init(&engine, &d, 1.0 / 192000.0);
     printf("fire: %s, %d cylinder%s, %.2f L, held at %.0f rpm by a dyno, throttle %.0f %%\n",
            engine_name, d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(&engine) * 1e3,
            op.rpm, op.throttle * 100.0);
-    if (op.ignition)
+    if (op.ignition && op.spark_map)
+        printf("  spark for the best torque, air-fuel ratio %.1f (lambda %.2f), walls %s\n",
+               op.afr, op.afr / RB_AFR_STOICH, d.heat_transfer ? "at 430 K" : "adiabatic");
+    else if (op.ignition)
         printf("  spark %.1f deg before TDC, air-fuel ratio %.1f (lambda %.2f), walls %s\n",
                op.spark, op.afr, op.afr / RB_AFR_STOICH,
                d.heat_transfer ? "at 430 K" : "adiabatic");
@@ -1358,6 +1394,195 @@ static int cmd_presets(int argc, char **argv)
     return 0;
 }
 
+/* ---- dyno: the free engine braked by an absorbing dyno (stage 9) ---- */
+
+#define DYNO_COLS 19
+
+/* One row of the dyno CSV: the dyno's reading and the engine's own numbers
+ * for the same cycle (or their means over the cycles averaged). */
+static void dyno_row(csv_writer *csv, const rb_dyno_reading *r, const rb_engine_cycle *c,
+                     double throttle)
+{
+    double row[DYNO_COLS] = { r->rpm, r->target_rpm, throttle, r->brake_torque,
+                              r->brake_power / 1e3, r->absorbed_torque, c->torque,
+                              c->imep_net / 1e5, c->fmep / 1e5, 4.0 * 3.14159265358979323846
+                              * r->brake_torque / rb_engine_displacement(&engine) / 1e5,
+                              c->ve, c->map / 1e3, c->afr, c->p_max / 1e5, c->angle_p_max,
+                              c->efficiency, c->pmep / 1e5, c->spark, c->burn_duration };
+    csv_row(csv, row);
+}
+
+/* Steps the engine on the dyno until it has read `n` more cycles, giving up
+ * after `seconds`. Returns the mean of those readings (and of the engine's
+ * cycle results, in *mean). */
+static rb_dyno_reading dyno_average(rb_dyno *y, int n, double seconds, rb_engine_cycle *mean)
+{
+    rb_dyno_reading sum = { 0 };
+    rb_engine_cycle m = { 0 };
+    int got = 0;
+    for (long k = 0; k < lround(seconds / engine.dt) && got < n; k++) {
+        if (rb_dyno_step(y, &engine)) {
+            const rb_dyno_reading *r = &y->reading;
+            const rb_engine_cycle *c = &engine.result;
+            sum.rpm += r->rpm;
+            sum.target_rpm = r->target_rpm;
+            sum.brake_torque += r->brake_torque;
+            sum.brake_power += r->brake_power;
+            sum.absorbed_torque += r->absorbed_torque;
+            m.torque += c->torque;
+            m.imep_net += c->imep_net;
+            m.fmep += c->fmep;
+            m.ve += c->ve;
+            m.map += c->map;
+            m.afr += c->afr;
+            m.p_max += c->p_max;
+            m.angle_p_max += c->angle_p_max;
+            m.efficiency += c->efficiency;
+            m.pmep += c->pmep;
+            m.spark += c->spark;
+            m.burn_duration += c->burn_duration;
+            got++;
+        }
+        rb_engine_step(&engine);
+    }
+    const double f = got ? 1.0 / got : 0.0;
+    sum.rpm *= f; sum.brake_torque *= f; sum.brake_power *= f; sum.absorbed_torque *= f;
+    m.torque *= f; m.imep_net *= f; m.fmep *= f; m.ve *= f; m.map *= f; m.afr *= f;
+    m.p_max *= f; m.angle_p_max *= f; m.efficiency *= f; m.pmep *= f;
+    m.spark *= f; m.burn_duration *= f;
+    *mean = m;
+    return sum;
+}
+
+static int cmd_dyno(int argc, char **argv)
+{
+    rb_engine_desc d;
+    const char *csv_path = "renders/dyno.csv";
+    double from = 1500.0, to = -1.0, rate = 100.0, step = 0.0, throttle = 1.0;
+
+    if (engine_from_args(argc, argv, "dyno", &d)) return 2;
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int ok = 1;
+        if (!strcmp(a, "--csv"))
+            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--from"))
+            ok = !to_double(take_value(argc, argv, &i), &from);
+        else if (!strcmp(a, "--to"))
+            ok = !to_double(take_value(argc, argv, &i), &to);
+        else if (!strcmp(a, "--rate"))
+            ok = !to_double(take_value(argc, argv, &i), &rate);
+        else if (!strcmp(a, "--step"))
+            ok = !to_double(take_value(argc, argv, &i), &step);
+        else if (!strcmp(a, "--throttle"))
+            ok = !to_double(take_value(argc, argv, &i), &throttle);
+        else if (!strcmp(a, "--cr"))
+            ok = !to_double(take_value(argc, argv, &i), &d.cr);
+        else if (!strcmp(a, "--intake"))
+            ok = !parse_cam(take_value(argc, argv, &i), &d.intake, 1);
+        else if (!strcmp(a, "--exhaust"))
+            ok = !parse_cam(take_value(argc, argv, &i), &d.exhaust, 0);
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+        else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
+            usage(stdout);
+            return 0;
+        } else {
+            fprintf(stderr, "rb_cli dyno: unknown option '%s'\n", a);
+            return 2;
+        }
+        if (!ok) {
+            fprintf(stderr, "rb_cli dyno: missing or bad value for %s\n", a);
+            return 2;
+        }
+    }
+    if (rb_engine_desc_check(&d) != 0) {
+        fprintf(stderr, "rb_cli dyno: impossible engine (check --cr, --intake and --exhaust)\n");
+        return 2;
+    }
+    if (!(to > 0.0)) to = d.rev_limit - 200.0;
+    if (!(from >= 500.0 && to > from && to < d.rev_limit)) {
+        fprintf(stderr, "rb_cli dyno: need 500 <= --from < --to < the rev limit (%.0f rpm)\n",
+                d.rev_limit);
+        return 2;
+    }
+    if (!(rate >= 10.0 && rate <= 5000.0) || !(step >= 0.0) || !(throttle >= 0.0 && throttle <= 1.0)) {
+        fprintf(stderr, "rb_cli dyno: --rate must be 10-5000 rpm/s, --step >= 0, --throttle 0-1\n");
+        return 2;
+    }
+
+    const char *cols[DYNO_COLS] = { "rpm", "target_rpm", "throttle", "brake_torque_Nm",
+                                    "brake_power_kW", "absorbed_torque_Nm", "torque_Nm",
+                                    "imep_bar", "fmep_bar", "bmep_bar", "ve", "map_kPa", "afr",
+                                    "p_max_bar", "angle_p_max", "efficiency", "pmep_bar",
+                                    "spark_deg", "burn_deg" };
+    csv_writer *csv = csv_open(csv_path, cols, DYNO_COLS);
+    if (!csv) {
+        fprintf(stderr, "rb_cli dyno: cannot write %s (does the folder exist?)\n", csv_path);
+        return 1;
+    }
+
+    /* Run the engine up held at the first speed, then hand it to the dyno. */
+    rb_engine_init(&engine, &d, 1.0 / 192000.0);
+    engine.rpm = from;
+    engine.throttle_pos = throttle;
+    engine.ignition = 1;
+    rb_engine_settle(&engine, 100, 1e-3);
+    rb_dyno y;
+    rb_dyno_init(&y, &engine, from);
+    printf("dyno: %s, %d cylinder%s, %.2f L, %.0f %% throttle, %s %.0f to %.0f rpm\n", engine_name,
+           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(&engine) * 1e3,
+           100.0 * throttle, step > 0.0 ? "held at each speed," : "a sweep,", from, to);
+    printf("  %8s %10s %9s %9s %9s %7s\n", "rpm", "brake", "power", "BMEP", "FMEP", "VE");
+
+    double best_t = 0.0, best_t_at = 0.0, best_p = 0.0, best_p_at = 0.0, next_print = from;
+    rb_engine_cycle mean;
+    if (step > 0.0) {
+        /* Each speed in turn: hold it a second, then average 6 cycles. */
+        for (double rpm = from; rpm <= to + 1e-9; rpm += step) {
+            y.target_rpm = rpm;
+            dyno_average(&y, 1000000, 1.0, &mean);
+            const rb_dyno_reading r = dyno_average(&y, 6, 5.0, &mean);
+            dyno_row(csv, &r, &mean, throttle);
+            printf("  %8.0f %7.1f Nm %6.1f kW %5.2f bar %5.2f bar %7.3f\n", r.rpm, r.brake_torque,
+                   r.brake_power / 1e3, 4.0 * 3.14159265358979323846 * r.brake_torque
+                   / rb_engine_displacement(&engine) / 1e5, mean.fmep / 1e5, mean.ve);
+            if (r.brake_torque > best_t) { best_t = r.brake_torque; best_t_at = r.rpm; }
+            if (r.brake_power > best_p) { best_p = r.brake_power; best_p_at = r.rpm; }
+        }
+    } else {
+        /* A second at the first speed, then climb, a row every cycle. */
+        dyno_average(&y, 1000000, 1.0, &mean);
+        rb_dyno_sweep(&y, to, rate);
+        const long most = lround(((to - from) / rate + 2.0) / engine.dt);
+        for (long k = 0; k < most; k++) {
+            if (rb_dyno_step(&y, &engine)) {
+                const rb_dyno_reading *r = &y.reading;
+                dyno_row(csv, r, &engine.result, throttle);
+                if (r->brake_torque > best_t) { best_t = r->brake_torque; best_t_at = r->rpm; }
+                if (r->brake_power > best_p) { best_p = r->brake_power; best_p_at = r->rpm; }
+                if (r->rpm >= next_print) {
+                    printf("  %8.0f %7.1f Nm %6.1f kW %5.2f bar %5.2f bar %7.3f\n", r->rpm,
+                           r->brake_torque, r->brake_power / 1e3, 4.0 * 3.14159265358979323846
+                           * r->brake_torque / rb_engine_displacement(&engine) / 1e5,
+                           engine.result.fmep / 1e5, engine.result.ve);
+                    next_print += 500.0;
+                }
+                if (y.target_rpm >= to && r->rpm >= to - 5.0) break;
+            }
+            rb_engine_step(&engine);
+        }
+    }
+    printf("peak brake torque %.1f N m at %.0f rpm, peak power %.1f kW at %.0f rpm\n", best_t,
+           best_t_at, best_p / 1e3, best_p_at);
+    if (csv_close(csv)) {
+        fprintf(stderr, "rb_cli dyno: error writing %s\n", csv_path);
+        return 1;
+    }
+    printf("wrote %s\n", csv_path);
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -1380,6 +1605,8 @@ int main(int argc, char **argv)
         return cmd_run(argc - 1, argv + 1);
     if (!strcmp(argv[1], "presets"))
         return cmd_presets(argc - 1, argv + 1);
+    if (!strcmp(argv[1], "dyno"))
+        return cmd_dyno(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         usage(stdout);
         return 0;

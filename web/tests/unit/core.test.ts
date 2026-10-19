@@ -143,12 +143,14 @@ describe('the engine through the API (stage 8)', () => {
     expect(info.presets.map((p) => p.key)).toEqual(['i4', 'i6', 'v8-cross', 'v8-flat', 'boxer4']);
     expect(info.presets[2]?.name).toBe('5.0 L cross-plane V8');
     const f = (name: string) => info.engineFields.find((x) => x.name === name);
-    expect(f('bore')).toMatchObject({ unit: 'm', flags: 0 });
+    expect(f('bore')).toMatchObject({ unit: 'm', flags: 0, min: 0.04, max: 0.15 });
     expect(f('displacement')).toMatchObject({ unit: 'm^3', flags: RB_EF_READONLY });
+    expect(f('displacement')?.min).toBeNaN();             // read-only: no range
     expect(f('bank_angle')?.flags).toBe(RB_EF_PER_BANK);
     expect(f('pin')).toMatchObject({ unit: 'deg', flags: RB_EF_PER_CYLINDER });
     expect(f('firing_order')?.flags).toBe(RB_EF_IN_ORDER | RB_EF_INTEGER);
     expect(f('rev_limit')).toMatchObject({ unit: 'rpm', flags: RB_EF_LIVE });
+    expect(f('runner_length')).toMatchObject({ unit: 'm', flags: 0, min: 0.05, max: 0.8 });
     expect(new Set(info.engineFields.map((x) => x.name)).size).toBe(info.engineFields.length);
     expect(info.cylinderFields.map((x) => x.name)).toEqual([
       'angle', 'piston', 'pressure', 'temperature', 'burn', 'burned_gas', 'intake_lift', 'exhaust_lift',
@@ -198,6 +200,10 @@ describe('the engine through the API (stage 8)', () => {
     expect(sim.getEngine(field('pin'), 4)).toBeNaN();
     expect(sim.setEngine(field('rev_limit'), 0, 6000)).toBe(RB_OK);
     expect(sim.getEngine(field('rev_limit'))).toBe(6000);
+    expect(sim.setEngine(field('rev_limit'), 0, 50000)).toBe(RB_CLAMPED);   // out of range
+    expect(sim.getEngine(field('rev_limit'))).toBe(12000);
+    expect(sim.setEngine(field('pin'), 1, -180)).toBe(RB_OK);            // angles wrap: 180, as it was
+    expect(sim.getEngine(field('pin'), 1)).toBe(180);
     sim.destroy();
   });
 

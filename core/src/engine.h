@@ -81,6 +81,10 @@ typedef struct rb_engine_desc {
     rb_valve    intake, exhaust;          /* each cylinder's valves (valve.h)         */
     rb_throttle throttle;                 /* throttle.h                               */
     double plenum_volume;                 /* m^3                                      */
+    double runner_length;                 /* m: each cylinder's intake runner, plenum
+                                           * to valve (0: the valves draw straight from
+                                           * the plenum, as in stages 5-8)            */
+    double runner_diameter;               /* m                                        */
     double exhaust_volume;                /* m^3: headers and collector               */
     double catalyst_area;                 /* m^2: effective area (Cd included) of the
                                            * downpipe and catalyst                    */
@@ -88,7 +92,10 @@ typedef struct rb_engine_desc {
     double tailpipe_area;                 /* m^2: effective area of the way out       */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
-    double burn_duration;                 /* crank degrees from the spark to the end  */
+    double burn_duration;                 /* crank degrees from the spark to the end,
+                                           * at 3000 rpm with a wide-open charge; it
+                                           * changes with speed and the charge (stage 9,
+                                           * see burn_duration() in engine.c)          */
     double wiebe_a, wiebe_m;              /* shape of the burn                        */
     double mixture_spread;                /* spread of the local fuel-air ratio, as a
                                            * standard deviation of phi (combustion.h) */
@@ -147,6 +154,8 @@ typedef struct rb_engine_cycle {
     double p_max;                     /* Pa: peak cylinder pressure, mean over the cylinders  */
     double angle_p_max;               /* degrees after firing TDC where it happens (mean)     */
     double residual;                  /* burned-gas share of the trapped charge (mean)        */
+    double spark;                     /* spark advance, degrees before TDC (mean)             */
+    double burn_duration;             /* crank degrees from spark to end of burn (mean)       */
     double rpm;                       /* mean crank speed over the cycle                      */
     double fmep;                      /* Pa: friction mean effective pressure                 */
     double bmep;                      /* Pa: brake mean effective pressure, imep_net - fmep   */
@@ -160,6 +169,8 @@ typedef struct rb_burn {
                                      (Woschni's reference)                               */
     double residual;              /* its burned-gas mass fraction                        */
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
+    double duration;              /* this cycle's burn: crank degrees from the spark to
+                                     the end (set at IVC)                                */
     int    spark_due;             /* 1 from intake valve closing until the spark         */
     double burnable;              /* kg of fuel set to burn at the spark                 */
     double fraction;              /* burned fraction so far, 0..1                        */
@@ -184,7 +195,11 @@ typedef struct rb_engine {
     double throttle_pos;    /* pedal, 0..1 (set it any time)                           */
     int    ignition;        /* 1 = injectors and spark on, 0 = motored (any time)      */
     double afr;             /* air-fuel ratio (by mass) the injectors aim for          */
-    double spark;           /* spark advance, crank degrees before firing TDC          */
+    int    spark_map;       /* 1: the engine computer times the spark, aiming the
+                             * middle of the burn just after TDC (the default);
+                             * 0: the spark comes at `spark`                          */
+    double spark;           /* spark advance, crank degrees before firing TDC, used
+                             * when spark_map is 0                                     */
     double theta;           /* degrees, cylinder 1's crank angle in the cycle          */
     long   cycles;          /* cycles completed since rb_engine_init                    */
     rb_engine_cycle result; /* the last completed cycle                                */
@@ -194,7 +209,10 @@ typedef struct rb_engine {
     rb_burn     burn[RB_MAX_CYLINDERS];
     rb_chamber  intake_air, plenum, manifold, muffler, exhaust_air;   /* the air reservoirs are fixed */
     rb_orifice  throttle;                          /* intake_air -> plenum             */
-    rb_orifice  intake[RB_MAX_CYLINDERS];          /* plenum -> cylinder i             */
+    rb_chamber  port[RB_MAX_CYLINDERS];            /* the gas in intake runner i (stage 9) */
+    rb_duct     runner[RB_MAX_CYLINDERS];          /* plenum -> port i: its moving column */
+    rb_orifice  intake[RB_MAX_CYLINDERS];          /* port i (the plenum with no runners)
+                                                    * -> cylinder i                     */
     rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> manifold           */
     rb_orifice  catalyst;                          /* manifold -> muffler              */
     rb_orifice  tailpipe;                          /* muffler -> exhaust_air           */

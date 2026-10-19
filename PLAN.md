@@ -24,7 +24,7 @@ gets a one-line summary of anything that changed from the plan.
 | 6  | Combustion (Wiebe) + heat transfer               | Physics core     | ✅     | 2.0 L four at 3000 rpm WOT: IMEP 12.0 bar, peak 58.8 bar at 12.7° ATDC at MBT (25°), 38.8 % indicated; low-speed VE 0.87 |
 | 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ✅     | Free crank with exact energy books; cranks at 238 rpm, idles at 800, limiter 6680–6830; brake 167 N m / 97 kW |
 | 8  | Engine layouts & presets                         | Physics core     | ✅     | I4, I6, cross- and flat-plane V8, boxer-4 start, idle and rev; firings every 180/120/90°; engine and cylinder state in the API |
-| 9  | Dyno + validation against real engines           | Physics core     | ⬜     | |
+| 9  | Dyno + validation against real engines           | Physics core     | ✅     | Absorbing dyno on the free crank; the four, six and boxer within 5 % of the 1AZ-FE, M54B30 and FB20; lumped intake runners brought forward from stage 10 |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ⬜     | |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ⬜     | Listening checkpoint |
 | 12 | Muffler, intake & mechanical sound, mix 🎧        | Sound            | ⬜     | Listening checkpoint |
@@ -252,6 +252,24 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - **Done when:** peak torque and power are within about ±15% of the reference engines, at sensible RPMs,
   and changes behave in the right direction (more CR → more torque until knock; bigger cams → torque
   shifts up the rev range).
+- *Built:* `dyno.c`, an absorbing dyno: a PI controller on the free crank's `load_torque` (1.5 Hz,
+  absorbing only) with a reading every cycle and the inertia correction. `rb_cli dyno` sweeps or
+  holds each speed and writes a CSV, and `tools/plot_dyno.py` charts it. The calibration:
+  - a burn that lengthens with speed and at light load (entrainment and burn-up, with Metghalchi
+    and Keck's flame speed);
+  - the engine computer's spark at the best torque (half burned 8° after TDC), held back at idle as
+    a reserve;
+  - modern friction (Knauder et al.);
+  - lumped intake runners (`rb_duct`: a column of air with inertia, and a port chamber at each
+    valve), brought forward from stage 10 because without a ram effect bigger cams only lost torque.
+
+  The four, the six and the boxer make within 5 % of the 1AZ-FE's, M54B30's and FB20's peak torque
+  and power. Bigger cams move the torque peak from 3500 to 5000 rpm, and each point of compression
+  adds about 2.5 %. The idle valves and gains were retuned for the new engine, and below idle the
+  computer now learns the idle valve's position even while the speed changes (a load at idle). The
+  stage 8 review gave the API's fields ranges (clamped with `RB_CLAMPED`; angles wrap). The fuel's
+  evaporation cooling was left out: it belongs with direct injection. Details in
+  `docs/stage-09.md`.
 
 ### Phase 2 — Sound (the realistic part)
 
@@ -265,7 +283,15 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - Expose the pipe geometry (lengths, diameters, how pipes connect) and per-cell pressure, for the 3D
   exhaust view (stage 19).
 - Use the same pipe model for the intake runners. Stage 5's quasi-steady valves give VE no
-  mid-range hump: that comes from the inertia of the air in tuned runners ("ram" effect).
+  mid-range hump: that comes from the inertia of the air in tuned runners ("ram" effect). Stage 9
+  added lumped runners (`rb_duct`, one column of air and a port chamber each); the pipes replace
+  them, keeping the `runner_length` and `runner_diameter` fields.
+- Then check the calibration again (`test_calibration_*` holds the four, six and boxer within
+  ±15 % of their real engines) and retune the idle gains. With the lumped exhaust 28–55 % of the
+  charge at idle is burned gas, which makes the idle burns 64–99°. The pipes will change that, and
+  the idle gains depend on it. Watch each idle for 30 s: the six's ±2.5 rpm swing only shows after
+  15 s. The V8s' idle spark (an absolute 15°) is 20–28° short of their best; a reserve counted from
+  the best spark needs their gains retuned.
 - The pipes replace stage 6's lumped exhaust manifold (2 L) and muffler (10 L). Check the
   air-fuel ratio at the lightest loads, where the lumped tailpipe still lets some air in (13.6
   instead of 14.6 at 2000 rpm and 3 % throttle).
@@ -307,7 +333,9 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   physics rate dropped to 96 kHz (VE changes by 0.03–0.1 % between the two, IMEP by under 0.1 %,
   and the free engine's idle not at all) as well as the optimizations listed in
   `docs/stage-05.md` and `docs/stage-06.md`. The eights (stage 8) cost 2.0 µs per step natively,
-  1.8 times the four: about 40 % of a core at 192 kHz before pipes.
+  1.8 times the four: about 40 % of a core at 192 kHz before pipes. Stage 9's lumped intake runners
+  add 30–38 %: the four costs 1.42 µs per step and the cross-plane V8 2.64 µs, mostly in the port
+  chambers' gas updates.
 - Benchmark with repeated runs: on this laptop (hybrid performance and efficiency cores) the same
   step measured 1.8 µs in one session and 1.1 µs in another.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default
@@ -331,13 +359,19 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   cam duration/lift/centerline, header length/diameter, muffler type, spark advance, AFR,
   rev limit, volume, quality.
 - Live vs rebuild parameters with a crossfade, input ranges kept sane, and units toggle (metric/imperial).
+  The API gives every field's range (`rb_engine_field_min/max`, stage 9) and clamps values outside
+  it. The spark is the engine computer's since stage 9 (`spark_map`): offer an offset from it
+  rather than a fixed advance. The intake runners (`runner_length`, `runner_diameter`) are fields too.
 - **Done when:** every control audibly or measurably does something and nothing can crash the sim.
 
 #### Stage 16 — Gauges + live dyno chart
 - Tachometer, manifold pressure/boost, AFR, torque and HP readouts. Level meters get proper ballistics
   (stage 2's meters show a single 128-frame block, so the RMS wobbles about 1 dB).
 - Dyno sweep button → torque/power curve drawn live in uPlot. Overlay the previous run to compare
-  builds ("before vs after" is the whole point of a tester).
+  builds ("before vs after" is the whole point of a tester). Stage 9's dyno (`core/src/dyno.c`)
+  isn't in the public API yet: expose it through `rb_sim`, so the browser sweeps with the same code.
+- A load at idle: with stage 9's idle gains the fours take about 5 s to recover from a sudden
+  10 N m. A derivative term on the idle valve or a feed-forward for known loads would help.
 - **Done when:** a sweep in the browser matches the native dyno curve from stage 9 within a few %.
 
 ### Phase 4 — 3D engine view
@@ -402,6 +436,8 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
   loss; piston speed, valve float and over-rev limits; an optional "engine blows" state with a
   warning UI and reset. The end gas is the unburned share of stage 6's Wiebe burn. Stage 6 lets
   50° of advance push the peak pressure to 82 bar; a real engine would knock long before that.
+  Since stage 9 the engine computer sets the spark for the best torque everywhere (18–37° on the
+  four); knock should hold it back at full load and low speed, as real engines' maps do.
 - 3D effects: knock flashes inside the cylinder, glowing parts, smoke, and a thrown rod when the
   engine blows.
 - **Done when:** the silly combos (CR 16 + 3 bar boost on pump gas, 12k rpm on a long-stroke I6) are

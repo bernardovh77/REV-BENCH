@@ -109,3 +109,37 @@ void rb_network_step(rb_chamber *const *chambers, int n_chambers,
     for (int i = 0; i < n_orifices; i++) rb_orifice_flow(&orifices[i], dt);
     for (int i = 0; i < n_chambers; i++) rb_chamber_integrate(chambers[i], dt);
 }
+
+void rb_duct_init(rb_duct *d, rb_chamber *a, rb_chamber *b, double area, double length,
+                  double loss)
+{
+    d->a = a;
+    d->b = b;
+    d->area = area;
+    d->length = length;
+    d->loss = loss;
+    d->mdot = 0.0;
+}
+
+double rb_duct_flow(rb_duct *d, double dt)
+{
+    if (!(d->mdot == d->mdot)) d->mdot = 0.0;   /* NaN: start again from rest */
+    const int forward = d->mdot >= 0.0;
+    rb_chamber *up = forward ? d->a : d->b, *down = forward ? d->b : d->a;
+    double m = fabs(d->mdot);
+    if (!(up->mass > 0.0)) m = 0.0;
+    else if (dt > 0.0 && m * dt > 0.5 * up->mass) m = 0.5 * up->mass / dt;
+    rb_chamber_add_flow(up, -m, up->y, up->h);
+    rb_chamber_add_flow(down, m, up->y, up->h);
+    return forward ? m : -m;
+}
+
+void rb_duct_accelerate(rb_duct *d, double dt)
+{
+    const rb_chamber *up = (d->mdot >= 0.0) ? d->a : d->b;
+    const double rho = (up->rho > 1e-6) ? up->rho : 1e-6;
+    const double u = d->mdot / (rho * d->area);
+    const double dp = d->a->p - d->b->p - d->loss * 0.5 * rho * u * fabs(u);
+    const double mdot = d->mdot + dt * d->area / d->length * dp;
+    d->mdot = (mdot == mdot) ? mdot : 0.0;
+}

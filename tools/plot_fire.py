@@ -226,6 +226,14 @@ def plot_spark(path, out):
     print(f"wrote {out}")
 
 
+def spark_text(d):
+    """The spark the sweep ran with: fixed, or the engine computer's (stage 9)."""
+    lo, hi = min(d["spark_deg"]), max(d["spark_deg"])
+    if hi - lo < 0.05:
+        return f"Spark {lo:g}° before TDC"
+    return f"Spark for the best torque ({lo:.0f}–{hi:.0f}° before TDC)"
+
+
 def plot_power(path, out):
     d = read_csv(path, ("rpm", "torque_Nm", "power_kW", "spark_deg"), "plot_fire")
     rpm = d["rpm"]
@@ -242,8 +250,7 @@ def plot_power(path, out):
         titles(fig, "Power curve at the crank: the 2.0 L four, wide open",
                f"Friction takes {f_lo:.1f} bar of mean pressure at {rpm[0]:.0f} rpm and "
                f"{f_hi:.1f} bar at {rpm[-1]:.0f}, so the brake torque\npeaks lower and earlier "
-               "than the gas's own (indicated) torque. "
-               f"Spark {d['spark_deg'][0]:g}° before TDC, stoichiometric.", top=0.94)
+               f"than the gas's own (indicated) torque. {spark_text(d)}, stoichiometric.", top=0.94)
         handles = [Line2D([], [], color=BLUE, lw=2, marker="o", ms=3.5, label="brake (at the crank)"),
                    Line2D([], [], color=MUTED, lw=1.4, ls=DASH, label="indicated (before friction)")]
         fig.legend(handles=handles, loc="lower right", bbox_to_anchor=(0.975, 0.72), ncol=2,
@@ -252,8 +259,8 @@ def plot_power(path, out):
                   (ax_p, d["brake_power_kW"], d["power_kW"], "power (kW)", "kW"))
     else:
         titles(fig, "First power curve: the 2.0 L four, wide open",
-               f"Indicated, before friction (stage 7 takes that off), spark {d['spark_deg'][0]:g}° "
-               "before TDC, stoichiometric.\nThe torque curve is nearly flat: there are no pressure "
+               f"Indicated, before friction (stage 7 takes that off), {spark_text(d).lower()}, "
+               "stoichiometric.\nThe torque curve is nearly flat: there are no pressure "
                "waves in the pipes yet (stage 10) to tune it.", top=0.94)
         panels = ((ax_t, d["torque_Nm"], None, "indicated torque (N m)", "N m"),
                   (ax_p, d["power_kW"], None, "indicated power (kW)", "kW"))

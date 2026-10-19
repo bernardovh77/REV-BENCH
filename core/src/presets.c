@@ -61,10 +61,20 @@ static void breathing(rb_engine_desc *d, double throttle, double leak, double pl
     d->tailpipe_area = tailpipe;
 }
 
+/* Each cylinder's intake runner, plenum to valve: its length sets where the
+ * air in it rams the cylinder fullest, and so where the torque peaks. */
+static void runners(rb_engine_desc *d, double length, double diameter)
+{
+    d->runner_length = length;
+    d->runner_diameter = diameter;
+}
+
 /* The crank, the starter, and the engine computer's idle and rev limit. Each
- * engine's idle gains are tuned on it (see docs/stage-08.md): start, a blip of
- * the throttle and a 10 N m load at idle, with room for gains 1.5 times as
- * strong before the idle hunts. */
+ * idle valve is sized so that the warm engine idles with it about 15 % open,
+ * where the engine computer starts it, and each engine's idle gains are tuned
+ * on it (docs/stage-08.md, retuned in docs/stage-09.md): start, a blip of the
+ * throttle and a 10 N m load at idle, with room for gains 1.5 times as strong
+ * before the idle hunts. */
 static void running(rb_engine_desc *d, double inertia, double starter, double starter_rpm,
                     double idle, double idle_valve, double gain_p, double gain_i, double limit)
 {
@@ -105,7 +115,8 @@ static void inline6(rb_engine_desc *d)
     d->intake = valve(2, 32 * MM, 9.7 * MM, 250.0, 110.0, 1);
     d->exhaust = valve(2, 27 * MM, 9.3 * MM, 250.0, 110.0, 0);
     breathing(d, 70 * MM, 3 * MM2, 4.0 * L, 3.0 * L, 28 * CM2, 15 * L, 28 * CM2);
-    running(d, 0.20, 250.0, 250.0, 700.0, 55 * MM2, 1.5e-4, 5.0e-4, 7000.0);
+    runners(d, 420 * MM, 40 * MM);
+    running(d, 0.20, 250.0, 250.0, 700.0, 40 * MM2, 2.0e-4, 3.0e-4, 7000.0);
 }
 
 /* 5.0 L 90-degree V8, 92 x 94 mm, with a cross-plane crank: four throws at
@@ -130,7 +141,8 @@ static void v8_cross(rb_engine_desc *d)
     d->intake = valve(2, 36 * MM, 11.0 * MM, 260.0, 112.0, 1);
     d->exhaust = valve(2, 31 * MM, 10.5 * MM, 260.0, 112.0, 0);
     breathing(d, 80 * MM, 4 * MM2, 6.0 * L, 4.0 * L, 40 * CM2, 20 * L, 40 * CM2);
-    running(d, 0.30, 350.0, 220.0, 650.0, 80 * MM2, 2.0e-4, 5.0e-4, 7000.0);
+    runners(d, 450 * MM, 45 * MM);
+    running(d, 0.30, 350.0, 220.0, 650.0, 68 * MM2, 2.0e-4, 5.0e-4, 7000.0);
 }
 
 /* 4.5 L 90-degree V8, 94 x 81 mm, with a flat-plane crank: two inline-4s on
@@ -154,7 +166,8 @@ static void v8_flat(rb_engine_desc *d)
     d->intake = valve(2, 38 * MM, 12.0 * MM, 270.0, 108.0, 1);
     d->exhaust = valve(2, 32 * MM, 11.0 * MM, 270.0, 108.0, 0);
     breathing(d, 90 * MM, 4 * MM2, 6.0 * L, 4.0 * L, 45 * CM2, 18 * L, 45 * CM2);
-    running(d, 0.18, 300.0, 250.0, 1000.0, 90 * MM2, 2.5e-4, 6.0e-4, 9000.0);
+    runners(d, 300 * MM, 50 * MM);
+    running(d, 0.18, 300.0, 250.0, 1000.0, 82 * MM2, 2.5e-4, 6.0e-4, 9000.0);
 }
 
 /* 2.0 L flat-4 (boxer), 84 x 90 mm: the banks 180 degrees apart, opposite
@@ -174,7 +187,8 @@ static void boxer4(rb_engine_desc *d)
     layout(d, 2, 90.0, -90.0, bank, pin, position, order);
     d->intake = valve(2, 32 * MM, 9.5 * MM, 250.0, 110.0, 1);
     d->exhaust = valve(2, 27 * MM, 9.0 * MM, 250.0, 110.0, 0);
-    running(d, 0.15, 200.0, 250.0, 750.0, 36 * MM2, 2.5e-4, 7.0e-4, 6500.0);
+    runners(d, 320 * MM, 40 * MM);
+    running(d, 0.15, 200.0, 250.0, 750.0, 27 * MM2, 3.0e-4, 4.0e-4, 6500.0);
 }
 
 static const preset_info PRESETS[] = {

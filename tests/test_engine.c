@@ -12,7 +12,7 @@
 
 #define DT (1.0 / 192000.0)   /* the default physics step */
 
-static rb_engine e;           /* about 10 KB: kept off the stack */
+static rb_engine e;           /* about 20 KB: kept off the stack */
 
 /* The default 2.0 L four from rest, motored with adiabatic walls (stage 5),
  * at the given speed and throttle. */
@@ -82,6 +82,8 @@ static contents inside(void)
     add_chamber(&c, &e.manifold);
     add_chamber(&c, &e.muffler);
     for (int i = 0; i < e.desc.cylinders; i++) add_chamber(&c, &e.cyl[i].gas);
+    if (e.desc.runner_length > 0.0)
+        for (int i = 0; i < e.desc.cylinders; i++) add_chamber(&c, &e.port[i]);
     return c;
 }
 
@@ -154,6 +156,11 @@ void test_engine_description(void)
     bad = d; bad.exhaust.duration = 0.0;       CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     bad = d; bad.throttle.cd = 2.0;            CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     bad = d; bad.plenum_volume = 0.0;          CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
+    bad = d; bad.runner_length = 0.0;          CHECK_EQ_INT(rb_engine_desc_check(&bad), 0);   /* no runners */
+    bad = d; bad.runner_length = 0.02;         CHECK_EQ_INT(rb_engine_desc_check(&bad), 0);
+    bad = d; bad.runner_length = 0.019;        CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);  /* rings too fast */
+    bad = d; bad.runner_length = NAN;          CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
+    bad = d; bad.runner_diameter = 0.0;        CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     bad = d; bad.p_ambient = NAN;              CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     CHECK_EQ_INT(rb_engine_desc_check(NULL), -1);
     CHECK_EQ_INT(rb_engine_init(&e, &bad, DT), -1);
@@ -198,14 +205,16 @@ void test_engine_settles_and_balances(void)
 {
     /* Wide open at 3000 rpm: it settles within a few cycles, the air through
      * the throttle equals the air into the cylinders, and the volumetric
-     * efficiency is in the range of real naturally aspirated engines. */
+     * efficiency is in the range of real naturally aspirated engines near
+     * their torque peak, where the intake runners' ram fills the cylinders
+     * nearly full (stage 9). */
     start(3000.0, 1.0);
     const int cycles = rb_engine_settle(&e, 100, 1e-6);
     const rb_engine_cycle *r = &e.result;
     const double expected_flow = r->ve * ambient_density() * rb_engine_displacement(&e) * 3000.0 / 120.0;
 
     CHECK(cycles > 0 && cycles < 50);
-    CHECK(r->ve > 0.85 && r->ve < 0.95);
+    CHECK(r->ve > 0.90 && r->ve < 1.0);
     CHECK_NEAR(r->air_flow, expected_flow, 1e-5 * expected_flow);
     CHECK(r->map < e.desc.p_ambient && r->map > 0.98 * e.desc.p_ambient);
     CHECK(r->map_min < r->map && r->map < r->map_max);
@@ -379,12 +388,14 @@ void test_engine_fired_full_load(void)
 
 void test_engine_spark_advance(void)
 {
-    /* Advancing the spark raises the peak pressure and moves it earlier, and
-     * the torque peaks in between ("MBT"): too early or too late both lose. */
+    /* With the spark set by hand (the engine computer's map off): advancing
+     * it raises the peak pressure and moves it earlier, and the torque peaks
+     * in between ("MBT"): too early or too late both lose. */
     static const double spark[3] = { 10.0, 25.0, 40.0 };
     double torque[3], p_max[3], angle[3];
     for (int k = 0; k < 3; k++) {
         start_fired(3000.0, 1.0);
+        e.spark_map = 0;
         e.spark = spark[k];
         rb_engine_settle(&e, 100, 1e-4);
         torque[k] = e.result.torque;
@@ -474,9 +485,10 @@ void test_engine_burn_stops_at_evo(void)
 {
     /* Spark 90 degrees after TDC: the exhaust valve opens with the flame still
      * going, and whatever hasn't burned by then leaves unburned. The burned
-     * share is where the Wiebe curve has got to at the valve's opening, and
-     * the books still balance. */
+     * share is where the Wiebe curve, as long as this charge burns (stage 9),
+     * has got to at the valve's opening, and the books still balance. */
     start_fired(3000.0, 1.0);
+    e.spark_map = 0;
     e.spark = -90.0;
     rb_engine_settle(&e, 100, 1e-4);
     const books b0 = snapshot();
@@ -484,7 +496,7 @@ void test_engine_burn_stops_at_evo(void)
     const books b1 = snapshot();
     const rb_engine_desc *d = &e.desc;
     const double evo = rb_valve_opens(&d->exhaust), a = rb_engine_cylinder_angle(&e, 0);
-    const double x_evo = rb_wiebe(evo - 90.0, d->burn_duration, d->wiebe_a, d->wiebe_m);
+    const double x_evo = rb_wiebe(evo - 90.0, e.burn[0].duration, d->wiebe_a, d->wiebe_m);
     const double fuel = b1.fuel_in - b0.fuel_in, unburned = b1.out[RB_FUEL] - b0.out[RB_FUEL];
 
     CHECK(x_evo > 0.3 && x_evo < 0.95);          /* the valve opens mid-burn */
@@ -512,9 +524,11 @@ void test_engine_settles_light_load(void)
 void test_engine_spark_change_mid_burn(void)
 {
     /* The spark timing is fixed for each cycle at intake valve closing, as an
-     * engine computer does: changing the setting while a cylinder burns
-     * neither shifts its burn nor lights it again. The next cycle uses it. */
+     * engine computer does: changing the setting (by hand, the map off) while
+     * a cylinder burns neither shifts its burn nor lights it again. The next
+     * cycle uses it. */
     start_fired(3000.0, 1.0);
+    e.spark_map = 0;
     rb_engine_settle(&e, 100, 1e-4);
     const double p_max_25 = e.result.p_max;
     const rb_burn *b = &e.burn[0];
@@ -583,8 +597,9 @@ static void run_for(double t, double *lo, double *hi)
 void test_engine_friction(void)
 {
     /* Friction follows Chen and Flynn's formula, and the brake numbers are
-     * the indicated ones minus it. Wide open at 3000 rpm that's about 1.5 bar,
-     * and twice as much at twice the speed. */
+     * the indicated ones minus it. Wide open at 3000 rpm that's about 1.2 bar
+     * (a modern engine, stage 9), and about half as much again at twice the
+     * speed. */
     start_fired(3000.0, 1.0);
     rb_engine_settle(&e, 100, 1e-5);
     const rb_engine_cycle *r = &e.result;
@@ -595,8 +610,8 @@ void test_engine_friction(void)
     const double w = 3000.0 * 3.14159265358979323846 / 30.0;
     CHECK_NEAR(r->fmep, expected, 1e-4 * expected);
     CHECK_NEAR(rb_engine_fmep(&e, w), expected, 1e-4 * expected);
-    CHECK(r->fmep > 1.3e5 && r->fmep < 1.8e5);
-    CHECK(rb_engine_fmep(&e, 2.0 * w) > 1.5 * r->fmep);
+    CHECK(r->fmep > 1.05e5 && r->fmep < 1.3e5);
+    CHECK(rb_engine_fmep(&e, 2.0 * w) > 1.4 * r->fmep && rb_engine_fmep(&e, 2.0 * w) < 1.6 * r->fmep);
     CHECK_NEAR(r->bmep, r->imep_net - r->fmep, 1e-9 * r->imep_net);
     CHECK_NEAR(r->brake_torque, r->torque - r->fmep * rb_engine_displacement(&e) / (4.0 * 3.14159265358979323846),
                1e-6 * r->torque);

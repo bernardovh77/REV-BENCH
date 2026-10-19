@@ -7,11 +7,14 @@
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
   Playwright test in both modes (dev and `E2E_PREVIEW=1`).
-- Check that new physics tests can fail: plant deliberate bugs in a copy (e.g. `$HOME/rb-mut8`,
-  whose `mutate8.py` rebuilds only the test binary and runs a filtered set of tests) and note in
-  the stage doc which tests catch them. The whole suite takes ~35 s (~90 s with the sanitizers),
-  so run a few bugs per call under `timeout`, re-copy the sources before each batch (a killed run
-  can leave a bug in place), and never `pkill -f` a pattern that also matches your own command line.
+- Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
+  which tests catch them. `$HOME/rb-mut9/m9.py WORKDIR NAME...` applies each named bug to a copy of
+  the sources in WORKDIR, rebuilds only the test binary, runs a filtered set of tests and puts the
+  file back; two work dirs run two bugs at once. The whole suite takes 60-80 s (~140 s with the
+  sanitizers, so run that in three filtered parts), and processes started in the background die
+  with each 3-minute call: run a few bugs per call under `timeout`, re-copy the sources before each
+  batch (a killed run can leave a bug in place), and never `pkill -f` a pattern that also matches
+  your own command line.
 
 ## Core (C)
 - C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
@@ -32,13 +35,27 @@
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
   Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
   equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
+- Stage 9 added `dyno.c` (an absorbing dyno: a PI controller on the free crank's `load_torque`, a
+  reading per cycle with the inertia correction; internal, not in rb.h yet) and `flow.c`'s
+  `rb_duct` (an inertial duct: `rb_duct_flow` moves gas with the current ṁ, `rb_duct_accelerate`
+  updates ṁ once the chambers are integrated). In `engine.c` it added:
+  - the intake runners: plenum → duct → a port chamber a quarter of the runner's volume → intake
+    valve; `runner_length = 0` means none, as in stages 5–8;
+  - the burn's length from the charge at IVC and the speed (`burn_duration`, 0.5–2 times
+    `desc.burn_duration`, which is the four's at 3000 rpm wide open);
+  - the engine computer's spark (`computer_spark`): the best torque's, with half the charge burned
+    8° after TDC; at idle 15° plus 0.1° per rpm below idle, capped at the best.
+
+  `spark_map = 1` (the default) uses that spark and `spark_map = 0` the fixed `e->spark` of stages
+  6–8, so tests that set `e.spark` must also clear `spark_map`.
 - Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
   after the engine computer runs) → events the crank passes during the step (an event counts if
   it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
-  cycle's spark timing, the spark sets the burnable fuel, EVO stops the burn, overlap TDC closes
-  the peak-pressure bookkeeping → set areas
-  (throttle, valves) → all flows, Woschni wall heat and burning as rates from the current state,
-  integrated together (explicit Euler) → turn the crank and move the pistons (trapezoidal); a free
+  cycle's burn length and spark timing, the spark sets the burnable fuel, EVO stops the burn,
+  overlap TDC closes the peak-pressure bookkeeping → set areas (throttle, valves) → all flows (the
+  runners' with their current ṁ), Woschni wall heat and burning as rates from the current state,
+  integrated together (explicit Euler), then the runners' ṁ from the new pressures → turn the
+  crank and move the pistons (trapezoidal); a free
   crank's kinetic energy then changes by exactly the work done on it (gas, crankcase at ambient,
   starter, friction, load), so `crank_books()` in the tests balances to 1e-9.
   Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
@@ -49,10 +66,11 @@
   velocity keep a minimum pace (`RB_GAS_PACE_RPM`).
 - `rb_cli breathe` stays motored with adiabatic walls by default (stage 5's numbers; `--walls` adds
   heat transfer); `rb_cli fire` has walls and fuel; `rb_cli run` is the free engine's scripted
-  drive. In tests, `start()` (test_engine.c) is motored and adiabatic, `start_fired()` the full
-  engine held, `start_free()` the free crank at rest. Loops that wait for the engine must be
-  bounded (`run_cycles`, `run_to_angle`, `run_for`): a planted bug that stops the crank must fail
-  a test, not hang the suite.
+  drive; `rb_cli dyno` puts the free engine on stage 9's dyno. In tests, `start()`
+  (test_engine.c) is motored and adiabatic, `start_fired()` the full engine held, `start_free()`
+  the free crank at rest, and test_dyno.c's `run_held()` a preset held wide open at 96 kHz. Loops
+  that wait for the engine must be bounded (`run_cycles`, `run_to_angle`, `run_for`): a planted
+  bug that stops the crank must fail a test, not hang the suite.
 - Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
   360 + ICL), exhaust centerline before it (360 - ECL).
 - Layouts (stage 8): angles in the direction the crank turns; a piston is at TDC at crank angle
@@ -60,12 +78,17 @@
   cylinder fires at its first TDC after the previous firing, cylinder 1 first, all within 720°) and
   `rb_engine_desc_check` refuses a `firing[]` that disagrees. Presets live in `presets.c` (V8s:
   odd cylinders on bank 0, even on bank 1, cylinders 1 and 2 at the front). Each preset carries
-  its own idle valve and idle gains; tune new ones with a start, a 30 % blip and a 10 N m load at
-  idle, keeping room for gains 1.5 times stronger (docs/stage-08.md).
+  its own idle valve, sized so the warm engine idles at about 15 % open (where the computer starts
+  it), and idle gains; tune new ones with a start, a 30 % blip and a 10 N m load at idle, keeping
+  room for gains 1.5 times stronger (docs/stage-08.md, retuned in docs/stage-09.md). Watch the
+  idle for 30 s: a slow swing can take 15 s to show (the six's does). Engine changes that move the
+  idle's torque response (the burn, friction, pipes) mean retuning them.
 - The public engine API (`rb_engine_api.c`): `rb_load_preset`, `rb_get_engine`/`rb_set_engine`
   over a field table (offsets into `rb_engine_desc`, a few worked out), `rb_get_cylinder`.
-  `rb_set_engine` changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE fields,
-  changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`. The
+  `rb_set_engine` clamps a value outside the field's range (returning RB_CLAMPED; pin and bank
+  angles wrap instead), changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE
+  fields, changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`,
+  with a range. The
   sim holds the engine, but until stage 14 `rb_step` still plays the test tone; tests that need it
   running step `sim->engine` directly (tests/test_presets.c).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
@@ -82,7 +105,8 @@
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
   ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
   `tools/plot_run.py` the `rb_cli run` one, `tools/plot_presets.py` the presets' (firing, runs,
-  idle). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
+  idle), `tools/plot_dyno.py` the `rb_cli dyno` sweeps and `fire --rpm-sweep` comparisons (curves,
+  changes, spark). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in
   Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.

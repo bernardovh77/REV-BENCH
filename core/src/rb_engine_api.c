@@ -24,6 +24,7 @@ typedef struct field_info {
     const char *name;     /* stable identifier for the UI and the CLI     */
     const char *unit;     /* "" when it has none                          */
     int         flags;    /* RB_EF_* bits                                 */
+    double      min, max; /* the range it can be set in (NaN: read-only)  */
     int         kind;     /* STORED_DOUBLE, STORED_INT or WORKED_OUT      */
     size_t      offset;   /* where a stored field is in rb_engine_desc    */
 } field_info;
@@ -31,48 +32,55 @@ typedef struct field_info {
 #define DBL(member) STORED_DOUBLE, offsetof(rb_engine_desc, member)
 #define INT(member) STORED_INT, offsetof(rb_engine_desc, member)
 #define CALC        WORKED_OUT, 0
+#define NONE        NAN, NAN
 
 enum {
     RO = RB_EF_READONLY, WHOLE = RB_EF_INTEGER, BANK = RB_EF_PER_BANK,
     CYL = RB_EF_PER_CYLINDER, ORDER = RB_EF_IN_ORDER, LIVE = RB_EF_LIVE
 };
 
+/* The ranges are what a control should offer: wide enough for any car or
+ * motorcycle engine, narrow enough that nothing silly gets in. Whether the
+ * whole engine still works (the rod longer than the stroke, the valves
+ * fitting in the bore, ...) is checked on top of them. */
 static const field_info FIELDS[RB_ENG_COUNT] = {
-    /*                               name                 unit      flags          stored as */
-    [RB_ENG_CYLINDERS]         = { "cylinders",         "",       RO | WHOLE,    INT(cylinders) },
-    [RB_ENG_BORE]              = { "bore",              "m",      0,             DBL(bore) },
-    [RB_ENG_STROKE]            = { "stroke",            "m",      0,             DBL(stroke) },
-    [RB_ENG_ROD]               = { "rod",               "m",      0,             DBL(rod) },
-    [RB_ENG_COMPRESSION_RATIO] = { "compression_ratio", "",       0,             DBL(cr) },
-    [RB_ENG_DISPLACEMENT]      = { "displacement",      "m^3",    RO,            CALC },
-    [RB_ENG_BANKS]             = { "banks",             "",       RO | WHOLE,    INT(banks) },
-    [RB_ENG_BANK_ANGLE]        = { "bank_angle",        "deg",    BANK,          DBL(bank_angle) },
-    [RB_ENG_BANK]              = { "bank",              "",       CYL | WHOLE,   INT(bank) },
-    [RB_ENG_PIN]               = { "pin",               "deg",    CYL,           DBL(pin) },
-    [RB_ENG_POSITION]          = { "position",          "m",      CYL,           DBL(position) },
-    [RB_ENG_FIRING_ORDER]      = { "firing_order",      "",       ORDER | WHOLE, INT(firing_order) },
-    [RB_ENG_FIRING_ANGLE]      = { "firing_angle",      "deg",    CYL | RO,      DBL(firing) },
-    [RB_ENG_INTAKE_VALVES]     = { "intake_valves",     "",       WHOLE,         INT(intake.count) },
-    [RB_ENG_INTAKE_DIAMETER]   = { "intake_diameter",   "m",      0,             DBL(intake.diameter) },
-    [RB_ENG_INTAKE_PORT]       = { "intake_port",       "m",      0,             DBL(intake.port_diameter) },
-    [RB_ENG_INTAKE_LIFT]       = { "intake_lift",       "m",      0,             DBL(intake.max_lift) },
-    [RB_ENG_INTAKE_DURATION]   = { "intake_duration",   "deg",    0,             DBL(intake.duration) },
-    [RB_ENG_INTAKE_CENTER]     = { "intake_center",     "deg",    0,             DBL(intake.center) },
-    [RB_ENG_INTAKE_OPENS]      = { "intake_opens",      "deg",    RO,            CALC },
-    [RB_ENG_INTAKE_CLOSES]     = { "intake_closes",     "deg",    RO,            CALC },
-    [RB_ENG_EXHAUST_VALVES]    = { "exhaust_valves",    "",       WHOLE,         INT(exhaust.count) },
-    [RB_ENG_EXHAUST_DIAMETER]  = { "exhaust_diameter",  "m",      0,             DBL(exhaust.diameter) },
-    [RB_ENG_EXHAUST_PORT]      = { "exhaust_port",      "m",      0,             DBL(exhaust.port_diameter) },
-    [RB_ENG_EXHAUST_LIFT]      = { "exhaust_lift",      "m",      0,             DBL(exhaust.max_lift) },
-    [RB_ENG_EXHAUST_DURATION]  = { "exhaust_duration",  "deg",    0,             DBL(exhaust.duration) },
-    [RB_ENG_EXHAUST_CENTER]    = { "exhaust_center",    "deg",    0,             DBL(exhaust.center) },
-    [RB_ENG_EXHAUST_OPENS]     = { "exhaust_opens",     "deg",    RO,            CALC },
-    [RB_ENG_EXHAUST_CLOSES]    = { "exhaust_closes",    "deg",    RO,            CALC },
-    [RB_ENG_THROTTLE_DIAMETER] = { "throttle_diameter", "m",      0,             DBL(throttle.diameter) },
-    [RB_ENG_PLENUM_VOLUME]     = { "plenum_volume",     "m^3",    0,             DBL(plenum_volume) },
-    [RB_ENG_INERTIA]           = { "inertia",           "kg m^2", 0,             DBL(inertia) },
-    [RB_ENG_IDLE_RPM]          = { "idle_rpm",          "rpm",    LIVE,          DBL(idle_rpm) },
-    [RB_ENG_REV_LIMIT]         = { "rev_limit",         "rpm",    LIVE,          DBL(rev_limit) },
+    /*                               name                 unit      flags          min      max      stored as */
+    [RB_ENG_CYLINDERS]         = { "cylinders",         "",       RO | WHOLE,    NONE,             INT(cylinders) },
+    [RB_ENG_BORE]              = { "bore",              "m",      0,             0.04,    0.15,    DBL(bore) },
+    [RB_ENG_STROKE]            = { "stroke",            "m",      0,             0.04,    0.15,    DBL(stroke) },
+    [RB_ENG_ROD]               = { "rod",               "m",      0,             0.08,    0.30,    DBL(rod) },
+    [RB_ENG_COMPRESSION_RATIO] = { "compression_ratio", "",       0,             6.0,     16.0,    DBL(cr) },
+    [RB_ENG_DISPLACEMENT]      = { "displacement",      "m^3",    RO,            NONE,             CALC },
+    [RB_ENG_BANKS]             = { "banks",             "",       RO | WHOLE,    NONE,             INT(banks) },
+    [RB_ENG_BANK_ANGLE]        = { "bank_angle",        "deg",    BANK,          -180.0,  180.0,   DBL(bank_angle) },
+    [RB_ENG_BANK]              = { "bank",              "",       CYL | WHOLE,   0.0,     1.0,     INT(bank) },
+    [RB_ENG_PIN]               = { "pin",               "deg",    CYL,           0.0,     360.0,   DBL(pin) },
+    [RB_ENG_POSITION]          = { "position",          "m",      CYL,           -1.0,    3.0,     DBL(position) },
+    [RB_ENG_FIRING_ORDER]      = { "firing_order",      "",       ORDER | WHOLE, 0.0,     RB_MAX_CYLINDERS - 1.0, INT(firing_order) },
+    [RB_ENG_FIRING_ANGLE]      = { "firing_angle",      "deg",    CYL | RO,      NONE,             DBL(firing) },
+    [RB_ENG_INTAKE_VALVES]     = { "intake_valves",     "",       WHOLE,         1.0,     4.0,     INT(intake.count) },
+    [RB_ENG_INTAKE_DIAMETER]   = { "intake_diameter",   "m",      0,             0.015,   0.06,    DBL(intake.diameter) },
+    [RB_ENG_INTAKE_PORT]       = { "intake_port",       "m",      0,             0.01,    0.06,    DBL(intake.port_diameter) },
+    [RB_ENG_INTAKE_LIFT]       = { "intake_lift",       "m",      0,             0.003,   0.02,    DBL(intake.max_lift) },
+    [RB_ENG_INTAKE_DURATION]   = { "intake_duration",   "deg",    0,             160.0,   360.0,   DBL(intake.duration) },
+    [RB_ENG_INTAKE_CENTER]     = { "intake_center",     "deg",    0,             400.0,   540.0,   DBL(intake.center) },
+    [RB_ENG_INTAKE_OPENS]      = { "intake_opens",      "deg",    RO,            NONE,             CALC },
+    [RB_ENG_INTAKE_CLOSES]     = { "intake_closes",     "deg",    RO,            NONE,             CALC },
+    [RB_ENG_EXHAUST_VALVES]    = { "exhaust_valves",    "",       WHOLE,         1.0,     4.0,     INT(exhaust.count) },
+    [RB_ENG_EXHAUST_DIAMETER]  = { "exhaust_diameter",  "m",      0,             0.015,   0.06,    DBL(exhaust.diameter) },
+    [RB_ENG_EXHAUST_PORT]      = { "exhaust_port",      "m",      0,             0.01,    0.06,    DBL(exhaust.port_diameter) },
+    [RB_ENG_EXHAUST_LIFT]      = { "exhaust_lift",      "m",      0,             0.003,   0.02,    DBL(exhaust.max_lift) },
+    [RB_ENG_EXHAUST_DURATION]  = { "exhaust_duration",  "deg",    0,             160.0,   360.0,   DBL(exhaust.duration) },
+    [RB_ENG_EXHAUST_CENTER]    = { "exhaust_center",    "deg",    0,             180.0,   320.0,   DBL(exhaust.center) },
+    [RB_ENG_EXHAUST_OPENS]     = { "exhaust_opens",     "deg",    RO,            NONE,             CALC },
+    [RB_ENG_EXHAUST_CLOSES]    = { "exhaust_closes",    "deg",    RO,            NONE,             CALC },
+    [RB_ENG_THROTTLE_DIAMETER] = { "throttle_diameter", "m",      0,             0.03,    0.12,    DBL(throttle.diameter) },
+    [RB_ENG_PLENUM_VOLUME]     = { "plenum_volume",     "m^3",    0,             0.0005,  0.02,    DBL(plenum_volume) },
+    [RB_ENG_INERTIA]           = { "inertia",           "kg m^2", 0,             0.03,    1.0,     DBL(inertia) },
+    [RB_ENG_IDLE_RPM]          = { "idle_rpm",          "rpm",    LIVE,          0.0,     2000.0,  DBL(idle_rpm) },
+    [RB_ENG_REV_LIMIT]         = { "rev_limit",         "rpm",    LIVE,          2000.0,  12000.0, DBL(rev_limit) },
+    [RB_ENG_RUNNER_LENGTH]     = { "runner_length",     "m",      0,             0.05,    0.8,     DBL(runner_length) },
+    [RB_ENG_RUNNER_DIAMETER]   = { "runner_diameter",   "m",      0,             0.02,    0.08,    DBL(runner_diameter) },
 };
 
 typedef struct cylinder_field_info {
@@ -119,6 +127,8 @@ int         rb_engine_field_count(void)      { return RB_ENG_COUNT; }
 const char *rb_engine_field_name(int field)  { return field_ok(field) ? FIELDS[field].name  : NULL; }
 const char *rb_engine_field_unit(int field)  { return field_ok(field) ? FIELDS[field].unit  : NULL; }
 int         rb_engine_field_flags(int field) { return field_ok(field) ? FIELDS[field].flags : 0; }
+double      rb_engine_field_min(int field)   { return field_ok(field) ? FIELDS[field].min   : NAN; }
+double      rb_engine_field_max(int field)   { return field_ok(field) ? FIELDS[field].max   : NAN; }
 
 int rb_engine_field_find(const char *name)
 {
@@ -171,12 +181,29 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     const field_info *f = &FIELDS[field];
     if (f->flags & RB_EF_READONLY) return RB_ERR_READONLY;
     if (!isfinite(value)) return RB_ERR_VALUE;
+    if ((f->flags & RB_EF_INTEGER) && value != floor(value)) return RB_ERR_VALUE;
+
+    /* Angles around the crank wrap; everything else is clamped into its range. */
+    int rc = RB_OK;
+    if (field == RB_ENG_PIN) {                  /* into [0, 360) */
+        value = fmod(value, 360.0);
+        if (value < 0.0) value += 360.0;
+        if (value >= 360.0) value -= 360.0;     /* -1e-17 + 360 rounds to 360 */
+        value += 0.0;                           /* -0 becomes 0 */
+    } else if (field == RB_ENG_BANK_ANGLE) {    /* into [-180, 180] */
+        value = fmod(value, 360.0);
+        if (value > 180.0) value -= 360.0;
+        else if (value < -180.0) value += 360.0;
+        value += 0.0;
+    } else if (value < f->min || value > f->max) {
+        value = (value < f->min) ? f->min : f->max;
+        rc = RB_CLAMPED;
+    }
 
     /* Change a copy, then keep it only if it makes a possible engine. */
     rb_engine_desc d = sim->engine.desc;
     char *at = (char *)&d + f->offset;
     if (f->kind == STORED_INT) {
-        if (value != floor(value) || fabs(value) > 1e6) return RB_ERR_VALUE;
         int *slot = (int *)at;
         const int v = (int)value;
         if (field == RB_ENG_FIRING_ORDER) {   /* swap places with cylinder v */
@@ -191,10 +218,10 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     }
     if (rb_engine_layout(&d) != 0 || rb_engine_desc_check(&d) != 0) return RB_ERR_VALUE;
 
-    if (memcmp(&d, &sim->engine.desc, sizeof d) == 0) return RB_OK;   /* the same engine */
+    if (memcmp(&d, &sim->engine.desc, sizeof d) == 0) return rc;   /* the same engine */
     if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
     else rb_engine_init(&sim->engine, &d, sim->dt);
-    return RB_OK;
+    return rc;
 }
 
 /* ---- each cylinder's state ---- */

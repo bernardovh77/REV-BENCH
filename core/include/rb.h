@@ -195,6 +195,10 @@ typedef enum rb_engine_field {
     RB_ENG_IDLE_RPM,            /* the engine computer's idle speed (0 = no idle
                                    control and no fuel cut on overrun)             */
     RB_ENG_REV_LIMIT,           /* rpm where the rev limiter cuts the spark        */
+    RB_ENG_RUNNER_LENGTH,       /* m: each intake runner, plenum to valve; its air
+                                   rams the cylinder fullest at one speed, so it
+                                   moves the torque peak                          */
+    RB_ENG_RUNNER_DIAMETER,     /* m: the runners' bore                            */
     RB_ENG_COUNT
 } rb_engine_field;
 
@@ -213,12 +217,15 @@ enum {
  * for the fields that have one value each, and 0 for the others. NaN for an
  * unknown field or index. */
 double      rb_get_engine(const rb_sim *sim, int field, int index);
-/* Changes a field: RB_OK; RB_ERR_ARG (bad sim or index); RB_ERR_ID (unknown
- * field); RB_ERR_READONLY; or RB_ERR_VALUE when the value isn't a number or
- * would make an impossible engine (the engine stays as it was). Putting
- * cylinder c at place k of the firing order swaps it with the cylinder that
- * was there, so the order always has every cylinder once. Changing the rev
- * limit moves the speed where the spark comes back by the same amount. */
+/* Changes a field: RB_OK; RB_CLAMPED (the value was outside the field's
+ * range, rb_engine_field_min/max, and the nearest end was used); RB_ERR_ARG
+ * (bad sim or index); RB_ERR_ID (unknown field); RB_ERR_READONLY; or
+ * RB_ERR_VALUE when the value isn't a number (or a whole one where needed)
+ * or would make an impossible engine (the engine stays as it was). Crank pin
+ * and bank angles wrap around instead of being clamped. Putting cylinder c at
+ * place k of the firing order swaps it with the cylinder that was there, so
+ * the order always has every cylinder once. Changing the rev limit moves the
+ * speed where the spark comes back by the same amount. */
 int         rb_set_engine(rb_sim *sim, int field, int index, double value);
 /* How many values a field has: 1, the banks or the cylinders (0 if unknown). */
 int         rb_engine_field_size(const rb_sim *sim, int field);
@@ -226,6 +233,8 @@ int         rb_engine_field_count(void);
 const char *rb_engine_field_name(int field);      /* NULL if unknown       */
 const char *rb_engine_field_unit(int field);      /* "" when it has none   */
 int         rb_engine_field_flags(int field);     /* RB_EF_* bits          */
+double      rb_engine_field_min(int field);       /* the range a control   */
+double      rb_engine_field_max(int field);       /* offers; NaN: read-only */
 int         rb_engine_field_find(const char *name);   /* id, or RB_ERR_ID  */
 
 /* Each cylinder's state, now. */
