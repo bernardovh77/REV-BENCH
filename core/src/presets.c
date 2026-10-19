@@ -47,18 +47,13 @@ static void layout(rb_engine_desc *d, int banks, double angle0, double angle1, c
     rb_engine_layout(d);
 }
 
-/* Intake, exhaust and the crank's own settings, sized for the engine. */
-static void breathing(rb_engine_desc *d, double throttle, double leak, double plenum,
-                      double manifold, double catalyst, double muffler, double tailpipe)
+/* The throttle and the plenum, sized for the engine. */
+static void intake(rb_engine_desc *d, double throttle, double leak, double plenum)
 {
     d->throttle.diameter = throttle;
     d->throttle.shaft = throttle > 0.07 ? 0.010 : 0.008;
     d->throttle.leak_area = leak;
     d->plenum_volume = plenum;
-    d->exhaust_volume = manifold;
-    d->catalyst_area = catalyst;
-    d->muffler_volume = muffler;
-    d->tailpipe_area = tailpipe;
 }
 
 /* Each cylinder's intake runner, plenum to valve: its length sets where the
@@ -69,12 +64,36 @@ static void runners(rb_engine_desc *d, double length, double diameter)
     d->runner_diameter = diameter;
 }
 
+/* The exhaust (stage 10): every cylinder's header (a length each, from
+ * `header`, and the collector it joins, from `collector`), then each
+ * collector's exhaust pipe, one or two systems (catalyst, muffler and
+ * tailpipe each), sized for the engine. */
+static void exhaust(rb_engine_desc *d, const double *header, double header_diameter,
+                    const int *collector, double pipe, double pipe_diameter, int systems,
+                    double catalyst, double muffler, double muffler_area, double tailpipe,
+                    double tailpipe_diameter)
+{
+    for (int i = 0; i < d->cylinders; i++) {
+        d->header_length[i] = header[i];
+        d->collector[i] = collector[i];
+    }
+    d->header_diameter = header_diameter;
+    d->exhaust_pipe_length = pipe;
+    d->exhaust_pipe_diameter = pipe_diameter;
+    d->exhaust_systems = systems;
+    d->catalyst_area = catalyst;
+    d->muffler_volume = muffler;
+    d->muffler_area = muffler_area;
+    d->tailpipe_length = tailpipe;
+    d->tailpipe_diameter = tailpipe_diameter;
+}
+
 /* The crank, the starter, and the engine computer's idle and rev limit. Each
  * idle valve is sized so that the warm engine idles with it about 15 % open,
  * where the engine computer starts it, and each engine's idle gains are tuned
- * on it (docs/stage-08.md, retuned in docs/stage-09.md): start, a blip of the
- * throttle and a 10 N m load at idle, with room for gains 1.5 times as strong
- * before the idle hunts. */
+ * on it (docs/stage-08.md, retuned in docs/stage-09.md and docs/stage-10.md):
+ * start, a blip of the throttle and a 10 N m load at idle, with room for gains
+ * 1.5 times as strong before the idle hunts. */
 static void running(rb_engine_desc *d, double inertia, double starter, double starter_rpm,
                     double idle, double idle_valve, double gain_p, double gain_i, double limit)
 {
@@ -97,12 +116,17 @@ static void inline4(rb_engine_desc *d)
 
 /* 3.0 L inline-6, 84 x 90 mm. The crank pairs 1-6, 2-5 and 3-4 at 120
  * degrees, so it fires every 120 degrees in the order 1-5-3-6-2-4, and both
- * its primary and secondary forces cancel: a smooth engine. */
+ * its primary and secondary forces cancel: a smooth engine. Its headers
+ * meet in two collectors of three, the front and the rear cylinders, each
+ * firing every 240 degrees, so one cylinder's exhaust pulse doesn't push
+ * against the next one's overlap. */
 static void inline6(rb_engine_desc *d)
 {
     static const int bank[6] = { 0, 0, 0, 0, 0, 0 };
     static const double pin[6] = { 0.0, 240.0, 120.0, 120.0, 240.0, 0.0 };
     static const int order[6] = { 1, 5, 3, 6, 2, 4 };
+    static const double header[6] = { 0.40, 0.40, 0.40, 0.40, 0.40, 0.40 };
+    static const int collector[6] = { 0, 0, 0, 1, 1, 1 };
     double position[6];
     rb_engine_desc_default(d);
     d->cylinders = 6;
@@ -114,21 +138,24 @@ static void inline6(rb_engine_desc *d)
     layout(d, 1, 0.0, 0.0, bank, pin, position, order);
     d->intake = valve(2, 32 * MM, 9.7 * MM, 250.0, 110.0, 1);
     d->exhaust = valve(2, 27 * MM, 9.3 * MM, 250.0, 110.0, 0);
-    breathing(d, 70 * MM, 3 * MM2, 4.0 * L, 3.0 * L, 28 * CM2, 15 * L, 28 * CM2);
+    intake(d, 70 * MM, 3 * MM2, 4.0 * L);
     runners(d, 420 * MM, 40 * MM);
-    running(d, 0.20, 250.0, 250.0, 700.0, 40 * MM2, 2.0e-4, 3.0e-4, 7000.0);
+    exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 16 * CM2, 15 * L, 28 * CM2, 0.7, 60 * MM);
+    running(d, 0.20, 250.0, 250.0, 700.0, 44 * MM2, 5.0e-4, 4.0e-4, 7000.0);
 }
 
 /* 5.0 L 90-degree V8, 92 x 94 mm, with a cross-plane crank: four throws at
  * 0, 90, 270 and 180 degrees, each shared by a cylinder from each bank. It
  * fires every 90 degrees (1-8-4-3-6-5-7-2), but each bank on its own fires
  * unevenly, 90-270-180-180 degrees apart: the off-beat burble of an American
- * V8. */
+ * V8, which its twin exhaust (each bank its own collector, pipe, muffler and
+ * tailpipe) keeps apart. */
 static void v8_cross(rb_engine_desc *d)
 {
     static const int bank[8] = { 0, 1, 0, 1, 0, 1, 0, 1 };
     static const double pin[8] = { 0.0, 0.0, 90.0, 90.0, 270.0, 270.0, 180.0, 180.0 };
     static const int order[8] = { 1, 8, 4, 3, 6, 5, 7, 2 };
+    static const double header[8] = { 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40 };
     double position[8];
     rb_engine_desc_default(d);
     d->cylinders = 8;
@@ -140,20 +167,23 @@ static void v8_cross(rb_engine_desc *d)
     layout(d, 2, 45.0, -45.0, bank, pin, position, order);
     d->intake = valve(2, 36 * MM, 11.0 * MM, 260.0, 112.0, 1);
     d->exhaust = valve(2, 31 * MM, 10.5 * MM, 260.0, 112.0, 0);
-    breathing(d, 80 * MM, 4 * MM2, 6.0 * L, 4.0 * L, 40 * CM2, 20 * L, 40 * CM2);
+    intake(d, 80 * MM, 4 * MM2, 6.0 * L);
     runners(d, 450 * MM, 45 * MM);
-    running(d, 0.30, 350.0, 220.0, 650.0, 68 * MM2, 2.0e-4, 5.0e-4, 7000.0);
+    exhaust(d, header, 40 * MM, bank, 2.0, 55 * MM, 2, 20 * CM2, 10 * L, 20 * CM2, 0.8, 60 * MM);
+    running(d, 0.30, 350.0, 220.0, 650.0, 81 * MM2, 6.0e-4, 3.0e-4, 7000.0);
 }
 
 /* 4.5 L 90-degree V8, 94 x 81 mm, with a flat-plane crank: two inline-4s on
  * one flat crank, the banks taking turns. Every bank fires evenly every 180
  * degrees (1-6-5-8-7-4-3-2 overall): the high-revving, rasping kind. Short
- * stroke, light flywheel, bigger cams and 12.5:1 compression. */
+ * stroke, light flywheel, bigger cams and 12.5:1 compression, and long tuned
+ * headers into each bank's own exhaust. */
 static void v8_flat(rb_engine_desc *d)
 {
     static const int bank[8] = { 0, 1, 0, 1, 0, 1, 0, 1 };
     static const double pin[8] = { 0.0, 0.0, 180.0, 180.0, 180.0, 180.0, 0.0, 0.0 };
     static const int order[8] = { 1, 6, 5, 8, 7, 4, 3, 2 };
+    static const double header[8] = { 0.60, 0.60, 0.60, 0.60, 0.60, 0.60, 0.60, 0.60 };
     double position[8];
     rb_engine_desc_default(d);
     d->cylinders = 8;
@@ -165,20 +195,26 @@ static void v8_flat(rb_engine_desc *d)
     layout(d, 2, 45.0, -45.0, bank, pin, position, order);
     d->intake = valve(2, 38 * MM, 12.0 * MM, 270.0, 108.0, 1);
     d->exhaust = valve(2, 32 * MM, 11.0 * MM, 270.0, 108.0, 0);
-    breathing(d, 90 * MM, 4 * MM2, 6.0 * L, 4.0 * L, 45 * CM2, 18 * L, 45 * CM2);
+    intake(d, 90 * MM, 4 * MM2, 6.0 * L);
     runners(d, 300 * MM, 50 * MM);
-    running(d, 0.18, 300.0, 250.0, 1000.0, 82 * MM2, 2.5e-4, 6.0e-4, 9000.0);
+    exhaust(d, header, 42 * MM, bank, 1.4, 60 * MM, 2, 23 * CM2, 9 * L, 23 * CM2, 0.5, 70 * MM);
+    running(d, 0.18, 300.0, 250.0, 1000.0, 114 * MM2, 5.0e-4, 4.0e-4, 9000.0);
 }
 
 /* 2.0 L flat-4 (boxer), 84 x 90 mm: the banks 180 degrees apart, opposite
  * pistons moving in and out together on throws 180 degrees apart. It fires
- * evenly every 180 degrees, 1-3-2-4. */
+ * evenly every 180 degrees, 1-3-2-4, two cylinders of one bank and then two
+ * of the other. Its headers meet in one collector under the engine, the
+ * second bank's 30 cm longer (they cross under it): their pulses arrive
+ * unevenly, the rumble of a flat four with unequal-length headers. */
 static void boxer4(rb_engine_desc *d)
 {
     static const int bank[4] = { 0, 1, 0, 1 };
     static const double pin[4] = { 0.0, 180.0, 180.0, 0.0 };
     static const double position[4] = { 0.0, 0.040, 0.113, 0.153 };
     static const int order[4] = { 1, 3, 2, 4 };
+    static const double header[4] = { 0.45, 0.75, 0.45, 0.75 };
+    static const int collector[4] = { 0, 0, 0, 0 };
     rb_engine_desc_default(d);
     d->bore = 84 * MM;
     d->stroke = 90 * MM;
@@ -188,7 +224,8 @@ static void boxer4(rb_engine_desc *d)
     d->intake = valve(2, 32 * MM, 9.5 * MM, 250.0, 110.0, 1);
     d->exhaust = valve(2, 27 * MM, 9.0 * MM, 250.0, 110.0, 0);
     runners(d, 320 * MM, 40 * MM);
-    running(d, 0.15, 200.0, 250.0, 750.0, 27 * MM2, 3.0e-4, 4.0e-4, 6500.0);
+    exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 21 * CM2, 10 * L, 21 * CM2, 0.6, 50 * MM);
+    running(d, 0.15, 200.0, 250.0, 750.0, 33 * MM2, 3.0e-4, 4.0e-4, 6500.0);
 }
 
 static const preset_info PRESETS[] = {

@@ -3,6 +3,9 @@
  * preset, the engine's description field by field, and each cylinder's
  * state (see "the engine" in rb.h).
  *
+ * Since stage 10, also its pipes: what each is and where it runs, and the
+ * state of each of its cells.
+ *
  * The fields are a table, like the parameters in rb_params.c: most are a
  * number stored in rb_engine_desc, a few are worked out from it. To add one:
  *   1. add an id to rb_engine_field in rb.h (just before RB_ENG_COUNT)
@@ -81,12 +84,40 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_REV_LIMIT]         = { "rev_limit",         "rpm",    LIVE,          2000.0,  12000.0, DBL(rev_limit) },
     [RB_ENG_RUNNER_LENGTH]     = { "runner_length",     "m",      0,             0.05,    0.8,     DBL(runner_length) },
     [RB_ENG_RUNNER_DIAMETER]   = { "runner_diameter",   "m",      0,             0.02,    0.08,    DBL(runner_diameter) },
+    [RB_ENG_HEADER_LENGTH]     = { "header_length",     "m",      CYL,           0.1,     2.0,     DBL(header_length) },
+    [RB_ENG_HEADER_DIAMETER]   = { "header_diameter",   "m",      0,             0.02,    0.08,    DBL(header_diameter) },
+    [RB_ENG_COLLECTOR]         = { "collector",         "",       CYL | WHOLE,   0.0,     RB_MAX_COLLECTORS - 1.0, INT(collector) },
+    [RB_ENG_EXHAUST_PIPE_LENGTH]   = { "exhaust_pipe_length",   "m", 0,          0.2,     5.0,     DBL(exhaust_pipe_length) },
+    [RB_ENG_EXHAUST_PIPE_DIAMETER] = { "exhaust_pipe_diameter", "m", 0,          0.025,   0.15,    DBL(exhaust_pipe_diameter) },
+    [RB_ENG_EXHAUST_SYSTEMS]   = { "exhaust_systems",   "",       WHOLE,         1.0,     RB_MAX_COLLECTORS, INT(exhaust_systems) },
+    [RB_ENG_MUFFLER_VOLUME]    = { "muffler_volume",    "m^3",    0,             0.001,   0.05,    DBL(muffler_volume) },
+    [RB_ENG_TAILPIPE_LENGTH]   = { "tailpipe_length",   "m",      0,             0.1,     3.0,     DBL(tailpipe_length) },
+    [RB_ENG_TAILPIPE_DIAMETER] = { "tailpipe_diameter", "m",      0,             0.025,   0.15,    DBL(tailpipe_diameter) },
 };
 
 typedef struct cylinder_field_info {
     const char *name;
     const char *unit;
 } cylinder_field_info;
+
+static const cylinder_field_info PIPE_FIELDS[RB_PIPE_FIELD_COUNT] = {
+    [RB_PIPE_KIND]        = { "kind",        "" },
+    [RB_PIPE_NUMBER]      = { "number",      "" },
+    [RB_PIPE_LENGTH]      = { "length",      "m" },
+    [RB_PIPE_DIAMETER]    = { "diameter",    "m" },
+    [RB_PIPE_CELLS]       = { "cells",       "" },
+    [RB_PIPE_FROM]        = { "from",        "" },
+    [RB_PIPE_FROM_NUMBER] = { "from_number", "" },
+    [RB_PIPE_TO]          = { "to",          "" },
+    [RB_PIPE_TO_NUMBER]   = { "to_number",   "" },
+};
+
+static const cylinder_field_info PIPE_CELL_FIELDS[RB_CELL_COUNT] = {
+    [RB_CELL_PRESSURE]    = { "pressure",    "Pa" },
+    [RB_CELL_TEMPERATURE] = { "temperature", "K" },
+    [RB_CELL_VELOCITY]    = { "velocity",    "m/s" },
+    [RB_CELL_BURNED_GAS]  = { "burned_gas",  "" },
+};
 
 static const cylinder_field_info CYLINDER_FIELDS[RB_CYL_COUNT] = {
     [RB_CYL_ANGLE]        = { "angle",        "deg" },
@@ -257,6 +288,101 @@ double rb_get_cylinder(const rb_sim *sim, int cylinder, int field)
     case RB_CYL_BURNED_GAS:   return c->gas.y[RB_BURNED];
     case RB_CYL_INTAKE_LIFT:  return rb_valve_lift(&e->desc.intake, angle);
     case RB_CYL_EXHAUST_LIFT: return rb_valve_lift(&e->desc.exhaust, angle);
+    default:                  return NAN;
+    }
+}
+
+/* ---- the pipes ---- */
+
+int rb_pipe_count(const rb_sim *sim)
+{
+    return sim ? rb_engine_pipe_count(&sim->engine) : 0;
+}
+
+int rb_pipe_field_count(void)
+{
+    return RB_PIPE_FIELD_COUNT;
+}
+
+const char *rb_pipe_field_name(int field)
+{
+    return (field >= 0 && field < RB_PIPE_FIELD_COUNT) ? PIPE_FIELDS[field].name : NULL;
+}
+
+const char *rb_pipe_field_unit(int field)
+{
+    return (field >= 0 && field < RB_PIPE_FIELD_COUNT) ? PIPE_FIELDS[field].unit : NULL;
+}
+
+/* Pipe k's kind and number, and where its ends open (rb_engine_pipe's order:
+ * runners, headers, exhaust pipes, tailpipes). */
+static void describe_pipe(const rb_engine *e, int k, double out[RB_PIPE_FIELD_COUNT])
+{
+    const rb_engine_desc *d = &e->desc;
+    const int n = d->cylinders, runners = (d->runner_length > 0.0) ? n : 0;
+    int kind, number, from, from_number, to, to_number;
+    if (k < runners) {
+        kind = RB_PIPE_RUNNER, number = k;
+        from = RB_PLACE_PLENUM, from_number = 0, to = RB_PLACE_INTAKE_VALVE, to_number = k;
+    } else if (k < runners + n) {
+        kind = RB_PIPE_HEADER, number = k - runners;
+        from = RB_PLACE_EXHAUST_VALVE, from_number = number;
+        to = RB_PLACE_COLLECTOR, to_number = d->collector[number];
+    } else if (k < runners + n + e->collectors) {
+        kind = RB_PIPE_EXHAUST, number = k - runners - n;
+        from = RB_PLACE_COLLECTOR, from_number = number;
+        to = RB_PLACE_MUFFLER, to_number = (e->systems == 2) ? number : 0;
+    } else {
+        kind = RB_PIPE_TAILPIPE, number = k - runners - n - e->collectors;
+        from = RB_PLACE_MUFFLER, from_number = number, to = RB_PLACE_AIR, to_number = 0;
+    }
+    const rb_pipe *p = rb_engine_pipe(e, k);
+    out[RB_PIPE_KIND] = kind;
+    out[RB_PIPE_NUMBER] = number;
+    out[RB_PIPE_LENGTH] = p->length;
+    out[RB_PIPE_DIAMETER] = p->diameter;
+    out[RB_PIPE_CELLS] = p->cells;
+    out[RB_PIPE_FROM] = from;
+    out[RB_PIPE_FROM_NUMBER] = from_number;
+    out[RB_PIPE_TO] = to;
+    out[RB_PIPE_TO_NUMBER] = to_number;
+}
+
+double rb_get_pipe(const rb_sim *sim, int pipe, int field)
+{
+    if (pipe < 0 || pipe >= rb_pipe_count(sim) || field < 0 || field >= RB_PIPE_FIELD_COUNT)
+        return NAN;
+    double out[RB_PIPE_FIELD_COUNT];
+    describe_pipe(&sim->engine, pipe, out);
+    return out[field];
+}
+
+int rb_pipe_cell_field_count(void)
+{
+    return RB_CELL_COUNT;
+}
+
+const char *rb_pipe_cell_field_name(int field)
+{
+    return (field >= 0 && field < RB_CELL_COUNT) ? PIPE_CELL_FIELDS[field].name : NULL;
+}
+
+const char *rb_pipe_cell_field_unit(int field)
+{
+    return (field >= 0 && field < RB_CELL_COUNT) ? PIPE_CELL_FIELDS[field].unit : NULL;
+}
+
+double rb_get_pipe_cell(const rb_sim *sim, int pipe, int cell, int field)
+{
+    if (pipe < 0 || pipe >= rb_pipe_count(sim)) return NAN;
+    const rb_pipe *p = rb_engine_pipe(&sim->engine, pipe);
+    if (cell < 0 || cell >= p->cells) return NAN;
+    const rb_chamber *c = &p->cell[cell];
+    switch (field) {
+    case RB_CELL_PRESSURE:    return c->p;
+    case RB_CELL_TEMPERATURE: return c->T;
+    case RB_CELL_VELOCITY:    return rb_pipe_cell_velocity(p, cell);
+    case RB_CELL_BURNED_GAS:  return c->y[RB_BURNED];
     default:                  return NAN;
     }
 }

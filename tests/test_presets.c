@@ -88,12 +88,14 @@ void test_presets_table(void)
                 if (d.bank[i] == d.bank[j] && fabs(d.position[i] - d.position[j]) < d.bore) crowded++;
         CHECK_EQ_INT(crowded, 0);
     }
-    /* Each preset's idle settings are its own: the eights' valves are bigger. */
+    /* Each preset's idle settings are its own: the eights' valves are bigger,
+     * and the cross-plane V8, with 12 L of plenum and runners to fill, opens
+     * its valve faster than the four. */
     rb_engine_desc i4, v8;
     rb_preset_desc(0, &i4);
     rb_preset_desc(2, &v8);
     CHECK(v8.idle_valve_area > 1.5 * i4.idle_valve_area);
-    CHECK(v8.idle_gain_p < i4.idle_gain_p);
+    CHECK(v8.idle_gain_p > i4.idle_gain_p);
 
     rb_engine_desc d, before;
     memset(&d, 0x5a, sizeof d);
@@ -268,9 +270,9 @@ void test_presets_run_on_their_own(void)
 {
     /* Stage 8's "done when": every preset, with the crank free, is cranked by
      * its starter, starts, settles to its own idle speed and holds it without
-     * hunting (each with its own idle gains: with the four's, the six wanders
-     * 20 rpm), revs into its rev limiter floored, comes back to idle with the
-     * foot off, and stops when the ignition is switched off. */
+     * hunting (each with its own idle gains), revs into its rev limiter
+     * floored, comes back to idle with the foot off, and stops when the
+     * ignition is switched off. */
     for (int p = 0; p < rb_preset_count(); p++) {
         rb_engine_desc d;
         rb_preset_desc(p, &d);
@@ -307,7 +309,7 @@ void test_presets_run_on_their_own(void)
         CHECK(e.idle_valve > 0.12 && e.idle_valve < 0.18);   /* sized to idle about 15 % open */
 
         /* A blip, 30 % for a quarter of a second: back at idle without
-         * dipping much below it (with the four's gains the six dips 55 rpm). */
+         * dipping much below it (with the four's gains the six dips 80 rpm). */
         double dip = INFINITY;
         e.throttle_pos = 0.3;
         for (long j = 0; j < lround(0.25 / DT_FAST); j++) rb_engine_step(&e);
@@ -381,6 +383,41 @@ void test_presets_idle_takes_a_load(void)
     CHECK(low > d.idle_rpm - 400.0 && low < d.idle_rpm - 200.0);
     CHECK(back > 1.0 && back < 7.0);
     CHECK(e.idle_valve > valve + 0.04);
+}
+
+void test_presets_idle_on_the_spark_alone(void)
+{
+    /* With runners an idling engine is unstable on its own: the faster it
+     * turns, the less exhaust its cylinders push back into their runners
+     * during the overlap, so the better they breathe and the more torque
+     * they make, before the plenum's pressure can follow (docs/stage-10.md).
+     * The engine computer's idle spark has to take back more than that. With
+     * its idle valve held still (no gains), the six idles on the spark alone,
+     * steady to 5 rpm once settled; on stage 9's spark, 0.1 deg per rpm on
+     * the speed now, it swung about 95 rpm every 2.8 s. */
+    rb_engine_desc d;
+    rb_preset_desc(rb_preset_find("i6"), &d);
+    d.idle_gain_p = d.idle_gain_i = 0.0;   /* the valve stays where the computer starts it */
+    rb_engine_init(&e, &d, DT_FAST);
+    e.hold_speed = 0;
+    e.throttle_pos = 0.0;
+    e.ignition = 1;
+    e.starter = 1;
+    double lo = INFINITY, hi = 0.0;
+    long cycles = e.cycles;
+    for (long k = 0; k < lround(20.0 / DT_FAST); k++) {
+        if (e.starter && e.rpm_smooth > 0.75 * d.idle_rpm) e.starter = 0;
+        rb_engine_step(&e);
+        if (e.cycles != cycles) {
+            cycles = e.cycles;
+            if (k > lround(12.0 / DT_FAST)) {
+                lo = fmin(lo, e.result.rpm);
+                hi = fmax(hi, e.result.rpm);
+            }
+        }
+    }
+    CHECK(hi - lo < 5.0);
+    CHECK_NEAR(0.5 * (lo + hi), d.idle_rpm, 30.0);
 }
 
 void test_api_engine_fields(void)
@@ -540,12 +577,14 @@ void test_api_engine_changes(void)
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_BANK_ANGLE, 0, 0.0), RB_OK);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_REV_LIMIT, 0, 6000.0), RB_OK);
 
-    /* The intake runners (stage 9): through the API, at least 5 cm of them. */
+    /* The intake runners (stage 9, pipes since stage 10): through the API, at
+     * least 5 cm of them. */
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_LENGTH, 0, 0.0), RB_CLAMPED);
     CHECK(s->engine.runner[0].length == 0.05);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_DIAMETER, 0, 0.045), RB_OK);
-    CHECK_NEAR(s->engine.runner[3].area, PI / 4 * 0.045 * 0.045, 1e-18);
-    CHECK_NEAR(s->engine.port[3].V, 0.25 * s->engine.runner[3].area * 0.05, 1e-18);
+    const rb_pipe *runner = &s->engine.runner[3];
+    CHECK_NEAR(runner->area, PI / 4 * 0.045 * 0.045, 1e-18);
+    CHECK_NEAR(runner->cells * runner->cell[0].V, runner->area * 0.05, 1e-18);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_LENGTH, 0, 0.33), RB_OK);
     CHECK_EQ_INT(rb_set_engine(s, RB_ENG_RUNNER_DIAMETER, 0, 0.04), RB_OK);
 
@@ -642,5 +681,85 @@ void test_api_cylinder_state(void)
     CHECK(isnan(rb_get_cylinder(s, 8, RB_CYL_ANGLE)) && isnan(rb_get_cylinder(s, -1, RB_CYL_ANGLE)));
     CHECK(isnan(rb_get_cylinder(s, 0, RB_CYL_COUNT)) && isnan(rb_get_cylinder(s, 0, -1)));
     CHECK(isnan(rb_get_cylinder(NULL, 0, RB_CYL_ANGLE)));
+    rb_destroy(s);
+}
+
+void test_api_pipes(void)
+{
+    /* The pipes through the API (stage 10), for the 3D view: what each pipe
+     * is and where its ends open, and each cell's state, the engine's own.
+     * The cross-plane V8 has eight runners, eight headers into a collector
+     * per bank, and a twin exhaust: two exhaust pipes, mufflers and
+     * tailpipes. Run as in test_api_cylinder_state. */
+    CHECK_EQ_INT(rb_pipe_field_count(), RB_PIPE_FIELD_COUNT);
+    CHECK_EQ_INT(rb_pipe_cell_field_count(), RB_CELL_COUNT);
+    for (int f = 0; f < RB_PIPE_FIELD_COUNT; f++)
+        CHECK(rb_pipe_field_name(f) && rb_pipe_field_name(f)[0] && rb_pipe_field_unit(f));
+    for (int f = 0; f < RB_CELL_COUNT; f++)
+        CHECK(rb_pipe_cell_field_name(f) && rb_pipe_cell_field_name(f)[0] && rb_pipe_cell_field_unit(f));
+    CHECK(rb_pipe_field_name(RB_PIPE_FIELD_COUNT) == NULL && rb_pipe_field_unit(-1) == NULL);
+    CHECK(rb_pipe_cell_field_name(RB_CELL_COUNT) == NULL && rb_pipe_cell_field_unit(-1) == NULL);
+    CHECK_EQ_INT(rb_pipe_count(NULL), 0);
+    CHECK(isnan(rb_get_pipe(NULL, 0, RB_PIPE_KIND)) && isnan(rb_get_pipe_cell(NULL, 0, 0, RB_CELL_PRESSURE)));
+
+    rb_sim *s = rb_create(NULL);
+    CHECK(s != NULL);
+    if (!s) return;
+    rb_load_preset(s, rb_preset_find("v8-cross"));
+    rb_engine *en = &s->engine;
+    const rb_engine_desc *d = &en->desc;
+    CHECK_EQ_INT(rb_pipe_count(s), 20);
+    int wrong = 0;
+    for (int k = 0; k < 20; k++) {
+        const rb_pipe *p = rb_engine_pipe(en, k);
+        const int kind = (int)rb_get_pipe(s, k, RB_PIPE_KIND), number = (int)rb_get_pipe(s, k, RB_PIPE_NUMBER);
+        const int from = (int)rb_get_pipe(s, k, RB_PIPE_FROM), from_number = (int)rb_get_pipe(s, k, RB_PIPE_FROM_NUMBER);
+        const int to = (int)rb_get_pipe(s, k, RB_PIPE_TO), to_number = (int)rb_get_pipe(s, k, RB_PIPE_TO_NUMBER);
+        wrong += rb_get_pipe(s, k, RB_PIPE_LENGTH) != p->length;
+        wrong += rb_get_pipe(s, k, RB_PIPE_DIAMETER) != p->diameter;
+        wrong += rb_get_pipe(s, k, RB_PIPE_CELLS) != p->cells;
+        if (k < 8)        /* runner k: plenum -> intake valve k */
+            wrong += !(kind == RB_PIPE_RUNNER && number == k && p == &en->runner[k] && from == RB_PLACE_PLENUM
+                       && to == RB_PLACE_INTAKE_VALVE && to_number == k);
+        else if (k < 16)  /* header c: exhaust valve c -> its bank's collector, */
+            wrong += !(kind == RB_PIPE_HEADER && number == k - 8 && p == &en->header[k - 8]
+                       && from == RB_PLACE_EXHAUST_VALVE && from_number == k - 8
+                       && to == RB_PLACE_COLLECTOR && to_number == d->bank[k - 8]
+                       && p->end[1].chamber == &en->collector[d->bank[k - 8]]);   /* really */
+        else if (k < 18)  /* each bank's exhaust pipe into its own muffler */
+            wrong += !(kind == RB_PIPE_EXHAUST && number == k - 16 && from == RB_PLACE_COLLECTOR
+                       && from_number == k - 16 && to == RB_PLACE_MUFFLER && to_number == k - 16);
+        else              /* and its tailpipe out into the air */
+            wrong += !(kind == RB_PIPE_TAILPIPE && number == k - 18 && from == RB_PLACE_MUFFLER
+                       && from_number == k - 18 && to == RB_PLACE_AIR);
+    }
+    CHECK_EQ_INT(wrong, 0);
+    CHECK(isnan(rb_get_pipe(s, 20, RB_PIPE_KIND)) && isnan(rb_get_pipe(s, -1, RB_PIPE_KIND)));
+    CHECK(isnan(rb_get_pipe(s, 0, RB_PIPE_FIELD_COUNT)) && isnan(rb_get_pipe(s, 0, -1)));
+
+    en->rpm = 3000.0;
+    en->throttle_pos = 1.0;
+    en->ignition = 1;
+    const long cycle = lround(720.0 / (6.0 * en->rpm * rb_physics_dt(s)));
+    for (long k = 0; k < 2 * cycle + 123; k++) rb_engine_step(en);
+    int differ = 0, burned = 0, waves = 0;
+    for (int k = 0; k < 20; k++) {
+        const rb_pipe *p = rb_engine_pipe(en, k);
+        for (int c = 0; c < p->cells; c++) {
+            differ += rb_get_pipe_cell(s, k, c, RB_CELL_PRESSURE) != p->cell[c].p;
+            differ += rb_get_pipe_cell(s, k, c, RB_CELL_TEMPERATURE) != p->cell[c].T;
+            differ += rb_get_pipe_cell(s, k, c, RB_CELL_VELOCITY) != rb_pipe_cell_velocity(p, c);
+            differ += rb_get_pipe_cell(s, k, c, RB_CELL_BURNED_GAS) != p->cell[c].y[RB_BURNED];
+            burned += (k >= 8) && rb_get_pipe_cell(s, k, c, RB_CELL_BURNED_GAS) > 0.9;
+            waves += fabs(rb_get_pipe_cell(s, k, c, RB_CELL_PRESSURE) - d->p_ambient) > 2000.0;
+        }
+        CHECK(isnan(rb_get_pipe_cell(s, k, p->cells, RB_CELL_PRESSURE)));
+        CHECK(isnan(rb_get_pipe_cell(s, k, -1, RB_CELL_PRESSURE)));
+    }
+    CHECK_EQ_INT(differ, 0);
+    CHECK(burned > 50);   /* the exhaust side is full of burned gas ...    */
+    CHECK(waves > 20);    /* ... and the pipes are anything but still      */
+    CHECK(en->collector[0].y[RB_BURNED] > 0.9 && en->collector[1].y[RB_BURNED] > 0.9);   /* both banks' */
+    CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 20, 0, RB_CELL_PRESSURE)));
     rb_destroy(s);
 }

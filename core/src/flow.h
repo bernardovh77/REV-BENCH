@@ -47,38 +47,6 @@ void rb_orifice_init(rb_orifice *o, rb_chamber *a, rb_chamber *b, double area, d
  * chambers' rates. Returns the signed mass flow (kg/s). */
 double rb_orifice_flow(rb_orifice *o, double dt);
 
-/* A duct between two chambers, the gas in it moving as one column (stage 9).
- * Its mass flow is a state of its own: the pressure difference across the
- * duct accelerates the column, and friction slows it,
- *
- *   d(mdot)/dt = (A / L) * (p_a - p_b - K rho u |u| / 2),   u = mdot / (rho A),
- *
- * rho the upstream gas's density, K the losses in velocity heads. That
- * inertia is what lets an intake runner "ram" air into a cylinder after the
- * piston has stopped drawing it in. Positive flow goes from a to b. Each step:
- * rb_duct_flow with the chambers' rates, then, once the chambers have been
- * integrated, rb_duct_accelerate from their new pressures (symplectic Euler,
- * which keeps an oscillation's energy instead of growing or damping it). */
-typedef struct rb_duct {
-    rb_chamber *a;
-    rb_chamber *b;
-    double area;    /* m^2                                            */
-    double length;  /* m                                              */
-    double loss;    /* K, velocity heads lost to friction and the ends */
-    double mdot;    /* kg/s, signed: the column's flow now            */
-} rb_duct;
-
-void rb_duct_init(rb_duct *d, rb_chamber *a, rb_chamber *b, double area, double length,
-                  double loss);
-
-/* Adds the column's flow to both chambers' rates, carrying the upstream gas,
- * never more than half the upstream gas in one step. Returns the signed flow
- * (kg/s). */
-double rb_duct_flow(rb_duct *d, double dt);
-
-/* The column's new flow after a step, from the chambers' new pressures. */
-void rb_duct_accelerate(rb_duct *d, double dt);
-
 /* One explicit time step of a small network: clear rates, compute every
  * flow from the current states, then integrate every chamber. */
 void rb_network_step(rb_chamber *const *chambers, int n_chambers,

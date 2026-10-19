@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-#define RB_VERSION_STRING "0.8.0"
+#define RB_VERSION_STRING "0.10.0"
 
 /* Limits for rb_config. */
 #define RB_MIN_SAMPLE_RATE  8000.0
@@ -199,6 +199,20 @@ typedef enum rb_engine_field {
                                    rams the cylinder fullest at one speed, so it
                                    moves the torque peak                          */
     RB_ENG_RUNNER_DIAMETER,     /* m: the runners' bore                            */
+    RB_ENG_HEADER_LENGTH,       /* m, per cylinder: its exhaust header (primary
+                                   pipe), exhaust valve to collector (stage 10)    */
+    RB_ENG_HEADER_DIAMETER,     /* m: the headers' bore                            */
+    RB_ENG_COLLECTOR,           /* per cylinder: the collector its header joins, 0
+                                   or 1 (a second only if there's a first)         */
+    RB_ENG_EXHAUST_PIPE_LENGTH, /* m: each collector's pipe to its catalyst and
+                                   muffler                                         */
+    RB_ENG_EXHAUST_PIPE_DIAMETER, /* m                                             */
+    RB_ENG_EXHAUST_SYSTEMS,     /* 1: every exhaust pipe into one muffler and
+                                   tailpipe; 2 (with two collectors): each its own,
+                                   a twin exhaust                                  */
+    RB_ENG_MUFFLER_VOLUME,      /* m^3, each muffler                               */
+    RB_ENG_TAILPIPE_LENGTH,     /* m, each                                         */
+    RB_ENG_TAILPIPE_DIAMETER,   /* m                                               */
     RB_ENG_COUNT
 } rb_engine_field;
 
@@ -256,6 +270,66 @@ double      rb_get_cylinder(const rb_sim *sim, int cylinder, int field);   /* Na
 int         rb_cylinder_field_count(void);
 const char *rb_cylinder_field_name(int field);    /* NULL if unknown       */
 const char *rb_cylinder_field_unit(int field);
+
+/* ---- the pipes (stage 10) --------------------------------------------
+ * Pressure waves run along the engine's pipes. In order: the intake runners
+ * (one per cylinder, if the engine has runners), the exhaust headers (one
+ * per cylinder), the exhaust pipes (one per collector) and the tailpipes
+ * (one per exhaust system). Each runs from its end 0 to its end 1, cut into
+ * cells of equal length, cell 0 at end 0. Gas flows from end 0 to end 1 in
+ * the normal way of things: from the plenum to the intake valve, from the
+ * exhaust valve to the open air. */
+typedef enum rb_pipe_kind {
+    RB_PIPE_RUNNER = 0,         /* plenum -> intake valve                          */
+    RB_PIPE_HEADER,             /* exhaust valve -> collector                      */
+    RB_PIPE_EXHAUST,            /* collector -> catalyst and muffler               */
+    RB_PIPE_TAILPIPE            /* muffler -> the open air                         */
+} rb_pipe_kind;
+
+/* What a pipe's end opens into. */
+typedef enum rb_pipe_place {
+    RB_PLACE_AIR = 0,           /* the open air                                    */
+    RB_PLACE_PLENUM,            /* the intake plenum                               */
+    RB_PLACE_INTAKE_VALVE,      /* a cylinder's intake valves (number: cylinder)   */
+    RB_PLACE_EXHAUST_VALVE,     /* a cylinder's exhaust valves (number: cylinder)  */
+    RB_PLACE_COLLECTOR,         /* an exhaust collector (number: collector)        */
+    RB_PLACE_MUFFLER            /* a muffler (number: exhaust system); an exhaust
+                                   pipe opens into it through its catalyst         */
+} rb_pipe_place;
+
+/* A pipe's description. */
+typedef enum rb_pipe_field {
+    RB_PIPE_KIND = 0,           /* an rb_pipe_kind                                 */
+    RB_PIPE_NUMBER,             /* the cylinder, collector or system it serves     */
+    RB_PIPE_LENGTH,             /* m                                               */
+    RB_PIPE_DIAMETER,           /* m                                               */
+    RB_PIPE_CELLS,              /* how many                                        */
+    RB_PIPE_FROM,               /* an rb_pipe_place: where end 0 opens ...         */
+    RB_PIPE_FROM_NUMBER,        /* ... and which of them                           */
+    RB_PIPE_TO,                 /* the same for end 1                              */
+    RB_PIPE_TO_NUMBER,
+    RB_PIPE_FIELD_COUNT
+} rb_pipe_field;
+
+int         rb_pipe_count(const rb_sim *sim);                     /* 0 for NULL  */
+double      rb_get_pipe(const rb_sim *sim, int pipe, int field);  /* NaN if unknown */
+int         rb_pipe_field_count(void);
+const char *rb_pipe_field_name(int field);        /* NULL if unknown       */
+const char *rb_pipe_field_unit(int field);
+
+/* Each pipe cell's state, now. */
+typedef enum rb_pipe_cell_field {
+    RB_CELL_PRESSURE = 0,       /* Pa                                              */
+    RB_CELL_TEMPERATURE,        /* K                                               */
+    RB_CELL_VELOCITY,           /* m/s along the pipe (> 0: towards end 1)         */
+    RB_CELL_BURNED_GAS,         /* 0..1: burned gas, by mass                       */
+    RB_CELL_COUNT
+} rb_pipe_cell_field;
+
+double      rb_get_pipe_cell(const rb_sim *sim, int pipe, int cell, int field);  /* NaN if unknown */
+int         rb_pipe_cell_field_count(void);
+const char *rb_pipe_cell_field_name(int field);   /* NULL if unknown       */
+const char *rb_pipe_cell_field_unit(int field);
 
 /* ---- configuration accessors -------------------------------------- */
 double rb_sample_rate(const rb_sim *sim);

@@ -23,16 +23,36 @@ static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
  * It matters only while starting and stopping: a crank that stalls with a
  * burn under way still finishes it, and the hot gas still cools. */
 #define RB_GAS_PACE_RPM 100.0
-/* Each intake runner (stage 9) is one column of air, the whole runner's
- * length, moving between the plenum and a small chamber at the valve: the
- * port. Losses along it, in velocity heads: the entry from the plenum (about
- * 0.3) and friction (a Darcy factor of 0.02 over 10 to 15 diameters, 0.2-0.3).
- * The port holds a quarter of the runner's air. Exhaust pushed back past the
- * intake valve during overlap fills the port nearest the valve and is drawn
- * back in first; mixing it into the whole runner's air would keep it there for
- * several cycles, and that memory makes the idle hunt. */
-#define RUNNER_LOSS 0.6
-#define PORT_SHARE  0.25
+/* The pipes (stage 10; pipe.h). They step at about 48 kHz: a wave crosses a
+ * 5 cm cell in about three of those steps. The runners and headers, which
+ * tune the engine's breathing, have cells of about 5 cm; the long exhaust
+ * pipes and tailpipes 7.5 cm (still 10 to a wavelength at 700 Hz). */
+#define PIPE_DT          (1.0 / 48000.0)
+#define SHORT_CELL       0.05
+#define LONG_CELL        0.075
+/* Losses where gas leaves a volume for a pipe, in velocity heads on top of
+ * its dynamic head: from the plenum into a runner (a rounded entry, 0.3),
+ * from a collector back into a header, or into its exhaust pipe through the
+ * merging cone, and air drawn into a tailpipe's plain end (0.5). Flowing out
+ * of a pipe into a volume the gas's speed is lost anyway. */
+#define RUNNER_ENTRY     0.3
+#define HEADER_ENTRY     0.5
+#define COLLECTOR_ENTRY  0.3
+#define TAILPIPE_ENTRY   0.5
+/* A catalyst's laminar loss (pipe.h), Pa per m/s of its exhaust pipe's gas:
+ * a 400-cell substrate 12 cm long and five times the pipe's area across
+ * costs about 2.5 kPa at 100 m/s, near full power. It also damps the
+ * exhaust's slowest ring (the muffler on its tailpipe, about 40 Hz). */
+#define CATALYST_LAMINAR 25.0
+/* Darcy friction factors: smooth intake runners, rougher exhaust pipes. */
+#define RUNNER_FRICTION  0.02
+#define EXHAUST_FRICTION 0.025
+/* The pipes' walls (K), warm from the gas inside: the intake's from the
+ * cylinder head, the exhaust's cooler the further from the engine. */
+#define RUNNER_WALL      330.0
+#define HEADER_WALL      650.0
+#define EXHAUST_WALL     550.0
+#define TAILPIPE_WALL    400.0
 
 void rb_engine_desc_default(rb_engine_desc *d)
 {
@@ -69,13 +89,23 @@ void rb_engine_desc_default(rb_engine_desc *d)
      * 4500 rpm (stage 9). */
     d->runner_length = 0.33;
     d->runner_diameter = 0.040;
-    /* Headers and collector hold about 2 L, the mufflers and pipes about 10.
-     * The two restrictions together act like one 15 cm^2 opening: about
-     * 0.15 bar of back pressure at full power. */
-    d->exhaust_volume = 2.0e-3;
+    /* The exhaust: 450 mm headers of 36 mm into one collector, a 50 mm pipe
+     * 1.8 m long to the catalyst and a 10 L muffler, and a 60 cm tailpipe.
+     * The catalyst and the muffler's way through act like one 15 cm^2
+     * opening: with the pipes, about 0.2 bar of back pressure at full power. */
+    for (int i = 0; i < 4; i++) {
+        d->header_length[i] = 0.45;
+        d->collector[i] = 0;
+    }
+    d->header_diameter = 0.036;
+    d->exhaust_pipe_length = 1.8;
+    d->exhaust_pipe_diameter = 0.050;
+    d->exhaust_systems = 1;
     d->catalyst_area = 21e-4;
     d->muffler_volume = 10e-3;
-    d->tailpipe_area = 21e-4;
+    d->muffler_area = 21e-4;
+    d->tailpipe_length = 0.6;
+    d->tailpipe_diameter = 0.050;
     d->p_ambient = 101325.0;   /* standard sea-level air, 25 C */
     d->T_ambient = 298.15;
 
@@ -113,15 +143,15 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->starter_torque = 200.0;
     d->starter_free_rpm = 250.0;
     /* The engine computer: idle at 800 rpm with an idle air valve of up to
-     * 30 mm^2 (about a 6 mm hole; warm, the engine idles with it about 15 %
+     * 38 mm^2 (about a 7 mm hole; warm, the engine idles with it about 15 %
      * open), the spark cut at 6800 rpm until 6700, and a late spark while
      * cranking so the first firings don't kick back. The idle gains are tuned
-     * for this engine's valve, flywheel and idle speed: on another engine
-     * they may make the idle hunt or wander. */
+     * for this engine's valve, flywheel, pipes and idle speed: on another
+     * engine they may make the idle hunt or wander. */
     d->idle_rpm = 800.0;
-    d->idle_valve_area = 30e-6;
-    d->idle_gain_p = 4.0e-4;
-    d->idle_gain_i = 6.0e-4;
+    d->idle_valve_area = 38e-6;
+    d->idle_gain_p = 3.0e-4;
+    d->idle_gain_i = 3.0e-4;
     d->rev_limit = 6800.0;
     d->rev_limit_resume = 6700.0;
     d->cranking_rpm = 400.0;
@@ -178,7 +208,10 @@ int rb_engine_layout_inline(rb_engine_desc *d, int n)
         x.pin[i] = (tdc > 0.0) ? 360.0 - tdc : 0.0;
         x.firing_order[i] = i;
         x.position[i] = i * (x.bore + 0.010);
+        x.header_length[i] = d->header_length[0];   /* every header like the first, */
+        x.collector[i] = 0;                         /* into one collector           */
     }
+    x.exhaust_systems = 1;
     if (rb_engine_layout(&x) != 0) return -1;
     *d = x;
     return 0;
@@ -206,10 +239,25 @@ int rb_engine_desc_check(const rb_engine_desc *d)
      * than the physics step can follow (at about 2 c / length). */
     if (!(d->runner_length == 0.0 || (d->runner_length >= 0.02 && d->runner_length < 5.0))) return -1;
     if (d->runner_length > 0.0 && !(d->runner_diameter > 0.005 && d->runner_diameter < 0.5)) return -1;
-    if (!(d->exhaust_volume > 0.0 && d->exhaust_volume < 1.0)) return -1;
-    if (!(d->muffler_volume > 0.0 && d->muffler_volume < 1.0)) return -1;
+    /* The exhaust: every header at least 5 cm long, joining collector 0 or 1
+     * (a second only if there's a first), and two systems only with two
+     * collectors. */
+    int joined[RB_MAX_COLLECTORS] = { 0 };
+    for (int i = 0; i < d->cylinders; i++) {
+        if (!(d->header_length[i] >= 0.05 && d->header_length[i] <= 10.0)) return -1;
+        if (d->collector[i] < 0 || d->collector[i] >= RB_MAX_COLLECTORS) return -1;
+        joined[d->collector[i]]++;
+    }
+    if (!joined[0]) return -1;
+    if (!(d->header_diameter > 0.01 && d->header_diameter < 0.3)) return -1;
+    if (!(d->exhaust_pipe_length >= 0.05 && d->exhaust_pipe_length <= 10.0)) return -1;
+    if (!(d->exhaust_pipe_diameter > 0.01 && d->exhaust_pipe_diameter < 0.5)) return -1;
+    if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2 && joined[1]))) return -1;
     if (!(d->catalyst_area > 0.0 && d->catalyst_area < 0.1)) return -1;
-    if (!(d->tailpipe_area > 0.0 && d->tailpipe_area < 0.1)) return -1;
+    if (!(d->muffler_volume > 0.0 && d->muffler_volume < 1.0)) return -1;
+    if (!(d->muffler_area > 0.0 && d->muffler_area < 0.1)) return -1;
+    if (!(d->tailpipe_length >= 0.05 && d->tailpipe_length <= 10.0)) return -1;
+    if (!(d->tailpipe_diameter > 0.01 && d->tailpipe_diameter < 0.5)) return -1;
     if (!(d->p_ambient > 1e3 && d->p_ambient < 1e7)) return -1;
     if (!(d->T_ambient > 100.0 && d->T_ambient < 1000.0)) return -1;
     if (!(d->burn_duration > 0.0 && d->burn_duration <= 180.0)) return -1;
@@ -254,7 +302,26 @@ static void start_cycle(rb_engine *e)
     e->acc_pmax = -INFINITY;
     e->acc_pump = e->acc_work = e->acc_time = 0.0;
     e->acc_fuel = e->acc_heat = e->acc_wall = e->acc_exh_m = e->acc_exh_mT = e->acc_pexh = 0.0;
-    e->acc_friction = 0.0;
+    e->acc_friction = e->acc_tail_m = e->acc_tail_mT = 0.0;
+}
+
+/* Sets up a pipe with its cells from the engine's pool: about one every
+ * `cell` metres (rb_pipe_cells_for), or when the pool can't give every pipe
+ * that many, one and the share room / over of the rest (whole numbers, so
+ * the shares never add up to more than the pool). */
+static void new_pipe(rb_engine *e, rb_pipe *p, int *used, double length, double diameter,
+                     double cell, int room, int over, double wall, double friction)
+{
+    const int n = 1 + (rb_pipe_cells_for(length, cell, e->pipe_dt) - 1) * room / over;
+    rb_pipe_init(p, &e->cell_pool[*used], &e->face_pool[*used], n, length, diameter,
+                 e->desc.p_ambient, e->desc.T_ambient, AIR, wall, friction);
+    *used += n;
+}
+
+/* The system (muffler and tailpipe) collector c's exhaust pipe runs into. */
+static int system_of(const rb_engine *e, int c)
+{
+    return (e->systems == 2) ? c : 0;
 }
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
@@ -272,38 +339,159 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
     e->spark_map = 1;
     e->throttle_area_pos = NAN;   /* not computed yet */
     rb_gas_init(&e->fuel_gas, FUEL);
+    e->pipe_every = (int)lround(PIPE_DT / dt);
+    if (e->pipe_every < 1) e->pipe_every = 1;
+    e->pipe_dt = e->pipe_every * dt;
+    for (int i = 0; i < d->cylinders; i++)
+        if (d->collector[i] + 1 > e->collectors) e->collectors = d->collector[i] + 1;
+    e->systems = d->exhaust_systems;
 
     rb_cyl_geom g;
     rb_cyl_geom_init(&g, d->bore, d->stroke, d->rod, d->cr);
     rb_chamber_init_reservoir(&e->intake_air, d->p_ambient, d->T_ambient, AIR);
     rb_chamber_init_reservoir(&e->exhaust_air, d->p_ambient, d->T_ambient, AIR);
     rb_chamber_init(&e->plenum, d->plenum_volume, d->p_ambient, d->T_ambient, AIR);
-    rb_chamber_init(&e->manifold, d->exhaust_volume, d->p_ambient, d->T_ambient, AIR);
-    rb_chamber_init(&e->muffler, d->muffler_volume, d->p_ambient, d->T_ambient, AIR);
     rb_orifice_init(&e->throttle, &e->intake_air, &e->plenum, 0.0, 1.0);
-    rb_orifice_init(&e->catalyst, &e->manifold, &e->muffler, d->catalyst_area, 1.0);
-    rb_orifice_init(&e->tailpipe, &e->muffler, &e->exhaust_air, d->tailpipe_area, 1.0);
     rb_orifice_init(&e->idle_air, &e->intake_air, &e->plenum, 0.0, 1.0);
 
+    /* The pipes' cells. If they'd want more than the pool has, each still
+     * gets one, and a share of the rest of what it wants (new_pipe): never
+     * more than the pool, however many short pipes there are (at most 36). */
+    const int runners = d->runner_length > 0.0;
+    const int pipes = (runners ? 2 : 1) * d->cylinders + e->collectors + e->systems;
+    int want = 0, used = 0;
+    for (int i = 0; i < d->cylinders; i++)
+        want += rb_pipe_cells_for(d->header_length[i], SHORT_CELL, e->pipe_dt)
+              + (runners ? rb_pipe_cells_for(d->runner_length, SHORT_CELL, e->pipe_dt) : 0);
+    want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, LONG_CELL, e->pipe_dt)
+          + e->systems * rb_pipe_cells_for(d->tailpipe_length, LONG_CELL, e->pipe_dt);
+    const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
+    const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
+
+    /* Each collector merges its headers into its exhaust pipe through a cone
+     * about two pipe diameters long. */
+    const double header_area = 0.25 * PI * d->header_diameter * d->header_diameter;
+    const double pipe_area = 0.25 * PI * d->exhaust_pipe_diameter * d->exhaust_pipe_diameter;
+    for (int c = 0; c < e->collectors; c++) {
+        int headers = 0;
+        for (int i = 0; i < d->cylinders; i++) headers += (d->collector[i] == c);
+        const double volume = d->exhaust_pipe_diameter * (headers * header_area + pipe_area);
+        rb_chamber_init(&e->collector[c], volume, d->p_ambient, d->T_ambient, AIR);
+    }
+    for (int s = 0; s < e->systems; s++)
+        rb_chamber_init(&e->muffler[s], d->muffler_volume, d->p_ambient, d->T_ambient, AIR);
+
+    /* The areas of the valves, catalysts and mufflers are effective areas
+     * (Cd included), so cd = 1. */
     for (int i = 0; i < d->cylinders; i++) {
         const double theta = rb_engine_cylinder_angle(e, i) * PI / 180.0;
         rb_cylinder_init(&e->cyl[i], &g, theta, d->p_ambient, d->T_ambient, AIR);
-        /* The areas below are effective areas (Cd included), so cd = 1. */
-        rb_chamber *feed = &e->plenum;
-        if (d->runner_length > 0.0) {
-            const double area = 0.25 * PI * d->runner_diameter * d->runner_diameter;
-            rb_chamber_init(&e->port[i], PORT_SHARE * area * d->runner_length, d->p_ambient,
-                            d->T_ambient, AIR);
-            rb_duct_init(&e->runner[i], &e->plenum, &e->port[i], area, d->runner_length, RUNNER_LOSS);
-            feed = &e->port[i];
+        rb_chamber *gas = &e->cyl[i].gas;
+        /* The runner: from the plenum to the intake valve, its last cell at
+         * the valve stepped with the cylinder. */
+        if (runners) {
+            rb_pipe *r = &e->runner[i];
+            new_pipe(e, r, &used, d->runner_length, d->runner_diameter, SHORT_CELL, room, over,
+                     RUNNER_WALL, RUNNER_FRICTION);
+            rb_pipe_join(r, 0, &e->plenum, RUNNER_ENTRY, 1);
+            rb_orifice_init(&e->intake[i], rb_pipe_end_cell(r, 1), gas, 0.0, 1.0);
+            rb_pipe_attach(r, 1, gas, &e->intake[i]);
+            rb_pipe_set_fast(r, 1);
+        } else {
+            rb_orifice_init(&e->intake[i], &e->plenum, gas, 0.0, 1.0);
         }
-        rb_orifice_init(&e->intake[i], feed, &e->cyl[i].gas, 0.0, 1.0);
-        rb_orifice_init(&e->exhaust[i], &e->cyl[i].gas, &e->manifold, 0.0, 1.0);
+        /* The header: from the exhaust valve, its first cell stepped with the
+         * cylinder, to its collector. */
+        rb_pipe *h = &e->header[i];
+        new_pipe(e, h, &used, d->header_length[i], d->header_diameter, SHORT_CELL, room, over,
+                 HEADER_WALL, EXHAUST_FRICTION);
+        rb_orifice_init(&e->exhaust[i], gas, rb_pipe_end_cell(h, 0), 0.0, 1.0);
+        rb_pipe_attach(h, 0, gas, &e->exhaust[i]);
+        rb_pipe_set_fast(h, 0);
+        rb_pipe_join(h, 1, &e->collector[d->collector[i]], HEADER_ENTRY, 0);
         e->burn[i].spark_angle = 720.0 - RB_SPARK_DEFAULT;
         e->burn[i].duration = d->burn_duration;
     }
+    /* Each collector's exhaust pipe, into its system's muffler through the
+     * catalyst at its end; each muffler's tailpipe, through the muffler's
+     * baffles and out into the open air. The catalyst and the baffles are
+     * restrictions at the pipes' ends (pipe.h). */
+    for (int c = 0; c < e->collectors; c++) {
+        rb_pipe *x = &e->exhaust_pipe[c];
+        new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, LONG_CELL, room, over,
+                 EXHAUST_WALL, EXHAUST_FRICTION);
+        rb_pipe_join(x, 0, &e->collector[c], COLLECTOR_ENTRY, 0);
+        rb_pipe_join(x, 1, &e->muffler[system_of(e, c)], 0.0, 0);
+        rb_pipe_restrict(x, 1, d->catalyst_area);
+        rb_pipe_resist(x, 1, CATALYST_LAMINAR);
+    }
+    for (int s = 0; s < e->systems; s++) {
+        rb_pipe *t = &e->tailpipe[s];
+        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, LONG_CELL, room, over,
+                 TAILPIPE_WALL, EXHAUST_FRICTION);
+        rb_pipe_join(t, 0, &e->muffler[s], 0.0, 0);
+        rb_pipe_restrict(t, 0, d->muffler_area);
+        rb_pipe_join(t, 1, &e->exhaust_air, TAILPIPE_ENTRY, 0);
+    }
     start_cycle(e);
     return 0;
+}
+
+int rb_engine_pipe_count(const rb_engine *e)
+{
+    const int n = e->desc.cylinders;
+    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + e->systems;
+}
+
+const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
+{
+    const int n = e->desc.cylinders;
+    if (k < 0) return NULL;
+    if (e->desc.runner_length > 0.0) {
+        if (k < n) return &e->runner[k];
+        k -= n;
+    }
+    if (k < n) return &e->header[k];
+    k -= n;
+    if (k < e->collectors) return &e->exhaust_pipe[k];
+    k -= e->collectors;
+    if (k < e->systems) return &e->tailpipe[k];
+    return NULL;
+}
+
+void rb_engine_contents(const rb_engine *e, double *mass, double *energy,
+                        double species[RB_NSPECIES])
+{
+    double m = 0.0, u = 0.0, y[RB_NSPECIES] = { 0.0 };
+    const rb_chamber *volumes[RB_MAX_CYLINDERS + 1 + 2 * RB_MAX_COLLECTORS];
+    int count = 0;
+    volumes[count++] = &e->plenum;
+    for (int i = 0; i < e->desc.cylinders; i++) volumes[count++] = &e->cyl[i].gas;
+    for (int c = 0; c < e->collectors; c++) volumes[count++] = &e->collector[c];
+    for (int s = 0; s < e->systems; s++) volumes[count++] = &e->muffler[s];
+    for (int k = 0; k < count; k++) {
+        m += volumes[k]->mass;
+        u += volumes[k]->U;
+        for (int j = 0; j < RB_NSPECIES; j++) y[j] += volumes[k]->m[j];
+    }
+    for (int k = 0; k < rb_engine_pipe_count(e); k++) {
+        double pm, pu, py[RB_NSPECIES];
+        rb_pipe_contents(rb_engine_pipe(e, k), &pm, &pu, py);
+        m += pm;
+        u += pu;
+        for (int j = 0; j < RB_NSPECIES; j++) y[j] += py[j];
+    }
+    if (mass) *mass = m;
+    if (energy) *energy = u;
+    if (species)
+        for (int j = 0; j < RB_NSPECIES; j++) species[j] = y[j];
+}
+
+double rb_engine_pipe_heat(const rb_engine *e)
+{
+    double q = 0.0;
+    for (int k = 0; k < rb_engine_pipe_count(e); k++) q += rb_engine_pipe(e, k)->heat;
+    return q;
 }
 
 /* The upstream chamber of an orifice's last flow: a if the flow went a -> b,
@@ -371,6 +559,7 @@ static void finish_cycle(rb_engine *e)
     r->wall_loss = -e->acc_wall;
     r->t_exhaust = (e->acc_exh_m > 0.0) ? e->acc_exh_mT / e->acc_exh_m : 0.0;
     r->p_exhaust = e->acc_pexh / e->acc_time;
+    r->t_tailpipe = (e->acc_tail_m > 0.0) ? e->acc_tail_mT / e->acc_tail_m : 0.0;
     r->p_max = p_max / d->cylinders;
     r->angle_p_max = angle / d->cylinders;
     r->residual = residual / d->cylinders;
@@ -395,7 +584,7 @@ static void finish_cycle(rb_engine *e)
 /* What one step adds to the cycle's totals. */
 typedef struct step_share {
     double air[RB_MAX_CYLINDERS], throttle, p, rho, pump, work, heat, wall, exh_m, exh_mT, pexh, dt;
-    double friction;
+    double friction, tail_m, tail_mT;
 } step_share;
 
 static void add_share(rb_engine *e, const step_share *s, double f, int n)
@@ -411,6 +600,8 @@ static void add_share(rb_engine *e, const step_share *s, double f, int n)
     e->acc_friction += f * s->friction;
     e->acc_exh_m += f * s->exh_m;
     e->acc_exh_mT += f * s->exh_mT;
+    e->acc_tail_m += f * s->tail_m;
+    e->acc_tail_mT += f * s->tail_mT;
     e->acc_pexh += f * s->pexh * s->dt;
     e->acc_time += f * s->dt;
     if (s->p < e->acc_pmin) e->acc_pmin = s->p;
@@ -493,15 +684,32 @@ static double mbt_advance(const rb_engine *e, double duration)
     return duration * pow(log(2.0) / d->wiebe_a, 1.0 / (d->wiebe_m + 1.0)) - MBT_CA50;
 }
 
+/* At idle the engine computer acts on the speed the engine is heading for:
+ * IDLE_LOOKAHEAD on, at the rate it's changing (rpm_smooth - rpm_recent is
+ * about how much it changed over the last RPM_RECENT seconds). */
+#define RPM_RECENT      0.15      /* s: the speed's smoothing for its rate      */
+#define IDLE_LOOKAHEAD  0.5       /* s: how far ahead the idle control looks    */
+
+static double idle_heading(const rb_engine *e)
+{
+    return e->rpm_smooth + IDLE_LOOKAHEAD / RPM_RECENT * (e->rpm_smooth - e->rpm_recent);
+}
+
 /* At idle the computer holds the spark back from its best, a torque reserve,
- * and moves it with the speed: advanced when the engine sags below its idle
- * speed, retarded when it runs above. A spark change acts within a cycle, far
- * sooner than the idle valve's air reaches the cylinders, so the spark
- * steadies the idle while the valve does the slow work (stage 9). It idles
- * this way with the foot off, running with its crank free, and within
+ * and moves it with the speed the engine is heading for: advanced when it's
+ * heading below its idle speed, retarded when above. A spark change acts
+ * within a cycle, far sooner than the idle valve's air reaches the cylinders,
+ * so the spark steadies the idle while the valve does the slow work (stage 9).
+ * It needs to be strong: with the runners (stage 10), an engine idling a few
+ * rpm faster pushes less exhaust back into its runners at each overlap (the
+ * overlap is over sooner), so it breathes better and makes more torque before
+ * the plenum pressure can follow. The six, on the stage 9 spark of 0.1 deg per
+ * rpm and with its idle valve held still, swung about 95 rpm every 2.8 s
+ * (stage 9's six held steady with its spark held still too). It idles this
+ * way with the foot off, running with its crank free, and within
  * IDLE_SPARK_BAND of its idle speed. */
 #define IDLE_SPARK      15.0      /* deg before TDC at the idle speed            */
-#define IDLE_SPARK_GAIN 0.1       /* deg more per rpm below it                   */
+#define IDLE_SPARK_GAIN 0.3       /* deg more per rpm below it                   */
 #define IDLE_SPARK_BAND 400.0     /* rpm above the idle speed where idling ends  */
 
 /* The spark advance the engine computer chooses for a cycle. */
@@ -513,7 +721,7 @@ static double computer_spark(const rb_engine *e, double duration, double rpm)
     const double best = mbt_advance(e, duration);
     if (!e->hold_speed && d->idle_rpm > 0.0 && e->throttle_pos < 0.01
         && e->rpm_smooth < d->idle_rpm + IDLE_SPARK_BAND) {
-        const double s = IDLE_SPARK + IDLE_SPARK_GAIN * (d->idle_rpm - e->rpm_smooth);
+        const double s = IDLE_SPARK + IDLE_SPARK_GAIN * (d->idle_rpm - idle_heading(e));
         return (s < 0.0) ? 0.0 : (s < best) ? s : best;
     }
     return best;
@@ -661,8 +869,16 @@ static double crank_turn(rb_engine *e)
  * Coasting with the foot off the pedal more than 700 rpm above idle, the
  * injectors stop until the engine is back within 400 rpm of idle: no fuel is
  * wasted, and the engine slows down faster. The idle valve opens in
- * proportion to how far the engine is below its idle speed (idle_gain_p),
- * around a position it learns while the engine idles (idle_gain_i): running,
+ * proportion to how far below its idle speed the engine is heading
+ * (idle_gain_p): the speed half a second on, at the rate it's changing. The
+ * air takes about that long to fill the plenum and runners (4 L in the four),
+ * so falling towards idle the valve opens before the speed gets there; looking
+ * at the speed now, the four dipped 150 rpm below idle after a blip, the
+ * plenum still emptied from the fuel cut (stage 10). The rate is the speed's
+ * change over the last 0.15 s: over the 0.5 s of the trend, a long coast down
+ * from the rev limiter still looked steep when the fuel came back on, and held
+ * the valve wide open above idle. All that around a position the valve learns
+ * while the engine idles (idle_gain_i): running,
  * foot off the pedal, and its speed steady (the speed smoothed over 0.05 s
  * within 50 rpm of the speed smoothed over 0.5 s). The learning is slow and
  * counts at most 100 rpm of error, so coasting down from high rpm doesn't
@@ -684,6 +900,7 @@ static void engine_computer(rb_engine *e)
     const double rpm = e->omega * 30.0 / PI;
     e->rpm_smooth += (rpm - e->rpm_smooth) * (e->dt / RPM_SMOOTHING);
     e->rpm_trend += (e->rpm_smooth - e->rpm_trend) * (e->dt / RPM_TREND);
+    e->rpm_recent += (e->rpm_smooth - e->rpm_recent) * (e->dt / RPM_RECENT);
     if (!e->ignition) {            /* switched off: the valve stays where it is */
         e->spark_cut = e->fuel_cut = 0;
         return;
@@ -710,7 +927,7 @@ static void engine_computer(rb_engine *e)
         if (e->idle_trim < -IDLE_VALVE_BASE) e->idle_trim = -IDLE_VALVE_BASE;
         if (e->idle_trim > 1.0 - IDLE_VALVE_BASE) e->idle_trim = 1.0 - IDLE_VALVE_BASE;
     }
-    const double v = IDLE_VALVE_BASE + e->idle_trim + d->idle_gain_p * error;
+    const double v = IDLE_VALVE_BASE + e->idle_trim + d->idle_gain_p * (d->idle_rpm - idle_heading(e));
     e->idle_valve = (v > 0.0) ? ((v < 1.0) ? v : 1.0) : 0.0;
 }
 
@@ -724,6 +941,51 @@ static double count_inflow(rb_engine *e, const rb_orifice *o)
     e->energy_in += m * up->h;
     for (int s = 0; s < RB_NSPECIES; s++) e->species_in[s] += m * up->y[s];
     return m;
+}
+
+/* Mean pressure in the exhaust collectors. */
+static double exhaust_pressure(const rb_engine *e)
+{
+    double p = 0.0;
+    for (int c = 0; c < e->collectors; c++) p += e->collector[c].p;
+    return p / e->collectors;
+}
+
+/* The slow gas: the pipes but for their fast cells, the collectors and the
+ * mufflers, stepped every pipe_every steps (pipe.h, two rates). When a block
+ * of steps begins (step 3), their rates. */
+static void slow_flows(rb_engine *e)
+{
+    const double dt = e->pipe_dt;
+    const int pipes = rb_engine_pipe_count(e);
+    for (int c = 0; c < e->collectors; c++) rb_chamber_clear_rates(&e->collector[c]);
+    for (int s = 0; s < e->systems; s++) rb_chamber_clear_rates(&e->muffler[s]);
+    for (int k = 0; k < pipes; k++) rb_pipe_clear((rb_pipe *)rb_engine_pipe(e, k), 0);
+    for (int k = 0; k < pipes; k++) rb_pipe_flows((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
+}
+
+/* When the block ends (step 5): what leaves through the tailpipes' open ends
+ * (or is drawn in) is counted, everything slow is integrated over the block,
+ * and the faces between slow cells get their new flows. */
+static void slow_step(rb_engine *e, step_share *share)
+{
+    const double dt = e->pipe_dt;
+    const int pipes = rb_engine_pipe_count(e);
+    for (int s = 0; s < e->systems; s++) {
+        const rb_face *out = &e->tailpipe[s].end_face[1];
+        const double m = out->moved * dt;
+        e->mass_out += m;
+        e->energy_out += m * out->moved_h;
+        for (int j = 0; j < RB_NSPECIES; j++) e->species_out[j] += m * out->moved_y[j];
+        if (m > 0.0) {
+            share->tail_m += m;
+            share->tail_mT += m * out->a->T;
+        }
+    }
+    for (int c = 0; c < e->collectors; c++) rb_chamber_integrate(&e->collector[c], dt);
+    for (int s = 0; s < e->systems; s++) rb_chamber_integrate(&e->muffler[s], dt);
+    for (int k = 0; k < pipes; k++) rb_pipe_integrate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
+    for (int k = 0; k < pipes; k++) rb_pipe_accelerate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }
 
 void rb_engine_step(rb_engine *e)
@@ -747,7 +1009,7 @@ void rb_engine_step(rb_engine *e)
         /* The engine computer is off while held: nothing of its stays cut, and
          * its view of the speed is ready for when the crank is let go. */
         e->spark_cut = e->fuel_cut = 0;
-        e->rpm_smooth = e->rpm_trend = rpm;
+        e->rpm_smooth = e->rpm_trend = e->rpm_recent = rpm;
         e->friction_torque = rb_engine_fmep(e, e->omega) * rb_engine_displacement(e) / (4.0 * PI);
         turn = e->omega * dt;
     } else {
@@ -793,31 +1055,24 @@ void rb_engine_step(rb_engine *e)
         open[i] = (e->intake[i].area > 0.0 || e->exhaust[i].area > 0.0);
     }
 
-    /* 3. Everything that changes the gas, computed from the current state,
-     * then integrated together. What crosses the boundary is counted before
-     * the chambers change. */
-    step_share share = { .p = e->plenum.p, .rho = e->plenum.rho, .pexh = e->manifold.p, .dt = dt };
+    /* 3. Everything that changes the fast gas (the cylinders, the plenum and
+     * the pipes' cells at the valves), computed from the current state, then
+     * integrated together. What crosses the boundary is counted before the
+     * chambers change. The slow gas's rates first, if a block of steps
+     * begins. */
+    step_share share = { .p = e->plenum.p, .rho = e->plenum.rho, .pexh = exhaust_pressure(e), .dt = dt };
     const int runners = d->runner_length > 0.0;
+    if (e->pipe_phase == 0) slow_flows(e);
     rb_chamber_clear_rates(&e->plenum);
-    rb_chamber_clear_rates(&e->manifold);
-    rb_chamber_clear_rates(&e->muffler);
-    for (int i = 0; i < n; i++) rb_chamber_clear_rates(&e->cyl[i].gas);
-    if (runners)
-        for (int i = 0; i < n; i++) {
-            rb_chamber_clear_rates(&e->port[i]);
-            rb_duct_flow(&e->runner[i], dt);
-        }
+    for (int i = 0; i < n; i++) {
+        rb_chamber_clear_rates(&e->cyl[i].gas);
+        if (runners) rb_pipe_clear(&e->runner[i], 1);
+        rb_pipe_clear(&e->header[i], 1);
+    }
 
     rb_orifice_flow(&e->throttle, dt);
     rb_orifice_flow(&e->idle_air, dt);
     share.throttle = count_inflow(e, &e->throttle) + count_inflow(e, &e->idle_air);
-
-    rb_orifice_flow(&e->catalyst, dt);
-    rb_orifice_flow(&e->tailpipe, dt);
-    const rb_chamber *up = upstream(&e->tailpipe);
-    e->mass_out += e->tailpipe.mdot * dt;
-    e->energy_out += e->tailpipe.mdot * up->h * dt;
-    for (int s = 0; s < RB_NSPECIES; s++) e->species_out[s] += e->tailpipe.mdot * up->y[s] * dt;
 
     for (int i = 0; i < n; i++) {
         rb_chamber *g = &e->cyl[i].gas;
@@ -847,17 +1102,17 @@ void rb_engine_step(rb_engine *e)
             burn_step(e, i, rb_engine_cylinder_angle(e, i), step_deg, q_fuel);
             share.heat += b->heat;
         }
+        /* the pipes' ends at the valves (and at the plenum) */
+        if (runners) rb_pipe_flows(&e->runner[i], 1, dt);
+        rb_pipe_flows(&e->header[i], 1, dt);
     }
 
     rb_chamber_integrate(&e->plenum, dt);
-    rb_chamber_integrate(&e->manifold, dt);
-    rb_chamber_integrate(&e->muffler, dt);
-    for (int i = 0; i < n; i++) rb_chamber_integrate(&e->cyl[i].gas, dt);
-    if (runners)
-        for (int i = 0; i < n; i++) {
-            rb_chamber_integrate(&e->port[i], dt);
-            rb_duct_accelerate(&e->runner[i], dt);
-        }
+    for (int i = 0; i < n; i++) {
+        rb_chamber_integrate(&e->cyl[i].gas, dt);
+        if (runners) rb_pipe_integrate(&e->runner[i], 1, dt);
+        rb_pipe_integrate(&e->header[i], 1, dt);
+    }
 
     /* 4. Turn the crank and move the pistons. A step's work counts as pumping
      * if the cylinder is between BDC (180) and BDC (540), on its exhaust and
@@ -907,7 +1162,19 @@ void rb_engine_step(rb_engine *e)
         e->rpm = e->omega * 30.0 / PI;
     }
 
-    /* 5. Add the step to the cycle; a step across the end of the cycle is
+    /* 5. The slow gas at the end of its block of steps; then the new flows
+     * at the pipes' fast ends, seeing the slow cells' pressures as they are
+     * by now. */
+    if (++e->pipe_phase >= e->pipe_every) {
+        e->pipe_phase = 0;
+        slow_step(e, &share);
+    }
+    for (int i = 0; i < n; i++) {
+        if (runners) rb_pipe_accelerate(&e->runner[i], 1, dt);
+        rb_pipe_accelerate(&e->header[i], 1, dt);
+    }
+
+    /* 6. Add the step to the cycle; a step across the end of the cycle is
      * shared in proportion to its angle on each side. */
     const double theta = e->theta + step_deg;
     if (theta < 720.0) {

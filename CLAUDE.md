@@ -24,40 +24,55 @@
 - Internal physics modules: `gas.c` (species RB_AIR/RB_FUEL/RB_BURNED, two-range cp fits, u(T), T(u)),
   `chamber.c` (0D control volume: clear rates, add flows/heat, integrate; `rb_chamber_set_volume` does
   piston work with the time-symmetric trapezoidal rule and splits changes over 2 %), `flow.c` (nozzle
-  formula, orifices with the equalisation limit, `rb_network_step`), `cylinder.c` (slider-crank
+  formula, orifices with the equalisation limit, `rb_network_step`), `pipe.c` (stage 10's 1D pipe:
+  cells = chambers on a staggered grid, faces whose ṁ is a state; ends closed, joined to a volume
+  with the end correction, restricted, laminar loss, or on an orifice; two rates), `cylinder.c` (slider-crank
   geometry; `rb_cylinder` = chamber + geometry + crank angle, `rb_cylinder_move` returns the work),
   `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
   (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
   correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
-  area), `engine.c` (N cylinders + plenum + throttle + idle air valve + exhaust manifold → catalyst
-  orifice → muffler → tailpipe + two air reservoirs; fuel at IVC, spark, burn, walls; the crank,
-  held or free; friction, starter, the engine computer; per-cycle IMEP, BMEP, torque etc.).
+  area), `engine.c` (N cylinders + plenum + throttle + idle air valve, a runner per cylinder (pipe)
+  → intake valve, exhaust valve → header (pipe) → one of up to two collectors (volumes) → each
+  collector's exhaust pipe → catalyst (a restriction + laminar loss at its end) → muffler (volume)
+  → tailpipe (pipe) → the air, one or two systems; two air reservoirs; fuel at IVC, spark, burn,
+  walls; the crank, held or free; friction, starter, the engine computer; per-cycle IMEP, BMEP,
+  torque etc.).
   The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
   Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
   equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
 - Stage 9 added `dyno.c` (an absorbing dyno: a PI controller on the free crank's `load_torque`, a
-  reading per cycle with the inertia correction; internal, not in rb.h yet) and `flow.c`'s
-  `rb_duct` (an inertial duct: `rb_duct_flow` moves gas with the current ṁ, `rb_duct_accelerate`
-  updates ṁ once the chambers are integrated). In `engine.c` it added:
-  - the intake runners: plenum → duct → a port chamber a quarter of the runner's volume → intake
-    valve; `runner_length = 0` means none, as in stages 5–8;
+  reading per cycle with the inertia correction; internal, not in rb.h yet). In `engine.c` it added:
   - the burn's length from the charge at IVC and the speed (`burn_duration`, 0.5–2 times
     `desc.burn_duration`, which is the four's at 3000 rpm wide open);
   - the engine computer's spark (`computer_spark`): the best torque's, with half the charge burned
-    8° after TDC; at idle 15° plus 0.1° per rpm below idle, capped at the best.
+    8° after TDC; at idle 15° at the idle speed, more below, less above, capped at the best.
 
   `spark_map = 1` (the default) uses that spark and `spark_map = 0` the fixed `e->spark` of stages
   6–8, so tests that set `e.spark` must also clear `spark_map`.
+- Stage 10 made the runners (`runner_length = 0`: none, as in stages 5–8) and the exhaust 1D pipes
+  (`pipe.h` explains the scheme). Cells about every 5 cm in runners and headers, 7.5 cm in exhaust
+  pipes and tailpipes, from a pool of 512 in the engine. The pipes step at 48 kHz (`pipe_every`
+  physics steps), but the cells at the valves are fast, stepped every physics step; fast faces see a
+  slow neighbour's pressure as it is by now (`rb_chamber_pressure_now`: the gas it took meanwhile and
+  its rates since the block began). Get this wrong and the engine's VE moves up to 0.9 % between
+  384 and 96 kHz (docs/stage-10.md, "Two rates"; `test_engine_pipes_two_rates`). The engine computer's idle valve and idle spark act on the
+  speed half a second ahead (`idle_heading`), the spark 0.3° per rpm: with runners an idling engine
+  is unstable on its own (less exhaust pushed back into them the faster it turns). `heat_transfer
+  = 0` means adiabatic cylinders; the pipes' walls always trade heat. At 96 kHz the valves' 5 cm
+  cells are too stiff for the flow cap (10 % more pumping work motored); 192 kHz is converged.
 - Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
   after the engine computer runs) → events the crank passes during the step (an event counts if
   it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
   cycle's burn length and spark timing, the spark sets the burnable fuel, EVO stops the burn,
-  overlap TDC closes the peak-pressure bookkeeping → set areas (throttle, valves) → all flows (the
-  runners' with their current ṁ), Woschni wall heat and burning as rates from the current state,
-  integrated together (explicit Euler), then the runners' ṁ from the new pressures → turn the
-  crank and move the pistons (trapezoidal); a free
-  crank's kinetic energy then changes by exactly the work done on it (gas, crankcase at ambient,
-  starter, friction, load), so `crank_books()` in the tests balances to 1e-9.
+  overlap TDC closes the peak-pressure bookkeeping → set areas (throttle, valves) → when a block of
+  `pipe_every` steps begins, the slow gas's rates (`slow_flows`: the pipes' slow faces, collectors,
+  mufflers) → all fast flows (throttle, valves, the pipes' fast faces with their current ṁ),
+  Woschni wall heat and burning as rates from the current state, integrated together (explicit
+  Euler) → turn the crank and move the pistons (trapezoidal) → when the block ends, the slow gas
+  integrated over it, its tailpipe outflow counted, its faces' ṁ updated (`slow_step`) → the fast
+  faces' ṁ from the new pressures. A free crank's kinetic energy changes by exactly the work done
+  on it (gas, crankcase at ambient, starter, friction, load), so `crank_books()` in the tests
+  balances to 1e-9.
   Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
   a steady state of VE, plenum pressure and net work.
 - `hold_speed = 1` (the default after init) is the dyno-held crank of stages 5–6: the engine
@@ -80,9 +95,11 @@
   odd cylinders on bank 0, even on bank 1, cylinders 1 and 2 at the front). Each preset carries
   its own idle valve, sized so the warm engine idles at about 15 % open (where the computer starts
   it), and idle gains; tune new ones with a start, a 30 % blip and a 10 N m load at idle, keeping
-  room for gains 1.5 times stronger (docs/stage-08.md, retuned in docs/stage-09.md). Watch the
-  idle for 30 s: a slow swing can take 15 s to show (the six's does). Engine changes that move the
-  idle's torque response (the burn, friction, pipes) mean retuning them.
+  room for gains 1.5 times stronger (docs/stage-08.md, retuned in docs/stage-09.md and
+  docs/stage-10.md). Watch the idle for 30 s: a slow swing can take 15 s to show. To tell the
+  controller from the engine, hold the idle valve and spark still: since stage 10 the six and the
+  cross-plane V8 swing on their own then. Engine changes that move the idle's torque response (the
+  burn, friction, pipes, cams) mean retuning them.
 - The public engine API (`rb_engine_api.c`): `rb_load_preset`, `rb_get_engine`/`rb_set_engine`
   over a field table (offsets into `rb_engine_desc`, a few worked out), `rb_get_cylinder`.
   `rb_set_engine` clamps a value outside the field's range (returning RB_CLAMPED; pin and bank
@@ -105,7 +122,8 @@
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
   ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
   `tools/plot_run.py` the `rb_cli run` one, `tools/plot_presets.py` the presets' (firing, runs,
-  idle), `tools/plot_dyno.py` the `rb_cli dyno` sweeps and `fire --rpm-sweep` comparisons (curves,
+  idle), `tools/plot_pipes.py` the `rb_cli pipes` ones (pulse, engine) and a stage-to-stage
+  `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and `fire --rpm-sweep` comparisons (curves,
   changes, spark). The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b /
   #52514e, muted #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue
   ramp for ordered categories, and the Inter font when installed. Doc images are rendered in

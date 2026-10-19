@@ -105,8 +105,10 @@ void test_dyno_sweeps(void)
 {
     /* Climbing from 2600 to 3400 rpm at 200 rpm/s, the dyno absorbs less than
      * the engine makes: the rest speeds up the crank, J dw/dt. The brake
-     * torque adds that back, and over 2900-3100 rpm reads what the engine
-     * makes held at 3000. The setpoint stops where the sweep ends. */
+     * torque adds that back, and over 2900-3100 rpm reads what the dyno reads
+     * holding 3000: 0.3 % less than the ideal hold, the free crank's speed
+     * ripple (test_dyno_holds_a_speed). The setpoint stops where the sweep
+     * ends. */
     rb_engine_desc d;
     rb_engine_desc_default(&d);
     run_held(&held, &d, 3000.0, 1.0);
@@ -130,7 +132,7 @@ void test_dyno_sweeps(void)
     const double j_alpha = d.inertia * 200.0 * PI / 30.0;   /* 3.4 N m */
     CHECK(n >= 20 && n <= 30);                    /* 1 s of the sweep: about 25 cycles */
     CHECK_NEAR(speed / n, 3000.0, 15.0);
-    CHECK_NEAR(brake / n, held.result.brake_torque, 0.004 * held.result.brake_torque);
+    CHECK_NEAR(brake / n, 0.997 * held.result.brake_torque, 0.004 * held.result.brake_torque);
     CHECK_NEAR(inertia / n, j_alpha, 0.1 * j_alpha);
     CHECK(highest == 3400.0 && y.target_rpm == 3400.0);
     CHECK_NEAR(e.rpm, 3400.0, 40.0);
@@ -162,13 +164,14 @@ void test_dyno_only_absorbs(void)
 
     y.target_rpm = 2000.0;
     long back = -1;
-    for (long k = 0; k < lround(1.0 / DT_FAST); k++) {
+    for (long k = 0; k < lround(1.5 / DT_FAST); k++) {
         rb_dyno_step(&y, &e);
         rb_engine_step(&e);
         if (back < 0 && e.rpm < 2020.0) back = k;
     }
     CHECK(back >= 0 && back < lround(0.25 / DT_FAST));
-    CHECK_NEAR(e.rpm, 2000.0, 50.0);              /* still settling from the stop */
+    CHECK_NEAR(e.rpm, 2000.0, 50.0);              /* still settling from the stop: the
+                                                     plenum and runners (4 L) refill */
     CHECK(e.load_torque > 20.0);
 }
 

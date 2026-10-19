@@ -51,6 +51,15 @@ export interface RbExports {
   rb_cylinder_field_count(): number;
   rb_cylinder_field_name(field: number): number;
   rb_cylinder_field_unit(field: number): number;
+  rb_pipe_count(sim: number): number;
+  rb_get_pipe(sim: number, pipe: number, field: number): number;
+  rb_pipe_field_count(): number;
+  rb_pipe_field_name(field: number): number;
+  rb_pipe_field_unit(field: number): number;
+  rb_get_pipe_cell(sim: number, pipe: number, cell: number, field: number): number;
+  rb_pipe_cell_field_count(): number;
+  rb_pipe_cell_field_name(field: number): number;
+  rb_pipe_cell_field_unit(field: number): number;
   rb_sample_rate(sim: number): number;
   rb_oversample(sim: number): number;
   rb_alloc_floats(count: number): number;
@@ -68,6 +77,8 @@ export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
   'rb_engine_field_name', 'rb_engine_field_unit', 'rb_engine_field_flags',
   'rb_engine_field_min', 'rb_engine_field_max',
   'rb_get_cylinder', 'rb_cylinder_field_count', 'rb_cylinder_field_name', 'rb_cylinder_field_unit',
+  'rb_pipe_count', 'rb_get_pipe', 'rb_pipe_field_count', 'rb_pipe_field_name', 'rb_pipe_field_unit',
+  'rb_get_pipe_cell', 'rb_pipe_cell_field_count', 'rb_pipe_cell_field_name', 'rb_pipe_cell_field_unit',
   'rb_sample_rate', 'rb_oversample', 'rb_alloc_floats', 'rb_free_floats',
 ];
 
@@ -89,6 +100,18 @@ export const RB_EF_IN_ORDER = 16;
 export const RB_EF_LIVE = 32;
 /** Engine fields with one value per bank, cylinder or place in the firing order. */
 export const RB_EF_ARRAY = RB_EF_PER_BANK | RB_EF_PER_CYLINDER | RB_EF_IN_ORDER;
+/* Pipe kinds (rb_pipe_kind in rb.h): a pipe's "kind" field. */
+export const RB_PIPE_RUNNER = 0;
+export const RB_PIPE_HEADER = 1;
+export const RB_PIPE_EXHAUST = 2;
+export const RB_PIPE_TAILPIPE = 3;
+/* What a pipe's end opens into (rb_pipe_place): its "from" and "to" fields. */
+export const RB_PLACE_AIR = 0;
+export const RB_PLACE_PLENUM = 1;
+export const RB_PLACE_INTAKE_VALVE = 2;
+export const RB_PLACE_EXHAUST_VALVE = 3;
+export const RB_PLACE_COLLECTOR = 4;
+export const RB_PLACE_MUFFLER = 5;
 
 export interface ParamInfo {
   id: number;
@@ -123,6 +146,13 @@ export interface FieldInfo {
  */
 export type EngineDescription = Record<string, number | number[]>;
 
+/**
+ * One pipe, by the core's pipe field names: kind (RB_PIPE_*), number (the
+ * cylinder, collector or system it serves), length and diameter (m), cells,
+ * from / from_number and to / to_number (where its ends open: RB_PLACE_*).
+ */
+export type PipeDescription = Record<string, number>;
+
 export interface CoreInfo {
   version: string;
   params: ParamInfo[];
@@ -130,6 +160,8 @@ export interface CoreInfo {
   presets: PresetInfo[];
   engineFields: FieldInfo[];
   cylinderFields: FieldInfo[];
+  pipeFields: FieldInfo[];
+  pipeCellFields: FieldInfo[];
 }
 
 /**
@@ -253,20 +285,37 @@ export class RbCore {
     return id;
   }
 
-  cylinderFields(): FieldInfo[] {
-    const x = this.exports;
+  /** Fields described by a count, a name and a unit (cylinder, pipe and pipe cell fields). */
+  private plainFields(count: number, name: (id: number) => number, unit: (id: number) => number): FieldInfo[] {
     const list: FieldInfo[] = [];
-    for (let id = 0; id < x.rb_cylinder_field_count(); id++) {
+    for (let id = 0; id < count; id++) {
       list.push({
         id,
-        name: this.cString(x.rb_cylinder_field_name(id)),
-        unit: this.cString(x.rb_cylinder_field_unit(id)),
+        name: this.cString(name(id)),
+        unit: this.cString(unit(id)),
         flags: 0,
         min: Number.NaN,
         max: Number.NaN,
       });
     }
     return list;
+  }
+
+  cylinderFields(): FieldInfo[] {
+    const x = this.exports;
+    return this.plainFields(x.rb_cylinder_field_count(), x.rb_cylinder_field_name, x.rb_cylinder_field_unit);
+  }
+
+  /** What describes a pipe (rb_pipe_field in rb.h). */
+  pipeFields(): FieldInfo[] {
+    const x = this.exports;
+    return this.plainFields(x.rb_pipe_field_count(), x.rb_pipe_field_name, x.rb_pipe_field_unit);
+  }
+
+  /** The state of each pipe cell (rb_pipe_cell_field in rb.h). */
+  pipeCellFields(): FieldInfo[] {
+    const x = this.exports;
+    return this.plainFields(x.rb_pipe_cell_field_count(), x.rb_pipe_cell_field_name, x.rb_pipe_cell_field_unit);
   }
 
   info(): CoreInfo {
@@ -277,6 +326,8 @@ export class RbCore {
       presets: this.presets(),
       engineFields: this.engineFields(),
       cylinderFields: this.cylinderFields(),
+      pipeFields: this.pipeFields(),
+      pipeCellFields: this.pipeCellFields(),
     };
   }
 
@@ -300,6 +351,7 @@ export class RbSim {
   private readonly buf: number;
   private readonly bufFrames: number;
   private readonly cylindersField: number;
+  private readonly pipeCellsField: number;
   private view: Float32Array;
   private ptr: number;
 
@@ -310,6 +362,7 @@ export class RbSim {
     this.bufFrames = bufFrames;
     this.view = new Float32Array(core.exports.memory.buffer, buf, bufFrames);
     this.cylindersField = core.engineFieldId('cylinders');
+    this.pipeCellsField = core.pipeFields().findIndex((f) => f.name === 'cells');
   }
 
   /**
@@ -427,6 +480,53 @@ export class RbSim {
       for (let f = 0; f < fields; f++) into[c * fields + f] = x.rb_get_cylinder(this.ptr, c, f);
     }
     return cylinders;
+  }
+
+  /** How many pipes the engine has (0 once destroyed). */
+  get pipeCount(): number {
+    return this.ptr ? this.core.exports.rb_pipe_count(this.ptr) : 0;
+  }
+
+  /** One field of one pipe's description (rb_pipe_field). NaN if unknown. */
+  getPipe(pipe: number, field: number): number {
+    return this.core.exports.rb_get_pipe(this.ptr, pipe, field);
+  }
+
+  /**
+   * Every pipe's description, in the core's order: the runners (one per
+   * cylinder, if the engine has them), the headers, the exhaust pipes, the
+   * tailpipes.
+   */
+  pipes(): PipeDescription[] {
+    const fields = this.core.pipeFields();
+    const list: PipeDescription[] = [];
+    for (let p = 0; p < this.pipeCount; p++) {
+      const pipe: PipeDescription = {};
+      for (const f of fields) pipe[f.name] = this.getPipe(p, f.id);
+      list.push(pipe);
+    }
+    return list;
+  }
+
+  /** One field of one pipe cell's state (rb_pipe_cell_field). NaN if unknown. */
+  getPipeCell(pipe: number, cell: number, field: number): number {
+    return this.core.exports.rb_get_pipe_cell(this.ptr, pipe, cell, field);
+  }
+
+  /**
+   * Copies every cell of one pipe into `into`, cell by cell:
+   * into[c * fields + f] is field f of cell c, from end 0. Allocates nothing.
+   * Returns how many cells it copied (as many as fit).
+   */
+  readPipeCells(pipe: number, into: Float64Array): number {
+    const x = this.core.exports;
+    const fields = x.rb_pipe_cell_field_count();
+    const pipeCells = this.getPipe(pipe, this.pipeCellsField) || 0;   // NaN: no such pipe
+    const cells = Math.min(pipeCells, Math.floor(into.length / fields));
+    for (let c = 0; c < cells; c++) {
+      for (let f = 0; f < fields; f++) into[c * fields + f] = x.rb_get_pipe_cell(this.ptr, pipe, c, f);
+    }
+    return cells;
   }
 
   destroy(): void {

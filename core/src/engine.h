@@ -1,7 +1,7 @@
 /*
  * engine.h - a whole engine: N cylinders on one crankshaft, fed from an
- * intake plenum behind the throttle, exhausting through a manifold, a
- * catalyst, a muffler and a tailpipe into the open air.
+ * intake plenum behind the throttle, exhausting through pipes, a catalyst and
+ * a muffler into the open air.
  * The crank is either held at a set speed by a motor or a dyno (stages 5 and
  * 6, and dyno runs), or free: it turns under the torques of the gas,
  * friction, the starter motor and whatever it drives, with an engine computer
@@ -11,15 +11,23 @@
  * or flat (boxer), with any crank and firing order that fit together
  * (stage 8); presets.c has the engines that come ready-made.
  *
- *   ambient air --> throttle --> plenum --> intake valves --> cylinder 1..N
- *                                                                  |
- *   ambient air <-- tailpipe <-- muffler <-- catalyst <-- exhaust  |
- *                                                         manifold <-- exhaust valves
+ *   air --> throttle --> plenum --> runner i --> intake valve --> cylinder i
+ *                                                                     |
+ *   air <-- tailpipe <-- muffler <-- catalyst <-- exhaust pipe <--    |
+ *                                          collector <-- header i <-- exhaust valve
  *
- * The exhaust is two volumes for now (stage 10 replaces it with pipes): the
- * manifold catches the exhaust pulses, and the muffler holds old exhaust gas,
- * so when the pressure dips at light load, the engine pulls back exhaust gas
- * through its tailpipe rather than fresh air.
+ * The runners, headers, exhaust pipes and tailpipes are 1D pipes (stage 10,
+ * pipe.h): pressure waves run along them, which is what tunes an engine's
+ * breathing and, later, its sound. Each cylinder's header joins one of up to
+ * two collectors (on a V or a boxer usually its bank's), each collector has
+ * its exhaust pipe, and the exhaust pipes run into one muffler, or with two
+ * collectors each into its own (two systems: a twin exhaust). The plenum,
+ * the collectors and the mufflers are volumes (0D chambers).
+ *
+ * Two rates: the cylinders, the plenum and the pipes' cells at the valves are
+ * stepped every physics step (dt); the rest of the pipes, the collectors and
+ * the mufflers every `pipe_every` steps, at about 48 kHz (pipe.h).
+ *
  * One physics step (dt):
  *   0. how far the crank turns: rpm dt when held; when free, from its speed
  *      and the torques on it now (and the engine computer has its say);
@@ -30,13 +38,19 @@
  *      pressure);
  *   2. set every opening's area: the throttle from the pedal, each valve
  *      from its cam at the current crank angle;
- *   3. everything that changes the gas, computed from the current state and
- *      applied together (explicit Euler, as in stage 3): flow through the
- *      openings, heat to or from the walls, and the burning;
+ *   3. everything that changes the fast gas, computed from the current state
+ *      and applied together (explicit Euler, as in stage 3): flow through the
+ *      throttle and the valves and along the pipes' ends, heat to or from the
+ *      walls, and the burning. When a block of `pipe_every` steps begins, the
+ *      slow gas's rates first (the gas along the pipes, into and out of the
+ *      collectors and mufflers);
  *   4. turn the crank and move every piston (the trapezoidal step of
  *      stage 4); a free crank's kinetic energy then changes by exactly the
  *      work done on it: the gas's, the crankcase's, the starter's, friction's
- *      and the load's.
+ *      and the load's;
+ *   5. when the block ends, the slow gas is integrated over it (what left
+ *      through the tailpipes counted first) and its pipes' faces get their
+ *      new flows; then, every step, the faces at the pipes' fast ends.
  * At the end of every 720-degree cycle the engine adds up what went through
  * it: volumetric efficiency, plenum pressure, work, fuel, heat. The step that
  * crosses the end of a cycle is shared between the two cycles in proportion
@@ -52,10 +66,16 @@
 #include "chamber.h"
 #include "cylinder.h"
 #include "flow.h"
+#include "pipe.h"
 #include "throttle.h"
 #include "valve.h"
 
 #define RB_MAX_CYLINDERS 16
+#define RB_MAX_COLLECTORS 2      /* and as many exhaust systems                */
+/* The pipes' cells, all of them: the presets use 96 (the four) to 212 (the
+ * cross-plane V8). An engine with more pipe than that gets fewer, longer
+ * cells. */
+#define RB_ENGINE_CELLS  512
 
 /* Everything that defines an engine. presets.c fills one in for each preset,
  * and the public API reads and changes it field by field (rb_engine_api.c). */
@@ -85,11 +105,27 @@ typedef struct rb_engine_desc {
                                            * to valve (0: the valves draw straight from
                                            * the plenum, as in stages 5-8)            */
     double runner_diameter;               /* m                                        */
-    double exhaust_volume;                /* m^3: headers and collector               */
-    double catalyst_area;                 /* m^2: effective area (Cd included) of the
-                                           * downpipe and catalyst                    */
-    double muffler_volume;                /* m^3: mufflers and the pipes between them */
-    double tailpipe_area;                 /* m^2: effective area of the way out       */
+    /* the exhaust (stage 10) */
+    double header_length[RB_MAX_CYLINDERS]; /* m: each cylinder's header (primary pipe),
+                                           * exhaust valve to collector               */
+    double header_diameter;               /* m                                        */
+    int    collector[RB_MAX_CYLINDERS];   /* the collector each header joins: 0, or 1
+                                           * for a second group (a V's other bank, an
+                                           * inline six's rear three)                 */
+    double exhaust_pipe_length;           /* m: each collector's pipe to its catalyst
+                                           * and muffler                              */
+    double exhaust_pipe_diameter;         /* m                                        */
+    int    exhaust_systems;               /* 1: every exhaust pipe into one muffler and
+                                           * tailpipe; 2: each collector its own (needs
+                                           * two collectors)                          */
+    double catalyst_area;                 /* m^2: effective area (Cd included) of each
+                                           * exhaust pipe's catalyst, where it opens
+                                           * into the muffler                         */
+    double muffler_volume;                /* m^3, each                                */
+    double muffler_area;                  /* m^2: effective area of each muffler's way
+                                           * through, into its tailpipe               */
+    double tailpipe_length;               /* m, each                                  */
+    double tailpipe_diameter;             /* m                                        */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
     double burn_duration;                 /* crank degrees from the spark to the end,
@@ -101,7 +137,11 @@ typedef struct rb_engine_desc {
                                            * standard deviation of phi (combustion.h) */
     double combustion_efficiency;         /* share of the burnable fuel that burns    */
     /* walls (heat.h) */
-    int    heat_transfer;                 /* 1 = Woschni heat flow, 0 = adiabatic     */
+    int    heat_transfer;                 /* 1 = Woschni heat flow, 0 = adiabatic
+                                           * cylinders (the pipes' walls always trade
+                                           * heat: motored with the throttle shut, the
+                                           * pumping work would otherwise heat the
+                                           * little gas that flows to nearly 5000 K)  */
     double wall_temperature;              /* K                                        */
     /* the crank (stage 7) */
     double inertia;                       /* kg m^2: crankshaft, flywheel and clutch  */
@@ -150,7 +190,9 @@ typedef struct rb_engine_cycle {
     double wall_loss;                 /* J of heat lost to the walls (< 0: walls warmed the gas) */
     double t_exhaust;                 /* K: mass-averaged temperature of the gas leaving
                                        * through the exhaust valves                          */
-    double p_exhaust;                 /* Pa: mean exhaust manifold pressure                   */
+    double p_exhaust;                 /* Pa: mean pressure in the exhaust collectors          */
+    double t_tailpipe;                /* K: mass-averaged temperature of the gas leaving the
+                                       * tailpipes                                            */
     double p_max;                     /* Pa: peak cylinder pressure, mean over the cylinders  */
     double angle_p_max;               /* degrees after firing TDC where it happens (mean)     */
     double residual;                  /* burned-gas share of the trapped charge (mean)        */
@@ -207,17 +249,29 @@ typedef struct rb_engine {
     /* the gas */
     rb_cylinder cyl[RB_MAX_CYLINDERS];
     rb_burn     burn[RB_MAX_CYLINDERS];
-    rb_chamber  intake_air, plenum, manifold, muffler, exhaust_air;   /* the air reservoirs are fixed */
+    rb_chamber  intake_air, plenum, exhaust_air;   /* the air reservoirs are fixed */
     rb_orifice  throttle;                          /* intake_air -> plenum             */
-    rb_chamber  port[RB_MAX_CYLINDERS];            /* the gas in intake runner i (stage 9) */
-    rb_duct     runner[RB_MAX_CYLINDERS];          /* plenum -> port i: its moving column */
-    rb_orifice  intake[RB_MAX_CYLINDERS];          /* port i (the plenum with no runners)
-                                                    * -> cylinder i                     */
-    rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> manifold           */
-    rb_orifice  catalyst;                          /* manifold -> muffler              */
-    rb_orifice  tailpipe;                          /* muffler -> exhaust_air           */
     rb_orifice  idle_air;                          /* intake_air -> plenum, beside the
                                                     * throttle                         */
+    rb_orifice  intake[RB_MAX_CYLINDERS];          /* runner i's last cell (the plenum
+                                                    * with no runners) -> cylinder i   */
+    rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> header i's first cell */
+    rb_pipe     runner[RB_MAX_CYLINDERS];          /* plenum -> intake valve i         */
+    rb_pipe     header[RB_MAX_CYLINDERS];          /* exhaust valve i -> its collector  */
+    rb_chamber  collector[RB_MAX_COLLECTORS];      /* where a group of headers meets   */
+    rb_pipe     exhaust_pipe[RB_MAX_COLLECTORS];   /* collector c -> its system's
+                                                    * muffler, through the catalyst at
+                                                    * its end (rb_pipe_restrict)       */
+    rb_chamber  muffler[RB_MAX_COLLECTORS];
+    rb_pipe     tailpipe[RB_MAX_COLLECTORS];       /* muffler s, through its baffles,
+                                                    * -> the open air                  */
+    int         collectors, systems;               /* how many of each                 */
+    int         pipe_every;                        /* the slow gas steps once every this
+                                                    * many physics steps ...           */
+    int         pipe_phase;                        /* ... and this many have passed     */
+    double      pipe_dt;                           /* s: pipe_every dt                  */
+    rb_chamber  cell_pool[RB_ENGINE_CELLS];        /* the pipes' cells ...             */
+    rb_face     face_pool[RB_ENGINE_CELLS];        /* ... and the faces between them   */
     rb_gas      fuel_gas;                          /* pure fuel vapour, for injection  */
 
     /* the crank */
@@ -231,6 +285,7 @@ typedef struct rb_engine {
     /* the engine computer (runs only with the crank free) */
     double rpm_smooth;      /* crank speed smoothed over a few firing pulses ...       */
     double rpm_trend;       /* ... and over half a second                              */
+    double rpm_recent;      /* ... and over 0.15 s, for how fast it's changing         */
     double idle_valve;      /* idle air valve opening, 0..1                            */
     double idle_trim;       /* the part of it learned while idling                     */
     int    spark_cut;       /* 1 while the rev limiter cuts the spark                  */
@@ -245,7 +300,8 @@ typedef struct rb_engine {
     double fuel_energy_in;          /* J of sensible energy the injected fuel brought          */
     double fuel_burned;             /* kg of fuel burned                                       */
     double heat_released;           /* J released by burning                                   */
-    double wall_heat;               /* J the walls gave the gas (negative: the gas lost heat)  */
+    double wall_heat;               /* J the cylinders' walls gave the gas (negative: the gas
+                                     * lost heat); the pipes' walls: rb_engine_pipe_heat()   */
     double crank_gas_work;          /* J the gas did on the crank through the pistons          */
     double crank_case_work;         /* J the crank did on the crankcase air (at ambient)       */
     double starter_work, friction_work, load_work;   /* J into / out of the crank          */
@@ -255,13 +311,13 @@ typedef struct rb_engine {
     /* the cycle in progress (internal) */
     double acc_air[RB_MAX_CYLINDERS], acc_throttle, acc_p, acc_rho, acc_pmin, acc_pmax;
     double acc_pump, acc_work, acc_time, acc_fuel, acc_heat, acc_wall, acc_exh_m, acc_exh_mT;
-    double acc_pexh, acc_friction;
+    double acc_pexh, acc_friction, acc_tail_m, acc_tail_mT;
     double throttle_area_pos;       /* pedal position the throttle's area was computed for */
 } rb_engine;
 
 /* A 2.0 L inline four: 86 x 86 mm, firing order 1-3-4-2, two intake and two
- * exhaust valves per cylinder, a 60 mm throttle, a 2.5 L plenum, a 2 L
- * exhaust manifold and a 10 L muffler. */
+ * exhaust valves per cylinder, a 60 mm throttle, a 2.5 L plenum, 4-into-1
+ * headers, one exhaust pipe and a 10 L muffler. */
 void   rb_engine_desc_default(rb_engine_desc *d);
 
 /* 0 if the description makes a possible engine, -1 otherwise. That includes
@@ -308,5 +364,20 @@ double rb_engine_displacement(const rb_engine *e);
 
 /* Cylinder i's crank angle (degrees, 0..720 in its own cycle). */
 double rb_engine_cylinder_angle(const rb_engine *e, int i);
+
+/* All the gas inside the engine (cylinders, plenum, pipes, collectors,
+ * mufflers): kg, J (internal, and the pipes' gas's kinetic energy) and kg of
+ * each species. NULL skips one. */
+void   rb_engine_contents(const rb_engine *e, double *mass, double *energy,
+                          double species[RB_NSPECIES]);
+
+/* J the pipes' walls have given the gas since rb_engine_init (< 0: lost). */
+double rb_engine_pipe_heat(const rb_engine *e);
+
+/* How many pipes the engine has, and pipe k: the runners first (one per
+ * cylinder, if it has them), then the headers, the exhaust pipes (one per
+ * collector) and the tailpipes (one per system). NULL if k is out of range. */
+int    rb_engine_pipe_count(const rb_engine *e);
+const rb_pipe *rb_engine_pipe(const rb_engine *e, int k);
 
 #endif /* RB_ENGINE_H */

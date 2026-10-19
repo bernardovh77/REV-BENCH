@@ -79,11 +79,13 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_set_param rb_get_param rb_param_count rb_param_name rb_param_unit \
     rb_param_min rb_param_max rb_param_default rb_param_flags rb_param_find \
     rb_get_telemetry rb_telemetry_count rb_telemetry_name \
-    rb_preset_count rb_preset_key rb_preset_name rb_load_preset rb_get_preset \
+    rb_preset_count rb_preset_key rb_preset_name rb_preset_find rb_load_preset rb_get_preset \
     rb_get_engine rb_set_engine rb_engine_field_size rb_engine_field_count \
     rb_engine_field_name rb_engine_field_unit rb_engine_field_flags \
-    rb_engine_field_min rb_engine_field_max \
+    rb_engine_field_min rb_engine_field_max rb_engine_field_find \
     rb_get_cylinder rb_cylinder_field_count rb_cylinder_field_name rb_cylinder_field_unit \
+    rb_pipe_count rb_get_pipe rb_pipe_field_count rb_pipe_field_name rb_pipe_field_unit \
+    rb_get_pipe_cell rb_pipe_cell_field_count rb_pipe_cell_field_name rb_pipe_cell_field_unit \
     rb_sample_rate rb_oversample rb_physics_dt rb_alloc_floats rb_free_floats
 comma := ,
 WASM_FLAGS := -target wasm32-wasi -mexec-model=reactor -O3 -g0 -std=c11 \

@@ -50,12 +50,19 @@ void rb_chamber_init_reservoir(rb_chamber *ch, double p, double T, const double 
     ch->fixed = 1;
 }
 
-/* Rebuilds the mixture's properties, but only if the composition changed:
- * rb_gas_init does a fair amount of arithmetic and most steps don't change
- * the mixture (pure air never does). */
+/* Rebuilds the mixture's properties, but only if the composition changed by
+ * RB_REMIX or more (in some mass fraction) since they were last built:
+ * rb_gas_init does a fair amount of arithmetic, and most steps change the
+ * mixture by less (pure air never changes). A change that small moves T and
+ * p by about 1e-8 of themselves; the masses and the energy stay exact. */
+#define RB_REMIX 1e-8
+
 static void remix(rb_chamber *ch)
 {
-    if (memcmp(ch->y, ch->gas_y, sizeof ch->y) == 0) return;
+    if (fabs(ch->y[RB_AIR] - ch->gas_y[RB_AIR]) < RB_REMIX
+        && fabs(ch->y[RB_FUEL] - ch->gas_y[RB_FUEL]) < RB_REMIX
+        && fabs(ch->y[RB_BURNED] - ch->gas_y[RB_BURNED]) < RB_REMIX)
+        return;
     rb_gas_init(&ch->gas, ch->y);
     memcpy(ch->gas_y, ch->y, sizeof ch->y);
 }
@@ -103,23 +110,6 @@ void rb_chamber_update(rb_chamber *ch)
     }
     derive(ch);
     ch->repairs += repaired;
-}
-
-void rb_chamber_clear_rates(rb_chamber *ch)
-{
-    for (int s = 0; s < RB_NSPECIES; s++) ch->dm[s] = 0.0;
-    ch->dU = 0.0;
-}
-
-void rb_chamber_add_flow(rb_chamber *ch, double mdot, const double y[RB_NSPECIES], double h)
-{
-    for (int s = 0; s < RB_NSPECIES; s++) ch->dm[s] += mdot * y[s];
-    ch->dU += mdot * h;
-}
-
-void rb_chamber_add_heat(rb_chamber *ch, double qdot)
-{
-    ch->dU += qdot;
 }
 
 void rb_chamber_integrate(rb_chamber *ch, double dt)

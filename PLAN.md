@@ -25,7 +25,7 @@ gets a one-line summary of anything that changed from the plan.
 | 7  | Crankshaft dynamics, multi-cylinder, self-running| Physics core     | ✅     | Free crank with exact energy books; cranks at 238 rpm, idles at 800, limiter 6680–6830; brake 167 N m / 97 kW |
 | 8  | Engine layouts & presets                         | Physics core     | ✅     | I4, I6, cross- and flat-plane V8, boxer-4 start, idle and rev; firings every 180/120/90°; engine and cylinder state in the API |
 | 9  | Dyno + validation against real engines           | Physics core     | ✅     | Absorbing dyno on the free crank; the four, six and boxer within 5 % of the 1AZ-FE, M54B30 and FB20; lumped intake runners brought forward from stage 10 |
-| 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ⬜     | |
+| 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ✅     | Runners, headers, collectors, exhaust pipes and tailpipes are 1D pipes; a pulse runs at c (−0.16 %) and echoes inverted from an open end; the idle computer looks ahead |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ⬜     | Listening checkpoint |
 | 12 | Muffler, intake & mechanical sound, mix 🎧        | Sound            | ⬜     | Listening checkpoint |
 | 13 | Performance & stability pass                     | Sound            | ⬜     | |
@@ -301,6 +301,22 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
 - **Done when:** a pressure pulse travels at the right speed of sound (the measured delay matches
   `L/c`), reflects correctly at an open end, and the engine still runs and holds dyno numbers with
   pipes attached.
+- *Built:* `pipe.c`, a staggered-grid 1D pipe: cells (chambers) joined by faces whose mass flow is a
+  state, with momentum, Darcy friction, kinetic energy paid for by the cells, Colburn's walls, open
+  and closed ends with the end correction, restrictions, a laminar loss, and two rates (the cells at
+  the valves every physics step, the rest at 48 kHz, the fast faces seeing the slow cells' pressure
+  as it is by now). Every runner, header, collector's exhaust pipe (through a catalyst with a
+  laminar loss into its muffler) and tailpipe is one; the V8s have a twin exhaust, the six two
+  collectors of three, the boxer unequal headers. The API gives each pipe and every cell's state, and
+  `rb_cli pipes` and `tools/plot_pipes.py` show them. The pulse runs at the speed of sound (0.16 %
+  slow) and comes back from an open end inverted, 15 mm beyond it (the end correction: 12 mm). The
+  four, the six and the boxer stay within 6 % of their real engines. The tailpipe no longer draws
+  fresh air in at the lightest loads, as stage 6's lumped one did (the air-fuel ratio reads 14.6
+  there, not 13.6). The runners made the idle unstable on its own (less exhaust pushed back into
+  them the faster the engine turns), so the engine computer's idle valve and spark now act on the
+  speed half a second ahead, the spark three times as strongly, and every preset's idle was
+  retuned. The pipes cost 2.3 times stage 9 per step for the four, 2.7 for the cross-plane V8.
+  Details in `docs/stage-10.md`.
 
 #### Stage 11 — Audio extraction → first WAV renders 🎧
 - Microphone model: tailpipe outflow → radiated pressure (∝ d(mass flow)/dt), distance attenuation.
@@ -336,6 +352,13 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   1.8 times the four: about 40 % of a core at 192 kHz before pipes. Stage 9's lumped intake runners
   add 30–38 %: the four costs 1.42 µs per step and the cross-plane V8 2.64 µs, mostly in the port
   chambers' gas updates.
+- Stage 10's pipes (96–212 cells, at 48 kHz but for the cells at the valves) multiply that by 2.3
+  for the four and 2.7 for the cross-plane V8 (callgrind; on a cloud VM 4.1 and 9.2 µs per step, so
+  only the fours keep up with real time there). The biggest items: rebuilding cells' gas mixtures
+  (15 %), `u(T)` and `T(u)` (13 %), the pipes' faces and cells (28 %). Dropping to 96 kHz needs the
+  valves' cells reworked first: a 5 cm cell at a wide-open valve takes two 96 kHz steps to equalise,
+  so the flow cap gives 10 % more pumping work there (`docs/stage-10.md`, "At 96 kHz"). The engine
+  struct is 317 KB, nearly all the pool of pipe cells.
 - Benchmark with repeated runs: on this laptop (hybrid performance and efficiency cores) the same
   step measured 1.8 µs in one session and 1.1 µs in another.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default

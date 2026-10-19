@@ -40,11 +40,15 @@ enum { RB_AIR = 0, RB_FUEL, RB_BURNED, RB_NSPECIES };
 /* Stoichiometric air/fuel mass ratio of the fuel above. */
 #define RB_AFR_STOICH 14.596
 
-/* Thermodynamic description of one gas mixture, built by rb_gas_init(). */
+/* Thermodynamic description of one gas mixture, built by rb_gas_init(). Every
+ * chamber and pipe cell rebuilds one whenever its mixture changes, so it's
+ * kept to sums and products: the species' coefficients weighted by mass. */
 typedef struct rb_gas {
     double R;       /* specific gas constant, J/(kg K)                        */
-    double lo[5];   /* cp(T), T <= 1000 K: lo[0] + lo[1] t + ... + lo[4] t^4, t = T/1000 */
-    double hi[5];   /* cp(T), T >  1000 K, same form                          */
+    double lo[5];   /* cv(T), T <= 1000 K: lo[0] + lo[1] t + ... + lo[4] t^4, t = T/1000 */
+    double hi[5];   /* cv(T), T >  1000 K, same form                          */
+    double ulo[5];  /* u(T) = k_lo + T (ulo[0] + ulo[1] t + ... + ulo[4] t^4), T <= 1000 K */
+    double uhi[5];  /* u(T) = k_hi + T (uhi[0] + ...),                          T >  1000 K */
     double k_lo;    /* integration constants: make u(T_REF) = 0 ...           */
     double k_hi;    /* ... and u continuous at T_MID                           */
 } rb_gas;

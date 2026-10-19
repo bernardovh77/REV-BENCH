@@ -60,40 +60,42 @@ static int run_to_angle(double lo, double hi)
     return 0;
 }
 
-/* Everything inside the engine: mass, sensible energy, mass of each species
- * and the count of repaired states. */
+/* Everything inside the engine: mass, sensible energy (and the pipes' gas's
+ * kinetic energy), mass of each species and the count of repaired states. */
 typedef struct contents {
     double mass, U, species[RB_NSPECIES];
     int repairs;
 } contents;
 
-static void add_chamber(contents *c, const rb_chamber *g)
+/* Repairs: the times a chamber's state had to be mended. */
+static int repairs(void)
 {
-    c->mass += g->mass;
-    c->U += g->U;
-    for (int s = 0; s < RB_NSPECIES; s++) c->species[s] += g->m[s];
-    c->repairs += g->repairs;
+    int n = e.plenum.repairs;
+    for (int i = 0; i < e.desc.cylinders; i++) n += e.cyl[i].gas.repairs;
+    for (int c = 0; c < e.collectors; c++) n += e.collector[c].repairs;
+    for (int s = 0; s < e.systems; s++) n += e.muffler[s].repairs;
+    for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
+        const rb_pipe *p = rb_engine_pipe(&e, k);
+        for (int j = 0; j < p->cells; j++) n += p->cell[j].repairs;
+    }
+    return n;
 }
 
 static contents inside(void)
 {
     contents c = { 0 };
-    add_chamber(&c, &e.plenum);
-    add_chamber(&c, &e.manifold);
-    add_chamber(&c, &e.muffler);
-    for (int i = 0; i < e.desc.cylinders; i++) add_chamber(&c, &e.cyl[i].gas);
-    if (e.desc.runner_length > 0.0)
-        for (int i = 0; i < e.desc.cylinders; i++) add_chamber(&c, &e.port[i]);
+    rb_engine_contents(&e, &c.mass, &c.U, c.species);
+    c.repairs = repairs();
     return c;
 }
 
 /* What the engine's books say should have changed: energy brought in by the
  * air and fuel, taken out by the exhaust, added by the pistons, the walls
- * and the burning. */
+ * (the cylinders' and the pipes') and the burning. */
 static double energy_books(void)
 {
-    return e.energy_in - e.energy_out + e.work_on_gas + e.wall_heat + e.heat_released
-         + e.fuel_energy_in;
+    return e.energy_in - e.energy_out + e.work_on_gas + e.wall_heat + rb_engine_pipe_heat(&e)
+         + e.heat_released + e.fuel_energy_in;
 }
 
 /* The engine's running totals at one moment, to compare two moments. */
@@ -161,11 +163,40 @@ void test_engine_description(void)
     bad = d; bad.runner_length = 0.019;        CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);  /* rings too fast */
     bad = d; bad.runner_length = NAN;          CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     bad = d; bad.runner_diameter = 0.0;        CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
+    bad = d; bad.header_length[2] = 0.04;      CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);  /* under 5 cm */
+    bad = d; bad.collector[1] = 2;             CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);  /* two at most */
+    bad = d; bad.exhaust_systems = 2;          CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);  /* twin, one collector */
+    bad.collector[2] = bad.collector[3] = 1;   CHECK_EQ_INT(rb_engine_desc_check(&bad), 0);
+    for (int i = 0; i < 4; i++) bad.collector[i] = 1;   /* a second collector, but no first */
+    CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
+    bad = d; bad.muffler_area = 0.0;           CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
+    bad = d; bad.tailpipe_diameter = NAN;      CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     bad = d; bad.p_ambient = NAN;              CHECK_EQ_INT(rb_engine_desc_check(&bad), -1);
     CHECK_EQ_INT(rb_engine_desc_check(NULL), -1);
     CHECK_EQ_INT(rb_engine_init(&e, &bad, DT), -1);
     CHECK_EQ_INT(rb_engine_init(&e, &d, 0.0), -1);
     CHECK_EQ_INT(rb_engine_init(&e, &d, NAN), -1);
+
+    /* Sixteen cylinders with 4.9 m runners and 5 cm headers, and 10 m of
+     * exhaust pipe and tailpipe, want 1168 cells: more than the pool holds.
+     * Every pipe still gets one, the rest share what's left, and it runs. */
+    bad = d;
+    CHECK_EQ_INT(rb_engine_layout_inline(&bad, 16), 0);
+    bad.runner_length = 4.9;
+    for (int i = 0; i < 16; i++) bad.header_length[i] = 0.05;
+    bad.exhaust_pipe_length = bad.tailpipe_length = 10.0;
+    CHECK_EQ_INT(rb_engine_init(&e, &bad, DT), 0);
+    CHECK_EQ_INT(rb_engine_pipe_count(&e), 34);
+    int cells = 0, fewest = RB_PIPE_MAX_CELLS;
+    for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
+        cells += rb_engine_pipe(&e, k)->cells;
+        if (rb_engine_pipe(&e, k)->cells < fewest) fewest = rb_engine_pipe(&e, k)->cells;
+    }
+    CHECK(cells <= RB_ENGINE_CELLS && fewest == 1);
+    CHECK(rb_engine_pipe(&e, 0)->cells > 20);   /* the runners still have some */
+    e.rpm = 3000.0;
+    for (int k = 0; k < 2000; k++) rb_engine_step(&e);
+    CHECK(e.plenum.p > 0.0 && e.cyl[15].gas.p > 0.0);
 }
 
 void test_engine_pistons_follow_the_crank(void)
@@ -246,17 +277,43 @@ void test_engine_cylinders_breathe_alike(void)
     CHECK(e.result.map_max - e.result.map_min > 0.03 * e.result.map);   /* it does pulse */
 }
 
+void test_engine_pipes_two_rates(void)
+{
+    /* The pipes step at 48 kHz, the cylinders and the cells at the valves at
+     * the physics rate (pipe.h, two rates). Between the pipes' steps, the
+     * valves' cells see the slow cells' pressures as they are by now: with
+     * the gas they have taken in or given, and their own rates running since
+     * the last slow step. So the engine breathes the same at 192 and 384 kHz,
+     * 4 and 8 steps to a pipe step: to 0.05 %. (Seeing the pressures of the
+     * last slow step, it was 0.3 % apart, and the cylinders took turns.) */
+    double ve[2];
+    for (int k = 0; k < 2; k++) {
+        rb_engine_desc d;
+        rb_engine_desc_default(&d);
+        d.heat_transfer = 0;
+        rb_engine_init(&e, &d, k ? DT / 2.0 : DT);
+        e.rpm = 1500.0;
+        e.throttle_pos = 1.0;
+        CHECK(rb_engine_settle(&e, 100, 1e-6) > 0);
+        ve[k] = e.result.ve;
+        for (int i = 1; i < 4; i++) CHECK_NEAR(e.result.ve_cyl[i], e.result.ve_cyl[0], 1e-6);
+    }
+    CHECK_NEAR(ve[1], ve[0], 5e-4 * ve[0]);
+}
+
 void test_engine_throttle_response(void)
 {
     /* Closing the throttle at 2000 rpm: the plenum pressure and the air drawn
-     * in fall, and the pumping loss grows. */
+     * in fall, and the pumping loss grows. (Settled to 1e-4: throttled, the
+     * pumping work heats the little air that flows, and it takes the exhaust
+     * pipes and muffler, 17 L, more than 100 cycles to warm through.) */
     static const double pos[4] = { 1.0, 0.15, 0.04, 0.0 };
     double map[4], ve[4], pmep[4];
     int wrong = 0;
 
     for (int k = 0; k < 4; k++) {
         start(2000.0, pos[k]);
-        if (rb_engine_settle(&e, 100, 1e-5) < 0) wrong++;
+        if (rb_engine_settle(&e, 100, 1e-4) < 0) wrong++;
         map[k] = e.result.map;
         ve[k] = e.result.ve;
         pmep[k] = e.result.pmep;
@@ -272,7 +329,8 @@ void test_engine_choked_throttle(void)
 {
     /* Nearly shut, the plenum stays below 0.528 bar the whole time, so the
      * throttle is choked: the air flow is fixed by the throttle alone,
-     * Cd A p0 sqrt(g / (R T0)) (2/(g+1))^((g+1)/(2(g-1))), whatever the speed. */
+     * Cd A p0 sqrt(g / (R T0)) (2/(g+1))^((g+1)/(2(g-1))), whatever the speed.
+     * (Settled to 1e-4, as in test_engine_throttle_response.) */
     const double g = 1.4, R = 287.1;   /* air near 300 K; stage 3 */
     rb_engine_desc d;
     rb_engine_desc_default(&d);
@@ -283,7 +341,7 @@ void test_engine_choked_throttle(void)
 
     for (int k = 0; k < 2; k++) {
         start(rpms[k], 0.03);
-        CHECK(rb_engine_settle(&e, 100, 1e-5) > 0);
+        CHECK(rb_engine_settle(&e, 100, 1e-4) > 0);
         CHECK(e.result.map_max < 0.528 * d.p_ambient);
         CHECK_NEAR(e.result.air_flow, choked, 2e-3 * choked);   /* gamma of real air: 1.4 +- 0.1 % */
     }
@@ -293,26 +351,42 @@ void test_engine_pumping_loss(void)
 {
     /* At low speed the pumping loss is simply the pressure difference the
      * pistons work against: they push out against the atmosphere and pull in
-     * against the plenum, so PMEP = p_ambient - MAP (Heywood, chapter 5). */
-    start(1000.0, 0.04);
+     * against the plenum, so PMEP = p_ambient - MAP (Heywood, chapter 5).
+     * Slow enough that the gas in the pipes doesn't matter: motored at such
+     * light loads, the cylinder is at about a quarter of a bar when its
+     * exhaust valve opens, the header's gas rushes in, and the piston has to
+     * push it back out. At 4 % throttle that costs 4 % more at 1000 rpm, 8 %
+     * at 2000 rpm. */
+    start(500.0, 0.015);
     CHECK(rb_engine_settle(&e, 100, 1e-5) > 0);
     const double expected = e.desc.p_ambient - e.result.map;
     CHECK(expected > 0.5e5);
     CHECK_NEAR(e.result.pmep, expected, 0.02 * expected);
 }
 
-/* Pressure of chamber j: the four cylinders, then plenum, manifold, muffler. */
+/* Pressure of chamber j: the four cylinders, then the plenum, the collector,
+ * the muffler, and cylinder 1's runner and header cells at its valves. */
 static double watched_p(int j)
 {
     if (j < 4) return e.cyl[j].gas.p;
-    return j == 4 ? e.plenum.p : j == 5 ? e.manifold.p : e.muffler.p;
+    switch (j) {
+    case 4:  return e.plenum.p;
+    case 5:  return e.collector[0].p;
+    case 6:  return e.muffler[0].p;
+    case 7:  return rb_pipe_end_cell(&e.runner[0], 1)->p;
+    default: return rb_pipe_end_cell(&e.header[0], 0)->p;
+    }
 }
 
 void test_engine_pressures_dont_zigzag(void)
 {
     /* Explicit flow steps can make a small chamber's pressure flip up and
      * down every step when several openings feed it. Watch every chamber for
-     * three changes of direction in a row, motored and fired. */
+     * three changes of direction in a row, motored and fired. Changes under
+     * 1e-5 of the pressure don't count: the pipes' cells at the valves keep a
+     * ripple of a few tenths of a Pa from their slow neighbours' steps, every
+     * fourth step, which shows where a pressure turns over (0.2 Pa at 1.5 bar,
+     * in the header at 6500 rpm). */
     static const double cases[4][3] = { { 1200.0, 0.02, 0 }, { 3000.0, 1.0, 0 }, { 6500.0, 1.0, 0 },
                                         { 3000.0, 1.0, 1 } };
     int zigzags = 0;
@@ -321,15 +395,16 @@ void test_engine_pressures_dont_zigzag(void)
         if (cases[k][2] > 0.0) start_fired(cases[k][0], cases[k][1]);
         else start(cases[k][0], cases[k][1]);
         rb_engine_settle(&e, 100, 1e-4);
-        double prev[7], dprev[7] = { 0 };
-        int flips[7] = { 0 };
-        for (int j = 0; j < 7; j++) prev[j] = watched_p(j);
+        double prev[9], dprev[9] = { 0 };
+        int flips[9] = { 0 };
+        for (int j = 0; j < 9; j++) prev[j] = watched_p(j);
         const long c = e.cycles;
         for (long n = 0; e.cycles == c && n < lround(2.0 / DT); n++) {
             rb_engine_step(&e);
-            for (int j = 0; j < 7; j++) {
+            for (int j = 0; j < 9; j++) {
                 const double p = watched_p(j);
-                const double dp = p - prev[j];
+                double dp = p - prev[j];
+                if (fabs(dp) < 1e-5 * p) dp = 0.0;   /* too small to count */
                 flips[j] = (dp * dprev[j] < 0.0) ? flips[j] + 1 : 0;
                 if (flips[j] >= 3) zigzags++;
                 prev[j] = p;
@@ -433,7 +508,9 @@ void test_engine_walls_and_residuals(void)
     /* Warm walls heat the incoming charge, so the engine draws in less air
      * than with adiabatic walls. Throttled, more of the trapped charge is old
      * exhaust, and the injectors still hit their target: the engine doesn't
-     * breathe fresh air in through its tailpipe. */
+     * breathe fresh air in through its tailpipe. (Wide open at 2000 rpm, the
+     * headers' pressure wave keeps 5.8 % of the charge burned gas, 4.2 % with
+     * stage 6's lumped exhaust: twice that is still a clear difference.) */
     rb_engine_desc d;
     start(1000.0, 1.0);
     rb_engine_settle(&e, 100, 1e-4);
@@ -449,7 +526,7 @@ void test_engine_walls_and_residuals(void)
     const double residual_wot = e.result.residual;
     start_fired(2000.0, 0.06);
     rb_engine_settle(&e, 150, 1e-4);
-    CHECK(e.result.residual > 2.5 * residual_wot);
+    CHECK(e.result.residual > 2.0 * residual_wot);
     CHECK_NEAR(e.result.afr, 14.6, 0.15);
     CHECK(e.result.pmep > 0.5e5);
     CHECK(e.result.efficiency > 0.2 && e.result.efficiency < 0.34);
@@ -733,9 +810,9 @@ void test_engine_drives_itself(void)
     CHECK(e.idle_trim == trim);                                /* learns only with the foot off */
     CHECK(hi < limit + 150.0 && lo > limit - 400.0);           /* bouncing off the limiter, */
     CHECK(lo < limit - 60.0);                                  /* down to where the spark resumes */
-    e.throttle_pos = 0.0;
-    run_for(3.5, &lo, NULL);
-    CHECK(lo > 600.0);
+    e.throttle_pos = 0.0;                                      /* about 2.9 s down with */
+    run_for(4.0, &lo, NULL);                                   /* the fuel cut, then */
+    CHECK(lo > 600.0);                                         /* back to idle */
     run_for(0.5, NULL, NULL);
     CHECK_NEAR(e.result.rpm, 800.0, 40.0);                     /* idling again */
 

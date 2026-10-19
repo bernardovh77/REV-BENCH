@@ -39,7 +39,15 @@ void test_blowdown_converges_with_time_step(void);
 void test_stiff_equalisation_has_no_overshoot(void);
 void test_mixing_tracks_species(void);
 void test_filling_heats_the_tank(void);
-void test_duct_rings_like_a_helmholtz_resonator(void);
+/* ---- pipes (tests/test_pipe.c) ---- */
+void test_pipe_cells(void);
+void test_pipe_pulse_travels_at_the_speed_of_sound(void);
+void test_pipe_friction(void);
+void test_pipe_waves_ride_the_flow(void);
+void test_pipe_walls(void);
+void test_pipe_conserves_everything(void);
+void test_pipe_two_rates_agree(void);
+void test_pipe_rings(void);
 /* ---- cylinder (tests/test_cylinder.c) ---- */
 void test_cylinder_geometry(void);
 void test_compression_matches_isentrope(void);
@@ -67,6 +75,7 @@ void test_engine_conserves_mass_and_energy(void);
 void test_engine_settles_and_balances(void);
 void test_engine_cycle_totals_dont_jitter(void);
 void test_engine_cylinders_breathe_alike(void);
+void test_engine_pipes_two_rates(void);
 void test_engine_throttle_response(void);
 void test_engine_choked_throttle(void);
 void test_engine_pumping_loss(void);
@@ -93,9 +102,11 @@ void test_presets_fire_where_the_layout_says(void);
 void test_layout_rules(void);
 void test_presets_run_on_their_own(void);
 void test_presets_idle_takes_a_load(void);
+void test_presets_idle_on_the_spark_alone(void);
 void test_api_engine_fields(void);
 void test_api_engine_changes(void);
 void test_api_cylinder_state(void);
+void test_api_pipes(void);
 /* ---- the dyno and the calibration (tests/test_dyno.c) ---- */
 void test_dyno_holds_a_speed(void);
 void test_dyno_sweeps(void);
@@ -139,7 +150,14 @@ static const struct {
     T(test_stiff_equalisation_has_no_overshoot),
     T(test_mixing_tracks_species),
     T(test_filling_heats_the_tank),
-    T(test_duct_rings_like_a_helmholtz_resonator),
+    T(test_pipe_cells),
+    T(test_pipe_pulse_travels_at_the_speed_of_sound),
+    T(test_pipe_friction),
+    T(test_pipe_waves_ride_the_flow),
+    T(test_pipe_walls),
+    T(test_pipe_conserves_everything),
+    T(test_pipe_two_rates_agree),
+    T(test_pipe_rings),
     T(test_cylinder_geometry),
     T(test_compression_matches_isentrope),
     T(test_compression_converges_with_step_size),
@@ -163,6 +181,7 @@ static const struct {
     T(test_engine_settles_and_balances),
     T(test_engine_cycle_totals_dont_jitter),
     T(test_engine_cylinders_breathe_alike),
+    T(test_engine_pipes_two_rates),
     T(test_engine_throttle_response),
     T(test_engine_choked_throttle),
     T(test_engine_pumping_loss),
@@ -188,9 +207,11 @@ static const struct {
     T(test_layout_rules),
     T(test_presets_run_on_their_own),
     T(test_presets_idle_takes_a_load),
+    T(test_presets_idle_on_the_spark_alone),
     T(test_api_engine_fields),
     T(test_api_engine_changes),
     T(test_api_cylinder_state),
+    T(test_api_pipes),
     T(test_dyno_holds_a_speed),
     T(test_dyno_sweeps),
     T(test_dyno_only_absorbs),

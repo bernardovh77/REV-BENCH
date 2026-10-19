@@ -7,7 +7,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   RB_CLAMPED, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE, RB_EF_PER_BANK, RB_EF_PER_CYLINDER,
-  RB_EF_READONLY, RB_ERR_ARG, RB_ERR_ID, RB_ERR_READONLY, RB_ERR_VALUE, RB_OK, RbCore,
+  RB_EF_READONLY, RB_ERR_ARG, RB_ERR_ID, RB_ERR_READONLY, RB_ERR_VALUE, RB_OK, RB_PIPE_EXHAUST,
+  RB_PIPE_HEADER, RB_PIPE_RUNNER, RB_PIPE_TAILPIPE, RB_PLACE_AIR, RB_PLACE_COLLECTOR,
+  RB_PLACE_EXHAUST_VALVE, RB_PLACE_INTAKE_VALVE, RB_PLACE_MUFFLER, RB_PLACE_PLENUM, RbCore,
   REQUIRED_EXPORTS, type RbSim,
 } from '../../src/core/rb-core';
 
@@ -59,6 +61,14 @@ describe('rb_core.wasm', () => {
     expect(WebAssembly.Module.imports(module)).toEqual([]);
     const names = WebAssembly.Module.exports(module).map((e) => e.name);
     for (const name of REQUIRED_EXPORTS) expect(names).toContain(name);
+  });
+
+  it('exports every function rb.h declares (the Makefile lists them)', () => {
+    const header = readFileSync(new URL('../../../core/include/rb.h', import.meta.url), 'utf8');
+    const declared = [...header.matchAll(/^[\w ]+?\**(rb_\w+)\(/gm)].map((m) => m[1]);
+    const names = WebAssembly.Module.exports(new WebAssembly.Module(wasm)).map((e) => e.name);
+    expect(declared.length).toBeGreaterThan(50);
+    expect(declared.filter((name) => !names.includes(name as string))).toEqual([]);
   });
 
   it('reports its version, parameters and telemetry channels', async () => {
@@ -129,6 +139,60 @@ describe('rb_core.wasm', () => {
   });
 });
 
+describe('the pipes through the API (stage 10)', () => {
+  const core = RbCore.loadSync(wasm);
+
+  it('lists the four\'s pipes and where each runs', () => {
+    const sim = core.createSim(FS, 4);
+    const pipes = sim.pipes();
+    expect(pipes.map((p) => p.kind)).toEqual([
+      RB_PIPE_RUNNER, RB_PIPE_RUNNER, RB_PIPE_RUNNER, RB_PIPE_RUNNER,
+      RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_HEADER, RB_PIPE_EXHAUST, RB_PIPE_TAILPIPE,
+    ]);
+    const runner = pipes[2] as Record<string, number>, header = pipes[6] as Record<string, number>;
+    expect(runner).toMatchObject({ number: 2, from: RB_PLACE_PLENUM, to: RB_PLACE_INTAKE_VALVE, to_number: 2 });
+    expect(runner.length).toBeCloseTo(0.33, 12);
+    expect(header).toMatchObject({ number: 2, from: RB_PLACE_EXHAUST_VALVE, from_number: 2, to: RB_PLACE_COLLECTOR });
+    expect(pipes[8]).toMatchObject({ from: RB_PLACE_COLLECTOR, to: RB_PLACE_MUFFLER, to_number: 0 });
+    expect(pipes[9]).toMatchObject({ from: RB_PLACE_MUFFLER, to: RB_PLACE_AIR });
+    expect(Math.abs((pipes[8]?.length as number) / (pipes[8]?.cells as number) - 0.075)).toBeLessThan(0.01);
+    expect(sim.getPipe(10, 0)).toBeNaN();
+    sim.destroy();
+  });
+
+  it('gives the cross-plane V8 a twin exhaust, a collector per bank', () => {
+    const sim = core.createSim(FS, 4);
+    expect(sim.loadPreset(core.presetId('v8-cross'))).toBe(RB_OK);
+    const pipes = sim.pipes();
+    expect(pipes.length).toBe(8 + 8 + 2 + 2);
+    const bank = sim.engine().bank as number[];
+    for (let c = 0; c < 8; c++) expect(pipes[8 + c]?.to_number).toBe(bank[c]);   // header c joins its bank's collector
+    expect(pipes[17]).toMatchObject({ kind: RB_PIPE_EXHAUST, number: 1, to: RB_PLACE_MUFFLER, to_number: 1 });
+    expect(pipes[19]).toMatchObject({ kind: RB_PIPE_TAILPIPE, number: 1, from_number: 1 });
+    sim.destroy();
+  });
+
+  it("reports every pipe cell's state (here the engine at rest)", () => {
+    const sim = core.createSim(FS, 4);
+    const fields = core.pipeCellFields().length;
+    const cells = sim.getPipe(4, 4);   // the first header's
+    const into = new Float64Array(64 * fields);
+    expect(sim.readPipeCells(4, into)).toBe(cells);
+    for (let c = 0; c < cells; c++) {
+      expect(into[c * fields + 0]).toBeCloseTo(101325, 6);   // pressure
+      expect(into[c * fields + 1]).toBeCloseTo(298.15, 9);   // temperature
+      expect(into[c * fields + 2]).toBe(0);                  // velocity
+      expect(into[c * fields + 3]).toBe(0);                  // burned gas
+    }
+    expect(sim.getPipeCell(4, cells, 0)).toBeNaN();
+    expect(sim.readPipeCells(4, new Float64Array(fields * 2))).toBe(2);   // only as many as fit
+    expect(sim.readPipeCells(99, into)).toBe(0);
+    sim.destroy();
+    expect(sim.pipeCount).toBe(0);
+    expect(sim.readPipeCells(0, into)).toBe(0);
+  });
+});
+
 describe('the engine through the API (stage 8)', () => {
   const core = RbCore.loadSync(wasm);
   const field = (name: string): number => core.engineFieldId(name);
@@ -157,6 +221,14 @@ describe('the engine through the API (stage 8)', () => {
     ]);
     expect(info.cylinderFields[2]?.unit).toBe('Pa');
     expect(() => core.engineFieldId('wheelbase')).toThrow(/no engine field/);
+    expect(f('header_length')).toMatchObject({ unit: 'm', flags: RB_EF_PER_CYLINDER, min: 0.1, max: 2 });
+    expect(f('collector')?.flags).toBe(RB_EF_PER_CYLINDER | RB_EF_INTEGER);
+    expect(f('exhaust_systems')).toMatchObject({ flags: RB_EF_INTEGER, min: 1, max: 2 });
+    expect(info.pipeFields.map((x) => x.name)).toEqual([
+      'kind', 'number', 'length', 'diameter', 'cells', 'from', 'from_number', 'to', 'to_number',
+    ]);
+    expect(info.pipeCellFields.map((x) => x.name)).toEqual(['pressure', 'temperature', 'velocity', 'burned_gas']);
+    expect(info.pipeCellFields.map((x) => x.unit)).toEqual(['Pa', 'K', 'm/s', '']);
   });
 
   it('starts as the 2.0 L inline-4 and loads the other presets', () => {

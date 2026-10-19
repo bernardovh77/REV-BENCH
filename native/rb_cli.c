@@ -12,6 +12,8 @@
  *   rb_cli breathe [opts]    stage-5 physics demo: the whole engine breathing (CSV)
  *   rb_cli fire [opts]       stage-6 physics demo: the engine running on fuel (CSV)
  *   rb_cli run [opts]        stage-7 demo: the engine started, idled, revved and stopped (CSV)
+ *   rb_cli dyno [opts]       stage-9 demo: the engine on a dyno (CSV)
+ *   rb_cli pipes [opts]      stage-10 demo: pressure waves in the pipes (CSV)
  *
  * The native tools may use the core's internal headers (chamber.h, ...) to
  * exercise pieces of the physics on their own.
@@ -60,6 +62,9 @@ static void usage(FILE *f)
         "  presets [KEY] [options]  the engines that come with REV-BENCH, with their layouts\n"
         "                        and firing orders; with a KEY, every field of that engine as\n"
         "                        the API gives it\n"
+        "  pipes [options]       physics demo: pressure waves in the pipes. A pulse in a 2 m\n"
+        "                        pipe (--pulse), or one cycle of the engine's runner, header,\n"
+        "                        exhaust pipe and tailpipe, cell by cell (CSV)\n"
         "\n"
         "tone options:\n"
         "  -o, --out FILE        output WAV                 (default renders/test.wav)\n"
@@ -141,7 +146,16 @@ static void usage(FILE *f)
         "\n"
         "presets options:\n"
         "      --csv FILE        also run each one held at 3000 rpm wide open and write one\n"
-        "                        cycle of every cylinder's pressure (renders/presets.csv)\n",
+        "                        cycle of every cylinder's pressure (renders/presets.csv)\n"
+        "\n"
+        "pipes options:\n"
+        "      --pulse           a 1 kPa pulse in a 2 m pipe of 40 mm, closed at one end and open\n"
+        "                        at the other: when it passes, and how it comes back (renders/pulse.csv)\n"
+        "      --preset KEY      otherwise, the engine, held and fired (default i4) ...\n"
+        "      --rpm N           ... at this speed      (default 3000)\n"
+        "      --throttle X      ... and throttle, 0..1 (default 1): cylinder 1's pipes over one\n"
+        "                        cycle, every 2 degrees (renders/pipes.csv)\n"
+        "      --csv FILE        output CSV\n",
         f);
 }
 
@@ -874,7 +888,7 @@ static void print_point(const rb_engine_cycle *r, double rpm)
 {
     const double cycle_s = 120.0 / rpm;
     const double fuel_energy = r->fuel_flow * cycle_s * RB_FUEL_LHV;
-    printf("  volumetric efficiency  %.3f        plenum %.1f kPa, exhaust manifold %.1f kPa\n",
+    printf("  volumetric efficiency  %.3f        plenum %.1f kPa, exhaust collector %.1f kPa\n",
            r->ve, r->map / 1e3, r->p_exhaust / 1e3);
     printf("  IMEP                   %.2f bar net (%.2f gross, pumping %.2f)\n",
            r->imep_net / 1e5, r->imep_gross / 1e5, r->pmep / 1e5);
@@ -1583,6 +1597,191 @@ static int cmd_dyno(int argc, char **argv)
     return 0;
 }
 
+/* ---- pipes: pressure waves in the 1D pipes (stage 10) ---- */
+
+/* When trace v (n samples, dt apart) peaks (sign +1) or dips (-1) between
+ * samples i0 and i1, to a fraction of a sample: a parabola through the three
+ * samples around the extreme. */
+static double pulse_extreme(const double *v, long i0, long i1, double sign, double dt)
+{
+    long best = i0 + 1;
+    for (long i = i0 + 1; i < i1 - 1; i++)
+        if (sign * v[i] > sign * v[best]) best = i;
+    const double a = v[best - 1], b = v[best], c = v[best + 1];
+    const double den = a - 2.0 * b + c;
+    return (best + (den != 0.0 ? 0.5 * (a - c) / den : 0.0)) * dt;
+}
+
+/* A 2 m pipe of still air, 40 mm across, 64 cells, closed at x = 0 and open
+ * to the air at x = 2 m. A pulse of 1 kPa starts against the closed end (half
+ * a bump 20 cm wide: its mirror image in the wall makes it whole), runs along
+ * the pipe and comes back from the open end inverted. Stepped at the engine's
+ * pipe rate, 48 kHz; every cell every step for 20 ms. */
+static int pipes_pulse(const char *path)
+{
+    static const double air[RB_NSPECIES] = { [RB_AIR] = 1.0 };
+    static rb_chamber cell[64], outside;
+    static rb_face face[63];
+    static rb_pipe pipe;
+    static double at_half[960], at_one_half[960];   /* the pressure 0.5 m and 1.5 m along */
+    const double dt = 1.0 / 48000.0, p0 = 101325.0, T0 = 300.0;
+    const long steps = 960;                          /* 20 ms */
+
+    rb_chamber_init_reservoir(&outside, p0, T0, air);
+    rb_pipe_init(&pipe, cell, face, 64, 2.0, 0.04, p0, T0, air, T0, 0.0);
+    rb_pipe_join(&pipe, 1, &outside, 0.0, 0);
+    for (int k = 0; k < 64; k++) {   /* a sound wave: squeezed isentropically */
+        const double x = (k + 0.5) * pipe.dx, p = p0 + 1000.0 * exp(-(x / 0.2) * (x / 0.2));
+        const double g = cell[k].gamma;
+        rb_chamber_init(&cell[k], cell[k].V, p, T0 * pow(p / p0, (g - 1.0) / g), air);
+    }
+    const double c = cell[40].c;
+
+    const char *cols[] = { "time_ms", "x_m", "p_Pa", "u_m_s" };
+    csv_writer *csv = csv_open(path, cols, 4);
+    if (!csv) {
+        fprintf(stderr, "rb_cli pipes: cannot write %s (does the folder exist?)\n", path);
+        return 1;
+    }
+    for (long n = 0; n < steps; n++) {
+        rb_pipe_clear(&pipe, 0);
+        rb_pipe_flows(&pipe, 0, dt);
+        rb_pipe_integrate(&pipe, 0, dt);
+        rb_pipe_accelerate(&pipe, 0, dt);
+        for (int k = 0; k < 64; k++) {
+            double row[4] = { (n + 1) * dt * 1e3, (k + 0.5) * pipe.dx, cell[k].p - p0,
+                              rb_pipe_cell_velocity(&pipe, k) };
+            csv_row(csv, row);
+        }
+        at_half[n] = cell[15].p - p0;        /* (15 + 0.5) / 64 * 2 m = 0.484 m */
+        at_one_half[n] = cell[47].p - p0;    /* 1.484 m: one metre on           */
+    }
+    const int rc = csv_close(csv);
+
+    /* The pulse passes 0.484 m, then 1.484 m; it comes back from the open
+     * end as a dip and passes 1.484 m again. */
+    const double t1 = pulse_extreme(at_half, 1, 192, 1.0, dt) + dt;
+    const double t2 = pulse_extreme(at_one_half, 96, 288, 1.0, dt) + dt;
+    const double t3 = pulse_extreme(at_one_half, 288, 480, -1.0, dt) + dt;
+    const double end = 1.484 + 0.5 * c * (t3 - t2);   /* where it turned back */
+    printf("pipes --pulse: 1 kPa in a 2 m pipe of still air at %.0f K, closed at 0 and open at 2 m\n", T0);
+    printf("  speed of sound c        %.1f m/s\n", c);
+    printf("  passes 0.484 m at %.3f ms and 1.484 m at %.3f ms: a metre in %.4f ms\n",
+           t1 * 1e3, t2 * 1e3, (t2 - t1) * 1e3);
+    printf("  L / c = %.4f ms: the pulse runs at %.1f m/s, %+.2f %% of c\n", 1e3 / c, 1.0 / (t2 - t1),
+           100.0 * (1.0 / (t2 - t1) / c - 1.0));
+    printf("  comes back inverted, at %.3f ms: it turned %.1f mm beyond the pipe's end\n",
+           t3 * 1e3, (end - 2.0) * 1e3);
+    printf("    (the end correction, 0.3 diameters: %.0f mm)\n", 0.3 * 0.04 * 1e3);
+    printf("wrote %s\n", path);
+    return rc ? 1 : 0;
+}
+
+/* The engine held and fired: one cycle of cylinder 1's pipes, cell by cell,
+ * every 2 degrees, from -360 to 360 (overlap TDC to overlap TDC, firing TDC
+ * in the middle). Pipes: 0 its runner (x from the plenum), 1 its header
+ * (from the valve), 2 its exhaust pipe (from the collector), 3 its tailpipe
+ * (from the muffler); pipe -1 holds the volumes between them, cell 0 the
+ * cylinder, 1 the plenum, 2 the collector, 3 the muffler. */
+static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char *path)
+{
+    printf("pipes: %s held at %.0f rpm by a dyno, throttle %.0f %%\n", engine_name, op->rpm,
+           op->throttle * 100.0);
+    const int cycles = settle_at(d, op);
+    if (cycles < 0) printf("did not settle in 300 cycles; the cycle is the next one\n");
+    else printf("settled after %d cycles\n", cycles);
+    const rb_engine_cycle *r = &engine.result;
+    printf("  volumetric efficiency %.3f, brake torque %.1f N m; exhaust collector %.1f kPa, "
+           "plenum %.1f kPa\n", r->ve, r->brake_torque, r->p_exhaust / 1e3, r->map / 1e3);
+
+    const int c = d->collector[0], s = (engine.systems == 2) ? c : 0;
+    const rb_pipe *pipes[4] = { d->runner_length > 0.0 ? &engine.runner[0] : NULL, &engine.header[0],
+                                &engine.exhaust_pipe[c], &engine.tailpipe[s] };
+    const rb_chamber *volumes[4] = { &engine.cyl[0].gas, &engine.plenum, &engine.collector[c],
+                                     &engine.muffler[s] };
+    const char *cols[] = { "crank_deg", "pipe", "cell", "x_m", "p_kPa", "T_K", "u_m_s",
+                           "intake_lift_mm", "exhaust_lift_mm" };
+    csv_writer *csv = csv_open(path, cols, 9);
+    if (!csv) {
+        fprintf(stderr, "rb_cli pipes: cannot write %s (does the folder exist?)\n", path);
+        return 1;
+    }
+    const double step_deg = 6.0 * engine.rpm * engine.dt;
+    while (engine.theta < 360.0) rb_engine_step(&engine);   /* to overlap TDC */
+    const double start = rb_engine_cylinder_angle(&engine, 0) - 720.0;
+    double next = -360.0;
+    for (long n = 0; start + n * step_deg <= 360.0; n++) {
+        const double angle = start + n * step_deg;
+        if (angle >= next) {
+            next += 2.0;
+            const double a = rb_engine_cylinder_angle(&engine, 0);
+            const double in = rb_valve_lift(&d->intake, a) * 1e3, ex = rb_valve_lift(&d->exhaust, a) * 1e3;
+            for (int j = 0; j < 4; j++) {
+                double row[9] = { angle, -1, j, 0.0, volumes[j]->p / 1e3, volumes[j]->T, 0.0, in, ex };
+                csv_row(csv, row);
+            }
+            for (int j = 0; j < 4; j++) {
+                const rb_pipe *p = pipes[j];
+                for (int k = 0; p && k < p->cells; k++) {
+                    double row[9] = { angle, j, k, (k + 0.5) * p->dx, p->cell[k].p / 1e3,
+                                      p->cell[k].T, rb_pipe_cell_velocity(p, k), in, ex };
+                    csv_row(csv, row);
+                }
+            }
+        }
+        rb_engine_step(&engine);
+    }
+    printf("  cylinder 1's pipes: runner %d cells, header %d, exhaust pipe %d, tailpipe %d\n",
+           pipes[0] ? pipes[0]->cells : 0, pipes[1]->cells, pipes[2]->cells, pipes[3]->cells);
+    printf("wrote %s\n", path);
+    return csv_close(csv) ? 1 : 0;
+}
+
+static int cmd_pipes(int argc, char **argv)
+{
+    rb_engine_desc d;
+    const char *csv_path = NULL;
+    op_point op = { 3000.0, 1.0, 25.0, 14.6, 1, 1 };
+    int pulse = 0;
+
+    if (engine_from_args(argc, argv, "pipes", &d)) return 2;
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int ok = 1;
+        if (!strcmp(a, "--csv"))
+            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--pulse"))
+            pulse = 1;
+        else if (!strcmp(a, "--preset"))
+            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+        else if (!strcmp(a, "--rpm"))
+            ok = !to_double(take_value(argc, argv, &i), &op.rpm);
+        else if (!strcmp(a, "--throttle"))
+            ok = !to_double(take_value(argc, argv, &i), &op.throttle);
+        else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
+            usage(stdout);
+            return 0;
+        } else {
+            fprintf(stderr, "rb_cli pipes: unknown option '%s'\n", a);
+            return 2;
+        }
+        if (!ok) {
+            fprintf(stderr, "rb_cli pipes: missing or bad value for %s\n", a);
+            return 2;
+        }
+    }
+    if (pulse) return pipes_pulse(csv_path ? csv_path : "renders/pulse.csv");
+    if (!(op.rpm >= 300.0 && op.rpm <= 20000.0)) {
+        fprintf(stderr, "rb_cli pipes: --rpm must be in [300, 20000]\n");
+        return 2;
+    }
+    if (!(op.throttle >= 0.0 && op.throttle <= 1.0)) {
+        fprintf(stderr, "rb_cli pipes: --throttle must be in [0, 1]\n");
+        return 2;
+    }
+    return pipes_engine(&d, &op, csv_path ? csv_path : "renders/pipes.csv");
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -1607,6 +1806,8 @@ int main(int argc, char **argv)
         return cmd_presets(argc - 1, argv + 1);
     if (!strcmp(argv[1], "dyno"))
         return cmd_dyno(argc - 1, argv + 1);
+    if (!strcmp(argv[1], "pipes"))
+        return cmd_pipes(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         usage(stdout);
         return 0;

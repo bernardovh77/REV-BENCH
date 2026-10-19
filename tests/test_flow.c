@@ -243,12 +243,17 @@ void test_mixing_tracks_species(void)
     CHECK(cold.y[RB_BURNED] > 0.05 && cold.y[RB_BURNED] < 0.12);
     CHECK(hot.y[RB_AIR] < 1e-12);                 /* nothing flowed back */
 
-    /* The receiving tank's gas properties follow its new mixture. */
+    /* The receiving tank's gas properties follow its new mixture: they're
+     * rebuilt whenever it has moved by 1e-8 or more in some mass fraction
+     * (stage 10, chamber.c), so they're within about that of a fresh mix. */
     rb_gas mix;
     rb_gas_init(&mix, cold.y);
-    CHECK_NEAR(cold.gas.R, mix.R, 1e-12 * mix.R);
-    CHECK_NEAR(rb_gas_cv(&cold.gas, 1000.0), rb_gas_cv(&mix, 1000.0), 1e-9);
-    CHECK_NEAR(cold.p, cold.mass * mix.R * cold.T / cold.V, 1e-9 * cold.p);
+    int stale = 0;
+    for (int s = 0; s < RB_NSPECIES; s++) stale += !(fabs(cold.gas_y[s] - cold.y[s]) < 1e-8);
+    CHECK_EQ_INT(stale, 0);
+    CHECK_NEAR(cold.gas.R, mix.R, 1e-7 * mix.R);
+    CHECK_NEAR(rb_gas_cv(&cold.gas, 1000.0), rb_gas_cv(&mix, 1000.0), 1e-7 * rb_gas_cv(&mix, 1000.0));
+    CHECK_NEAR(cold.p, cold.mass * cold.gas.R * cold.T / cold.V, 1e-9 * cold.p);
 }
 
 void test_filling_heats_the_tank(void)
@@ -271,58 +276,4 @@ void test_filling_heats_the_tank(void)
     CHECK_NEAR(tank.T, rb_gas_T_from_u(&air, rb_gas_h(&air, 300.0), 400.0), 0.5);
     CHECK_NEAR(tank.T, 420.0, 2.0);
     CHECK(hole.mdot >= 0.0);                           /* flowed in, never out */
-}
-
-/* Runs a duct from the atmosphere into a 0.1 L chamber that starts at p0, for
- * 0.1 s. Returns the period of the chamber's pressure swings (s, from its
- * upward crossings of 1 bar), and the biggest swing in the first and the last
- * 10 ms (Pa). The chamber's mass changes by exactly what the duct moved. */
-static double ring(double p0, double loss, double *first, double *last)
-{
-    rb_chamber atmosphere, cavity;
-    rb_duct duct;
-    rb_chamber_init_reservoir(&atmosphere, 1e5, 300.0, AIR);
-    rb_chamber_init(&cavity, 1e-4, p0, 300.0, AIR);
-    rb_duct_init(&duct, &atmosphere, &cavity, 0.25 * 3.14159265358979323846 * 0.04 * 0.04, 0.33, loss);
-    const double m0 = cavity.mass;
-    double moved = 0.0, t = 0.0, t_first = -1.0, t_last = -1.0, prev = cavity.p - 1e5;
-    int crossings = 0;
-    *first = *last = 0.0;
-    for (long n = 0; n < 19200; n++) {
-        rb_chamber_clear_rates(&cavity);
-        moved += rb_duct_flow(&duct, DT) * DT;
-        rb_chamber_integrate(&cavity, DT);
-        rb_duct_accelerate(&duct, DT);
-        t += DT;
-        const double swing = cavity.p - 1e5;
-        if (prev < 0.0 && swing >= 0.0) {
-            if (t_first < 0.0) t_first = t;
-            else crossings++;
-            t_last = t;
-        }
-        prev = swing;
-        if (n < 1920) *first = fmax(*first, fabs(swing));
-        if (n >= 19200 - 1920) *last = fmax(*last, fabs(swing));
-    }
-    CHECK_NEAR(cavity.mass - m0, moved, 1e-12 * m0);
-    CHECK_EQ_INT(cavity.repairs, 0);
-    return crossings > 0 ? (t_last - t_first) / crossings : 0.0;
-}
-
-void test_duct_rings_like_a_helmholtz_resonator(void)
-{
-    /* An intake runner (stage 9): a column of air 0.33 m long and 40 mm
-     * across between the atmosphere and a 0.1 L chamber that starts 1 %
-     * below it. Without losses in the runner the air sloshes in and out at
-     * the Helmholtz frequency, w = c sqrt(A / (L V)) (341 Hz), and goes on,
-     * fading only slowly: the air drawn in mixes with the chamber's, which
-     * the swing has warmed or cooled (6 % in 0.1 s). With the runner's losses
-     * (0.6 velocity heads) a swing of 20 % loses two thirds in 0.1 s. */
-    const double c = sqrt(1.4 * 287.0 * 300.0), A = 0.25 * 3.14159265358979323846 * 0.04 * 0.04;
-    const double period = 2.0 * 3.14159265358979323846 / (c * sqrt(A / (0.33 * 1e-4)));
-    double first, last;
-    CHECK_NEAR(ring(0.99e5, 0.0, &first, &last), period, 0.005 * period);
-    CHECK(first > 990.0 && last > 0.9 * first && last < first);
-    ring(0.8e5, 0.6, &first, &last);
-    CHECK(first > 19e3 && last < 0.4 * first);
 }
