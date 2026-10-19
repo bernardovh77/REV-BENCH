@@ -6,7 +6,8 @@
 - Validate physics natively (tests, CSV plots, WAV renders) before wiring anything into the browser.
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
-  Playwright test in both modes (dev and `E2E_PREVIEW=1`).
+  Playwright test in both modes (dev and `E2E_PREVIEW=1`). Stages that touch `core/` also do the
+  sound check (PLAN.md, working agreement 6).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
   which tests catch them. `$HOME/rb-mut12/m12.py WORKDIR NAME...` (each stage's runner has its own
   table of bugs; copy the last one) applies each named bug to a copy of
@@ -16,6 +17,28 @@
   with each 3-minute call: run a few bugs per call under `timeout`, re-copy the sources before each
   batch (a killed run can leave a bug in place), and never `pkill -f` a pattern that also matches
   your own command line.
+
+## Sound: Bernardo's top priority
+- **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
+  cross-plane V8's sweep came close). He asked for research and comparisons with real engines,
+  and for the refining of the sound to be treated as very important.
+- **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md's sound track
+  (stages S1–S4 after stage 13, S5 at the end) acts on them, and working agreement 6 adds a sound
+  check to every stage. Never trade sound for speed silently.
+- **Measuring:** `tools/compare_real.py` measures renders like the recordings of real engines in
+  `tools/real_engines.csv` (Freesound, CC0/CC BY). `fetch` puts the recordings in
+  `renders/real/` once (needs ffmpeg), then `compare [--kind rev] WAV@T0-T1:LABEL...`.
+- **The numbers that matter** (medians at idle):
+  - **Repeating:** a real engine's cycle repeats at about +5 dB below 500 Hz and under 0 dB
+    above. Ours repeats at +41 to +57 dB, an exact loop: that is the "artificial".
+  - **High frequencies:** ours falls off a cliff above 2 kHz, the pipes' grid (it carries nothing
+    above c/(πΔx): 2.4 kHz in the 7.5 cm exhaust cells). Real engines keep a broadband floor to
+    16 kHz (−25 dB of their energy above 2 kHz, ours −59): that is the "dull".
+  - **The highs are the gap, not the mids.** Under load our energy above 1 kHz is already the
+    real engines' (−14 dB).
+- **How engine-sim does it:** its physics stops at 1.9 kHz too. Its highs come from time jitter,
+  noise multiplied into the flow and a convolution with an impulse response, with a leveler at
+  the end.
 
 ## Core (C)
 - C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
@@ -164,11 +187,12 @@
   `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and
   `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
   WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; engines by
-  order; pulls' dBA against rpm; 16-bit WAVs only, so render without `--float`). The shared style
-  lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted #898781, grid #e1e0d9,
-  series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered categories, and the
-  Inter font when installed. Doc images are rendered in
-  Claude's cloud workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
+  order; pulls' dBA against rpm; 16-bit WAVs only, so render without `--float`),
+  `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above).
+  The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted
+  #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered
+  categories, and the Inter font when installed. Doc images are rendered in Claude's cloud
+  workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
 
 ## Web
 - Vite 8 + TypeScript 7 + Vitest 5 + Playwright 1.63, pinned exactly (pick versions at least two

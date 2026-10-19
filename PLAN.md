@@ -5,6 +5,12 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
+**The sound comes first.** It is Bernardo's top priority: an engine that's hard to tell from a
+real one by ear. After stage 12 he found the renders "dull and really artificial", so the plan
+gained a sound-realism track (stages S1–S5). Its targets come from recordings of real engines,
+and `tools/compare_real.py` measures them (RESEARCH.md, "Sound realism"). Every stage also keeps
+a sound check (working agreement 6).
+
 Each stage below is sized to fit in **one prompt**. To continue, just say *"do stage N"*
 (or *"next stage"*). After each stage, its box in the tracker is ticked and the "Notes" column
 gets a one-line summary of anything that changed from the plan.
@@ -27,9 +33,12 @@ gets a one-line summary of anything that changed from the plan.
 | 9  | Dyno + validation against real engines           | Physics core     | ✅     | Absorbing dyno on the free crank; the four, six and boxer within 5 % of the 1AZ-FE, M54B30 and FB20; lumped intake runners brought forward from stage 10 |
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ✅     | Runners, headers, collectors, exhaust pipes and tailpipes are 1D pipes; a pulse runs at c (−0.16 %) and echoes inverted from an open end; the idle computer looks ahead |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ✅     | A microphone hears the tailpipes' volume flow; anti-alias FIR, DC blocker, soft limiter, TPDF dither; four clean renders. Listening checkpoint |
-| 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Listening checkpoint |
-| 12b| Mechanical & flow noise, in-car listener 🎧       | Sound            | ⬜     | Split from stage 12. Listening checkpoint |
+| 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Bernardo: "dull and really artificial" → S1–S5 |
 | 13 | Performance & stability pass                     | Sound            | ⬜     | |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | ⬜     | Real idles repeat at +5 dB per cycle, ours at +44 (RESEARCH.md) |
+| S2 | Sound: air (flow noise, finer exhaust) 🎧         | Sound realism    | ⬜     | Ours falls off a cliff above 2 kHz: the pipes' grid |
+| S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ⬜     | Takes stage 12b's mechanical noise |
+| S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | Takes stage 12b's in-car listener |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -41,6 +50,7 @@ gets a one-line summary of anything that changed from the plan.
 | 22 | Knock, mechanical limits & engine damage         | Realism          | ⬜     | |
 | 23 | More layouts & presets                           | Polish           | ⬜     | |
 | 24 | UX polish, save/share builds, quality settings   | Polish           | ⬜     | |
+| S5 | Sound: tuning by ear 🎧                           | Polish           | ⬜     | Once everything is built |
 | 25 | Deploy to Vercel + README                        | Ship             | ⬜     | 🚀 |
 | 26 | Optional extras (gearbox, 2-stroke, export, ...) | Extras           | ⬜     | Pick à la carte |
 
@@ -373,14 +383,9 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   six and boxer lose about 3 % of their torque and power to the filter and mufflers, and stay
   within 9 % of their real engines. Details in `docs/stage-12.md`.
 
-#### Stage 12b — Mechanical & flow noise, in-car listener 🎧
-- Valvetrain/mechanical noise tied to crank angle, flow turbulence noise (the throttle's hiss, the
-  tailpipe's jet).
-- The in-car listener (the cabin's walls between it and the engine and exhaust), and an optional
-  room/outdoor reverb (done later with a Web Audio `ConvolverNode` in the browser).
-- **Done when:** idling and revving renders have the engine's mechanical sound under the exhaust's,
-  and the in-car render sounds like it's from inside.
-- **Bernardo checks:** listen.
+#### Stage 12b — folded into the sound-realism track
+Its flow noise is now stage S2, its mechanical noise S3, and its in-car listener and reverb S4
+(after stage 13).
 
 #### Stage 13 — Performance & stability pass
 - Profile the native build. Optimize memory layout and pipe cell counts, and add a quality setting (sim rate).
@@ -407,8 +412,99 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   struct is 317 KB, nearly all the pool of pipe cells.
 - Benchmark with repeated runs: on this laptop (hybrid performance and efficiency cores) the same
   step measured 1.8 µs in one session and 1.1 µs in another.
+- **Sound first.** At the default quality the renders must not change, or only inaudibly; check
+  with `tools/plot_sound.py` and `tools/compare_real.py`.
+  - **The quality setting covers the exhaust's cell size too,** not only the physics rate. The
+    pipes carry nothing above c/(π Δx): 2.4 kHz in the 7.5 cm exhaust cells, the cliff in
+    RESEARCH.md's "Sound realism".
+  - **The headroom found here goes to the sound:** finer cells where the sound is made (stage S2),
+    then the other sound stages.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default
   quality, so it has headroom for WASM in the browser.
+
+### Phase 2b — Sound realism (top priority) 🎧
+
+Stage 12's renders sounded "dull and really artificial" to Bernardo, and the recordings of real
+engines show why (RESEARCH.md, "Sound realism"):
+- **Too regular:** each cycle of ours repeats the last to +44 dB; a real idle repeats at about +5.
+- **Too dull:** nothing above 2 kHz, the pipes' grid; real engines have broadband energy up to
+  16 kHz.
+- **Too much missing:** no mechanical sound, and no place.
+
+Each stage adds a layer driven by what the sim already computes, not samples. Each one ends with
+the numbers from `tools/compare_real.py` in the real engines' range, and with Bernardo's ears.
+
+#### Stage S1 — Life: cycle-to-cycle and cylinder-to-cylinder variation 🎧
+- **Each cycle's burn varies,** as the flame's early growth does with the turbulence and mixture
+  at the plug.
+  - A random ignition delay and burn length per cycle and cylinder, from a seeded generator in
+    the core, so renders and tests stay reproducible.
+  - Larger for slow burns (idle, part throttle, residual gas, lean or rich), smallest near the
+    best spark.
+  - Aim at the COV of IMEP real engines show: a few percent at load and more at idle. Driveability
+    suffers above about 10 %.
+- **Small fixed differences between cylinders** (fuel, air, spark), so even-firing engines get
+  their small half orders.
+- **Turbulence in the flow** at the valves' and throttle's jets, which the pipes then carry and
+  filter.
+- **The engine computer must still hold the idle,** so retune its gains if needed.
+- **Done when:**
+  - at idle the cycle repeats between 0 and +15 dB below 500 Hz (stage 12: +41 to +57);
+  - the COV of IMEP reads a few percent at load and more at idle;
+  - the dyno numbers move under 1 %;
+  - every preset idles steadily for 30 s.
+- **Bernardo checks:** the held and idling renders no longer sound like a loop.
+
+#### Stage S2 — Air: flow noise and a finer exhaust 🎧
+- **Broadband noise where the gas is fast:**
+  - the tailpipe's jet (its power grows with about U⁸);
+  - the throttle's hiss, following its pressure drop;
+  - the intake's roar;
+  - the muffler's baffles (1–8 kHz under hard acceleration).
+
+  Each is driven by the velocities, densities and sizes the sim computes, with a spectrum scaled by
+  its Strouhal number. So it bursts with each pulse (the rasp) and drops on the overrun.
+- **The exhaust's highs:**
+  - finer cells where the sound is made, through stage 13's quality setting (the cutoff c/(π Δx)
+    is 2.4 kHz with today's 7.5 cm cells);
+  - the tailpipe beaming its highs along its axis above ka ≈ 1.
+- **Done when:**
+  - at idle, the energy above 2 kHz is in the real engines' range (−45…−5 dB; stage 12: −57…−67);
+  - above 500 Hz, the cycle repeats under 0 dB;
+  - revving, the third-octave slope from 0.5 to 8 kHz is between −2 and −8 dB per octave
+    (stage 12's pulls: −12 to −22);
+  - on the overrun, the highs drop.
+- **Bernardo checks:** does it still sound dull?
+
+#### Stage S3 — The engine's own sound 🎧
+- **The sources:**
+  - combustion noise through the block: each cylinder's pressure rise through the structure's
+    attenuation curve;
+  - piston slap: the side thrust changes sign near TDC, from the gas force and the rod's angle;
+  - the valves seating, the injectors ticking, the cam drive's whine.
+- **How:** physically timed impulses into a few block and head resonances (modal synthesis),
+  radiated from the engine bay. Strongest in front of the car, and heard inside it.
+- **Done when:**
+  - in front of the car, the energy above 1 kHz is well above the exhaust's (the recorded Honda
+    V6: +13 dB);
+  - the clatter follows the load, and the ticking follows the rpm.
+- **Bernardo checks:** in front of the car, the idle sounds like an engine bay.
+
+#### Stage S4 — Scenery: stereo and the place 🎧
+- **A stereo listener:** two ears, or a spaced pair of microphones, each hearing every source at
+  its own distance and delay, with the head's shadow. WAVs and the browser in stereo.
+- **Places:**
+  - an open lot (asphalt or grass);
+  - beside a wall;
+  - a garage or dyno cell, its reverb a feedback delay network in allocation-free C, so native
+    renders and the browser sound the same;
+  - ISO 5130's exhaust test spot (0.5 m, 45°);
+  - a pass-by at 7.5 m;
+  - inside the car: the body's paths, the engine's orders through the mounts, the cabin's boom
+    (stage 12b's in-car listener).
+- **Done when:** each place renders in stereo and sounds like itself, and the in-car render sounds
+  like it's from inside.
+- **Bernardo checks:** listen on headphones.
 
 ### Phase 3 — Browser
 
@@ -526,6 +622,13 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
   (front, side, cutaway, follow the exhaust).
 - **Done when:** a fresh visitor can figure out what to do in under 30 seconds.
 
+#### Stage S5 — Tuning by ear 🎧 (once everything is built)
+- **Bernardo tunes each preset in the browser,** with live controls for each layer of the sound.
+  He compares it with recordings of the real engine it's modelled on: at the exhaust, in front,
+  inside and passing by.
+- **`tools/compare_real.py` keeps the numbers honest.** The tuned values become the defaults.
+- **Done when:** Bernardo is happy with every preset's sound.
+
 #### Stage 25 — Deploy
 - Vercel project (static build of `web/`), caching headers for `.wasm`, README with screenshots
   and a short "how it works" (written from the real equations used, not fluff), and a link from the portfolio.
@@ -546,3 +649,10 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
    `web/tests/e2e` and must pass in headless Chromium, on the dev server and the production build.
 4. Write the equations used in `docs/stage-NN.md` with sources, so the physics stays explainable.
 5. Finish by updating the tracker row and listing anything Bernardo should check.
+6. **Sound check** (the sound is the top priority):
+   - **Re-render and compare.** Every stage that changes `core/` runs `make render` and compares
+     the sound with the last stage's, using `tools/plot_sound.py` and `tools/compare_real.py`.
+   - **Say what changed.** The stage doc says what changed in the sound. A stage that isn't meant
+     to change it shows that it didn't.
+   - **Never trade sound for speed silently.** A lower default quality is checked by ear and by
+     spectrum, not only by the dyno numbers.

@@ -118,6 +118,9 @@ python3 tools/plot_sound.py spectrograms renders/i4-idle.wav renders/v8-flat-300
 python3 tools/plot_sound.py sweep renders/i4-sweep.wav renders/i4-sweep.csv
 python3 tools/plot_sound.py orders renders/boxer4-3000.wav renders/boxer4-3000-equal.wav --rpm 3000
 python3 tools/plot_sound.py levels renders/i4-sweep.wav renders/i4-sweep.csv   # dBA against rpm
+python3 tools/compare_real.py fetch          # recordings of real engines → renders/real/ (needs ffmpeg)
+build/rb_cli sound --preset i4 --idle --seconds 16 --listener tailpipe --out renders/i4-idle-tailpipe.wav
+python3 tools/compare_real.py compare renders/i4-idle-tailpipe.wav@6-16:"i4 idle"   # against them
 ```
 
 ## Rebuilding the WebAssembly core
