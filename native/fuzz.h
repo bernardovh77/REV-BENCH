@@ -36,6 +36,7 @@ typedef struct rb_fuzz_result {
     rb_fuzz_change change[RB_FUZZ_MAX_CHANGES];
     int    cylinders;      /* the engine it ran                                    */
     int    hear;           /* where the listener stood (RB_HEAR_*, audio.h)       */
+    double variation;      /* how much no two cycles were alike (stage 12c)       */
     double max_rpm;        /* the extremes it reached                              */
     double max_p;          /* Pa, any chamber                                      */
     double max_T;          /* K, any chamber                                       */

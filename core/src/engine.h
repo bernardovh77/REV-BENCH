@@ -73,6 +73,8 @@
 #include "throttle.h"
 #include "valve.h"
 
+#include <stdint.h>
+
 #define RB_MAX_CYLINDERS 16
 #define RB_MAX_COLLECTORS 2      /* and as many exhaust systems                */
 /* The pipes' cells, all of them: the presets use 96 (the four) to 212 (the
@@ -162,6 +164,10 @@ typedef struct rb_engine_desc {
     double fmep_pressure;                 /* Pa per Pa of peak cylinder pressure      */
     double fmep_speed;                    /* Pa per m/s of mean piston speed          */
     double fmep_speed2;                   /* Pa per (m/s)^2                           */
+    double accessory_power;               /* W the accessories take once the engine
+                                           * runs: the alternator for the car's
+                                           * electrics, the pumps (stage 12c; part
+                                           * of the friction, as Heywood counts it)   */
     double starter_torque;                /* N m at the crank, starter stalled        */
     double starter_free_rpm;              /* crank rpm where the starter stops pushing */
     /* the engine computer (stage 7; it only runs with the crank free) */
@@ -223,9 +229,11 @@ typedef struct rb_burn {
                                      (Woschni's reference)                               */
     double residual;              /* its burned-gas mass fraction                        */
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
-    double duration;              /* this cycle's burn: crank degrees from the spark to
+    double start_angle;           /* ... and of its burn's start: the spark, give or take
+                                     this cycle's flame (stage 12c; set at IVC)          */
+    double duration;              /* this cycle's burn: crank degrees from its start to
                                      the end (set at IVC)                                */
-    int    spark_due;             /* 1 from intake valve closing until the spark         */
+    int    spark_due;             /* 1 from intake valve closing until the burn starts   */
     double burnable;              /* kg of fuel set to burn at the spark                 */
     double fraction;              /* burned fraction so far, 0..1                        */
     double burn_angle;            /* the burn's clock: crank degrees since the spark     */
@@ -234,6 +242,9 @@ typedef struct rb_burn {
     double heat, wall_heat;       /* J released by burning / added by the walls, last step */
     double p_max, angle_p_max;    /* highest pressure since overlap TDC, and where       */
     double last_p_max, last_angle_p_max;   /* the same for the last complete cycle       */
+    double work, last_work;       /* J the gas did on the piston since overlap TDC, and
+                                     over the last complete cycle (stage 12c: per
+                                     cylinder, its IMEP times its swept volume)          */
 } rb_burn;
 
 /* The orifices point at chambers inside the same struct, so an rb_engine must
@@ -257,6 +268,12 @@ typedef struct rb_engine {
     double theta;           /* degrees, cylinder 1's crank angle in the cycle          */
     long   cycles;          /* cycles completed since rb_engine_init                    */
     rb_engine_cycle result; /* the last completed cycle                                */
+    double variation;       /* stage 12c: how much no two cycles are alike (any time):
+                             * 0 every cycle the same (the default, as the tests and
+                             * the dyno numbers want), 1 a real engine's (rb_cli sound
+                             * sets it): each burn's start and length vary, the
+                             * cylinders differ a little, the exhaust valves' jets
+                             * flicker                                                 */
 
     /* the gas */
     rb_cylinder cyl[RB_MAX_CYLINDERS];
@@ -313,8 +330,17 @@ typedef struct rb_engine {
     double rpm_recent;      /* ... and over 0.15 s, for how fast it's changing         */
     double idle_valve;      /* idle air valve opening, 0..1                            */
     double idle_trim;       /* the part of it learned while idling                     */
-    int    spark_cut;       /* 1 while the rev limiter cuts the spark                  */
+    int    spark_cut;       /* 1 while the rev limiter cuts every spark (the hard cut) */
+    long   limiter_cuts;    /* sparks the rev limiter cut, soft or hard (stage 12c)    */
     int    fuel_cut;        /* 1 while the injectors are off, coasting (overrun)       */
+
+    /* no two cycles alike (stage 12c; `variation` above) */
+    uint64_t rand_cycles;           /* the generator's state for the cycles (rand.h) ...  */
+    uint64_t rand_flicker;          /* ... and for the valves' jets                       */
+    double   trim_fuel[RB_MAX_CYLINDERS];   /* each cylinder's own fuel and burn length:   */
+    double   trim_burn[RB_MAX_CYLINDERS];   /* fixed normal numbers, drawn at init         */
+    double   flicker[RB_MAX_CYLINDERS];     /* each exhaust valve's jet now, filtered      */
+    double   flicker_a, flicker_norm;       /* its filter, and what makes its RMS 1        */
 
     /* totals since rb_engine_init, for checking conservation */
     double mass_in, mass_out;       /* kg taken from the intake air / given to the outside air */

@@ -174,17 +174,23 @@ static void usage(FILE *f)
         "      --preset KEY      the engine                 (default i4)\n"
         "      --idle            started with the key, then left to idle (the default)\n"
         "      --sweep           wide open from 1000 rpm (held there for 1.5 s first) into the\n"
-        "                        rev limiter with a car's inertia on the crank (a pull in third\n"
-        "                        gear), then the foot off\n"
-        "      --hold            held at --rpm and --throttle by a dyno (after 1.5 s to settle)\n"
+        "                        rev limiter with a car's inertia and the road's load on the\n"
+        "                        crank (a pull in second gear), then the foot off, the clutch in,\n"
+        "                        and back to idle\n"
+        "      --hold            held at --rpm and --throttle (1.5 s to settle), then on a dyno,\n"
+        "                        the crank free\n"
+        "      --rev             revved in neutral: started with the key, a blip, then floored\n"
+        "                        into the rev limiter, then the foot off back to idle\n"
         "      --rpm N           for --hold                 (default 3000)\n"
         "      --throttle X      for --hold, 0..1           (default 1)\n"
         "      --inertia KGM2    for --sweep: crank, flywheel and the car (default 3)\n"
-        "  -s, --seconds S       how long                   (default: 8 idle, 5 hold; the sweep\n"
-        "                        ends 2 s after the foot comes off)\n"
+        "      --load N          for --idle: a load on the crank once it runs, N m (default 0)\n"
+        "  -s, --seconds S       how long                   (default: 8 idle, 5 hold, 12 rev;\n"
+        "                        the sweep ends 1.5 s after it is back at idle)\n"
         "      --muffler TYPE    none (a straight pipe), straight (straight-through, packed) or\n"
         "                        chambered                  (default: the preset's)\n"
         "      --equal-headers   every exhaust header as long as their mean\n"
+        "      --headers L,L,...  each cylinder's exhaust header, m (as many as it has cylinders)\n"
         "      --listener WHERE  behind: someone 3 m behind the car (the default); tailpipe: a\n"
         "                        microphone 1 m behind the (right) tailpipe; side: 4 m to its\n"
         "                        side; front: leaning over the bonnet, by the intake's mouth;\n"
@@ -192,6 +198,8 @@ static void usage(FILE *f)
         "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
         "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
         "                        mechanical sound)\n"
+        "      --variation V     how much no two cycles are alike: 0 every one the same (stage\n"
+        "                        12b's sound), 1 a real engine's (the default), up to 4\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
@@ -1848,7 +1856,7 @@ static int cmd_pipes(int argc, char **argv)
 
 /* ---- sound: what a listener around the car hears (stages 11 and 12) ---- */
 
-enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD };
+enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD, DRIVE_REV };
 
 /* The listener's places (RB_HEAR_*, audio.h), by name. */
 static const char *const LISTENERS[RB_HEAR_COUNT] = { "tailpipe", "behind", "side", "front", "cabin" };
@@ -1882,14 +1890,46 @@ static const char *const MUFFLER_SAYS[3] = { "no muffler", "straight-through muf
 #define SOUND_SETTLE   1.5    /* s a held engine runs before the recording starts  */
 #define SWEEP_FROM     1000.0 /* rpm                                               */
 #define SWEEP_LIMITER  1.0    /* s on the rev limiter before the foot comes off    */
-#define SWEEP_COAST    2.0    /* s of coasting after it, to the end               */
+#define SWEEP_LIFT     0.4    /* s coasting in gear before the clutch goes in      */
+#define SWEEP_FALL     4.0    /* s at most for the engine to fall back to idle ... */
+#define SWEEP_IDLE     1.5    /* ... and this long idling after, to the end        */
+
+/* The car on --sweep (stage 12c): its weight in the gear the pull is in is
+ * the crank's inertia less the engine's own; with the wheels' radius that
+ * gives the gearing, and so the road speed and the road's load on the crank:
+ * rolling resistance and the air's drag. */
+#define CAR_MASS     1300.0   /* kg                                              */
+#define CAR_WHEEL    0.31     /* m: the driven wheels' rolling radius            */
+#define CAR_ROLLING  0.012    /* rolling resistance coefficient                  */
+#define CAR_CDA      0.70     /* m^2: drag coefficient times frontal area        */
+#define CAR_AIR      1.2      /* kg/m^3                                          */
+
+/* The road's load on the crank (N m) at crank speed w (rad/s), the car's
+ * share of the crank's inertia `j_car` (kg m^2): none without a car. */
+static double road_load(double w, double j_car)
+{
+    if (!(j_car > 0.0)) return 0.0;
+    const double ratio = CAR_WHEEL * sqrt(CAR_MASS / j_car);   /* crank turns per wheel turn */
+    const double v = w * CAR_WHEEL / ratio;
+    return (CAR_ROLLING * CAR_MASS * 9.81 + 0.5 * CAR_AIR * CAR_CDA * v * v) * CAR_WHEEL / ratio;
+}
+
+/* The neutral revs of --rev, like the recordings of real engines revved
+ * standing still (stage 12c): started with the key, then a blip, then floored
+ * into the rev limiter, then the foot off and back to idle. */
+#define REV_BLIP_AT     3.0   /* s                                               */
+#define REV_BLIP        0.25  /* s at REV_BLIP_THROTTLE                          */
+#define REV_BLIP_THROTTLE 0.4
+#define REV_FLOOR_AT    5.5   /* s: wide open ...                                */
+#define REV_FLOOR       1.6   /* ... for this long, into the limiter             */
 
 static int cmd_sound(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *out_path = "renders/sound.wav", *csv_path = NULL;
     double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
-    double gain = 1.0, os = 4.0;
+    double gain = 1.0, os = 4.0, variation = 1.0, idle_load = 0.0;
+    rb_dyno dyno;
     int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
     int layers = RB_LAYER_ALL;
     rb_config cfg;
@@ -1911,6 +1951,8 @@ static int cmd_sound(int argc, char **argv)
             drive = DRIVE_SWEEP;
         else if (!strcmp(a, "--hold"))
             drive = DRIVE_HOLD;
+        else if (!strcmp(a, "--rev"))
+            drive = DRIVE_REV;
         else if (!strcmp(a, "--rpm"))
             ok = !to_double(take_value(argc, argv, &i), &rpm);
         else if (!strcmp(a, "--throttle"))
@@ -1928,6 +1970,10 @@ static int cmd_sound(int argc, char **argv)
         }
         else if (!strcmp(a, "--layers"))
             ok = (layers = layers_from(take_value(argc, argv, &i))) > 0;
+        else if (!strcmp(a, "--variation"))
+            ok = !to_double(take_value(argc, argv, &i), &variation);
+        else if (!strcmp(a, "--load"))
+            ok = !to_double(take_value(argc, argv, &i), &idle_load);
         else if (!strcmp(a, "--muffler")) {
             const char *v = take_value(argc, argv, &i);
             ok = 0;
@@ -1939,6 +1985,16 @@ static int cmd_sound(int argc, char **argv)
         }
         else if (!strcmp(a, "--equal-headers"))
             equal = 1;
+        else if (!strcmp(a, "--headers")) {   /* each header's length, m, comma-separated */
+            const char *v = take_value(argc, argv, &i);
+            int k = 0;
+            while (v && *v && k < d.cylinders) {
+                char *end;
+                d.header_length[k++] = strtod(v, &end);
+                v = (*end == ',') ? end + 1 : (*end ? NULL : end);
+            }
+            ok = v && !*v && k == d.cylinders;
+        }
         else if (!strcmp(a, "--gain"))
             ok = !to_double(take_value(argc, argv, &i), &gain);
         else if (!strcmp(a, "--float"))
@@ -1961,7 +2017,8 @@ static int cmd_sound(int argc, char **argv)
             return 2;
         }
     }
-    if (seconds < 0.0) seconds = (drive == DRIVE_HOLD) ? 5.0 : (drive == DRIVE_IDLE) ? 8.0 : 60.0;
+    if (seconds < 0.0)
+        seconds = (drive == DRIVE_HOLD) ? 5.0 : (drive == DRIVE_IDLE) ? 8.0 : (drive == DRIVE_REV) ? 12.0 : 60.0;
     if (!(seconds > 0.0 && seconds <= 600.0)) {
         fprintf(stderr, "rb_cli sound: --seconds must be in (0, 600]\n");
         return 2;
@@ -1974,6 +2031,10 @@ static int cmd_sound(int argc, char **argv)
         fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 100] kg m^2 and --gain in [0, 4]\n");
         return 2;
     }
+    if (!(variation >= 0.0 && variation <= 4.0)) {
+        fprintf(stderr, "rb_cli sound: --variation must be in [0, 4]\n");
+        return 2;
+    }
     if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
         fprintf(stderr, "rb_cli sound: --oversample must be an integer in [1, %d]\n", RB_MAX_OVERSAMPLE);
         return 2;
@@ -1983,7 +2044,9 @@ static int cmd_sound(int argc, char **argv)
         fprintf(stderr, "rb_cli sound: no --quality at that --rate\n");
         return 2;
     }
+    const double own_inertia = d.inertia;   /* the engine's own: crank, flywheel, clutch */
     if (drive == DRIVE_SWEEP) d.inertia = inertia;
+    const double car_inertia = d.inertia - own_inertia;
     if (equal) {   /* every header as long as their mean */
         double mean = 0.0;
         for (int i = 0; i < d.cylinders; i++) mean += d.header_length[i] / d.cylinders;
@@ -2008,13 +2071,14 @@ static int cmd_sound(int argc, char **argv)
     rb_sim_listen(sim);
     rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
     e->ignition = 1;
+    e->variation = variation;
     if (drive == DRIVE_HOLD) {
         e->rpm = rpm;
         e->throttle_pos = throttle;
     } else if (drive == DRIVE_SWEEP) {   /* held there to settle, then let go */
         e->rpm = SWEEP_FROM;
         e->throttle_pos = 1.0;
-    } else {
+    } else {   /* --idle and --rev start with the key */
         e->hold_speed = 0;
         e->throttle_pos = 0.0;
         e->starter = 1;
@@ -2064,34 +2128,67 @@ static int cmd_sound(int argc, char **argv)
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
         for (long k = 0; k < lround(SOUND_SETTLE * fs / BLOCK_FRAMES); k++)
             rb_render_block(sim, buf, BLOCK_FRAMES);
-        if (drive == DRIVE_HOLD)
-            printf("  held at %.0f rpm, throttle %.0f %%, after %.1f s to settle\n", rpm,
+        if (drive == DRIVE_HOLD && e->result.brake_torque > 0.0) {
+            /* Stage 12c: from here on a dyno holds it, as on stage 9's test
+             * bed, its crank free: each firing and each cycle moves it a
+             * little, as they do a real engine's. */
+            rb_dyno_init(&dyno, e, rpm);
+            sim->dyno = &dyno;
+            printf("  on a dyno at %.0f rpm, throttle %.0f %%, after %.1f s to settle\n", rpm,
                    100.0 * throttle, SOUND_SETTLE);
-        else
+        } else if (drive == DRIVE_HOLD) {
+            printf("  held at %.0f rpm, throttle %.0f %% (too little torque for the dyno), after "
+                   "%.1f s to settle\n", rpm, 100.0 * throttle, SOUND_SETTLE);
+        } else {
             e->hold_speed = 0;   /* the crank's speed and energy are the held ones: no jump */
+        }
     }
 
     const long long total = llround(seconds * fs);
     const double limited0 = rb_get_telemetry(sim, RB_TLM_LIMITED);   /* settling's aren't heard */
     double peak = 0.0, sumsq = 0.0, lo = INFINITY, hi = 0.0;
-    double released = -1.0, on_limiter = -1.0, lifted = -1.0;
+    double released = -1.0, on_limiter = -1.0, lifted = -1.0, clutch = -1.0, idling = -1.0;
+    double fall_from = -1.0, fall_to = -1.0;   /* s: passing 6000 and 2000 rpm, falling */
+    const long cuts0 = e->limiter_cuts;
     long long frames = 0;
     int io_error = 0;
     clock_t c0 = clock();
     while (frames < total) {
         const double t = frames / fs;
         /* the driver */
-        if (drive == DRIVE_IDLE && e->starter && (e->rpm_smooth > 0.75 * d.idle_rpm || t > 3.0)) {
+        if ((drive == DRIVE_IDLE || drive == DRIVE_REV) && e->starter
+            && (e->rpm_smooth > 0.75 * d.idle_rpm || t > 3.0)) {
             e->starter = 0;
             released = t;
         }
+        if (drive == DRIVE_IDLE && !e->starter) e->load_torque = idle_load;
+        if (drive == DRIVE_REV) {
+            e->throttle_pos = (t >= REV_BLIP_AT && t < REV_BLIP_AT + REV_BLIP) ? REV_BLIP_THROTTLE
+                            : (t >= REV_FLOOR_AT && t < REV_FLOOR_AT + REV_FLOOR) ? 1.0 : 0.0;
+            if (on_limiter < 0.0 && e->limiter_cuts > cuts0) on_limiter = t;
+        }
         if (drive == DRIVE_SWEEP) {
-            if (on_limiter < 0.0 && e->spark_cut) on_limiter = t;
+            if (on_limiter < 0.0 && e->limiter_cuts > cuts0) on_limiter = t;
             if (lifted < 0.0 && on_limiter >= 0.0 && t >= on_limiter + SWEEP_LIMITER) {
                 e->throttle_pos = 0.0;
                 lifted = t;
             }
-            if (lifted >= 0.0 && t >= lifted + SWEEP_COAST) break;
+            if (clutch < 0.0 && lifted >= 0.0 && t >= lifted + SWEEP_LIFT) {
+                /* The clutch goes in: the car's inertia leaves the crank,
+                 * which keeps its speed (its kinetic energy is the engine's
+                 * own from now on), and so does the road's load. */
+                e->desc.inertia = own_inertia;
+                e->kinetic = 0.5 * own_inertia * e->omega * e->omega;
+                clutch = t;
+            }
+            e->load_torque = (clutch < 0.0) ? road_load(e->omega, car_inertia) : 0.0;
+            if (clutch >= 0.0 && idling < 0.0 && (e->rpm_smooth < d.idle_rpm + 50.0 || t > clutch + SWEEP_FALL))
+                idling = t;
+            if (idling >= 0.0 && t >= idling + SWEEP_IDLE) break;
+        }
+        if (lifted >= 0.0 || (drive == DRIVE_REV && t > REV_FLOOR_AT + REV_FLOOR)) {   /* falling */
+            if (fall_from < 0.0 && e->rpm < 6000.0) fall_from = t;
+            if (fall_to < 0.0 && e->rpm < 2000.0) fall_to = t;
         }
 
         const int n = (int)(total - frames < BLOCK_FRAMES ? total - frames : BLOCK_FRAMES);
@@ -2120,11 +2217,23 @@ static int cmd_sound(int argc, char **argv)
         if (released >= 0.0) printf("  key to START; the starter lets go at %.2f s\n", released);
         printf("  idling at %.0f rpm at the end (%.0f-%.0f rpm over the whole run)\n", e->result.rpm, lo, hi);
     } else if (drive == DRIVE_SWEEP) {
-        printf("  wide open from %.0f rpm, %.1f kg m^2 on the crank", SWEEP_FROM, d.inertia);
+        printf("  wide open from %.0f rpm, %.1f kg m^2 on the crank and the road's load", SWEEP_FROM, inertia);
         if (on_limiter >= 0.0)
-            printf(": on the rev limiter after %.1f s, foot off at %.1f s\n", on_limiter, lifted);
+            printf(": on the rev limiter after %.1f s, foot off at %.1f s, clutch in at %.1f s, "
+                   "idling at %.1f s\n", on_limiter, lifted, clutch, idling);
         else
             printf(": no rev limiter within %.0f s\n", recorded);
+    } else if (drive == DRIVE_REV) {
+        printf("  revved in neutral: a blip at %.1f s, floored at %.1f s", REV_BLIP_AT, REV_FLOOR_AT);
+        if (on_limiter >= 0.0) printf(", on the rev limiter at %.2f s", on_limiter);
+        printf(", foot off at %.1f s; idling at %.0f rpm at the end\n", REV_FLOOR_AT + REV_FLOOR, e->result.rpm);
+    }
+    if (drive == DRIVE_SWEEP || drive == DRIVE_REV) {
+        printf("  the rev limiter cut %ld sparks", e->limiter_cuts - cuts0);
+        if (fall_from >= 0.0 && fall_to > fall_from)
+            printf("; falling, 6000 to 2000 rpm in %.2f s (%.0f rpm/s)", fall_to - fall_from,
+                   4000.0 / (fall_to - fall_from));
+        printf("\n");
     }
     const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
     printf("  %.2f s recorded: peak %.3f (%.1f dBFS), rms %.4f: %.1f dB SPL at the listener\n", recorded,
@@ -2180,17 +2289,17 @@ static int cmd_fuzz(int argc, char **argv)
         return 2;
     }
     int failed = 0;
-    printf("%8s  %-9s %4s %4s %-8s %8s %9s %7s %8s %7s\n", "seed", "preset", "cyl", "set", "heard",
-           "max rpm", "max bar", "max K", "repairs", "cpu s");
+    printf("%8s  %-9s %4s %4s %-8s %4s %8s %9s %7s %8s %7s\n", "seed", "preset", "cyl", "set", "heard",
+           "var", "max rpm", "max bar", "max K", "repairs", "cpu s");
     for (long k = 0; k < (long)sets; k++) {
         const unsigned long long sd = (unsigned long long)seed + (unsigned long long)k;
         rb_fuzz_result r;
         const clock_t c0 = clock();
         const int ok = rb_fuzz_run(sd, seconds, (int)os, quality, &r);
         const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
-        printf("%8llu  %-9s %4d %4d %-8s %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
+        printf("%8llu  %-9s %4d %4d %-8s %4.1f %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
                r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes,
-               (r.hear >= 0 && r.hear < RB_HEAR_COUNT) ? LISTENERS[r.hear] : "?", r.max_rpm,
+               (r.hear >= 0 && r.hear < RB_HEAR_COUNT) ? LISTENERS[r.hear] : "?", r.variation, r.max_rpm,
                r.max_p / 1e5, r.max_T, r.repairs, cpu, ok ? "ok" : r.what);
         if (!ok)   /* what it changed, to make it again */
             for (int j = 0; j < r.tries; j++) {

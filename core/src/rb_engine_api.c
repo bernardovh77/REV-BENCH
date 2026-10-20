@@ -98,6 +98,7 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_AIRBOX_VOLUME]     = { "airbox_volume",     "m^3",    0,             0.001,   0.03,    DBL(airbox_volume) },
     [RB_ENG_SNORKEL_LENGTH]    = { "snorkel_length",    "m",      0,             0.05,    1.5,     DBL(snorkel_length) },
     [RB_ENG_SNORKEL_DIAMETER]  = { "snorkel_diameter",  "m",      0,             0.03,    0.15,    DBL(snorkel_diameter) },
+    [RB_ENG_ACCESSORY_POWER]   = { "accessory_power",   "W",      LIVE,          0.0,     5000.0,  DBL(accessory_power) },
 };
 
 typedef struct cylinder_field_info {
@@ -143,6 +144,7 @@ int rb_load_preset(rb_sim *sim, int preset)
     if (!sim) return RB_ERR_ARG;
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
     rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */
+    sim->dyno = NULL;
     rb_sim_listen(sim);                          /* a new engine: no jump in its flows */
     sim->preset = preset;
     return RB_OK;
@@ -259,6 +261,7 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
     else {
         rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
+        sim->dyno = NULL;
         rb_sim_listen(sim);
     }
     return rc;

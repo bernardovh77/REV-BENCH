@@ -129,6 +129,7 @@ void rb_reset(rb_sim *sim)
      * is always a possible engine, so this can't fail. */
     const rb_engine_desc d = sim->engine.desc;
     rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
+    sim->dyno = NULL;
     rb_sim_listen(sim);
 }
 
@@ -155,6 +156,7 @@ static inline void model_step(rb_sim *sim)
 {
     if (sim->source == RB_SOURCE_ENGINE) {
         rb_engine *e = &sim->engine;
+        if (sim->dyno) rb_dyno_step(sim->dyno, e);
         rb_engine_step(e);
         if (e->pipe_steps != sim->pipe_steps_heard) {   /* the pipe ends' new flows */
             const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;

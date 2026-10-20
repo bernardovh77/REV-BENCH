@@ -6,6 +6,7 @@
 
 #include "combustion.h"
 #include "heat.h"
+#include "rand.h"
 #include "rb.h"   /* RB_MUFFLER_* */
 
 #include <math.h>
@@ -163,6 +164,7 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->fmep_pressure = 0.005;
     d->fmep_speed = 0.053e5;
     d->fmep_speed2 = 0.0004e5;
+    d->accessory_power = 0.0;   /* the presets have theirs (stage 12c) */
     /* A 1.3 kW starter, geared about 50:1 to the crank: 200 N m when stalled,
      * enough to push a cylinder through its compression from rest, falling to
      * nothing at 250 rpm. It cranks the engine at about 240 rpm. */
@@ -312,6 +314,7 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->fmep_pressure >= 0.0 && d->fmep_pressure < 0.1)) return -1;
     if (!(d->fmep_speed >= 0.0 && d->fmep_speed < 1e6)) return -1;
     if (!(d->fmep_speed2 >= 0.0 && d->fmep_speed2 < 1e5)) return -1;
+    if (!(d->accessory_power >= 0.0 && d->accessory_power <= 2e4)) return -1;
     if (!(d->starter_torque >= 0.0 && d->starter_torque < 1e4)) return -1;
     if (!(d->starter_free_rpm > 0.0 && d->starter_free_rpm < 1e4)) return -1;
     if (!(d->idle_rpm >= 0.0 && d->idle_rpm < 1e4)) return -1;
@@ -363,6 +366,75 @@ static void new_pipe(rb_engine *e, rb_pipe *p, int *used, double length, double 
 static int system_of(const rb_engine *e, int c)
 {
     return (e->systems == 2) ? c : 0;
+}
+
+/* No two cycles alike (stage 12c). In a real engine each burn starts and
+ * runs its own way: the turbulence and the mixture at the plug when it fires
+ * set how soon the flame gets going and how fast it then spreads (Heywood,
+ * section 9.4; Ozdor, Dulger and Sher, SAE 940987). Its first 10 % varies
+ * most, and a slow start mostly means a slow burn. The slower and more
+ * diluted the burn (idling, a light load), the more crank degrees it varies
+ * by: the cylinders' work varies by 1-3 % of the mean (the COV of IMEP) wide
+ * open, and 4-8 % idling, where the spark is held back from its best and the
+ * work changes faster with the burn's timing. So each cycle, at intake valve
+ * closing, the burn's start moves from the spark by VARY_START of the burn's
+ * length, and its length changes by VARY_LENGTH, both times `variation`, from
+ * two normal numbers VARY_ALIKE alike. The engine computer times the spark
+ * for the burn it expects, not this one.
+ * The cylinders also differ a little, for good: the injectors and the ports'
+ * air give each its own mixture (CYL_FUEL) and swirl, so its own burn length
+ * (CYL_BURN); the oxygen sensor keeps their mean on the target, and on
+ * average they burn as one. And the exhaust valves' jets are turbulent: the
+ * gas through each flickers by FLICKER (RMS) below FLICKER_HZ, a rasp the
+ * pipes carry on. Calibrated in docs/stage-12c.md. */
+#define VARY_START   0.07      /* of the burn's length, RMS                        */
+#define VARY_LENGTH  0.06      /* relative, RMS                                    */
+#define VARY_ALIKE   0.5       /* the correlation of the two                       */
+#define VARY_MOST    3.0       /* no normal number goes further than this          */
+#define VARY_TOP     4.0       /* the most `variation` counts                      */
+#define CYL_FUEL     0.02      /* RMS                                              */
+#define CYL_BURN     0.04      /* RMS                                              */
+#define FLICKER      0.15      /* RMS: as real engines, the sound between 0.5 and
+                                  2 kHz then changes more than it repeats from
+                                  one cycle to the next (docs/stage-12c.md)        */
+#define FLICKER_HZ   2000.0
+#define RB_ENGINE_SEED  0x5EED12C0FFEEULL
+
+/* The variation to use: 0 for a NaN or anything negative, at most VARY_TOP. */
+static double variation(const rb_engine *e)
+{
+    const double v = e->variation;
+    return (v > 0.0) ? ((v < VARY_TOP) ? v : VARY_TOP) : 0.0;
+}
+
+/* A normal number, kept within VARY_MOST. */
+static double vary_normal(uint64_t *state)
+{
+    const double z = rb_rand_normal(state);
+    return (z > VARY_MOST) ? VARY_MOST : (z < -VARY_MOST) ? -VARY_MOST : z;
+}
+
+/* The generators, and each cylinder's own mixture and burn: drawn whatever
+ * `variation` is, so turning it on later finds them there. Their mean over
+ * the cylinders is 0 (a single cylinder has none). */
+static void vary_init(rb_engine *e)
+{
+    const int n = e->desc.cylinders;
+    double fuel = 0.0, burn = 0.0;
+    e->rand_cycles = RB_ENGINE_SEED;
+    e->rand_flicker = RB_ENGINE_SEED ^ 0xF11C4E5ULL;
+    for (int i = 0; i < n; i++) {
+        e->trim_fuel[i] = vary_normal(&e->rand_cycles);
+        e->trim_burn[i] = vary_normal(&e->rand_cycles);
+        fuel += e->trim_fuel[i] / n;
+        burn += e->trim_burn[i] / n;
+    }
+    for (int i = 0; i < n; i++) {
+        e->trim_fuel[i] -= fuel;
+        e->trim_burn[i] -= burn;
+    }
+    e->flicker_a = 1.0 - exp(-2.0 * PI * FLICKER_HZ * e->dt);
+    e->flicker_norm = sqrt((2.0 - e->flicker_a) / e->flicker_a);   /* a one-pole's RMS */
 }
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
@@ -467,7 +539,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         rb_pipe_attach(h, 0, gas, &e->exhaust[i]);
         rb_pipe_set_fast(h, 0);
         rb_pipe_join(h, 1, &e->collector[d->collector[i]], HEADER_ENTRY, 0);
-        e->burn[i].spark_angle = 720.0 - RB_SPARK_DEFAULT;
+        e->burn[i].spark_angle = e->burn[i].start_angle = 720.0 - RB_SPARK_DEFAULT;
         e->burn[i].duration = d->burn_duration;
     }
     /* Each system's muffler (stage 12; rb.h: rb_muffler_type) is a pipe:
@@ -513,6 +585,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         }
         rb_pipe_join(t, 1, &e->exhaust_air, TAILPIPE_ENTRY, 0);
     }
+    vary_init(e);
     start_cycle(e);
     return 0;
 }
@@ -814,8 +887,10 @@ static void close_intake(rb_engine *e, int i)
 {
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
+    const double v = variation(e);
     const double fuel = (e->ignition && e->afr > 0.0 && !e->fuel_cut)
-                      ? g->m[RB_AIR] / e->afr - g->m[RB_FUEL] : 0.0;
+                      ? g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i]) - g->m[RB_FUEL]
+                      : 0.0;
     if (fuel > 0.0) {
         const double u_fuel = rb_gas_u(&e->fuel_gas, g->T);
         g->m[RB_FUEL] += fuel;
@@ -830,9 +905,39 @@ static void close_intake(rb_engine *e, int i)
     b->T_ivc = g->T;
     b->residual = g->y[RB_BURNED];
     const double rpm = e->hold_speed ? e->rpm : e->omega * 30.0 / PI;
-    b->duration = burn_duration(e, b, rpm);
-    b->spark_angle = cycle_angle(720.0 - spark_advance(computer_spark(e, b->duration, rpm)));
+    const double expected = burn_duration(e, b, rpm);
+    const double advance = spark_advance(computer_spark(e, expected, rpm));
+    b->spark_angle = cycle_angle(720.0 - advance);
+
+    /* This cycle's own burn (stage 12c): its start and length, and the
+     * cylinder's own length. */
+    const double start = vary_normal(&e->rand_cycles);
+    const double length = VARY_ALIKE * start
+                        + sqrt(1.0 - VARY_ALIKE * VARY_ALIKE) * vary_normal(&e->rand_cycles);
+    double duration = expected * exp(v * VARY_LENGTH * length) * (1.0 + v * CYL_BURN * e->trim_burn[i]);
+    if (!(duration >= 0.25 * expected)) duration = 0.25 * expected;
+    b->duration = (duration < 180.0) ? duration : 180.0;
+    b->start_angle = cycle_angle(720.0 - spark_advance(advance - v * VARY_START * expected * start));
     b->spark_due = 1;
+}
+
+/* The rev limiter's soft cut (stage 12c): within LIMIT_SOFT rpm below the
+ * rev limit the engine computer skips single sparks at random, more of them
+ * the nearer the limit (a share that grows from none to all across the
+ * band), as a racing ECU's soft cut does: held there in gear the engine
+ * stutters at the limit, firing on some of its cylinders. Above the limit
+ * the hard cut stops every spark (engine_computer). Before stage 12c only
+ * the hard cut was there: in gear, with a car's inertia on the crank, it
+ * took 0.6 s to fall the 100 rpm back to where it fires again; real engines
+ * bounce off their limiters 10-30 times a second. */
+#define LIMIT_SOFT 150.0   /* rpm */
+
+static int soft_cut(rb_engine *e)
+{
+    if (e->hold_speed) return 0;   /* the engine computer is off while held */
+    const double into = (e->omega * 30.0 / PI - (e->desc.rev_limit - LIMIT_SOFT)) / LIMIT_SOFT;
+    if (!(into > 0.0)) return 0;
+    return rb_rand_uniform(&e->rand_cycles) < into;
 }
 
 /* The spark: what can burn is the fuel, or as much of it as the air can burn,
@@ -842,7 +947,11 @@ static void spark(rb_engine *e, int i)
     const rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     b->burning = 0;
-    if (!e->ignition || e->spark_cut) return;   /* the rev limiter cuts the spark */
+    if (!e->ignition) return;
+    if (e->spark_cut || soft_cut(e)) {   /* the rev limiter cuts the spark */
+        e->limiter_cuts++;
+        return;
+    }
     b->burnable = rb_burnable_fuel(g->m[RB_FUEL], g->m[RB_AIR], e->desc.mixture_spread,
                                    e->desc.combustion_efficiency);
     b->fraction = 0.0;
@@ -860,7 +969,7 @@ static void burn_step(rb_engine *e, int i, double angle, double step, double q_f
     rb_burn *b = &e->burn[i];
     const rb_engine_desc *d = &e->desc;
     const double pace = 6.0 * RB_GAS_PACE_RPM * e->dt;   /* degrees per step */
-    if (b->burn_angle == 0.0) b->burn_angle = cycle_angle(angle + step - b->spark_angle);
+    if (b->burn_angle == 0.0) b->burn_angle = cycle_angle(angle + step - b->start_angle);
     else b->burn_angle += (step > pace) ? step : pace;
     const double x = rb_wiebe(b->burn_angle, b->duration, d->wiebe_a, d->wiebe_m);
     double fuel = (x - b->fraction) * b->burnable;
@@ -882,6 +991,30 @@ static void burn_step(rb_engine *e, int i, double angle, double step, double q_f
     e->heat_released += b->heat;
 }
 
+/* The accessories (stage 12c): the alternator, for the car's electrics, and
+ * the pumps. Above ACCESSORY_FULL_RPM they take `accessory_power`: a torque
+ * that falls as the speed rises. Below it, a steady torque (power at that
+ * speed): an alternator can't give its full output that slowly, and a power
+ * steering pump takes about the same torque at any speed. That also keeps
+ * them from destabilising the idle, as a load that grows as the speed sags
+ * would. While the engine cranks (below ACCESSORY_ON_RPM) the alternator
+ * isn't charging yet: they come in by 500 rpm. Idling, they are a third of
+ * what the engine works against, and they set how much air it needs: without
+ * them the four idled at 25 kPa in its manifold, where real ones run at
+ * 30-40, its cylinders below the exhaust's pressure when their exhaust
+ * valves opened; with its 800 W, at 28 kPa. */
+#define ACCESSORY_FULL_RPM 1500.0
+#define ACCESSORY_ON_RPM   300.0
+
+static double accessory_torque(const rb_engine_desc *d, double omega)
+{
+    if (!(d->accessory_power > 0.0)) return 0.0;
+    const double rpm = fabs(omega) * 30.0 / PI;
+    const double full = d->accessory_power / (((rpm > ACCESSORY_FULL_RPM) ? rpm : ACCESSORY_FULL_RPM) * PI / 30.0);
+    const double on = (rpm - ACCESSORY_ON_RPM) / (500.0 - ACCESSORY_ON_RPM);
+    return (on >= 1.0) ? full : (on > 0.0) ? on * full : 0.0;
+}
+
 double rb_engine_fmep(const rb_engine *e, double omega)
 {
     const rb_engine_desc *d = &e->desc;
@@ -890,7 +1023,7 @@ double rb_engine_fmep(const rb_engine *e, double omega)
     p_max /= d->cylinders;
     const double sp = d->stroke * fabs(omega) / PI;    /* mean piston speed: 2 stroke rev/s */
     return d->fmep_constant + d->fmep_pressure * p_max + d->fmep_speed * sp
-         + d->fmep_speed2 * sp * sp;
+         + d->fmep_speed2 * sp * sp + accessory_torque(d, omega) * 4.0 * PI / rb_engine_displacement(e);
 }
 
 /* Starter motor torque at the crank (N m): a DC motor's straight line from
@@ -982,7 +1115,7 @@ static void engine_computer(rb_engine *e)
         return;
     }
 
-    if (rpm > d->rev_limit) e->spark_cut = 1;
+    if (rpm > d->rev_limit) e->spark_cut = 1;   /* the hard cut (the soft one: soft_cut) */
     else if (rpm < d->rev_limit_resume) e->spark_cut = 0;
 
     if (!(d->idle_rpm > 0.0)) {
@@ -1074,6 +1207,7 @@ void rb_engine_step(rb_engine *e)
     const double dt = e->dt;
     const double q_fuel = rb_fuel_heat();
     const double ivc = rb_valve_closes(&d->intake), evo = rb_valve_opens(&d->exhaust);
+    const double v = variation(e);
     double open[RB_MAX_CYLINDERS];
 
     /* 0. How far the crank turns: rpm dt when it's held; when it's free, from
@@ -1108,9 +1242,11 @@ void rb_engine_step(rb_engine *e)
             b->last_p_max = b->p_max;
             b->last_angle_p_max = b->angle_p_max;
             b->p_max = 0.0;
+            b->last_work = b->work;
+            b->work = 0.0;
         }
         if (passes(angle, step_deg, ivc)) close_intake(e, i);
-        if (b->spark_due && passes(angle, step_deg, b->spark_angle)) {
+        if (b->spark_due && passes(angle, step_deg, b->start_angle)) {
             b->spark_due = 0;
             spark(e, i);
         }
@@ -1132,6 +1268,12 @@ void rb_engine_step(rb_engine *e)
         e->intake[i].area = rb_valve_area(&d->intake, rb_valve_lift(&d->intake, angle));
         e->exhaust[i].area = rb_valve_area(&d->exhaust, rb_valve_lift(&d->exhaust, angle));
         open[i] = (e->intake[i].area > 0.0 || e->exhaust[i].area > 0.0);
+        if (v > 0.0 && e->exhaust[i].area > 0.0) {   /* its jet flickers (stage 12c) */
+            e->flicker[i] += e->flicker_a * (rb_rand_white(&e->rand_flicker) - e->flicker[i]);
+            double f = 1.0 + v * FLICKER * e->flicker_norm * e->flicker[i];
+            f = (f > 0.25) ? ((f < 1.75) ? f : 1.75) : 0.25;
+            e->exhaust[i].area *= f;
+        }
     }
 
     /* 3. Everything that changes the fast gas (the cylinders, the air box,
@@ -1213,6 +1355,7 @@ void rb_engine_step(rb_engine *e)
         case_work += d->p_ambient * (e->cyl[i].gas.V - v0);
         if (angle >= 180.0 && angle < 540.0) share.pump += w;
         rb_burn *b = &e->burn[i];
+        b->work -= w;
         if (e->cyl[i].gas.p > b->p_max) {
             b->p_max = e->cyl[i].gas.p;
             b->angle_p_max = after_firing_tdc(cycle_angle(angle + step_deg));

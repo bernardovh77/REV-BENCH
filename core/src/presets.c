@@ -104,15 +104,18 @@ static void airbox(rb_engine_desc *d, double volume, double snorkel, double snor
     d->snorkel_diameter = snorkel_diameter;
 }
 
-/* The crank, the starter, and the engine computer's idle and rev limit. Each
- * idle valve is sized so that the warm engine idles with it about 15 % open,
- * where the engine computer starts it, and each engine's idle gains are tuned
- * on it (docs/stage-08.md, retuned in docs/stage-09.md and docs/stage-10.md):
- * start, a blip of the throttle and a 10 N m load at idle, with room for gains
- * 1.5 times as strong before the idle hunts. */
+/* The crank, the starter, the accessories, and the engine computer's idle
+ * and rev limit. Each idle valve is sized so that the warm engine idles with
+ * it about 15 % open, where the engine computer starts it, and each engine's
+ * idle gains are tuned on it (docs/stage-08.md, retuned in docs/stage-09.md,
+ * docs/stage-10.md and docs/stage-12c.md): start, a blip of the throttle and
+ * a 10 N m load at idle, with room for gains 1.5 times as strong before the
+ * idle hunts. */
 static void running(rb_engine_desc *d, double inertia, double starter, double starter_rpm,
-                    double idle, double idle_valve, double gain_p, double gain_i, double limit)
+                    double accessories, double idle, double idle_valve, double gain_p,
+                    double gain_i, double limit)
 {
+    d->accessory_power = accessories;
     d->inertia = inertia;
     d->starter_torque = starter;
     d->starter_free_rpm = starter_rpm;
@@ -124,10 +127,21 @@ static void running(rb_engine_desc *d, double inertia, double starter, double st
     d->rev_limit_resume = limit - 100.0;
 }
 
-/* 2.0 L inline-4: the default engine of stages 5-7. */
+/* 2.0 L inline-4: the default engine of stages 5-7, but for its headers.
+ * Like a production manifold's, they aren't all alike (stage 12c): from 58 cm
+ * at the front to 30 cm, as they reach a collector behind cylinder 3, so each
+ * cylinder's pulse arrives its own way and they don't all sound the same.
+ * Equal headers made the four a pure note: what's between its firing orders
+ * was 26 dB under them at 3000 rpm, where real engines' are 2-12 dB under. */
 static void inline4(rb_engine_desc *d)
 {
+    static const double header[4] = { 0.58, 0.40, 0.30, 0.52 };
     rb_engine_desc_default(d);
+    for (int i = 0; i < 4; i++) d->header_length[i] = header[i];
+    d->accessory_power = 800.0;
+    d->idle_valve_area = 47 * MM2;   /* for the accessories: about 15 % open idling, */
+    d->idle_gain_p = 2.4e-4;         /* the gains less as the valve is bigger        */
+    d->idle_gain_i = 2.4e-4;
 }
 
 /* 3.0 L inline-6, 84 x 90 mm. The crank pairs 1-6, 2-5 and 3-4 at 120
@@ -135,13 +149,14 @@ static void inline4(rb_engine_desc *d)
  * its primary and secondary forces cancel: a smooth engine. Its headers
  * meet in two collectors of three, the front and the rear cylinders, each
  * firing every 240 degrees, so one cylinder's exhaust pulse doesn't push
- * against the next one's overlap. */
+ * against the next one's overlap. Each collector sits between the two
+ * middle cylinders' ports, so the outer cylinders' headers are longest. */
 static void inline6(rb_engine_desc *d)
 {
     static const int bank[6] = { 0, 0, 0, 0, 0, 0 };
     static const double pin[6] = { 0.0, 240.0, 120.0, 120.0, 240.0, 0.0 };
     static const int order[6] = { 1, 5, 3, 6, 2, 4 };
-    static const double header[6] = { 0.40, 0.40, 0.40, 0.40, 0.40, 0.40 };
+    static const double header[6] = { 0.48, 0.40, 0.32, 0.32, 0.40, 0.48 };   /* stage 12c */
     static const int collector[6] = { 0, 0, 0, 1, 1, 1 };
     double position[6];
     rb_engine_desc_default(d);
@@ -159,7 +174,7 @@ static void inline6(rb_engine_desc *d)
     runners(d, 420 * MM, 40 * MM);
     exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 16 * CM2, 15 * L, 28 * CM2, 0.7, 60 * MM);
     muffler(d, RB_MUFFLER_CHAMBERED, 550 * MM);
-    running(d, 0.20, 250.0, 250.0, 700.0, 44 * MM2, 5.0e-4, 4.0e-4, 7000.0);
+    running(d, 0.20, 250.0, 250.0, 950.0, 700.0, 56 * MM2, 4.4e-4, 3.2e-4, 7000.0);
 }
 
 /* 5.0 L 90-degree V8, 92 x 94 mm, with a cross-plane crank: four throws at
@@ -167,13 +182,14 @@ static void inline6(rb_engine_desc *d)
  * fires every 90 degrees (1-8-4-3-6-5-7-2), but each bank on its own fires
  * unevenly, 90-180-270-180 degrees apart: the off-beat burble of an American
  * V8, which its twin exhaust (each bank its own collector, pipe, muffler and
- * tailpipe) keeps apart. */
+ * tailpipe) keeps apart. Each bank's manifold leaves at its back, so the
+ * front cylinders' headers are longest (stage 12c). */
 static void v8_cross(rb_engine_desc *d)
 {
     static const int bank[8] = { 0, 1, 0, 1, 0, 1, 0, 1 };
     static const double pin[8] = { 0.0, 0.0, 90.0, 90.0, 270.0, 270.0, 180.0, 180.0 };
     static const int order[8] = { 1, 8, 4, 3, 6, 5, 7, 2 };
-    static const double header[8] = { 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40, 0.40 };
+    static const double header[8] = { 0.52, 0.52, 0.44, 0.44, 0.36, 0.36, 0.28, 0.28 };
     double position[8];
     rb_engine_desc_default(d);
     d->cylinders = 8;
@@ -190,7 +206,7 @@ static void v8_cross(rb_engine_desc *d)
     runners(d, 450 * MM, 45 * MM);
     exhaust(d, header, 40 * MM, bank, 2.0, 55 * MM, 2, 20 * CM2, 10 * L, 20 * CM2, 0.8, 60 * MM);
     muffler(d, RB_MUFFLER_STRAIGHT, 450 * MM);
-    running(d, 0.30, 350.0, 220.0, 650.0, 81 * MM2, 6.0e-4, 3.0e-4, 7000.0);
+    running(d, 0.30, 350.0, 220.0, 1250.0, 650.0, 95 * MM2, 5.1e-4, 2.6e-4, 7000.0);
 }
 
 /* 4.5 L 90-degree V8, 94 x 81 mm, with a flat-plane crank: two inline-4s on
@@ -220,7 +236,7 @@ static void v8_flat(rb_engine_desc *d)
     runners(d, 300 * MM, 50 * MM);
     exhaust(d, header, 42 * MM, bank, 1.4, 60 * MM, 2, 23 * CM2, 9 * L, 23 * CM2, 0.5, 70 * MM);
     muffler(d, RB_MUFFLER_STRAIGHT, 400 * MM);
-    running(d, 0.18, 300.0, 250.0, 1000.0, 114 * MM2, 5.0e-4, 4.0e-4, 9000.0);
+    running(d, 0.18, 300.0, 250.0, 950.0, 1000.0, 135 * MM2, 4.2e-4, 3.4e-4, 9000.0);
 }
 
 /* 2.0 L flat-4 (boxer), 84 x 90 mm: the banks 180 degrees apart, opposite
@@ -247,7 +263,7 @@ static void boxer4(rb_engine_desc *d)
     d->exhaust = valve(2, 27 * MM, 9.0 * MM, 250.0, 110.0, 0);
     runners(d, 320 * MM, 40 * MM);
     exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 21 * CM2, 10 * L, 21 * CM2, 0.6, 50 * MM);
-    running(d, 0.15, 200.0, 250.0, 750.0, 33 * MM2, 3.0e-4, 4.0e-4, 6500.0);
+    running(d, 0.15, 200.0, 250.0, 800.0, 750.0, 43 * MM2, 2.6e-4, 3.1e-4, 6500.0);
 }
 
 static const preset_info PRESETS[] = {

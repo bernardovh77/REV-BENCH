@@ -3,6 +3,7 @@
  */
 #include "noise.h"
 
+#include "rand.h"
 #include "rb.h"
 #include "valve.h"
 
@@ -98,18 +99,11 @@ static const struct {
 #define MOUNT_HP_HZ  20.0
 #define MOUNT_LP_HZ  200.0
 
-/* ---- the generator ---- */
+/* ---- the generator: white noise of RMS 1 (rand.h) ---- */
 
-/* xorshift64* (Vigna 2016): uniform in [-1, 1), times sqrt(3) for an RMS of 1. */
 static double white(uint64_t *state)
 {
-    uint64_t x = *state;
-    x ^= x >> 12;
-    x ^= x << 25;
-    x ^= x >> 27;
-    *state = x;
-    const uint64_t r = x * 0x2545F4914F6CDD1DULL;
-    return ((double)(r >> 11) * (2.0 / 9007199254740992.0) - 1.0) * 1.7320508075688772;
+    return rb_rand_white(state);
 }
 
 /* One-pole filter coefficient for a corner at f (Hz), stepping every dt. */

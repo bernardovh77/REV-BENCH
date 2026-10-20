@@ -647,17 +647,49 @@ void test_audio_headers_rumble(void)
     CHECK(rel[1] < 1e-3);    /* -60 dB */
 }
 
+void test_audio_cylinders_sound_apart(void)
+{
+    /* Stage 12c: like a production manifold, the four's and the six's
+     * headers aren't all alike, so each cylinder's pulse reaches the
+     * tailpipe its own way and the orders between the firing ones are there
+     * even with every cycle the same (variation 0): the strongest of them
+     * within 35 dB of the firing order. With every header alike they were
+     * gone (the four's 60 dB down): a pure note. */
+    static const char *const keys[2] = { "i4", "i6" };
+    for (int p = 0; p < 2; p++) {
+        double rel[2];
+        for (int equal = 0; equal < 2; equal++) {
+            rb_engine_desc d;
+            rb_preset_desc(rb_preset_find(keys[p]), &d);
+            if (equal)
+                for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.45;
+            rb_engine_init(&twin, &d, 1.0 / 192000.0);
+            const long n = record_tailpipes(0.4);
+            const double fire = d.cylinders / 2.0;
+            double most = 0.0;
+            for (double k = 0.5; k < fire; k += 0.5)
+                most = fmax(most, order_amplitude(flows[0], n, k, 3000.0, twin.pipe_dt));
+            rel[equal] = most / order_amplitude(flows[0], n, fire, 3000.0, twin.pipe_dt);
+        }
+        CHECK(rel[0] > 0.018);   /* -35 dB */
+        CHECK(rel[1] < 1e-3);    /* -60 dB */
+    }
+}
+
 void test_audio_listener_hears_each_tailpipe(void)
 {
     /* The cross-plane V8's banks fire the same uneven pattern, one turn of
-     * the crank apart. Heard from the middle of its twin exhaust, the half
-     * orders of one tailpipe cancel the other's, as in stage 11 (60 dB below
-     * the firing, order 4). Heard from 1 m behind one tailpipe (the listener's
-     * RB_HEAR_TAILPIPE), the other's arrives later and weaker, and they don't:
-     * the strongest of orders 0.5 to 3.5 is within 25 dB of the firing. */
+     * the crank apart. With every header alike (since stage 12c the preset's
+     * differ, as a production manifold's do), heard from the middle of its
+     * twin exhaust, the half orders of one tailpipe cancel the other's, as in
+     * stage 11 (60 dB below the firing, order 4). Heard from 1 m behind one
+     * tailpipe (the listener's RB_HEAR_TAILPIPE), the other's arrives later
+     * and weaker, and they don't: the strongest of orders 0.5 to 3.5 is within
+     * 25 dB of the firing. */
     static double heard[4 * 1920];
     rb_engine_desc d;
     rb_preset_desc(rb_preset_find("v8-cross"), &d);
+    for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.40;
     rb_engine_init(&twin, &d, 1.0 / 192000.0);
     const long n = record_tailpipes(0.3);
     static rb_listener l;

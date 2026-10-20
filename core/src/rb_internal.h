@@ -10,6 +10,7 @@
 #include "rb.h"
 
 #include "audio.h"
+#include "dyno.h"
 #include "engine.h"
 #include "noise.h"
 
@@ -80,6 +81,10 @@ struct rb_sim {
      * always a possible engine. */
     int       preset;       /* the preset it was built from               */
     rb_engine engine;       /* stays where rb_init put it (see engine.h)  */
+    rb_dyno  *dyno;         /* stage 12c: a dyno a native host put on the
+                             * crank (rb_cli sound --hold), stepped before
+                             * the engine every physics step; a rebuilt
+                             * engine drops it. NULL: none                 */
 };
 
 /* Coefficient a for the smoother  y += a * (target - y)  run every dt. */

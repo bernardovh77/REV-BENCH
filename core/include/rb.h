@@ -243,6 +243,8 @@ typedef enum rb_engine_field {
                                    filter (stage 12)                               */
     RB_ENG_SNORKEL_LENGTH,      /* m: the air box's intake pipe, from the open air */
     RB_ENG_SNORKEL_DIAMETER,    /* m                                               */
+    RB_ENG_ACCESSORY_POWER,     /* W the accessories take once the engine runs:
+                                   the alternator, the pumps (stage 12c)           */
     RB_ENG_COUNT
 } rb_engine_field;
 
