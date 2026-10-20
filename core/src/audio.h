@@ -29,6 +29,24 @@
  * exhaust's two tailpipes, heard from beside one, let through what each bank
  * makes on its own (stage 11's cross-plane V8).
  *
+ * Stage 12b adds what the 1D gas can't make (noise.h): the flow's noise at
+ * each tailpipe and at the intake's mouth, and the engine's own sound from
+ * the engine bay. They come as pressures 1 m from their sources, every
+ * physics step, so the listener keeps them at that rate and hears each at
+ * (1 m) / r, as late as its path is long, straight and off the ground; the
+ * engine bay muffled by the car's body unless the bonnet is open
+ * (RB_HEAR_FRONT). Only rb_listener_place_noise puts them around the car.
+ *
+ * The cabin (RB_HEAR_CABIN, stage 12b). The driver hears everything outside
+ * through the body, whose transmission loss follows the mass law, 6 dB more
+ * every octave (Fahy, Sound and Structural Vibration, chapter 6):
+ * RB_CABIN_PASS of the pressure outside below a corner, a one-pole low-pass
+ * above it. The firewall lets through more than the floor and the boot, so
+ * what comes from in front of the cabin has a higher corner. The engine's
+ * torque reaches the cabin through the mounts too (noise.h), and the
+ * cabin's lowest mode booms: a peak RB_CABIN_BOOM_DB high around
+ * RB_CABIN_BOOM_HZ.
+ *
  * The chain, at each audio frame:
  *
  *   what the listener hears, every physics step (RB_FULL_SCALE_PA is an
@@ -68,8 +86,30 @@ enum {
     RB_HEAR_BEHIND,         /* someone standing 3 m behind the car (the default) */
     RB_HEAR_SIDE,           /* someone standing 4 m to the side of its middle    */
     RB_HEAR_FRONT,          /* leaning over the open bonnet                       */
+    RB_HEAR_CABIN,          /* in the driver's seat (stage 12b)                   */
     RB_HEAR_COUNT
 };
+
+/* Stage 12b's sources, heard as pressures 1 m away (noise.h: RB_NOISE_TAIL0,
+ * _TAIL1, _MOUTH and _BAY, in that order). */
+#define RB_LISTEN_NOISES  4
+#define RB_LISTEN_RING    8192   /* physics steps of each kept: 43 ms at 192 kHz */
+
+#define RB_CABIN_PASS     0.3    /* of the pressure outside, below the corners  */
+#define RB_CABIN_REAR_HZ  100.0  /* the corner behind (floor, boot) ...         */
+#define RB_CABIN_FRONT_HZ 200.0  /* ... and in front (the firewall)            */
+#define RB_CABIN_BOOM_HZ  55.0   /* the cabin's lowest mode ...                 */
+#define RB_CABIN_BOOM_Q   2.5
+#define RB_CABIN_BOOM_DB  8.0    /* ... and how much it lifts the sound there   */
+
+/* The cabin's filters (RB_HEAR_CABIN). */
+typedef struct rb_cabin {
+    double dt;                         /* the physics step they're designed for */
+    double rear_a, front_a;            /* the body's low-passes ...             */
+    double rear, front;                /* ... and their states                  */
+    double b0, b1, b2, a1, a2;         /* the boom: a peaking filter ...        */
+    double x1, x2, y1, y2;             /* ... and its state                     */
+} rb_cabin;
 
 typedef struct rb_listener {
     double gain[RB_LISTEN_SOURCES][2];    /* 1 / r of each source's paths (direct,
@@ -80,6 +120,19 @@ typedef struct rb_listener {
     int    pos;                           /* the newest pipe step's place in it  */
     double sum;                           /* what arrives now, m^2/s             */
     double heard;                         /* ... as it was at the last physics step */
+    double sum_front, heard_front;        /* the same of the sources in front of
+                                             the cabin (the mouth)               */
+
+    /* stage 12b: the sources heard as pressures */
+    double ngain[RB_LISTEN_NOISES][2];    /* (1 m) / r of each one's paths; 0: none */
+    double ndelay[RB_LISTEN_NOISES][2];   /* physics steps, the same reference
+                                             as `delay`                          */
+    float  ring[RB_LISTEN_NOISES][RB_LISTEN_RING];   /* their pressures (Pa at
+                                             1 m), each physics step             */
+    int    npos;                          /* the newest step's place in it       */
+    double mount;                         /* Pa: the mounts', in the cabin, now  */
+    int    inside;                        /* 1: in the cabin (RB_HEAR_CABIN)     */
+    rb_cabin cabin;
 } rb_listener;
 
 /* The listener at `at` and the sources at pos[0..sources-1] (m; z up from the
@@ -104,10 +157,24 @@ void   rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
 /* One pipe step's flows out of the sources (m^3/s). */
 void   rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
 
+/* Puts stage 12b's sources around the car for a listener rb_listener_place
+ * put at `where` (the same place and tailpipes): each tailpipe's and the
+ * mouth's noise where they are, and the engine bay, its body muffling it
+ * but at RB_HEAR_FRONT. dt (s) is the physics step they come at; if one is
+ * nearer than every flow source, the flows' delays grow to match. Returns
+ * 0, or -1 for a bad place. */
+int    rb_listener_place_noise(rb_listener *l, int where, int tailpipes, double c,
+                               double pipe_dt, double dt);
+
+/* One physics step's pressures (Pa at 1 m) from stage 12b's sources, and the
+ * mounts' in the cabin (Pa). Call it every physics step before hearing. */
+void   rb_listener_push_noise(rb_listener *l, const double p[RB_LISTEN_NOISES], double mount);
+
 /* The pressure (Pa) heard over a physics step of dt (s), the outside air's
  * density rho0: rho0 / (4 pi) d(sum)/dt. Between pipe steps the sum doesn't
  * change, so a pipe step's change comes out at the physics step after its
- * push; the decimator's filter smooths that back to the derivative. */
+ * push; the decimator's filter smooths that back to the derivative. Then
+ * stage 12b's sources, and in the cabin everything through its filters. */
 double rb_listener_hear(rb_listener *l, double rho0, double dt);
 
 /* ---- the decimator ---- */

@@ -187,7 +187,11 @@ static void usage(FILE *f)
         "      --equal-headers   every exhaust header as long as their mean\n"
         "      --listener WHERE  behind: someone 3 m behind the car (the default); tailpipe: a\n"
         "                        microphone 1 m behind the (right) tailpipe; side: 4 m to its\n"
-        "                        side; front: leaning over the bonnet, by the intake's mouth\n"
+        "                        side; front: leaning over the bonnet, by the intake's mouth;\n"
+        "                        cabin: in the driver's seat\n"
+        "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
+        "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
+        "                        mechanical sound)\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
@@ -1847,7 +1851,29 @@ static int cmd_pipes(int argc, char **argv)
 enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD };
 
 /* The listener's places (RB_HEAR_*, audio.h), by name. */
-static const char *const LISTENERS[RB_HEAR_COUNT] = { "tailpipe", "behind", "side", "front" };
+static const char *const LISTENERS[RB_HEAR_COUNT] = { "tailpipe", "behind", "side", "front", "cabin" };
+
+/* The sound's layers (RB_LAYER_*, rb_internal.h), by name. */
+static const char *const LAYERS[3] = { "pipes", "flow", "engine" };
+
+/* RB_LAYER_ bits from a comma-separated list of LAYERS' names; -1 if a name
+ * isn't one, or the list is empty. */
+static int layers_from(const char *list)
+{
+    if (!list || !*list) return -1;
+    int bits = 0;
+    while (*list) {
+        const char *end = strchr(list, ',');
+        const size_t len = end ? (size_t)(end - list) : strlen(list);
+        int found = -1;
+        for (int k = 0; k < 3; k++)
+            if (strlen(LAYERS[k]) == len && !strncmp(list, LAYERS[k], len)) found = k;
+        if (found < 0) return -1;
+        bits |= 1 << found;
+        list += len + (end != NULL);
+    }
+    return bits ? bits : -1;
+}
 
 /* The mufflers (RB_MUFFLER_*, rb.h), by name, and as the summary says them. */
 static const char *const MUFFLERS[3] = { "none", "straight", "chambered" };
@@ -1865,6 +1891,7 @@ static int cmd_sound(int argc, char **argv)
     double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
     double gain = 1.0, os = 4.0;
     int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
+    int layers = RB_LAYER_ALL;
     rb_config cfg;
 
     rb_config_default(&cfg);
@@ -1899,6 +1926,8 @@ static int cmd_sound(int argc, char **argv)
                 if (!strcmp(v, LISTENERS[k])) where = k;
             ok = where >= 0;
         }
+        else if (!strcmp(a, "--layers"))
+            ok = (layers = layers_from(take_value(argc, argv, &i))) > 0;
         else if (!strcmp(a, "--muffler")) {
             const char *v = take_value(argc, argv, &i);
             ok = 0;
@@ -1975,6 +2004,7 @@ static int cmd_sound(int argc, char **argv)
     rb_engine_init_at(e, &d, sim->dt, sim->cfg.pipe_rate);   /* at the sim's quality */
     sim->source = RB_SOURCE_ENGINE;
     sim->hear = where;
+    sim->layers = layers;
     rb_sim_listen(sim);
     rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
     e->ignition = 1;
@@ -2019,7 +2049,16 @@ static int cmd_sound(int argc, char **argv)
     else
         printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
     printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
-    printf("  physics at %.0f kHz, the pipes at %.0f kHz\n", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
+    printf("  physics at %.0f kHz, the pipes at %.0f kHz", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
+    if (layers != RB_LAYER_ALL) {
+        printf("; only");
+        for (int k = 0, first = 1; k < 3; k++)
+            if (layers & (1 << k)) {
+                printf("%s %s", first ? "" : ",", LAYERS[k]);
+                first = 0;
+            }
+    }
+    printf("\n");
     float buf[BLOCK_FRAMES];
     const double fs = cfg.sample_rate;
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
@@ -2141,16 +2180,17 @@ static int cmd_fuzz(int argc, char **argv)
         return 2;
     }
     int failed = 0;
-    printf("%8s  %-9s %4s %4s %8s %9s %7s %8s %7s\n", "seed", "preset", "cyl", "set", "max rpm",
-           "max bar", "max K", "repairs", "cpu s");
+    printf("%8s  %-9s %4s %4s %-8s %8s %9s %7s %8s %7s\n", "seed", "preset", "cyl", "set", "heard",
+           "max rpm", "max bar", "max K", "repairs", "cpu s");
     for (long k = 0; k < (long)sets; k++) {
         const unsigned long long sd = (unsigned long long)seed + (unsigned long long)k;
         rb_fuzz_result r;
         const clock_t c0 = clock();
         const int ok = rb_fuzz_run(sd, seconds, (int)os, quality, &r);
         const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
-        printf("%8llu  %-9s %4d %4d %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
-               r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes, r.max_rpm,
+        printf("%8llu  %-9s %4d %4d %-8s %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
+               r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes,
+               (r.hear >= 0 && r.hear < RB_HEAR_COUNT) ? LISTENERS[r.hear] : "?", r.max_rpm,
                r.max_p / 1e5, r.max_T, r.repairs, cpu, ok ? "ok" : r.what);
         if (!ok)   /* what it changed, to make it again */
             for (int j = 0; j < r.tries; j++) {

@@ -50,6 +50,7 @@ void test_pipe_conserves_everything(void);
 void test_pipe_two_rates_agree(void);
 void test_pipe_rings(void);
 void test_pipe_packing(void);
+void test_pipe_most_sonic(void);
 void test_pipe_onward(void);
 /* ---- audio (tests/test_audio.c) ---- */
 void test_audio_decimator_filter(void);
@@ -101,6 +102,7 @@ void test_engine_throttle_response(void);
 void test_engine_intake_losses(void);
 void test_engine_muffler_back_pressure(void);
 void test_engine_wide_tailpipes(void);
+void test_engine_vacuum(void);
 void test_engine_choked_throttle(void);
 void test_engine_pumping_loss(void);
 void test_engine_pressures_dont_zigzag(void);
@@ -143,6 +145,19 @@ void test_calibration_idle_spark(void);
 void test_engine_pipe_rate(void);
 /* ---- random engines (tests/test_fuzz.c) ---- */
 void test_fuzz_random_engines(void);
+/* ---- the flow's noise and the engine's own sound (tests/test_noise.c) ---- */
+void test_noise_jet_eighth_power(void);
+void test_noise_valve_jets(void);
+void test_noise_throttle_hiss(void);
+void test_noise_impacts_per_cycle(void);
+void test_noise_strikes(void);
+void test_noise_ticks_and_clatter(void);
+void test_noise_modes_follow_the_bore(void);
+void test_noise_repeatable(void);
+void test_noise_mounts(void);
+void test_audio_noise_sources_placed(void);
+void test_audio_cabin(void);
+void test_audio_engine_bay(void);
 /* ---- native helpers (tests/test_wav.c, tests/test_csv.c) ---- */
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
@@ -188,6 +203,7 @@ static const struct {
     T(test_pipe_two_rates_agree),
     T(test_pipe_rings),
     T(test_pipe_packing),
+    T(test_pipe_most_sonic),
     T(test_pipe_onward),
     T(test_audio_decimator_filter),
     T(test_audio_decimator_tones),
@@ -234,6 +250,7 @@ static const struct {
     T(test_engine_intake_losses),
     T(test_engine_muffler_back_pressure),
     T(test_engine_wide_tailpipes),
+    T(test_engine_vacuum),
     T(test_engine_choked_throttle),
     T(test_engine_pumping_loss),
     T(test_engine_pressures_dont_zigzag),
@@ -273,6 +290,18 @@ static const struct {
     T(test_calibration_idle_spark),
     T(test_engine_pipe_rate),
     T(test_fuzz_random_engines),
+    T(test_noise_jet_eighth_power),
+    T(test_noise_valve_jets),
+    T(test_noise_throttle_hiss),
+    T(test_noise_impacts_per_cycle),
+    T(test_noise_strikes),
+    T(test_noise_ticks_and_clatter),
+    T(test_noise_modes_follow_the_bore),
+    T(test_noise_repeatable),
+    T(test_noise_mounts),
+    T(test_audio_noise_sources_placed),
+    T(test_audio_cabin),
+    T(test_audio_engine_bay),
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),

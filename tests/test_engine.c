@@ -380,6 +380,38 @@ void test_engine_wide_tailpipes(void)
     CHECK(worst > 1.5e5 && worst < 8e5);
 }
 
+void test_engine_vacuum(void)
+{
+    /* Stage 12b's fuzzer: held at 6000 rpm with the throttle shut, the plenum
+     * near a vacuum (5-9 kPa), the cylinders pull the runners' gas so hard
+     * that their faces' flows ran away (58 times the sonic flow) and the gas
+     * in the V8's and the boxer's pipes fell to 13 and 24 K. Each face is
+     * held under twice its gas's sonic flow now (RB_PIPE_MOST_SONIC), and
+     * over half a second no pipe's gas falls below 100 K. */
+    const char *keys[2] = { "v8-cross", "boxer4" };
+    static rb_engine x;
+    for (int k = 0; k < 2; k++) {
+        rb_engine_desc d;
+        rb_preset_desc(rb_preset_find(keys[k]), &d);
+        CHECK_EQ_INT(rb_engine_init(&x, &d, 1.0 / 192000.0), 0);
+        x.rpm = 6000.0;
+        x.throttle_pos = 0.0;
+        x.ignition = 1;
+        double coldest = INFINITY;
+        for (long s = 0; s < 96000 && coldest > 1.0; s++) {
+            rb_engine_step(&x);
+            if (s % 16) continue;
+            for (int j = 0; j < rb_engine_pipe_count(&x); j++) {
+                const rb_pipe *p = rb_engine_pipe(&x, j);
+                for (int c = 0; c < p->cells; c++)
+                    if (!(p->cell[c].T > coldest)) coldest = p->cell[c].T;
+            }
+        }
+        CHECK(coldest > 100.0);
+        CHECK(x.plenum.p < 12000.0);   /* it is near a vacuum */
+    }
+}
+
 void test_engine_muffler_back_pressure(void)
 {
     /* Wide open at 6000 rpm (fired, held), the gas leaving the four at about

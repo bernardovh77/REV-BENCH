@@ -90,6 +90,7 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
                    "the decimator must take every oversampling factor");
     sim->source = RB_SOURCE_TONE;
     sim->hear = RB_HEAR_BEHIND;
+    sim->layers = RB_LAYER_ALL;
     rb_decimator_init(&sim->aa, c.oversample);
     rb_dc_blocker_init(&sim->dc, RB_DC_CUTOFF, c.sample_rate);
 
@@ -131,16 +132,21 @@ void rb_reset(rb_sim *sim)
     rb_sim_listen(sim);
 }
 
+_Static_assert(RB_LISTEN_NOISES == RB_NOISE_PLACED, "the listener hears every placed noise source");
+
 void rb_sim_listen(rb_sim *sim)
 {
     const rb_engine *e = &sim->engine;
     const rb_chamber *air = &e->exhaust_air;
     const double cv = rb_gas_cv(&air->gas, air->T);
     const double c = sqrt((cv + air->gas.R) / cv * air->gas.R * air->T);
-    const double q[RB_LISTEN_SOURCES] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+    const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
+    const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1], pipes * e->mouth_flow };
     rb_listener_place(&sim->listener, sim->hear, e->systems, c, e->pipe_dt);
+    rb_listener_place_noise(&sim->listener, sim->hear, e->systems, c, e->pipe_dt, sim->dt);
     rb_listener_prime(&sim->listener, q);
     sim->pipe_steps_heard = e->pipe_steps;
+    rb_noise_init(&sim->noise, e, RB_NOISE_SEED);
 }
 
 /* One physics substep of the model: the engine and what the listener hears
@@ -151,10 +157,17 @@ static inline void model_step(rb_sim *sim)
         rb_engine *e = &sim->engine;
         rb_engine_step(e);
         if (e->pipe_steps != sim->pipe_steps_heard) {   /* the pipe ends' new flows */
-            const double q[RB_LISTEN_SOURCES] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
+            const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1],
+                                                  pipes * e->mouth_flow };
             rb_listener_push(&sim->listener, q);
             sim->pipe_steps_heard = e->pipe_steps;
         }
+        /* Stage 12b: the flow's noise and the engine's own sound. */
+        const int what = ((sim->layers & RB_LAYER_FLOW) ? RB_NOISE_FLOW : 0)
+                       | ((sim->layers & RB_LAYER_ENGINE) ? RB_NOISE_ENGINE : 0);
+        rb_noise_step(&sim->noise, e, what);
+        rb_listener_push_noise(&sim->listener, sim->noise.out, sim->noise.out[RB_NOISE_MOUNT]);
         sim->mic = rb_listener_hear(&sim->listener, e->exhaust_air.rho, sim->dt) / RB_FULL_SCALE_PA;
         return;
     }

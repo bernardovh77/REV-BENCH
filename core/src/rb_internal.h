@@ -11,6 +11,7 @@
 
 #include "audio.h"
 #include "engine.h"
+#include "noise.h"
 
 #include <stdint.h>
 
@@ -24,6 +25,14 @@
 /* What the listener hears. Until stage 14 the browser plays stage 1's test
  * tone; native tools (rb_cli sound, the tests) switch to the engine. */
 enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE };
+
+/* The engine's sound in layers (`layers`, all by default): the pipe ends'
+ * flows (stages 11-12), the flow's noise and the engine's own sound (stage
+ * 12b, noise.h). Native tools turn some off to hear the rest. */
+enum { RB_LAYER_PIPES = 1, RB_LAYER_FLOW = 2, RB_LAYER_ENGINE = 4, RB_LAYER_ALL = 7 };
+
+/* The seed of the sim's noise: the same every time, so renders repeat. */
+#define RB_NOISE_SEED 0x12B5EED12B5EEDULL
 
 /* The most the listener's signal may be, in full-scale units (4e7 Pa):
  * beyond any real engine, it keeps the filters' sums finite. */
@@ -52,6 +61,8 @@ struct rb_sim {
     int           hear;        /* where the listener stands: RB_HEAR_*    */
     rb_listener   listener;    /* hears the engine's pipe ends            */
     long          pipe_steps_heard;   /* the engine's pipe steps it has   */
+    int           layers;      /* what of the engine's sound: RB_LAYER_*  */
+    rb_noise      noise;       /* stage 12b: the flow's and the engine's  */
     rb_decimator  aa;          /* physics rate -> audio rate              */
     rb_dc_blocker dc;
 

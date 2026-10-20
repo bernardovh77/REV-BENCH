@@ -21,6 +21,8 @@
  * The intake's mouth (its snorkel) is behind the grille. */
 static const double TAILPIPE[2][3] = { { 0.5, -0.05, 0.35 }, { -0.5, -0.05, 0.35 } };
 static const double MOUTH[3] = { -0.3, 3.7, 0.75 };
+/* The engine block's middle (stage 12b). */
+static const double BAY[3] = { 0.0, 3.3, 0.6 };
 
 /* Where the listener stands: its ears, or the microphone. */
 static const double PLACE[RB_HEAR_COUNT][3] = {
@@ -28,7 +30,21 @@ static const double PLACE[RB_HEAR_COUNT][3] = {
     [RB_HEAR_BEHIND]   = { 0.6, -3.0, 1.6 },    /* 3 m behind, a little to the right   */
     [RB_HEAR_SIDE]     = { 4.0, 2.2, 1.6 },     /* 4 m to the right of the middle      */
     [RB_HEAR_FRONT]    = { -0.1, 3.4, 1.3 },    /* over the bonnet, near the mouth     */
+    [RB_HEAR_CABIN]    = { -0.35, 2.4, 1.1 },   /* the driver's head (left-hand drive) */
 };
+
+/* Of the engine bay's sound, what the car's body lets out towards each place:
+ * the bonnet shut, most leaves under the car (about -10 dB); over the open
+ * bonnet, all of it. In the cabin the body's own filters do it. */
+static const double BAY_SHIELD[RB_HEAR_COUNT] = {
+    [RB_HEAR_TAILPIPE] = 0.3, [RB_HEAR_BEHIND] = 0.3, [RB_HEAR_SIDE] = 0.4,
+    [RB_HEAR_FRONT] = 1.0, [RB_HEAR_CABIN] = 1.0,
+};
+
+/* Which sources are in front of the cabin, for its firewall: the flows'
+ * mouth (source 2), and the noise's mouth and engine bay (2 and 3). */
+#define FLOW_IN_FRONT(j)  ((j) == 2)
+#define NOISE_IN_FRONT(j) ((j) >= 2)
 
 static double distance(const double a[3], const double b[3])
 {
@@ -71,6 +87,49 @@ int rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double
     if (where < 0 || where >= RB_HEAR_COUNT) return -1;
     const double *pos[RB_LISTEN_SOURCES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH };
     rb_listener_set(l, pos, PLACE[where], RB_GROUND, c, pipe_dt);
+    l->inside = (where == RB_HEAR_CABIN);
+    return 0;
+}
+
+int rb_listener_place_noise(rb_listener *l, int where, int tailpipes, double c, double pipe_dt, double dt)
+{
+    if (where < 0 || where >= RB_HEAR_COUNT || !(dt > 0.0) || !(pipe_dt > 0.0)) return -1;
+    const double *at = PLACE[where];
+    const double *flows[RB_LISTEN_SOURCES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH };
+    const double *src[RB_LISTEN_NOISES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH, BAY };
+
+    /* The flows' delays count from their nearest source (rb_listener_place).
+     * If one of these is nearer still, everything counts from it. */
+    double ref = INFINITY;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+        if (flows[j]) ref = fmin(ref, distance(flows[j], at));
+    double nearest = ref;
+    for (int j = 0; j < RB_LISTEN_NOISES; j++)
+        if (src[j]) nearest = fmin(nearest, distance(src[j], at));
+    if (nearest < ref) {
+        const double later = (ref - nearest) / (c * pipe_dt);
+        for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+            for (int k = 0; k < 2; k++)
+                if (l->gain[j][k] != 0.0) l->delay[j][k] = fmin(l->delay[j][k] + later, RB_LISTEN_HISTORY - 2);
+    }
+
+    /* Each one heard straight and off the ground, at (1 m) / r of its
+     * pressure 1 m away. */
+    for (int j = 0; j < RB_LISTEN_NOISES; j++) {
+        for (int k = 0; k < 2; k++) l->ngain[j][k] = l->ndelay[j][k] = 0.0;
+        if (!src[j]) continue;
+        const double image[3] = { src[j][0], src[j][1], -src[j][2] };
+        const double r[2] = { distance(src[j], at), distance(image, at) };
+        const double shield = (j == 3) ? BAY_SHIELD[where] : 1.0;
+        for (int k = 0; k < 2; k++) {
+            const double rr = (r[k] > 0.1) ? r[k] : 0.1;
+            l->ngain[j][k] = shield * ((k == 0) ? 1.0 : RB_GROUND) / rr;
+            l->ndelay[j][k] = fmin((r[k] - nearest) / (c * dt), RB_LISTEN_RING - 2);
+        }
+    }
+    memset(l->ring, 0, sizeof l->ring);
+    l->npos = 0;
+    l->mount = 0.0;
     return 0;
 }
 
@@ -81,10 +140,12 @@ double rb_listener_distance(const rb_listener *l, int j)
 }
 
 /* What arrives now: each path's source as it was `delay` pipe steps ago, read
- * between the two steps it falls between. */
-static double arriving(const rb_listener *l)
+ * between the two steps it falls between; and the part of it from in front
+ * of the cabin. */
+static double arriving(const rb_listener *l, double *front)
 {
     double sum = 0.0;
+    *front = 0.0;
     for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
         const double *q = l->flow[j];
         for (int k = 0; k < 2; k++) {
@@ -93,7 +154,9 @@ static double arriving(const rb_listener *l)
             const double part = l->delay[j][k] - whole;
             const int a = (l->pos - whole + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
             const int b = (a - 1 + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
-            sum += l->gain[j][k] * ((1.0 - part) * q[a] + part * q[b]);
+            const double v = l->gain[j][k] * ((1.0 - part) * q[a] + part * q[b]);
+            sum += v;
+            if (FLOW_IN_FRONT(j)) *front += v;
         }
     }
     return sum;
@@ -103,14 +166,79 @@ void rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES])
 {
     for (int j = 0; j < RB_LISTEN_SOURCES; j++)
         for (int n = 0; n < RB_LISTEN_HISTORY; n++) l->flow[j][n] = q[j];
-    l->sum = l->heard = arriving(l);
+    l->sum = l->heard = arriving(l, &l->sum_front);
+    l->heard_front = l->sum_front;
 }
 
 void rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES])
 {
     l->pos = (l->pos + 1) % RB_LISTEN_HISTORY;
     for (int j = 0; j < RB_LISTEN_SOURCES; j++) l->flow[j][l->pos] = q[j];
-    l->sum = arriving(l);
+    l->sum = arriving(l, &l->sum_front);
+}
+
+void rb_listener_push_noise(rb_listener *l, const double p[RB_LISTEN_NOISES], double mount)
+{
+    l->npos = (l->npos + 1) & (RB_LISTEN_RING - 1);
+    for (int j = 0; j < RB_LISTEN_NOISES; j++) l->ring[j][l->npos] = (float)p[j];
+    l->mount = mount;
+}
+
+/* Stage 12b's sources arriving now: each path's pressure as it was `ndelay`
+ * physics steps ago; behind the cabin (the return value) and in front. */
+static double noise_arriving(const rb_listener *l, double *front)
+{
+    double rear = 0.0;
+    *front = 0.0;
+    for (int j = 0; j < RB_LISTEN_NOISES; j++) {
+        const float *p = l->ring[j];
+        for (int k = 0; k < 2; k++) {
+            if (l->ngain[j][k] == 0.0) continue;
+            const int whole = (int)l->ndelay[j][k];
+            const double part = l->ndelay[j][k] - whole;
+            const int a = (l->npos - whole) & (RB_LISTEN_RING - 1);
+            const int b = (a - 1) & (RB_LISTEN_RING - 1);
+            const double v = l->ngain[j][k] * ((1.0 - part) * p[a] + part * p[b]);
+            if (NOISE_IN_FRONT(j)) *front += v;
+            else rear += v;
+        }
+    }
+    return rear;
+}
+
+/* The cabin's filters for a physics step of dt: the body's low-passes, and
+ * the boom, a peaking filter (Bristow-Johnson's "Audio EQ cookbook"). */
+static void cabin_design(rb_cabin *cb, double dt)
+{
+    cb->dt = dt;
+    cb->rear_a = 1.0 - exp(-2.0 * PI * RB_CABIN_REAR_HZ * dt);
+    cb->front_a = 1.0 - exp(-2.0 * PI * RB_CABIN_FRONT_HZ * dt);
+    const double A = pow(10.0, RB_CABIN_BOOM_DB / 40.0);
+    const double w0 = 2.0 * PI * RB_CABIN_BOOM_HZ * dt, cw = cos(w0);
+    const double alpha = sin(w0) / (2.0 * RB_CABIN_BOOM_Q);
+    const double a0 = 1.0 + alpha / A;
+    cb->b0 = (1.0 + alpha * A) / a0;
+    cb->b1 = -2.0 * cw / a0;
+    cb->b2 = (1.0 - alpha * A) / a0;
+    cb->a1 = -2.0 * cw / a0;
+    cb->a2 = (1.0 - alpha / A) / a0;
+}
+
+/* In the cabin: what's outside behind it and in front of it through the
+ * body, the mounts' share, and the boom. */
+static double cabin(rb_listener *l, double rear, double front, double dt)
+{
+    rb_cabin *cb = &l->cabin;
+    if (cb->dt != dt) cabin_design(cb, dt);
+    cb->rear += cb->rear_a * (RB_CABIN_PASS * rear - cb->rear);
+    cb->front += cb->front_a * (RB_CABIN_PASS * front - cb->front);
+    const double x = cb->rear + cb->front + l->mount;
+    const double y = cb->b0 * x + cb->b1 * cb->x1 + cb->b2 * cb->x2 - cb->a1 * cb->y1 - cb->a2 * cb->y2;
+    cb->x2 = cb->x1;
+    cb->x1 = x;
+    cb->y2 = cb->y1;
+    cb->y1 = y;
+    return y;
 }
 
 double rb_listener_hear(rb_listener *l, double rho0, double dt)
@@ -119,9 +247,17 @@ double rb_listener_hear(rb_listener *l, double rho0, double dt)
      * The sum's change over the step is its derivative: where it changes only
      * once a pipe step, each change is an impulse, which the decimator's
      * filter turns back into the smooth derivative. */
-    const double change = l->sum - l->heard;
+    const double change = l->sum - l->heard, change_front = l->sum_front - l->heard_front;
     l->heard = l->sum;
-    return rho0 / (4.0 * PI) * change / dt;
+    l->heard_front = l->sum_front;
+    const double flows = rho0 / (4.0 * PI) * change / dt;
+
+    /* Stage 12b's sources; and in the cabin, everything through its filters. */
+    double noise_front;
+    const double noise_rear = noise_arriving(l, &noise_front);
+    if (!l->inside) return flows + noise_rear + noise_front;
+    const double flows_front = rho0 / (4.0 * PI) * change_front / dt;
+    return cabin(l, flows - flows_front + noise_rear, flows_front + noise_front, dt);
 }
 
 /* ---- the decimator ---- */

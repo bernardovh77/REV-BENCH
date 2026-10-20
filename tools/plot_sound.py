@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-plot_sound.py - what the engine sounds like (stages 11 and 12), from rb_cli sound's WAVs:
+plot_sound.py - what the engine sounds like (stages 11-12b), from rb_cli sound's WAVs:
 
     python3 tools/plot_sound.py check WAV...
         for each file: its level (dB SPL and dBA at the listener, full scale
@@ -17,6 +17,10 @@ plot_sound.py - what the engine sounds like (stages 11 and 12), from rb_cli soun
     python3 tools/plot_sound.py levels WAV CSV [WAV CSV...]
         wide-open pulls (rb_cli sound --sweep --csv CSV): each one's dBA
         against the speed, while the throttle is open -> renders/levels.png
+    python3 tools/plot_sound.py bands WAV@T0-T1[/G]:LABEL... [--panels N,N...]
+        third-octave levels (dB SPL at the listener) of each stretch t0..t1 s
+        (G: that render's --gain), in panels of N each, titled by --titles
+                                                 -> renders/bands.png
 
 -o FILE writes the chart somewhere else; --gain G undoes a render's rb_cli sound
 --gain G in the levels. Needs matplotlib and numpy (sudo apt install
@@ -291,6 +295,66 @@ def levels_chart(args):
     save(fig, args.out or "renders/levels.png")
 
 
+def third_octaves(x, fs):
+    """Third-octave band centres (25 Hz to 16 kHz) and each band's level, dB SPL."""
+    win = np.hanning(len(x))
+    power = np.abs(np.fft.rfft(x * win)) ** 2
+    f = np.fft.rfftfreq(len(x), 1 / fs)
+    power *= np.mean(x ** 2) / max(power.sum(), 1e-30)   # Parseval: the bands sum to the mean square
+    centres = 1000.0 * 2.0 ** (np.arange(-16, 13) / 3.0)
+    p2 = [power[(f >= c * 2 ** (-1 / 6)) & (f < c * 2 ** (1 / 6))].sum() for c in centres]
+    return centres, 10 * np.log10(np.maximum(p2, 1e-30) * FULL_SCALE_PA ** 2 / P_REF ** 2)
+
+
+def bands(args):
+    stretches = []
+    for spec in args.files:
+        try:
+            path, rest = spec.split("@", 1)
+            span, name = rest.split(":", 1)
+            span, gain = span.split("/") if "/" in span else (span, "1")
+            t0, t1 = (float(v) for v in span.split("-"))
+        except ValueError:
+            sys.exit(f"plot_sound bands: {spec} isn't WAV@T0-T1[/GAIN]:LABEL")
+        x, fs = read_wav(path)
+        x = x[int(t0 * fs):int(t1 * fs)] / float(gain)
+        stretches.append((name, third_octaves(x - x.mean(), fs)))
+    counts = [int(c) for c in args.panels.split(",")] if args.panels else [len(stretches)]
+    if sum(counts) != len(stretches):
+        sys.exit("plot_sound bands: --panels must add up to the number of stretches")
+    names = args.titles.split("|") if args.titles else [""] * len(counts)
+    cols = 2 if len(counts) > 1 else 1
+    rows = (len(counts) + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(10, 1.3 + 3.3 * rows), squeeze=False, facecolor=SURFACE)
+    fig.subplots_adjust(left=0.075, right=0.97, top=1 - 1.15 / fig.get_figheight(), bottom=0.07,
+                        hspace=0.5, wspace=0.18)
+    colours = (BLUE, ORANGE, INK_2, MUTED)
+    first = 0
+    for k, count in enumerate(counts):
+        ax = axes[k // cols][k % cols]
+        style(ax)
+        for j, (name, (centres, db)) in enumerate(stretches[first:first + count]):
+            ax.plot(centres, db, color=colours[j % len(colours)], linewidth=1.4, label=name)
+        first += count
+        ax.set_xscale("log")
+        ax.set_xlim(22, 18000)
+        ax.set_xticks([31.5, 63, 125, 250, 500, 1000, 2000, 4000, 8000, 16000])
+        ax.set_xticklabels(["31.5", "63", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"])
+        ax.minorticks_off()
+        ax.set_ylim(0, 110)
+        ax.set_title(names[k] if k < len(names) else "", fontsize=9.5, color=INK, loc="left")
+        ax.legend(frameon=False, fontsize=8.5, labelcolor=INK_2, loc="lower left")
+        if k % cols == 0:
+            ax.set_ylabel("dB SPL at the listener, third octave")
+        if k // cols == rows - 1:
+            ax.set_xlabel("third-octave band (Hz)")
+    for k in range(len(counts), rows * cols):
+        axes[k // cols][k % cols].set_visible(False)
+    titles(fig, args.title or "Where the sound's energy is",
+           args.subtitle or "third-octave levels at the listener", top=1 - 0.42 / fig.get_figheight())
+    save(fig, args.out or "renders/bands.png")
+
+
 def save(fig, out):
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     fig.savefig(out, dpi=150, facecolor=SURFACE)
@@ -299,11 +363,12 @@ def save(fig, out):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("chart", choices=("check", "spectrograms", "sweep", "orders", "levels"))
+    parser.add_argument("chart", choices=("check", "spectrograms", "sweep", "orders", "levels", "bands"))
     parser.add_argument("files", nargs="+")
     parser.add_argument("-o", "--out")
     parser.add_argument("--rpm", help="orders: the speed both engines were held at")
     parser.add_argument("--titles", help="panel titles, separated by | (default: the file names)")
+    parser.add_argument("--panels", help="bands: how many stretches go in each panel, as N,N,...")
     parser.add_argument("--title", help="the chart's title")
     parser.add_argument("--subtitle", help="the chart's subtitle")
     parser.add_argument("--cylinders", type=int, default=4, help="sweep: the engine's cylinders (default 4)")
@@ -319,7 +384,7 @@ def main():
         parser.error("orders needs two WAVs or more")
     setup()
     {"check": check, "spectrograms": spectrograms, "sweep": sweep, "orders": orders,
-     "levels": levels_chart}[args.chart](args)
+     "levels": levels_chart, "bands": bands}[args.chart](args)
 
 
 if __name__ == "__main__":

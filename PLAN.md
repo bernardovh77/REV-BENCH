@@ -35,10 +35,11 @@ gets a one-line summary of anything that changed from the plan.
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ✅     | A microphone hears the tailpipes' volume flow; anti-alias FIR, DC blocker, soft limiter, TPDF dither; four clean renders. Listening checkpoint |
 | 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Bernardo: "dull and really artificial" → S1–S5 |
 | 13 | Performance & stability pass                     | Sound            | ✅     | Renders unchanged; the cross-plane V8 0.59× → 0.76× real time natively (0.46× → 0.72× as WASM). Quality setting: medium 1.09×, low 1.84×. A fuzzer found a stage 12 blow-up. The 4× → 13b |
+| 12b| Flow noise, the engine's own sound & the cabin 🎧 | Sound            | ✅     | Lighthill's tailpipe jets, the valves' and throttle's jets, modal synthesis (combustion, slap, valves, injectors), the mounts, a listener in the driver's seat; above 2 kHz the pulls −40/−26 → −24/−22 dB. Its fuzz run found a stage 10 runaway near a vacuum: pipe faces held under twice sonic |
 | S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | ⬜     | Real idles repeat at +5 dB per cycle, ours at +44 (RESEARCH.md) |
-| S2 | Sound: air (flow noise, finer exhaust) 🎧         | Sound realism    | ⬜     | Ours falls off a cliff above 2 kHz: the pipes' grid |
-| S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ⬜     | Takes stage 12b's mechanical noise |
-| S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | Takes stage 12b's in-car listener |
+| S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | ⬜     | The jets' noise came in 12b; left: finer exhaust cells, the tailpipe's beaming, the baffles |
+| S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
+| S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | The cabin came in 12b; left: stereo and the places |
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Split from stage 13: its 4× target |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
@@ -364,7 +365,7 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   mouth's flow changes every physics step, unlike the tailpipes', so the anti-alias filter will
   matter there.
 - Split (working agreement 2): the mechanical and flow noise and the in-car listener moved to
-  stage 12b.
+  stage 12b (done after stage 13).
 - **Done when:** the new renders sound noticeably more like a real car than in stage 11, and the
   equal- vs unequal-length header renders sound different.
 - **Bernardo checks:** listen and give feedback; the sound tuning knobs get adjusted from that.
@@ -385,9 +386,38 @@ Each stage lists what gets built, then **Done when** (the acceptance check) and,
   six and boxer lose about 3 % of their torque and power to the filter and mufflers, and stay
   within 9 % of their real engines. Details in `docs/stage-12.md`.
 
-#### Stage 12b — folded into the sound-realism track
-Its flow noise is now stage S2, its mechanical noise S3, and its in-car listener and reverb S4
-(after stage 13).
+#### Stage 12b — Flow noise, the engine's own sound & the cabin 🎧 (after stage 13)
+Split from stage 12, then folded into the sound-realism track (S2–S4), and brought back together
+after stage 13: Bernardo asked for it next.
+- **The flow's noise,** driven by the velocities and densities the sim computes: the tailpipe's jet
+  (Lighthill's U⁸), the exhaust valves' jets at blowdown carried down the pipes to the tailpipe, the
+  throttle's and idle valve's hiss at the intake's mouth.
+- **The engine's own sound,** tied to the crank angle: combustion noise through the block, piston
+  slap at the dead centres, the valves seating and lifting, the injectors' clicks, all striking a few
+  block and head resonances (modal synthesis), radiated from the engine bay.
+- **An in-car listener:** the body's transmission loss (the mass law), the engine's torque through
+  its mounts, the cabin's boom.
+- **Done when:** idling and revving renders have the engine's mechanical sound under the exhaust's,
+  and the in-car render sounds like it's from inside.
+- **Bernardo checks:** the bonnet's and the cabin's renders; does it still sound dull?
+- *Built:* `core/src/noise.c`: each tailpipe's jet at Lighthill's power (hot, its spectrum from the
+  Strouhal number), the exhaust valves' and the throttle's jets at η M⁵ of their stream power (IEC
+  60534-8-3, simplified), the valves' noise delayed down the pipes and through the catalyst and
+  muffler; six block and head modes, moved by the bore, struck by the pistons' force as it changes,
+  piston slap from the gas force less the parts' inertia, the valves' seating as the rpm, the
+  injectors; the gas torque's swings through the mounts. The listener hears them as pressures at the
+  physics rate, each at its distance and delay, the engine bay muffled by the body but over the open
+  bonnet; `--listener cabin` hears everything through the body's low-passes (100 Hz behind, 200 Hz
+  through the firewall), the mounts and a 55 Hz boom. `rb_cli sound --layers` turns each part on or
+  off. Above 2 kHz the pulls went from −40 and −26 dB of their energy to −24 and −22 (real revving:
+  −42 to −6), their slopes from −22 and −15 dB an octave to −8 and −6; over the open bonnet the four
+  idling matches the recorded Honda's engine bay above 1 kHz; levels moved by 0.5 dBA or less (a
+  straight pipe 2.5). From behind, the engine's own sound is 21 dBA under the rest idling and 32
+  pulling, 7–12 dB under it at 2–4 kHz. In the driver's seat the pull is 73 dBA, 19 under it behind
+  the car. The fuzzer now listens from anywhere, and found a stage 10 runaway: held at high rpm with
+  the throttle shut, the runners near a vacuum ran their flows to 58 times sonic and their gas to
+  13 K; each pipe face is held under twice the sonic flow of its gas now (`RB_PIPE_MOST_SONIC`),
+  which normal running never reaches. 4.8–6.4 % more instructions. Details in `docs/stage-12b.md`.
 
 #### Stage 13 — Performance & stability pass
 - Profile the native build. Optimize memory layout and pipe cell counts, and add a quality setting (sim rate).
@@ -445,6 +475,10 @@ engines show why (RESEARCH.md, "Sound realism"):
   16 kHz.
 - **Too much missing:** no mechanical sound, and no place.
 
+Stage 12b (above) added the flow's noise, the engine's own sound and the cabin: the highs and the
+mechanical sound are in, and S3 is done. What's left here: the variation (S1), the finer exhaust
+(S2), and the places in stereo (S4).
+
 Each stage adds a layer driven by what the sim already computes, not samples. Each one ends with
 the numbers from `tools/compare_real.py` in the real engines' range, and with Bernardo's ears.
 
@@ -469,7 +503,11 @@ the numbers from `tools/compare_real.py` in the real engines' range, and with Be
   - every preset idles steadily for 30 s.
 - **Bernardo checks:** the held and idling renders no longer sound like a loop.
 
-#### Stage S2 — Air: flow noise and a finer exhaust 🎧
+#### Stage S2 — Air: a finer exhaust 🎧
+- **Stage 12b put in the jets' noise:** the tailpipe's and the throttle's (the first two of the
+  list below), and the exhaust valves' at blowdown. Left: the intake's roar, the muffler's baffles,
+  the finer exhaust and the beaming. With finer cells part of the valves' noise band will come from
+  the pipes, so `VALVE_ETA` comes down.
 - **Broadband noise where the gas is fast:**
   - the tailpipe's jet (its power grows with about U⁸);
   - the throttle's hiss, following its pressure drop;
@@ -490,7 +528,9 @@ the numbers from `tools/compare_real.py` in the real engines' range, and with Be
   - on the overrun, the highs drop.
 - **Bernardo checks:** does it still sound dull?
 
-#### Stage S3 — The engine's own sound 🎧
+#### Stage S3 — The engine's own sound 🎧 (done in stage 12b)
+Stage 12b built it: everything below but the cam drive's whine, which moves to S5's list. In front of
+the car the four idling has −18 dB of its energy above 1 kHz, like the recorded Honda's (−17).
 - **The sources:**
   - combustion noise through the block: each cylinder's pressure rise through the structure's
     attenuation curve;
@@ -514,8 +554,7 @@ the numbers from `tools/compare_real.py` in the real engines' range, and with Be
     renders and the browser sound the same;
   - ISO 5130's exhaust test spot (0.5 m, 45°);
   - a pass-by at 7.5 m;
-  - inside the car: the body's paths, the engine's orders through the mounts, the cabin's boom
-    (stage 12b's in-car listener).
+  - inside the car: stage 12b's cabin (the body's paths, the mounts, the boom), heard in stereo.
 - **Done when:** each place renders in stereo and sounds like itself, and the in-car render sounds
   like it's from inside.
 - **Bernardo checks:** listen on headphones.
@@ -659,6 +698,9 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
 - **Bernardo tunes each preset in the browser,** with live controls for each layer of the sound.
   He compares it with recordings of the real engine it's modelled on: at the exhaust, in front,
   inside and passing by.
+- **What stage 12b left out:** the cam drive's whine, the alternator and the fan; each engine's own
+  table of modes (12b's six move only with the bore). Its calibrated constants are listed in
+  `docs/stage-12b.md`, "Calibration".
 - **`tools/compare_real.py` keeps the numbers honest.** The tuned values become the defaults.
 - **Done when:** Bernardo is happy with every preset's sound.
 

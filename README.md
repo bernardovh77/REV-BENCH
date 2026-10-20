@@ -5,10 +5,13 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 13 of 26 done. The C core plays in the browser through an AudioWorklet
-(still a test tone); natively it renders the engine's own sound to WAV files, as a listener
-around the car hears it: behind it, beside it, over the bonnet or a metre from a tailpipe,
-each tailpipe and the intake's mouth at their own distance and off the ground. The physics so
+**Status:** stages 0–13 of 26 done, and 12b. The C core plays in the browser through an
+AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
+listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe
+or in the driver's seat, each tailpipe and the intake's mouth at their own distance and off the
+ground. On top of the pipes' sound come the noise of the gas's jets (at the tailpipes, the
+exhaust valves and the throttle) and the engine's own mechanical sound (combustion, piston slap,
+the valves, the injectors), struck into the block's resonances. The physics so
 far: gas properties, chambers and flow through openings,
 a cylinder with a crank and piston, an engine breathing through its cams, valves, throttle
 and intake plenum, burning fuel with heat lost to the walls, and a crank that turns on its

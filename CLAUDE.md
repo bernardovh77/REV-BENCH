@@ -24,19 +24,22 @@
 - **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
   cross-plane V8's sweep came close). He asked for research and comparisons with real engines,
   and for the refining of the sound to be treated as very important.
-- **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md's sound track
-  (stages S1–S4 after stage 13, S5 at the end) acts on them, and working agreement 6 adds a sound
-  check to every stage. Never trade sound for speed silently.
+- **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md's sound track acts
+  on them: stage 12b (the jets' noise, the engine's own sound, the cabin; S3 folded into it), then
+  S1, S2 and S4, and S5 at the end. Working agreement 6 adds a sound check to every stage. Never
+  trade sound for speed silently.
 - **Measuring:** `tools/compare_real.py` measures renders like the recordings of real engines in
   `tools/real_engines.csv` (Freesound, CC0/CC BY). `fetch` puts the recordings in
   `renders/real/` once (needs ffmpeg), then `compare [--kind rev] WAV@T0-T1:LABEL...`.
 - **The numbers that matter** (medians at idle):
   - **Repeating:** a real engine's cycle repeats at about +5 dB below 500 Hz and under 0 dB
-    above. Ours repeats at +41 to +57 dB, an exact loop: that is the "artificial".
-  - **High frequencies:** ours falls off a cliff above 2 kHz, the pipes' grid (it carries nothing
-    above c/(πΔx): 2.4 kHz in the 7.5 cm exhaust cells). Real engines keep a broadband floor to
-    16 kHz (−25 dB of their energy above 2 kHz, ours −59): that is the "dull".
-  - **The highs are the gap, not the mids.** Under load our energy above 1 kHz is already the
+    above. Ours repeats at +38 to +57 dB below 500 Hz, an exact loop: that is the "artificial"
+    (stage S1's work).
+  - **High frequencies:** the pipes' grid carries nothing above c/(πΔx): 2.4 kHz in the 7.5 cm
+    exhaust cells. Real engines keep a broadband floor to 16 kHz (−25 dB of their energy above
+    2 kHz). Until stage 12b ours had −59 there: that was the "dull". Stage 12b's noise brought it
+    to −41 idling from behind and −24/−22 for the four's and the V8's pulls (real −42 to −6).
+  - **The highs were the gap, not the mids.** Under load our energy above 1 kHz was already the
     real engines' (−14 dB).
 - **How engine-sim does it:** its physics stops at 1.9 kHz too. Its highs come from time jitter,
   noise multiplied into the flow and a convolution with an impulse response, with a leveler at
@@ -61,8 +64,9 @@
   correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
   area), `audio.c` (the listener: stage 11's monopoles, the tailpipes' and since stage 12 the
   intake mouth's volume flow, heard from a place around the car, each at its distance and delay
-  and off the ground; the Kaiser-window anti-alias FIR and decimator; the DC blocker; the soft
-  limiter), `engine.c` (N cylinders, the air → snorkel (pipe; the filter a laminar loss at its
+  and off the ground; since stage 12b also `noise.c`'s pressures and the cabin; the Kaiser-window
+  anti-alias FIR and decimator; the DC blocker; the soft limiter), `noise.c` (stage 12b: what the
+  1D gas can't make: the jets' noise and the engine's own, mechanical sound), `engine.c` (N cylinders, the air → snorkel (pipe; the filter a laminar loss at its
   end) → air box (volume) → throttle + idle air valve → plenum, a runner per cylinder (pipe) →
   intake valve, exhaust valve → header (pipe) → one of up to two collectors (volumes) → each
   collector's exhaust pipe → catalyst (a restriction + laminar loss at its end) → muffler (pipe:
@@ -207,7 +211,35 @@
   cloud workspace swing by 20 %: compare builds interleaved, best of several runs, and use
   callgrind's instruction counts and gprof as second opinions.
 - The fuzzer (stage 13, native/fuzz.c): `rb_cli fuzz` / `make fuzz` (20 random engines for 10 s
-  each on their own crank) and `test_fuzz_random_engines` (4 short ones, at every quality).
+  each on their own crank, heard from a random place since stage 12b) and
+  `test_fuzz_random_engines` (4 short ones, at every quality).
+- Stage 12b added the sound the 1D gas can't make (`noise.c`, `rb_noise` in `sim->noise`), each
+  physics step, as Pa 1 m from its source:
+  - **the flow's noise:** each tailpipe's jet at Lighthill's power (K ρ0 U⁸ D²/c0⁵, hot: T/T0), the
+    exhaust valves' jets (η M⁵ of ½ ṁ U², choked at M = 1) written ahead into a ring and out of
+    their system's tailpipe when they get there (path / 580 m/s), through the catalyst and the
+    muffler's pass (`PASS_*`), the throttle's and idle valve's at the mouth through the air box;
+  - **the engine's own sound:** six block and head modes (resonators y = x sin ωΔt + 2r cos ωΔt
+    y1 − r² y2), moved by √(0.086/bore), struck by the change of the pistons' force (combustion),
+    piston slap at each dead centre (|gas force − inertia m r ω²(1 ± λ)|), valves seating (∝ rpm)
+    and lifting (a third), the injector at IVO when fuelled; each impact ±25 % at random. The
+    impacts are counted (`impacts[]`, `impact_energy[]`) for the tests; the gas torque's swings
+    through the mounts (20–200 Hz) for the cabin;
+  - **seeded** (`RB_NOISE_SEED`), so renders repeat; a NaN anywhere restarts it quiet;
+  - **layers** (`sim->layers`, `RB_LAYER_PIPES | _FLOW | _ENGINE`; `rb_cli sound --layers`):
+    the pipes layer alone is stage 13's sound;
+  - **the listener** keeps these pressures at the physics rate (`rb_listener_place_noise` after
+    `rb_listener_place`, `rb_listener_push_noise` each step), each at (1 m)/r and its delay, the
+    engine bay (`BAY`) muffled by the body but at `RB_HEAR_FRONT`. If a noise source is nearer
+    than every flow source (the cabin), the flows' delays grow to match;
+  - **the cabin** (`RB_HEAR_CABIN`): what's behind through a one-pole low-pass at 100 Hz, in front
+    (the mouth, the bay) at 200 Hz, both at 0.3, plus the mounts, then a 55 Hz boom (RBJ peak);
+  - **tests pose the engine by hand** (test_noise.c's `pose`): set `e.theta`, `e.omega` and the
+    pressures, `rb_noise_init`, move the crank and step only the noise.
+- The pipes' sonic guard (stage 12b, `RB_PIPE_MOST_SONIC`): no face's flow passes twice the sonic
+  flow of the gas it comes from, A √(1.4 ρ p). Normal running stays under 1.13 times it; held at
+  high rpm with the throttle shut, the runners near a vacuum ran away without it (58 times, gas at
+  13 K; `test_engine_vacuum`).
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
@@ -217,7 +249,8 @@
   `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and
   `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
   WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; engines by
-  order; pulls' dBA against rpm; 16-bit WAVs only, so render without `--float`),
+  order; pulls' dBA against rpm; third-octave bands side by side; 16-bit WAVs only, so render
+  without `--float`),
   `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above),
   `tools/plant_bugs.py` plants a stage's bugs (see Workflow).
   The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted

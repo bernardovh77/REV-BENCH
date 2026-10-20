@@ -5,7 +5,8 @@
  * values anywhere in their ranges (rb_set_engine, as the browser's controls
  * will), starts it with the key and drives it: the throttle jumping between
  * shut, wide open and anywhere between, loads on the crank, the ignition cut
- * now and then. The sound goes through the whole chain to the audio rate.
+ * now and then. The sound goes through the whole chain to the audio rate,
+ * heard from any of the listener's places (stage 12b: the cabin too).
  * It fails if anything stops being a number (the samples, the speed, any
  * chamber's pressure or temperature) or runs away (the speed beyond
  * RB_FUZZ_MAX_RPM, a pressure beyond RB_FUZZ_MAX_P, a temperature beyond
@@ -34,6 +35,7 @@ typedef struct rb_fuzz_result {
     int    tries;          /* fields it tried to change: change[0..tries-1]       */
     rb_fuzz_change change[RB_FUZZ_MAX_CHANGES];
     int    cylinders;      /* the engine it ran                                    */
+    int    hear;           /* where the listener stood (RB_HEAR_*, audio.h)       */
     double max_rpm;        /* the extremes it reached                              */
     double max_p;          /* Pa, any chamber                                      */
     double max_T;          /* K, any chamber                                       */

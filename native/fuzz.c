@@ -112,6 +112,11 @@ int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int qua
         r->change[r->tries++] = (rb_fuzz_change){ .field = f, .index = index, .rc = rc, .value = v };
     }
 
+    /* The listener, anywhere it can stand. */
+    r->hear = (int)(uniform(&s) * RB_HEAR_COUNT);
+    sim->hear = r->hear;
+    rb_sim_listen(sim);
+
     /* The driver: the key to START, then the pedal anywhere, loads on the
      * crank and the ignition cut now and then (then started again if it
      * stalled). */

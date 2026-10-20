@@ -531,6 +531,31 @@ static void pulse_across(int how)
     }
 }
 
+void test_pipe_most_sonic(void)
+{
+    /* However hard a column is pushed, a face never lets through more than
+     * RB_PIPE_MOST_SONIC times the sonic flow of the gas it comes from,
+     * A sqrt(1.4 rho p). A pipe from 10 bar into a near vacuum (1 kPa) drives
+     * its faces there for 20 ms: they reach the guard, and never pass it. */
+    static rb_chamber hi, lo;
+    rb_chamber_init_reservoir(&hi, 10.0 * P0, 300.0, AIR);
+    rb_chamber_init_reservoir(&lo, 1000.0, 300.0, AIR);
+    rb_pipe_init(&pipe, cells, faces, 20, 1.0, 0.04, 1000.0, 300.0, AIR, 300.0, 0.02);
+    rb_pipe_join(&pipe, 0, &hi, 0.5, 0);
+    rb_pipe_join(&pipe, 1, &lo, 0.0, 0);
+    double worst = 0.0;
+    for (long i = 0; i < lround(0.02 / SLOW_DT); i++) {
+        step(&pipe, SLOW_DT);
+        for (int k = -1; k < pipe.cells; k++) {   /* the end faces too */
+            const rb_face *f = (k < 0) ? &pipe.end_face[0] : (k == pipe.cells - 1) ? &pipe.end_face[1]
+                                                                                    : &pipe.face[k];
+            const rb_chamber *from = (f->mdot >= 0.0) ? f->a : f->b;
+            worst = fmax(worst, fabs(f->mdot) / (f->area * sqrt(1.4 * from->rho * from->p)));
+        }
+    }
+    CHECK(worst > 1.9 && worst <= RB_PIPE_MOST_SONIC * (1.0 + 1e-12));
+}
+
 void test_pipe_onward(void)
 {
     /* Two pipes going on into each other (stage 12) are one pipe: a pulse

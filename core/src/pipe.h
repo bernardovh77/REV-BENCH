@@ -188,6 +188,15 @@ typedef struct rb_pipe {
  * at RB_PIPE_WAVE_SPEED, divided by the safety factor RB_PIPE_COURANT. */
 #define RB_PIPE_WAVE_SPEED  1000.0   /* m/s: c + |u| of the hottest, fastest gas   */
 #define RB_PIPE_COURANT     0.8
+
+/* The most a face's flow may be, in times the sonic flow of the gas it comes
+ * from, A sqrt(gamma rho p) (gamma taken as 1.4, the most). The scheme can't
+ * carry gas much faster than sound: in normal running no face passes 1.13
+ * times it, but held at 6000 rpm with the throttle shut the runners near a
+ * vacuum ran away to 58 times it, and the gas in them down to 13 K (stage
+ * 12b's fuzzer). With the guard a cell loses at most 2 c dt / dx of its gas
+ * through a face in a step. */
+#define RB_PIPE_MOST_SONIC  2.0
 int  rb_pipe_cells_for(double length, double cell, double dt);
 
 /* A pipe of `cells` cells (1..RB_PIPE_MAX_CELLS), full of gas of composition y

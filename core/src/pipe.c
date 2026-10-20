@@ -393,7 +393,9 @@ void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
  * shorter than a stable cell stable at a slow step (pipe.h:
  * rb_pipe_cells_for). The laminar loss, A laminar u = laminar mdot / rho, and
  * the packing's, packing (mdot - settled) / rho, are taken at the new flow
- * (implicitly), so they can't overshoot however strong they are. */
+ * (implicitly), so they can't overshoot however strong they are. Last, the
+ * flow is held under RB_PIPE_MOST_SONIC times the sonic flow of the gas it
+ * comes from (pipe.h). */
 static void push(rb_face *f, double heads, double rho, double flux_a, double flux_b,
                  double shortest, double since, double dt)
 {
@@ -413,6 +415,11 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
     double mdot = f->mdot + dt * force * per_length;
     const double drag = f->laminar + packing;   /* Pa per m/s, taken at the new flow */
     if (drag > 0.0) mdot /= 1.0 + dt * drag * per_r * per_length;
+    /* never past RB_PIPE_MOST_SONIC times the sonic flow of the gas it takes */
+    const rb_chamber *from = (mdot >= 0.0) ? f->a : f->b;
+    const double most2 = RB_PIPE_MOST_SONIC * RB_PIPE_MOST_SONIC * 1.4 * from->rho * from->p
+                       * f->area * f->area;
+    if (mdot * mdot > most2) mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);
     f->mdot = (mdot == mdot && fabs(mdot) < 1e6) ? mdot : 0.0;   /* NaN: start from rest */
     f->settled += lag * (f->mdot - f->settled);
 }
