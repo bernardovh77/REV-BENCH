@@ -111,11 +111,12 @@ The web side uses Vite 8 + TypeScript 7 with Vitest and Playwright for tests, an
 (controls), uPlot (charts) and Three.js (3D view: WebGPU with automatic WebGL 2 fallback). npm versions are pinned exactly and are at least
 two weeks old when added.
 
-**Git:** `Personal-Projects` is already a git repo, so REV-BENCH lives inside it as a subfolder.
-Work is committed on the `rev-bench` branch at the end of each stage (stages 0–5 went in as one
-commit), and Bernardo merges it into `main` when he wants. Commit messages carry no co-author
-lines. `git commit` has to delete its lock files, which Claude's access to the folder can't do
-without Bernardo's permission, so Claude asks for it in each session that commits.
+**Git:** REV-BENCH has its own repo, github.com/bernardovh77/REV-BENCH. Until stage 13 it was a
+folder of Bernardo's `Personal-Projects` repo, on its `rev-bench` branch, and its history was
+split out of there with every commit (stages 0–5 went in as one). Work is committed on `main` at
+the end of each stage. Commit messages carry no co-author lines. On the device bridge, `git
+commit` has to delete its lock files, which Claude's access to the folder can't do without
+Bernardo's permission, so Claude asks for it in each session that commits.
 
 ---
 

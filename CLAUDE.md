@@ -238,7 +238,7 @@
 - Deleting files in the project folder is blocked by default, so build with
   `make BUILD=$HOME/rb-build ...` (outside the mounted folder) and only write deliverables
   (source, docs, renders) into the project. `git commit` also needs delete permission (lock files).
-- Commits: one per stage, at its end, on the `rev-bench` branch (don't commit to `main`). Author as
+- Commits: one per stage, at its end, on `main` (or the branch a session is told to use). Author as
   in Bernardo's history: `git -c user.name=bernardovh77 -c user.email=you@example.com commit ...`.
   Never add Co-Authored-By or session lines to commit messages (Bernardo's request).
   Read git state with `git --no-optional-locks ...`.
@@ -252,16 +252,18 @@
   (add `E2E_PREVIEW=1` for the production build).
 - The desktop app's built-in browser can't open servers Claude starts, so Bernardo runs
   `npm run dev` himself to listen.
-- `REV-BENCH` is a subfolder of the `Personal-Projects` git repo, so don't run `git init` here.
+- REV-BENCH is its own git repo (github.com/bernardovh77/REV-BENCH, default branch `main`). Until
+  stage 13 it was a folder of Bernardo's Personal-Projects repo, which its history was split out
+  of; on his machine the clone still sits at Personal-Projects/REV-BENCH, which that repo ignores.
 
 ## Claude's cloud sessions
-- They start in the repo's root (Personal-projects), whose CLAUDE.md imports this one.
-- First run `bash REV-BENCH/.claude/hooks/session-start.sh`, unless it already ran as the session's
-  SessionStart hook (it prints "REV-BENCH tools ready"). It installs what the workflow uses and
-  skips what's there: ~/rb-venv with zig 0.17 (`~/rb-venv/bin/python -m ziglang`), numpy,
-  matplotlib and graphify 0.9.92 (linked into /usr/local/bin), and the web app's node_modules in
-  ~/rb-copy/web. Outside the cloud (CLAUDE_CODE_REMOTE unset) it does nothing.
-- The web tests run in that copy: from REV-BENCH, `tar --exclude=web/node_modules
+- .claude/settings.json runs `.claude/hooks/session-start.sh` when a session starts (it prints
+  "REV-BENCH tools ready"); if it didn't, run `bash .claude/hooks/session-start.sh` first. It
+  installs what the workflow uses and skips what's there: ~/rb-venv with zig 0.17
+  (`~/rb-venv/bin/python -m ziglang`), numpy, matplotlib and graphify 0.9.92 (linked into
+  /usr/local/bin), and the web app's node_modules in ~/rb-copy/web. Outside the cloud
+  (CLAUDE_CODE_REMOTE unset) it does nothing.
+- The web tests run in that copy: from the repo's root, `tar --exclude=web/node_modules
   --exclude=web/dist --exclude=web/test-results --exclude=build --exclude=renders -cf - . |
   (cd ~/rb-copy && tar -xf -)`, then `npm test` in ~/rb-copy/web (the e2e test as above).
 
@@ -282,14 +284,13 @@ Rules:
 ## The graph in this repo
 
 graphify's section above assumes graphify is installed. In this repo:
-- graphify-out/ is in REV-BENCH/, a subfolder of the git repo: run graphify from REV-BENCH/
-  (`cd REV-BENCH && graphify query "..."`), since cloud sessions start in the repo's root.
+- Run graphify from the repo's root, where graphify-out/ is.
 - In cloud sessions the setup script above installs graphify. Wherever it's missing
   (`command -v graphify`): GRAPH_REPORT.md first to find the files, then only those; don't read
   graph.json or graph.html (about 1 MB each); and say in the stage's report that the graph needs
   a `graphify update .`.
-- .claude/hooks/graphify-guard.sh is graphify's reminder to query first, for .claude/settings.json
-  to run before searches and reads (`sh .claude/hooks/graphify-guard.sh search|read`). It finds
+- .claude/hooks/graphify-guard.sh is graphify's reminder to query first, which .claude/settings.json
+  runs before searches and reads (`sh .claude/hooks/graphify-guard.sh search|read`). It finds
   graphify on PATH or in ~/.local/bin and stays quiet in cloud sessions, where it would only
   start Python before every call.
 - GRAPH_REPORT.md names each community after one of its members ("math", "titles"), not a

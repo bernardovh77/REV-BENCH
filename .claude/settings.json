@@ -1,12 +1,23 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh\"",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|Grep",
         "hooks": [
           {
             "type": "command",
-            "command": "/home/bernardo/.local/bin/graphify hook-guard search",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/graphify-guard.sh\" search",
             "timeout": 10
           }
         ]
@@ -16,11 +27,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/home/bernardo/.local/bin/graphify hook-guard read",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/graphify-guard.sh\" read",
             "timeout": 10
           }
         ]
       }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(graphify query:*)",
+      "Bash(graphify path:*)",
+      "Bash(graphify explain:*)",
+      "Bash(graphify update:*)"
     ]
   }
 }
