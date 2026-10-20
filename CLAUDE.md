@@ -287,7 +287,8 @@
   `npm run dev` himself to listen.
 - REV-BENCH is its own git repo (github.com/bernardovh77/REV-BENCH, default branch `main`). Until
   stage 13 it was a folder of Bernardo's Personal-Projects repo, which its history was split out
-  of; on his machine the clone still sits at Personal-Projects/REV-BENCH, which that repo ignores.
+  of. On his machine the clone is its own folder beside Personal-Projects,
+  `/mnt/c/Users/berna/REV-BENCH` (inside Personal-Projects until stage 12b; docs/workspace.md).
 
 ## Claude's cloud sessions
 - .claude/settings.json runs `.claude/hooks/session-start.sh` when a session starts (it prints

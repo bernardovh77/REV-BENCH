@@ -6,34 +6,36 @@ Bernardo's Personal-Projects repo, on its `rev-bench` branch; its history came a
 
 ## Bernardo's machine (Windows + WSL)
 
-- The clone sits where the folder was, `/mnt/c/Users/berna/Personal-Projects/REV-BENCH`, and
-  Personal-Projects' `.gitignore` skips it. Claude Code runs in WSL, started there, so it reads
-  this repo's `CLAUDE.md` and `.claude/settings.json`.
+- The clone is its own folder beside Personal-Projects, `/mnt/c/Users/berna/REV-BENCH`, so
+  `git pull` and `git push` there sync with this repo, and Personal-Projects with its own. (Until
+  stage 12b it sat inside Personal-Projects, which ignored it.) Claude Code runs in WSL, started
+  there, so it reads this repo's `CLAUDE.md` and `.claude/settings.json`.
 - graphify (the code graph in `graphify-out/`) is installed in `~/.local/bin`, version 0.9.92
   (`pip install --user graphifyy==0.9.92`). After pulling, run `graphify update .`: it remakes its
   cache and manifest, which are each machine's own and not in git, and catches the graph up if a
   session couldn't.
+- Renders aren't in git (`renders/` is ignored): `make render` makes them, about four minutes.
 
-### Moving your copy over (once)
+### Moving it out of Personal-Projects (once)
 
-In WSL:
+In WSL, with an empty `REV-BENCH` folder beside Personal-Projects (or none: the clone makes it):
 
 ```bash
-cd /mnt/c/Users/berna/Personal-Projects
-git checkout rev-bench
-git status --short REV-BENCH          # anything not committed? It isn't in the new repo: copy it aside
-git pull                              # REV-BENCH's files leave Personal-Projects; ignored ones stay behind
-mv REV-BENCH ../REV-BENCH-old
+cd /mnt/c/Users/berna
 git clone https://github.com/bernardovh77/REV-BENCH.git REV-BENCH
-cp -r ../REV-BENCH-old/renders/. REV-BENCH/renders/    # keep your renders
-cd REV-BENCH/web && npm install && cd ..
+git -C Personal-Projects/REV-BENCH status --short   # anything listed (graphify-out/ aside) isn't on GitHub: copy it over
+cp -r Personal-Projects/REV-BENCH/renders/. REV-BENCH/renders/   # your old renders
+mv Personal-Projects/REV-BENCH REV-BENCH-old        # delete it once the new one works
+git -C Personal-Projects checkout main              # its rev-bench branch only points here now
+cd REV-BENCH/web && npm ci && cd ..
 graphify update .
+make test
 ```
 
-If `git pull` refuses because of local changes in REV-BENCH (graphify rewrites its graph files when
-it runs, for one), copy aside anything you want to keep, run `git checkout -- REV-BENCH`, and pull
-again. Then open Claude Code in `REV-BENCH` as before, and delete `../REV-BENCH-old` once everything
-works.
+Then open Claude Code in `/mnt/c/Users/berna/REV-BENCH` (in the desktop app, pick that folder).
+Claude Code lists past sessions by the folder they ran in: to `/resume` the old ones from here, copy
+`~/.claude/projects/-mnt-c-Users-berna-Personal-Projects-REV-BENCH` to
+`~/.claude/projects/-mnt-c-Users-berna-REV-BENCH`.
 
 ## Claude's cloud sessions
 
