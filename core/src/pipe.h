@@ -120,6 +120,8 @@ typedef struct rb_face {
                            head (0 for a plain end)                            */
     double laminar;     /* Pa per m/s of the pipe's gas, either way: a laminar
                            loss (0 but at a catalyst or a muffler's baffle)    */
+    double per_area;    /* 1 / area and 1 / length, which every step would    */
+    double per_length;  /* otherwise divide by                                 */
     double packing;     /* Pa per m/s of the flow's swings: a muffler's packing
                            (0 elsewhere) ...                                   */
     double settle_time; /* ... which lets through what's slower than this (s) */
@@ -161,6 +163,9 @@ typedef struct rb_pipe {
     int    cells;                       /* 1..RB_PIPE_MAX_CELLS                    */
     double length, diameter;            /* m                                       */
     double area, dx;                    /* m^2; m: each cell's length              */
+    double per_area;                    /* 1 / area                                */
+    double wall_ratio;                  /* a cell's wall over its cross-section,
+                                           pi D dx / A = 4 dx / D                  */
     double friction_factor;             /* Darcy f                                 */
     double stanton;                     /* the walls' St (Colburn's from f; 0 for
                                            walls that keep their heat)             */
@@ -203,11 +208,21 @@ void rb_pipe_restrict(rb_pipe *p, int end, double area);
  * the pipe, whichever way it flows. */
 void rb_pipe_resist(rb_pipe *p, int end, double laminar);
 
+/* The most two pipes' areas may differ (either way) to go straight on into
+ * each other. Each side's momentum flux is taken at its own area, so at a
+ * step in bore they differ: from the narrow pipe into the wide one they push
+ * the flow on whichever way it goes, and past an area ratio of about 1.8 the
+ * exhaust's pulses run away with it (stage 13's fuzzer: a cross-plane V8 with
+ * 75 mm tailpipes after 55 mm pipes). A step that big is a sudden expansion,
+ * which a join through the wide pipe's end cell models (the jet's speed lost). */
+#define RB_PIPE_ONWARD_MAX_RATIO 1.5
+
 /* Joins end 1 of pipe a straight on to end 0 of pipe b (see above): the face
  * between them is a's end 1 face, which can then be narrowed
  * (rb_pipe_restrict) or resisted (rb_pipe_resist) like any of a's end faces.
- * Both end cells must be slow, and neither pipe a one-cell pipe. Returns 0,
- * or -1 if it can't be done. */
+ * Both end cells must be slow, neither pipe a one-cell pipe, and their areas
+ * within RB_PIPE_ONWARD_MAX_RATIO of each other. Returns 0, or -1 if it can't
+ * be done. */
 int  rb_pipe_onward(rb_pipe *a, rb_pipe *b);
 
 /* Packs the pipe (see above): `resistance` Pa per m/s of the flow's swings

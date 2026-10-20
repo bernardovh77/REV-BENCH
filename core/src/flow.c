@@ -21,11 +21,17 @@ double rb_nozzle_mdot(double cd_area, double p0, double T0, double R, double gam
     const double r     = (p > 0.0) ? p / p0 : 0.0;
     const double scale = cd_area * p0 / sqrt(R * T0);
 
-    if (r <= rb_nozzle_critical_ratio(g))   /* choked */
+    /* The flow goes as sqrt(r^(2/g) - r^((g+1)/g)), which with a = r^(1/g) is
+     * sqrt(a^2 - r a). It peaks at the critical ratio, where the gas reaches
+     * the speed of sound; below that the flow stays at the peak (choked). Its
+     * slope, (a / g)(2 a / r - (g + 1)), is positive below the peak, so the
+     * nozzle is choked exactly when 2 a >= (g + 1) r: no second pow for the
+     * critical ratio itself. */
+    const double a = pow(r, 1.0 / g);
+    if (2.0 * a >= (g + 1.0) * r)   /* choked */
         return scale * sqrt(g) * pow(2.0 / (g + 1.0), (g + 1.0) / (2.0 * (g - 1.0)));
 
-    /* subsonic: r^(2/g) - r^((g+1)/g), using one pow: a = r^(1/g) */
-    const double a = pow(r, 1.0 / g);
+    /* subsonic */
     double term = a * a - r * a;
     if (term < 0.0) term = 0.0;             /* rounding near r = 1 */
     return scale * sqrt(2.0 * g / (g - 1.0) * term);
@@ -52,7 +58,7 @@ static double equalising_mass(const rb_chamber *up, const rb_chamber *down)
 {
     double k = 0.0;   /* change of (p_up - p_down) per kg moved, Pa/kg */
     if (!up->fixed)
-        k += up->c * up->c / up->V;
+        k += rb_chamber_gamma(up) * up->gas.R * up->T / up->V;   /* c^2 / V */
     if (!down->fixed) {
         double rise = down->gas.R * (down->T + (up->h - down->u) / down->cv) / down->V;
         if (rise > 0.0) k += rise;
@@ -80,7 +86,7 @@ double rb_orifice_flow(rb_orifice *o, double dt)
     o->limited = 0;
 
     if (up->mass > 0.0 && up->p > down->p) {
-        mdot = rb_nozzle_mdot(o->cd * o->area, up->p, up->T, up->gas.R, up->gamma, down->p);
+        mdot = rb_nozzle_mdot(o->cd * o->area, up->p, up->T, up->gas.R, rb_chamber_gamma(up), down->p);
 
         /* Explicit time steps overshoot when a big opening joins small volumes:
          * the pressures would cross and oscillate. Never move more than a

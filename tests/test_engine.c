@@ -6,6 +6,7 @@
  */
 #include "combustion.h"
 #include "engine.h"
+#include "presets.h"
 #include "rb.h"   /* RB_MUFFLER_* */
 #include "rb_test.h"
 
@@ -349,6 +350,34 @@ void test_engine_intake_losses(void)
     const double drop = e.desc.p_ambient - box / n;
     CHECK(drop > 1000.0 && drop < 2500.0);
     CHECK(e.result.map < box / n);
+}
+
+void test_engine_wide_tailpipes(void)
+{
+    /* Stage 13's fuzzer: a cross-plane V8 with 75 mm tailpipes (so 75 mm
+     * straight-through mufflers) after its 55 mm exhaust pipes blew up once the
+     * exhaust's pulses grew, the mufflers going straight on from the pipes.
+     * Now they open into them as into a volume, and wide open at 6000 rpm
+     * every pipe stays within a few bar. */
+    rb_engine_desc d;
+    rb_preset_desc(rb_preset_find("v8-cross"), &d);
+    d.tailpipe_diameter = 0.075;
+    static rb_engine x;
+    CHECK_EQ_INT(rb_engine_init(&x, &d, 1.0 / 96000.0), 0);
+    x.rpm = 6000.0;
+    x.throttle_pos = 1.0;
+    x.ignition = 1;
+    double worst = 0.0;
+    for (long k = 0; k < 96000 && worst < 1e7; k++) {
+        rb_engine_step(&x);
+        if (k % 64) continue;
+        for (int j = 0; j < rb_engine_pipe_count(&x); j++) {
+            const rb_pipe *p = rb_engine_pipe(&x, j);
+            for (int c = 0; c < p->cells; c++)
+                if (!(p->cell[c].p < worst)) worst = p->cell[c].p;
+        }
+    }
+    CHECK(worst > 1.5e5 && worst < 8e5);
 }
 
 void test_engine_muffler_back_pressure(void)

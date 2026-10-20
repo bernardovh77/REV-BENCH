@@ -43,6 +43,37 @@ static double best_spark(const rb_engine *x)
     return x->result.burn_duration * pow(log(2.0) / d->wiebe_a, 1.0 / (d->wiebe_m + 1.0)) - 8.0;
 }
 
+/* ---- the pipes' rate (stage 13's quality setting) ---- */
+
+void test_engine_pipe_rate(void)
+{
+    /* Stepping the pipes at 24 kHz instead of 48 moves the four's torque and
+     * VE by well under 1 %: wide open, and at a fifth of the throttle. */
+    rb_engine_desc d;
+    rb_preset_desc(rb_preset_find("i4"), &d);
+    static const double THROTTLE[2] = { 1.0, 0.2 };
+    for (int k = 0; k < 2; k++) {
+        double torque[2], ve[2];
+        for (int j = 0; j < 2; j++) {
+            CHECK_EQ_INT(rb_engine_init_at(&e, &d, DT_FAST, j ? 24000.0 : 48000.0), 0);
+            CHECK_NEAR(e.pipe_dt, j ? 1.0 / 24000.0 : 1.0 / 48000.0, 1e-12);
+            e.rpm = 3000.0;
+            e.throttle_pos = THROTTLE[k];
+            e.ignition = 1;
+            rb_engine_settle(&e, 100, 1e-4);
+            torque[j] = e.result.torque;
+            ve[j] = e.result.ve;
+        }
+        CHECK_NEAR(torque[1], torque[0], 0.005 * torque[0]);
+        CHECK_NEAR(ve[1], ve[0], 0.005 * ve[0]);
+    }
+    /* Faster than the physics, the pipes step with it; no rate at all is refused. */
+    CHECK_EQ_INT(rb_engine_init_at(&e, &d, 1.0 / 20000.0, 48000.0), 0);
+    CHECK_EQ_INT(e.pipe_every, 1);
+    CHECK_EQ_INT(rb_engine_init_at(&e, &d, DT_FAST, 0.0), -1);
+    CHECK_EQ_INT(rb_engine_init_at(&e, &d, DT_FAST, NAN), -1);
+}
+
 /* ---- the dyno ---- */
 
 void test_dyno_holds_a_speed(void)

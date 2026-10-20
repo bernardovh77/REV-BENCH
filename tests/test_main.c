@@ -25,6 +25,7 @@ void test_core_block_size_independent_and_reset(void);
 void test_core_fuzz_output_bounded(void);
 void test_core_render_bad_args(void);
 void test_core_host_helpers(void);
+void test_core_quality(void);
 /* ---- gas properties (tests/test_gas.c) ---- */
 void test_gas_matches_nasa_data(void);
 void test_gas_textbook_air(void);
@@ -99,6 +100,7 @@ void test_engine_pipes_two_rates(void);
 void test_engine_throttle_response(void);
 void test_engine_intake_losses(void);
 void test_engine_muffler_back_pressure(void);
+void test_engine_wide_tailpipes(void);
 void test_engine_choked_throttle(void);
 void test_engine_pumping_loss(void);
 void test_engine_pressures_dont_zigzag(void);
@@ -138,6 +140,9 @@ void test_calibration_compression(void);
 void test_calibration_cams(void);
 void test_calibration_burn_and_spark(void);
 void test_calibration_idle_spark(void);
+void test_engine_pipe_rate(void);
+/* ---- random engines (tests/test_fuzz.c) ---- */
+void test_fuzz_random_engines(void);
 /* ---- native helpers (tests/test_wav.c, tests/test_csv.c) ---- */
 void test_wav_pcm16_roundtrip(void);
 void test_wav_float32_stereo_roundtrip(void);
@@ -161,6 +166,7 @@ static const struct {
     T(test_core_fuzz_output_bounded),
     T(test_core_render_bad_args),
     T(test_core_host_helpers),
+    T(test_core_quality),
     T(test_gas_matches_nasa_data),
     T(test_gas_textbook_air),
     T(test_gas_u_and_T_are_inverse),
@@ -227,6 +233,7 @@ static const struct {
     T(test_engine_throttle_response),
     T(test_engine_intake_losses),
     T(test_engine_muffler_back_pressure),
+    T(test_engine_wide_tailpipes),
     T(test_engine_choked_throttle),
     T(test_engine_pumping_loss),
     T(test_engine_pressures_dont_zigzag),
@@ -264,6 +271,8 @@ static const struct {
     T(test_calibration_cams),
     T(test_calibration_burn_and_spark),
     T(test_calibration_idle_spark),
+    T(test_engine_pipe_rate),
+    T(test_fuzz_random_engines),
     T(test_wav_pcm16_roundtrip),
     T(test_wav_float32_stereo_roundtrip),
     T(test_wav_pcm16_clipping),

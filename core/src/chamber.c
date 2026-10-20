@@ -67,20 +67,20 @@ static void remix(rb_chamber *ch)
     memcpy(ch->gas_y, ch->y, sizeof ch->y);
 }
 
-/* Everything that follows from the mass, T, u, V and the composition. */
-static void derive(rb_chamber *ch)
+/* Everything else that follows from the mass, T, u, V and the composition
+ * (cv comes with T, from the gas's Newton step). per_kg is 1 / mass, or 0
+ * when the chamber is empty. */
+static void derive(rb_chamber *ch, double per_kg)
 {
-    ch->p     = ch->mass * ch->gas.R * ch->T / ch->V;   /* ideal gas: p = m R T / V */
-    ch->rho   = ch->mass / ch->V;
-    ch->h     = ch->u + ch->gas.R * ch->T;
-    ch->cv    = rb_gas_cv(&ch->gas, ch->T);
-    ch->gamma = (ch->cv + ch->gas.R) / ch->cv;
-    ch->c     = sqrt(ch->gamma * ch->gas.R * ch->T);
+    ch->rho     = ch->mass / ch->V;
+    ch->per_rho = ch->V * per_kg;
+    ch->p       = ch->rho * ch->gas.R * ch->T;   /* ideal gas: p = m R T / V */
+    ch->h       = ch->u + ch->gas.R * ch->T;
 }
 
 void rb_chamber_update(rb_chamber *ch)
 {
-    double mass = 0.0;
+    double mass = 0.0, per_kg = 0.0;
     int repaired = 0;
 
     /* NaN/inf guard: a corrupted mass is dropped rather than spreading. */
@@ -94,21 +94,28 @@ void rb_chamber_update(rb_chamber *ch)
     ch->mass = mass;
 
     if (mass > RB_MASS_EPS) {
-        for (int s = 0; s < RB_NSPECIES; s++) ch->y[s] = ch->m[s] / mass;
+        per_kg = 1.0 / mass;
+        for (int s = 0; s < RB_NSPECIES; s++) ch->y[s] = ch->m[s] * per_kg;
         remix(ch);
         if (!isfinite(ch->U)) {                  /* rebuild from the last temperature */
             ch->U = mass * rb_gas_u(&ch->gas, ch->T);
             repaired = 1;
         }
-        ch->u = ch->U / mass;
-        ch->T = rb_gas_T_from_u(&ch->gas, ch->u, ch->T);
+        const double u = ch->U * per_kg;
+        /* Newton's method for T, started where its first step from the last
+         * update would land: u changed by u - u_last, and T by that over cv.
+         * Then one more step usually finishes it (gas.c). */
+        double guess = ch->T;
+        if (ch->cv > 0.0) guess += (u - ch->u) / ch->cv;
+        ch->u = u;
+        ch->T = rb_gas_T_cv_from_u(&ch->gas, u, guess, &ch->cv);
     } else {
         /* Empty: keep the last composition and temperature. */
         remix(ch);
         if (!(ch->T > 0.0)) ch->T = RB_T_REF;
-        ch->u = rb_gas_u(&ch->gas, ch->T);
+        ch->u = rb_gas_u_cv(&ch->gas, ch->T, &ch->cv);
     }
-    derive(ch);
+    derive(ch, per_kg);
     ch->repairs += repaired;
 }
 
@@ -138,26 +145,32 @@ static void volume_step(rb_chamber *ch, double V_new)
     const double dV = V_new - ch->V;
     const double rhs = ch->U - 0.5 * ch->p * dV;
     const double k = 0.5 * ch->gas.R * dV / V_new;
-    double T = ch->T;
+    /* u and cv together, at the start and after each correction: at the end
+     * they're ready for the new state. */
+    double T = ch->T, cv;
+    double u = rb_gas_u_cv(&ch->gas, T, &cv);
     for (int i = 0; i < 50; i++) {
-        double f = m * (rb_gas_u(&ch->gas, T) + k * T) - rhs;
-        double dT = f / (m * (rb_gas_cv(&ch->gas, T) + k));
+        const double f = m * (u + k * T) - rhs;
+        const double dT = f / (m * (cv + k));
         T -= dT;
         if (T < 1.0) T = 1.0;
+        u = rb_gas_u_cv(&ch->gas, T, &cv);
         if (fabs(dT) <= 1e-12 * T) break;
     }
     if (!(T < INFINITY)) {   /* NaN or inf: only possible from a corrupted state */
         T = ch->T;
+        u = rb_gas_u_cv(&ch->gas, T, &cv);
         ch->repairs++;
     }
 
     /* The composition has not changed, so there is no need to remix the gas
      * or to solve for T again as rb_chamber_update() would. */
     ch->T = T;
-    ch->u = rb_gas_u(&ch->gas, T);
-    ch->U = m * ch->u;
+    ch->u = u;
+    ch->cv = cv;
+    ch->U = m * u;
     ch->V = V_new;
-    derive(ch);
+    derive(ch, 1.0 / m);
 }
 
 double rb_chamber_set_volume(rb_chamber *ch, double V_new)

@@ -32,6 +32,8 @@ static void face_init(rb_face *f, rb_chamber *a, rb_chamber *b, double area, dou
     f->b = b;
     f->area = area;
     f->length = length;
+    f->per_area = 1.0 / area;
+    f->per_length = 1.0 / length;
     f->friction = friction;
     f->pipe_end = -1;
 }
@@ -50,7 +52,9 @@ int rb_pipe_init(rb_pipe *p, rb_chamber *cell, rb_face *face, int cells, double 
     p->length = length;
     p->diameter = diameter;
     p->area = 0.25 * PI * diameter * diameter;
+    p->per_area = 1.0 / p->area;
     p->dx = length / cells;
+    p->wall_ratio = 4.0 * p->dx / diameter;
     p->friction_factor = friction_factor;
     p->stanton = friction_factor / 8.0 * PR_FACTOR;
     p->wall_temperature = wall_temperature;
@@ -132,6 +136,8 @@ void rb_pipe_resist(rb_pipe *p, int end, double laminar)
 int rb_pipe_onward(rb_pipe *a, rb_pipe *b)
 {
     if (!a || !b || a == b || a->cells < 2 || b->cells < 2 || a->fast[1] || b->fast[0]) return -1;
+    if (a->area > RB_PIPE_ONWARD_MAX_RATIO * b->area || b->area > RB_PIPE_ONWARD_MAX_RATIO * a->area)
+        return -1;
     rb_face *f = &a->end_face[1];
     rb_chamber *from = rb_pipe_end_cell(a, 1), *to = rb_pipe_end_cell(b, 0);
     /* half of each cell, the narrower bore */
@@ -206,11 +212,11 @@ static double side_flow(const rb_pipe *p, int k, int side)
     return (k < p->cells - 1) ? p->face[k].mdot : end_flow(p, 1);
 }
 
-/* The velocity of a cell's gas, given the flows through its two sides. */
+/* The velocity of a cell's gas, given the flows through its two sides
+ * (0 in an empty cell, whose per_rho is 0). */
 static double velocity(const rb_pipe *p, int k, double in, double out)
 {
-    const double rho = p->cell[k].rho;
-    return (rho > 0.0) ? 0.5 * (in + out) / (rho * p->area) : 0.0;
+    return 0.5 * (in + out) * p->cell[k].per_rho * p->per_area;
 }
 
 /* Kinetic energy per kg of a cell's gas (J/kg). */
@@ -278,17 +284,19 @@ static void move_gas(rb_face *f, double dt, int direct, double ke_a, double ke_b
  * energy (what speeds it up, or slows it down, cools it or warms it:
  * friction and the jets lost in the chambers slow the gas, and so heat it),
  * and the walls warm or cool it, q = St cp |mdot| / A * (pi D dx) (T_wall - T),
- * the cell's mass flow taken as the mean of its two sides' sizes. */
-static void cell_heat(rb_pipe *p, int k, double ke, double in, double out, double dt)
+ * the cell's mass flow taken as the mean of its two sides' sizes. per_dt is
+ * 1 / dt. */
+static void cell_heat(rb_pipe *p, int k, double ke, double in, double out, double dt,
+                      double per_dt)
 {
     rb_chamber *c = &p->cell[k];
     if (!(c->mass > 0.0)) return;
     const double kinetic = c->mass * ke;
-    rb_chamber_add_heat(c, -(kinetic - p->kinetic[k]) / dt);
+    rb_chamber_add_heat(c, -(kinetic - p->kinetic[k]) * per_dt);
     p->kinetic[k] = kinetic;
-    const double wall = 4.0 * p->dx / p->diameter;   /* (pi D dx) / A */
     const double flow = 0.5 * (fabs(in) + fabs(out));
-    const double q = p->stanton * (c->cv + c->gas.R) * flow * wall * (p->wall_temperature - c->T);
+    const double q = p->stanton * (c->cv + c->gas.R) * flow * p->wall_ratio
+                   * (p->wall_temperature - c->T);
     if (!(q == q) || q == 0.0) return;
     rb_chamber_add_heat(c, q);
     p->heat += q * dt;
@@ -355,11 +363,13 @@ void rb_pipe_contents(const rb_pipe *p, double *mass, double *energy, double spe
  * collected its flows a block of steps before. */
 void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
 {
+    const double per_dt = 1.0 / dt;
     if (fast) {
         int cell[2];
         for (int j = fast_cells(p, cell) - 1; j >= 0; j--) {
             const int k = cell[j];
-            cell_heat(p, k, kinetic_energy(p, k), side_flow(p, k, 0), side_flow(p, k, 1), dt);
+            cell_heat(p, k, kinetic_energy(p, k), side_flow(p, k, 0), side_flow(p, k, 1), dt,
+                      per_dt);
             rb_chamber_integrate(&p->cell[k], dt);
         }
         return;
@@ -370,7 +380,7 @@ void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
     for (int k = 0; k < n; k++) {
         if (cell_is_fast(p, k)) continue;
         const double v = velocity(p, k, flow[k], flow[k + 1]);
-        cell_heat(p, k, (v == v) ? 0.5 * v * v : 0.0, flow[k], flow[k + 1], dt);
+        cell_heat(p, k, (v == v) ? 0.5 * v * v : 0.0, flow[k], flow[k + 1], dt, per_dt);
         rb_chamber_integrate(&p->cell[k], dt);
     }
     p->since = 0.0;       /* their rates are in */
@@ -390,18 +400,19 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
     /* a slow side of a fast face (pipe.h, two rates): the pressure it has by now */
     const double dp = (f->direct_a ? rb_chamber_pressure_now(f->a, since) : f->a->p)
                     - (f->direct_b ? rb_chamber_pressure_now(f->b, since) : f->b->p);
-    const double r = (rho > 1e-6) ? rho : 1e-6;
-    const double u = f->mdot / (r * f->area);
+    const double r = (rho > 1e-6) ? rho : 1e-6, per_r = 1.0 / r;
     /* The packing's loss is on the swing that's left once the settled flow
      * has followed the new flow by `lag` of the way (backward Euler, which
      * never overshoots): (1 - lag) (mdot - settled). */
     const double lag = (f->packing > 0.0) ? dt / (f->settle_time + dt) : 0.0;
     const double packing = f->packing * (1.0 - lag);
-    const double force = f->area * (dp - heads * 0.5 * r * u * fabs(u)) + flux_a - flux_b
-                       + packing * f->settled / r;
-    const double length = (f->length > shortest) ? f->length : shortest;
-    const double mdot = (f->mdot + dt * force / length)
-                      / (1.0 + dt * (f->laminar + packing) / (r * length));
+    /* the heads at u = mdot / (rho A): A heads rho u|u| / 2 = heads mdot|mdot| / (2 rho A) */
+    const double force = f->area * dp - heads * 0.5 * f->mdot * fabs(f->mdot) * per_r * f->per_area
+                       + flux_a - flux_b + packing * f->settled * per_r;
+    const double per_length = (f->length > shortest) ? f->per_length : 1.0 / shortest;
+    double mdot = f->mdot + dt * force * per_length;
+    const double drag = f->laminar + packing;   /* Pa per m/s, taken at the new flow */
+    if (drag > 0.0) mdot /= 1.0 + dt * drag * per_r * per_length;
     f->mdot = (mdot == mdot && fabs(mdot) < 1e6) ? mdot : 0.0;   /* NaN: start from rest */
     f->settled += lag * (f->mdot - f->settled);
 }
@@ -412,8 +423,7 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
 static double momentum_flux(const rb_pipe *p, int k, double in, double out)
 {
     const double mdot = 0.5 * (in + out);
-    const double rho_a = p->cell[k].rho * p->area;
-    return (rho_a > 0.0) ? mdot * ((mdot >= 0.0) ? in : out) / rho_a : 0.0;
+    return mdot * ((mdot >= 0.0) ? in : out) * p->cell[k].per_rho * p->per_area;
 }
 
 /* An end's face: from a chamber's still gas into the pipe the gas loses

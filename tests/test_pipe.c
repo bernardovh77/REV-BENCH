@@ -35,7 +35,7 @@ static void step(rb_pipe *p, double dt)
  * gives it: a sound wave, with no hot or cold spot riding along. */
 static void squeeze(rb_pipe *p, int k, double pressure, double T)
 {
-    const double g = p->cell[k].gamma;
+    const double g = rb_chamber_gamma(&p->cell[k]);
     rb_chamber_init(&p->cell[k], p->area * p->dx, pressure,
                     T * pow(pressure / p->cell[k].p, (g - 1.0) / g), p->cell[k].y);
 }
@@ -113,7 +113,7 @@ static void pulse(int open, int two_rates, double *c)
         const double x = (k + 0.5) * pipe.dx;
         squeeze(&pipe, k, P0 + 1000.0 * exp(-(x / 0.2) * (x / 0.2)), 300.0);
     }
-    *c = pipe.cell[40].c;
+    *c = rb_chamber_sound_speed(&pipe.cell[40]);
     for (long i = 0; i < lround(0.02 / SLOW_DT); i++) {
         if (two_rates)
             for (long j = 4 * i; j < 4 * i + 4; j++) step_two_rates(&pipe, j);
@@ -219,7 +219,7 @@ void test_pipe_waves_ride_the_flow(void)
     rb_pipe_join(&pipe, 0, &in, 0.0, 0);
     rb_pipe_join(&pipe, 1, &out, 0.0, 0);
     for (long i = 0; i < lround(1.0 / SLOW_DT); i++) step(&pipe, SLOW_DT);
-    const double u = rb_pipe_cell_velocity(&pipe, 32), c = pipe.cell[32].c;
+    const double u = rb_pipe_cell_velocity(&pipe, 32), c = rb_chamber_sound_speed(&pipe.cell[32]);
     for (int k = 0; k < pipe.cells; k++) {
         const double x = (k + 0.5) * pipe.dx - 2.0;
         squeeze(&pipe, k, pipe.cell[k].p + 200.0 * exp(-(x / 0.5) * (x / 0.5)), pipe.cell[k].T);
@@ -585,4 +585,14 @@ void test_pipe_onward(void)
     CHECK_NEAR(e0 + e1 - pipe.heat - pipe2.heat, energy, 1e-11 * energy);
     CHECK(pipe2.cell[0].y[RB_BURNED] > 0.1);   /* the burned gas got across */
     CHECK_EQ_INT(rb_pipe_onward(&pipe, &pipe), -1);
+
+    /* Bores more than RB_PIPE_ONWARD_MAX_RATIO apart in area don't go straight
+     * on (stage 13: their momentum fluxes pump the flow from the narrow one into
+     * the wide one, and the exhaust's pulses ran away with it), either way. */
+    rb_pipe_init(&pipe, cells, faces, 12, 0.6, 0.055, P0, 300.0, AIR, 300.0, 0.02);
+    rb_pipe_init(&pipe2, cells2, faces2, 9, 0.6, 0.075, P0, 300.0, AIR, 300.0, 0.02);   /* x1.86 */
+    CHECK_EQ_INT(rb_pipe_onward(&pipe, &pipe2), -1);
+    CHECK_EQ_INT(rb_pipe_onward(&pipe2, &pipe), -1);
+    rb_pipe_init(&pipe2, cells2, faces2, 9, 0.6, 0.065, P0, 300.0, AIR, 300.0, 0.02);   /* x1.40 */
+    CHECK_EQ_INT(rb_pipe_onward(&pipe, &pipe2), 0);
 }

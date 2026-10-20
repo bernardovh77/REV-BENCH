@@ -94,7 +94,12 @@ build/rb_cli run           # the engine on its own: started, idling, revved, rev
 build/rb_cli run --preset v8-flat   # breathe, fire and run take any preset (rb_cli presets)
 build/rb_cli sound         # the engine's sound, started and idling (renders/sound.wav); try
                            # --preset v8-cross, --sweep, --hold --rpm 3000 --throttle 0.3,
-                           # --listener front, --muffler none, --equal-headers, --help
+                           # --listener front, --muffler none, --equal-headers, --help,
+                           # --quality low (faster: the physics and pipe rates halved)
+build/rb_cli fuzz          # random engines started and driven for 10 s each: nothing may stop
+                           # being a number or run away (also: make fuzz)
+make bench                 # how fast the core runs, preset by preset
+make bench-wasm            # the same as WebAssembly, run by node (needs zig)
 make SAN=1 test            # tests with AddressSanitizer + UBSan
 make help                  # all make targets
 ```

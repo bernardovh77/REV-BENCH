@@ -18,6 +18,7 @@ export interface RbExports {
   _initialize?: () => void;
   rb_version(): number;
   rb_create_with(sampleRate: number, oversample: number): number;
+  rb_create_with_quality(sampleRate: number, quality: number): number;
   rb_destroy(sim: number): void;
   rb_reset(sim: number): void;
   rb_render_block(sim: number, out: number, frames: number): number;
@@ -68,7 +69,8 @@ export interface RbExports {
 
 /** Exports this wrapper relies on. The unit tests check rb_core.wasm has them all. */
 export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
-  'memory', 'rb_version', 'rb_create_with', 'rb_destroy', 'rb_reset', 'rb_render_block',
+  'memory', 'rb_version', 'rb_create_with', 'rb_create_with_quality', 'rb_destroy', 'rb_reset',
+  'rb_render_block',
   'rb_set_param', 'rb_get_param', 'rb_param_count', 'rb_param_name', 'rb_param_unit',
   'rb_param_min', 'rb_param_max', 'rb_param_default', 'rb_param_flags',
   'rb_get_telemetry', 'rb_telemetry_count', 'rb_telemetry_name',
@@ -83,6 +85,10 @@ export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
 ];
 
 /* Return codes and flags, as in rb.h. */
+/** Quality levels (rb.h, stage 13): the physics and the pipes' rates together. */
+export const RB_QUALITY_LOW = 0;
+export const RB_QUALITY_MEDIUM = 1;
+export const RB_QUALITY_HIGH = 2;
 export const RB_OK = 0;
 export const RB_CLAMPED = 1;
 export const RB_ERR_ARG = -1;

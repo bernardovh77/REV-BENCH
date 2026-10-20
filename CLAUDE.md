@@ -9,14 +9,15 @@
   Playwright test in both modes (dev and `E2E_PREVIEW=1`). Stages that touch `core/` also do the
   sound check (PLAN.md, working agreement 6).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
-  which tests catch them. `$HOME/rb-mut12/m12.py WORKDIR NAME...` (each stage's runner has its own
-  table of bugs; copy the last one) applies each named bug to a copy of
-  the sources in WORKDIR, rebuilds only the test binary, runs a filtered set of tests and puts the
-  file back; two work dirs run two bugs at once. The whole suite takes 60-80 s (~140 s with the
-  sanitizers, so run that in three filtered parts), and processes started in the background die
-  with each 3-minute call: run a few bugs per call under `timeout`, re-copy the sources before each
-  batch (a killed run can leave a bug in place), and never `pkill -f` a pattern that also matches
-  your own command line.
+  which tests catch them. `python3 tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
+  applies each bug of `tools/bugs/stageSTAGE.py` (a stage's own table: start from the last one's)
+  to a fresh copy of the sources in WORKDIR, builds the test binary there and runs the tests named
+  for it; two work dirs run two bugs at once. The whole suite takes 3.5 min in Claude's cloud
+  workspace (more with the sanitizers, so run that in filtered parts), and processes started in
+  the background can die with a call: run a few bugs per call under `timeout`, and never
+  `pkill -f` a pattern that also matches your own command line.
+- After changing a header, rebuild from scratch (`rm -rf` the build's object folders): make has
+  left stale objects with the old struct layouts (stage 13: a segfault).
 
 ## Sound: Bernardo's top priority
 - **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
@@ -178,6 +179,31 @@
   pipe geometry) and per-cylinder / per-pipe-cell state. Never duplicate engine geometry in JavaScript.
 - After any change in `core/`, run `make wasm`. It rewrites `web/src/wasm/rb_core.wasm` and
   `rb_core.sources.sha256`; the web unit tests fail on a stale core.
+- Stage 13 made the core faster without changing what it computes (renders at high quality match
+  stage 12's; docs/stage-13.md):
+  - **The chamber:** `gamma` and the speed of sound aren't fields any more but
+    `rb_chamber_gamma()` and `rb_chamber_sound_speed()`, worked out when asked (most chambers are
+    pipe cells, which never need them). `per_rho` (1/rho, 0 when empty) is kept for the pipes.
+    The update starts Newton's method for T from a predicted guess, T + (u - u_last)/cv_last, and
+    `rb_gas_T_cv_from_u` returns cv too, so one evaluation of u(T) and cv(T) usually does it.
+  - **The gas:** each species' u(T) constants are worked out by the compiler (`SPECIES_ENTRY` in
+    gas.c) and a mixture is a weighted sum, with no polynomial evaluated. Keep `RB_REMIX` at 1e-8:
+    a remix makes T and p jump by about the threshold (1e-5 would be steps of about 1 Pa).
+  - **The nozzle** is choked when 2a >= (g + 1) r, with a = r^(1/g), so the subsonic case needs
+    one pow. **Woschni's h** is one exp of logs.
+  - **The pipes:** faces keep `per_area` and `per_length`, pipes `per_area` and `wall_ratio`, and
+    `push` skips the drag's division on faces that have none.
+- The quality setting (stage 13): `rb_config.pipe_rate` (0 = 48 kHz; faster than the physics means
+  every step), and `RB_QUALITY_LOW/MEDIUM/HIGH` (`rb_config_quality`, `rb_create_with_quality`):
+  physics 96/192/192 kHz, pipes 24/24/48 kHz. High is the default, and what the tests and renders
+  use. `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
+  pipe_rate)`; `rb_engine_init` is 48 kHz. Pipes at 24 kHz move the torque by under 0.3 %.
+- Speed: `make bench` (native/rb_bench.c) and `make bench-wasm` (the same as WASI WebAssembly,
+  run by tools/bench_wasm.mjs) time each preset held wide open at 3000 rpm. Timings in Claude's
+  cloud workspace swing by 20 %: compare builds interleaved, best of several runs, and use
+  callgrind's instruction counts and gprof as second opinions.
+- The fuzzer (stage 13, native/fuzz.c): `rb_cli fuzz` / `make fuzz` (20 random engines for 10 s
+  each on their own crank) and `test_fuzz_random_engines` (4 short ones, at every quality).
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
@@ -188,7 +214,8 @@
   `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
   WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; engines by
   order; pulls' dBA against rpm; 16-bit WAVs only, so render without `--float`),
-  `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above).
+  `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above),
+  `tools/plant_bugs.py` plants a stage's bugs (see Workflow).
   The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted
   #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered
   categories, and the Inter font when installed. Doc images are rendered in Claude's cloud

@@ -366,8 +366,19 @@ int    rb_engine_layout_inline(rb_engine_desc *d, int n);
  * conditions, the ignition off, a stoichiometric mixture and the default
  * spark advance. The crank starts held (at rpm 0 until you set it); set
  * hold_speed to 0 to free it. Returns 0, or -1 (and leaves e unusable) for a
- * bad description or time step. */
+ * bad description or time step. The pipes step at about RB_PIPE_RATE. */
 int    rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt);
+
+/* The pipes' rate (Hz): how often their slow cells are stepped, a whole
+ * number of physics steps (stage 13's quality setting). */
+#define RB_PIPE_RATE     48000.0
+#define RB_PIPE_RATE_MIN 12000.0
+#define RB_PIPE_RATE_MAX 96000.0
+
+/* rb_engine_init with the pipes at about `pipe_rate` (Hz): a whole number of
+ * physics steps, and every step when the physics is slower. The public API
+ * keeps it within RB_PIPE_RATE_MIN..RB_PIPE_RATE_MAX (rb_config). */
+int    rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double pipe_rate);
 
 /* One physics step with the current settings: rpm (held), starter and load
  * (free), throttle, ignition, afr and spark. */

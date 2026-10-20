@@ -25,6 +25,21 @@ void rb_config_default(rb_config *cfg)
     if (!cfg) return;
     cfg->sample_rate = 48000.0;
     cfg->oversample  = 4;
+    cfg->pipe_rate   = RB_PIPE_RATE;
+}
+
+int rb_config_quality(rb_config *cfg, int quality)
+{
+    if (!cfg || quality < 0 || quality >= RB_QUALITY_COUNT
+        || !(cfg->sample_rate >= RB_MIN_SAMPLE_RATE && cfg->sample_rate <= RB_MAX_SAMPLE_RATE))
+        return RB_ERR_ARG;
+    const double physics = (quality == RB_QUALITY_LOW) ? 96000.0 : 192000.0;
+    long os = lround(physics / cfg->sample_rate);
+    if (os < 1) os = 1;
+    if (os > RB_MAX_OVERSAMPLE) os = RB_MAX_OVERSAMPLE;
+    cfg->oversample = (int)os;
+    cfg->pipe_rate = (quality == RB_QUALITY_HIGH) ? RB_PIPE_RATE : 0.5 * RB_PIPE_RATE;
+    return RB_OK;
 }
 
 size_t rb_sizeof(void)
@@ -32,13 +47,16 @@ size_t rb_sizeof(void)
     return sizeof(rb_sim);
 }
 
+/* A valid config (pipe_rate 0 has already become the default). */
 static int config_is_valid(const rb_config *c)
 {
     return isfinite(c->sample_rate)
         && c->sample_rate >= RB_MIN_SAMPLE_RATE
         && c->sample_rate <= RB_MAX_SAMPLE_RATE
         && c->oversample >= 1
-        && c->oversample <= RB_MAX_OVERSAMPLE;
+        && c->oversample <= RB_MAX_OVERSAMPLE
+        && c->pipe_rate >= RB_PIPE_RATE_MIN
+        && c->pipe_rate <= RB_PIPE_RATE_MAX;
 }
 
 double rb_onepole_coef(double dt, double tau)
@@ -57,6 +75,7 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
     if (!sim) return RB_ERR_ARG;
     if (cfg) c = *cfg;
     else     rb_config_default(&c);
+    if (c.pipe_rate == 0.0) c.pipe_rate = RB_PIPE_RATE;
     if (!config_is_valid(&c)) return RB_ERR_CONFIG;
 
     memset(sim, 0, sizeof *sim);
@@ -108,7 +127,7 @@ void rb_reset(rb_sim *sim)
     /* The engine starts again at rest, as it's described. The description
      * is always a possible engine, so this can't fail. */
     const rb_engine_desc d = sim->engine.desc;
-    rb_engine_init(&sim->engine, &d, sim->dt);
+    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
     rb_sim_listen(sim);
 }
 
@@ -228,3 +247,4 @@ double rb_get_telemetry(const rb_sim *sim, int id)
 double rb_sample_rate(const rb_sim *sim) { return sim ? sim->cfg.sample_rate : NAN; }
 int    rb_oversample(const rb_sim *sim)  { return sim ? sim->cfg.oversample : 0; }
 double rb_physics_dt(const rb_sim *sim)  { return sim ? sim->dt : NAN; }
+double rb_pipe_rate(const rb_sim *sim)   { return sim ? 1.0 / sim->engine.pipe_dt : NAN; }

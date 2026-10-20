@@ -66,7 +66,7 @@ void test_chamber_init_and_repairs(void)
     CHECK_NEAR(ch.T, 300.0, 1e-9);
     CHECK_NEAR(ch.mass, 1e5 * 1e-3 / (rb_species_R(RB_AIR) * 300.0), 1e-15);
     CHECK_NEAR(ch.rho, 1.161, 0.001);   /* air at 1 bar and 300 K      */
-    CHECK_NEAR(ch.c, 347.2, 0.3);       /* speed of sound, m/s         */
+    CHECK_NEAR(rb_chamber_sound_speed(&ch), 347.2, 0.3);       /* speed of sound, m/s         */
     CHECK_NEAR(ch.h, ch.u + ch.gas.R * ch.T, 1e-9);
     CHECK_EQ_INT(ch.repairs, 0);
 
@@ -138,7 +138,7 @@ void test_blowdown_matches_analytic(void)
     /* While choked, with constant gamma, the exact solution is
      *   p(t) = p0 (1 + K t)^(-2g/(g-1)),  K = (g-1)/2 * C A sqrt(R T0) / V
      * with C = sqrt(g) (2/(g+1))^((g+1)/(2(g-1))). */
-    const double g = tank.gamma, R = tank.gas.R;
+    const double g = rb_chamber_gamma(&tank), R = tank.gas.R;
     const double C = sqrt(g) * pow(2.0 / (g + 1.0), (g + 1.0) / (2.0 * (g - 1.0)));
     const double K = 0.5 * (g - 1.0) * C * 1e-4 * sqrt(R * 300.0) / 10e-3;
 

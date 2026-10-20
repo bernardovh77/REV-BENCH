@@ -283,6 +283,7 @@ void test_core_fuzz_output_bounded(void)
 
     for (int it = 0; it < 200; it++) {
         rb_config c;
+        rb_config_default(&c);
         c.sample_rate = rates[(int)(rnd01() * 4.0) & 3];
         c.oversample  = 1 + (int)(rnd01() * 8.0);
         rb_sim *s = rb_create(&c);
@@ -323,6 +324,96 @@ void test_core_render_bad_args(void)
     CHECK(isnan(rb_get_telemetry(NULL, RB_TLM_TIME_S)));
     CHECK(isnan(rb_get_telemetry(s, RB_TLM_COUNT)));
     rb_destroy(s);
+}
+
+void test_core_quality(void)
+{
+    /* Stage 13: the quality levels set the physics and pipe rates together;
+     * high is the default. */
+    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4 };
+    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0 };
+    rb_config c, d;
+    rb_sim *s;
+
+    rb_config_default(&d);
+    CHECK_NEAR(d.pipe_rate, 48000.0, 0.0);
+    for (int q = 0; q < RB_QUALITY_COUNT; q++) {
+        rb_config_default(&c);
+        CHECK_EQ_INT(rb_config_quality(&c, q), RB_OK);
+        CHECK_EQ_INT(c.oversample, OS[q]);
+        CHECK_NEAR(c.pipe_rate, PIPES[q], 0.0);
+        s = rb_create_with_quality(48000.0, q);
+        CHECK(s != NULL);
+        if (s) {
+            CHECK_NEAR(rb_physics_dt(s), 1.0 / (48000.0 * OS[q]), 1e-18);
+            CHECK_NEAR(rb_pipe_rate(s), PIPES[q], 1e-6);
+            rb_destroy(s);
+        }
+    }
+    CHECK(c.oversample == d.oversample && c.pipe_rate == d.pipe_rate);   /* high = default */
+
+    /* A new engine, from a preset or a changed field, keeps the sim's rates. */
+    s = rb_create_with_quality(48000.0, RB_QUALITY_LOW);
+    CHECK(s != NULL);
+    if (s) {
+        CHECK_EQ_INT(rb_load_preset(s, 1), RB_OK);
+        CHECK_NEAR(rb_pipe_rate(s), 24000.0, 1e-6);
+        CHECK(rb_set_engine(s, RB_ENG_TAILPIPE_LENGTH, 0, 0.8) >= RB_OK);
+        CHECK_NEAR(rb_pipe_rate(s), 24000.0, 1e-6);
+        rb_reset(s);
+        CHECK_NEAR(rb_pipe_rate(s), 24000.0, 1e-6);
+        rb_destroy(s);
+    }
+
+    /* Other audio rates keep the physics near 96 and 192 kHz, and the pipes
+     * a whole number of physics steps. */
+    rb_config_default(&c);
+    c.sample_rate = 44100.0;
+    CHECK_EQ_INT(rb_config_quality(&c, RB_QUALITY_LOW), RB_OK);
+    CHECK_EQ_INT(c.oversample, 2);
+    s = rb_create(&c);
+    CHECK(s != NULL);
+    if (s) {
+        CHECK_NEAR(rb_pipe_rate(s), 88200.0 / 4.0, 1e-6);   /* 24 kHz, rounded */
+        rb_destroy(s);
+    }
+    c.sample_rate = 8000.0;
+    CHECK_EQ_INT(rb_config_quality(&c, RB_QUALITY_HIGH), RB_OK);
+    CHECK_EQ_INT(c.oversample, 24);
+    CHECK_NEAR(c.pipe_rate, 48000.0, 0.0);
+
+    /* Bad levels, rates and configs. */
+    CHECK_EQ_INT(rb_config_quality(&c, -1), RB_ERR_ARG);
+    CHECK_EQ_INT(rb_config_quality(&c, RB_QUALITY_COUNT), RB_ERR_ARG);
+    CHECK_EQ_INT(rb_config_quality(NULL, RB_QUALITY_LOW), RB_ERR_ARG);
+    c.sample_rate = NAN;
+    CHECK_EQ_INT(rb_config_quality(&c, RB_QUALITY_LOW), RB_ERR_ARG);
+    CHECK(rb_create_with_quality(48000.0, RB_QUALITY_COUNT) == NULL);
+    CHECK(rb_create_with_quality(0.0, RB_QUALITY_HIGH) == NULL);
+    CHECK(isnan(rb_pipe_rate(NULL)));
+
+    /* pipe_rate 0 means the default (a host that never set it); outside
+     * 12-96 kHz, or faster than the physics, it's refused. */
+    rb_config_default(&c);
+    c.pipe_rate = 0.0;
+    s = rb_create(&c);
+    CHECK(s != NULL);
+    if (s) {
+        CHECK_NEAR(rb_pipe_rate(s), 48000.0, 1e-6);
+        rb_destroy(s);
+    }
+    c.pipe_rate = 6000.0;    CHECK(rb_create(&c) == NULL);
+    c.pipe_rate = 200000.0;  CHECK(rb_create(&c) == NULL);
+    c.pipe_rate = NAN;       CHECK(rb_create(&c) == NULL);
+    c.pipe_rate = 48000.0;   /* faster than 8 kHz physics: every step */
+    c.sample_rate = 8000.0;
+    c.oversample = 1;
+    s = rb_create(&c);
+    CHECK(s != NULL);
+    if (s) {
+        CHECK_NEAR(rb_pipe_rate(s), 8000.0, 1e-6);
+        rb_destroy(s);
+    }
 }
 
 void test_core_host_helpers(void)

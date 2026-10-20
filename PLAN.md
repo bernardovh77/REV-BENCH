@@ -39,6 +39,7 @@ gets a one-line summary of anything that changed from the plan.
 | S2 | Sound: air (flow noise, finer exhaust) 🎧         | Sound realism    | ⬜     | Ours falls off a cliff above 2 kHz: the pipes' grid |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ⬜     | Takes stage 12b's mechanical noise |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | Takes stage 12b's in-car listener |
+| 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Split from stage 13: its 4× target |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -505,6 +506,25 @@ the numbers from `tools/compare_real.py` in the real engines' range, and with Be
 - **Done when:** each place renders in stereo and sounds like itself, and the in-car render sounds
   like it's from inside.
 - **Bernardo checks:** listen on headphones.
+
+#### Stage 13b — Performance II: vectorized pipes, implicit valves
+Split from stage 13 (working agreement 2), whose cheap wins and quality setting brought the
+cross-plane V8 from 0.48× to about 0.8× real time natively at high quality (docs/stage-13.md). The
+pipes are now most of the cost, about 70 ns per cell and step, and no single function dominates:
+it's the per-cell work itself.
+- **Structure of arrays for the pipes' cells.** Their state goes in arrays the loops run along, with
+  no function calls and branch-free upwinding, so the compiler vectorizes them. Then build the
+  WebAssembly core with SIMD (`-msimd128`, in every current browser) and link-time optimization.
+- **The gas mixture without rebuilding it.** The rebuild is 18 % of the time, and the remix
+  threshold can't be raised: it would make T and p jump by up to 1 Pa. Instead, evaluate the
+  three species' u(T) and cv(T) weighted by mass (more arithmetic, all of it vectorizable), or
+  vectorize the rebuild.
+- **The valve's flow solved together with its port cell** (implicit), so a 96 kHz physics rate
+  keeps 192 kHz's accuracy. Today's low quality has stage 10's error: 10 % more pumping work
+  motored at 1500 rpm wide open.
+- **After the sound stages S1–S4,** which change the hot code (S2's finer exhaust cells above all).
+- **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real time natively and ≥ 2× as
+  WebAssembly at the default quality, with the renders unchanged.
 
 ### Phase 3 — Browser
 

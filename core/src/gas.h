@@ -66,8 +66,16 @@ double rb_gas_gamma(const rb_gas *g, double T);   /* cp / cv */
 double rb_gas_u(const rb_gas *g, double T);       /* J/kg, sensible internal energy */
 double rb_gas_h(const rb_gas *g, double T);       /* J/kg, enthalpy = u + R T */
 
+/* u(T) (J/kg) and cv(T) (J/(kg K)) together, for the price of one: they
+ * share the powers of T. */
+double rb_gas_u_cv(const rb_gas *g, double T, double *cv);
+
 /* Temperature (K) whose internal energy is u, by Newton's method starting
  * from T_guess (the previous temperature is a good guess). */
 double rb_gas_T_from_u(const rb_gas *g, double u, double T_guess);
+
+/* The same, also giving cv at the temperature found (its last iteration's:
+ * within about a millionth of it), which a chamber's update needs anyway. */
+double rb_gas_T_cv_from_u(const rb_gas *g, double u, double T_guess, double *cv);
 
 #endif /* RB_GAS_H */

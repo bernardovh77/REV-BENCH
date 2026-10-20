@@ -24,11 +24,13 @@ static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
  * It matters only while starting and stopping: a crank that stalls with a
  * burn under way still finishes it, and the hot gas still cools. */
 #define RB_GAS_PACE_RPM 100.0
-/* The pipes (stage 10; pipe.h). They step at about 48 kHz: a wave crosses a
- * 5 cm cell in about three of those steps. The runners and headers, which
- * tune the engine's breathing, have cells of about 5 cm; the long exhaust
- * pipes and tailpipes 7.5 cm (still 10 to a wavelength at 700 Hz). */
-#define PIPE_DT          (1.0 / 48000.0)
+/* The pipes (stage 10; pipe.h). They step at RB_PIPE_RATE (48 kHz) unless
+ * told otherwise (rb_engine_init_at): a wave crosses a 5 cm cell in about
+ * three of those steps. The runners and headers, which tune the engine's
+ * breathing, have cells of about 5 cm; the long exhaust pipes and tailpipes
+ * 7.5 cm (still 10 to a wavelength at 700 Hz). At 24 kHz the shortest
+ * stable cell is 5.2 cm (rb_pipe_cells_for), and the torque moves by under
+ * 0.3 % (stage 13). */
 #define SHORT_CELL       0.05
 #define LONG_CELL        0.075
 /* Losses where gas leaves a volume for a pipe, in velocity heads on top of
@@ -365,7 +367,14 @@ static int system_of(const rb_engine *e, int c)
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
 {
-    if (rb_engine_desc_check(d) != 0 || !(dt > 0.0 && dt < 1e-3)) return -1;
+    return rb_engine_init_at(e, d, dt, RB_PIPE_RATE);
+}
+
+int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double pipe_rate)
+{
+    if (rb_engine_desc_check(d) != 0 || !(dt > 0.0 && dt < 1e-3)
+        || !(pipe_rate > 0.0 && pipe_rate < INFINITY))
+        return -1;
 
     memset(e, 0, sizeof *e);
     e->desc = *d;
@@ -378,7 +387,7 @@ int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
     e->spark_map = 1;
     e->throttle_area_pos = NAN;   /* not computed yet */
     rb_gas_init(&e->fuel_gas, FUEL);
-    e->pipe_every = (int)lround(PIPE_DT / dt);
+    e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));
     if (e->pipe_every < 1) e->pipe_every = 1;
     e->pipe_dt = e->pipe_every * dt;
     for (int i = 0; i < d->cylinders; i++)

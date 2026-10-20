@@ -16,7 +16,9 @@
  *     dt = 1 / (sample_rate * oversample)
  *
  * rb_render_block() runs `oversample` substeps for every audio sample it
- * outputs and reduces them to one sample.
+ * outputs and reduces them to one sample. The engine's pipes step less
+ * often, at about `pipe_rate`, and the quality levels (rb_config_quality)
+ * set both rates together.
  *
  * Inputs and outputs
  * ------------------
@@ -64,10 +66,25 @@ enum {
     RB_ERR_READONLY = -5 /* the engine field can't be set             */
 };
 
+/* Start from rb_config_default(): later stages may add fields. */
 typedef struct rb_config {
     double sample_rate;  /* audio output rate, Hz        [8000, 384000] */
     int    oversample;   /* physics substeps per audio sample   [1, 32] */
+    double pipe_rate;    /* how often the pipes step, Hz [12000, 96000];
+                            0 = 48000 (stage 13). Faster than the physics:
+                            every physics step                          */
 } rb_config;
+
+/* Quality (stage 13): the physics and the pipes' rates together. Each level
+ * down costs less (the cross-plane V8 about 30 % less, then 30 % less again)
+ * and moves the engine's torque by under 1 % (docs/stage-13.md). */
+enum {
+    RB_QUALITY_LOW = 0,  /* physics at about 96 kHz, the pipes at 24 kHz        */
+    RB_QUALITY_MEDIUM,   /* physics at about 192 kHz, the pipes at 24 kHz       */
+    RB_QUALITY_HIGH,     /* physics at about 192 kHz, the pipes at 48 kHz: the
+                            default, and what the tests and renders use       */
+    RB_QUALITY_COUNT
+};
 
 /* Parameters (inputs). Append new ids just before RB_PARAM_COUNT and add
  * a row to the table in core/src/rb_params.c. */
@@ -107,6 +124,11 @@ rb_sim     *rb_create(const rb_config *cfg);       /* malloc + rb_init      */
 /* Same as rb_create() for hosts that can't easily build a struct, such as
  * JavaScript. Returns NULL for an invalid rate/oversample. */
 rb_sim     *rb_create_with(double sample_rate, int oversample);
+/* Sets cfg's oversample and pipe_rate for a quality (RB_QUALITY_*) at its
+ * sample_rate. RB_OK, or RB_ERR_ARG for a bad cfg, rate or quality. */
+int         rb_config_quality(rb_config *cfg, int quality);
+/* rb_create_with at a quality, for JavaScript. NULL for a bad rate or quality. */
+rb_sim     *rb_create_with_quality(double sample_rate, int quality);
 void        rb_destroy(rb_sim *sim);               /* free (NULL is fine)   */
 
 /* ---- running ------------------------------------------------------ */
@@ -360,6 +382,9 @@ const char *rb_pipe_cell_field_unit(int field);
 double rb_sample_rate(const rb_sim *sim);
 int    rb_oversample(const rb_sim *sim);
 double rb_physics_dt(const rb_sim *sim);
+/* How often the engine's pipes step (Hz): the config's pipe_rate, rounded
+ * to a whole number of physics steps (stage 13). NaN for a NULL sim. */
+double rb_pipe_rate(const rb_sim *sim);
 
 /* ---- host helpers ---------------------------------------------------
  * Scratch float buffers for hosts that cannot call malloc themselves

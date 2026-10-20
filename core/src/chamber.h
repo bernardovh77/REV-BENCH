@@ -23,6 +23,8 @@
 
 #include "gas.h"
 
+#include <math.h>
+
 typedef struct rb_chamber {
     /* ---- state, advanced by the integrator ---- */
     double m[RB_NSPECIES];   /* kg of each species                             */
@@ -38,11 +40,11 @@ typedef struct rb_chamber {
     double T;                /* K                                               */
     double p;                /* Pa                                              */
     double rho;              /* kg/m^3                                          */
+    double per_rho;          /* m^3/kg: 1 / rho (0 when empty), which the pipes
+                                divide by a few times per cell and step         */
     double u;                /* J/kg, specific internal energy                  */
     double h;                /* J/kg, specific enthalpy: what an outflow carries */
     double cv;               /* J/(kg K)                                        */
-    double gamma;            /* cp/cv                                           */
-    double c;                /* m/s, speed of sound                             */
     int    repairs;          /* times a NaN/negative state had to be repaired   */
 
     /* ---- rates collected during the current step ---- */
@@ -58,6 +60,19 @@ void rb_chamber_init_reservoir(rb_chamber *ch, double p, double T, const double 
 
 /* Recomputes the derived values (T, p, ...) from m[], U and V. */
 void rb_chamber_update(rb_chamber *ch);
+
+/* cp/cv of the chamber's gas, and its speed of sound (m/s), as of its last
+ * update. Worked out when asked: most chambers (a pipe's cells) never need
+ * them, and every update would pay a division and a square root. */
+static inline double rb_chamber_gamma(const rb_chamber *ch)
+{
+    return (ch->cv + ch->gas.R) / ch->cv;
+}
+
+static inline double rb_chamber_sound_speed(const rb_chamber *ch)
+{
+    return sqrt(rb_chamber_gamma(ch) * ch->gas.R * ch->T);
+}
 
 /* Rates: clear at the start of a step, then add flows (mdot > 0 = in, with
  * the composition y and enthalpy h of the gas that moves) and heat (W).

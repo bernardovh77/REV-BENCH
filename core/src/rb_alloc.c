@@ -25,8 +25,18 @@ rb_sim *rb_create(const rb_config *cfg)
 rb_sim *rb_create_with(double sample_rate, int oversample)
 {
     rb_config cfg;
+    rb_config_default(&cfg);
     cfg.sample_rate = sample_rate;
     cfg.oversample  = oversample;
+    return rb_create(&cfg);
+}
+
+rb_sim *rb_create_with_quality(double sample_rate, int quality)
+{
+    rb_config cfg;
+    rb_config_default(&cfg);
+    cfg.sample_rate = sample_rate;
+    if (rb_config_quality(&cfg, quality) != RB_OK) return NULL;
     return rb_create(&cfg);
 }
 

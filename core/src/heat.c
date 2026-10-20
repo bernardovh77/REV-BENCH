@@ -11,8 +11,9 @@ double rb_woschni_h(double bore, double p, double T, double w)
 {
     if (!(bore > 0.0 && p > 0.0 && T > 0.0 && w > 0.0)) return 0.0;
     const double p_kpa = p * 1e-3;
-    /* p^0.8 w^0.8 = (p w)^0.8: one pow fewer */
-    return 3.26 * pow(bore, -0.2) * pow(p_kpa * w, 0.8) * pow(T, -0.55);
+    /* B^-0.2 (p w)^0.8 T^-0.55 as one exp of logs: a pow is a log and an exp
+     * of its own, and this runs for every cylinder every step. */
+    return 3.26 * exp(0.8 * log(p_kpa * w) - 0.55 * log(T) - 0.2 * log(bore));
 }
 
 double rb_woschni_w(double piston_speed, int valves_open, int burning_phase,

@@ -27,6 +27,7 @@
 #include "engine.h"
 #include "presets.h"
 #include "flow.h"
+#include "fuzz.h"
 #include "rb.h"
 #include "rb_internal.h"   /* rb_cli sound drives the sim's own engine */
 #include "wav.h"
@@ -69,6 +70,9 @@ static void usage(FILE *f)
         "                        exhaust pipe and tailpipe, cell by cell (CSV)\n"
         "  sound [options]       the engine's sound as a listener around the car hears it,\n"
         "                        through the same chain as the browser (WAV)\n"
+        "  fuzz [options]        random engines (a preset with random fields), started and\n"
+        "                        driven on their own crank: fails if anything stops being a\n"
+        "                        number or runs away\n"
         "\n",
         f);
     fputs(
@@ -188,7 +192,16 @@ static void usage(FILE *f)
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
         "      --csv FILE        a row per 128-frame block: speed, throttle, sound level\n"
-        "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n",
+        "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
+        "      --quality Q       low, medium or high: the physics and pipe rates together\n"
+        "                        (rb.h: RB_QUALITY_*; high is the default)\n"
+        "\n"
+        "fuzz options:\n"
+        "      --sets N          how many random engines    (default 20)\n"
+        "  -s, --seconds S       each one's run             (default 10)\n"
+        "      --seed K          the first one's seed; the others follow (default 1)\n"
+        "  -x, --oversample N    physics substeps per 48 kHz sample (default 4)\n"
+        "      --quality Q       low, medium or high, as for sound\n",
         f);
 }
 
@@ -198,6 +211,17 @@ static const char *take_value(int argc, char **argv, int *i)
     if (*i + 1 >= argc) return NULL;
     *i += 1;
     return argv[*i];
+}
+
+/* The quality levels by name (rb.h: RB_QUALITY_*). */
+static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high" };
+
+/* A quality level's number from its name, or -1. */
+static int quality_from(const char *name)
+{
+    for (int q = 0; name && q < RB_QUALITY_COUNT; q++)
+        if (!strcmp(name, QUALITIES[q])) return q;
+    return -1;
 }
 
 /* Parses a finite number; returns 0 on success, -1 otherwise. */
@@ -458,7 +482,7 @@ static int cmd_blowdown(int argc, char **argv)
     const long steps = lround(seconds / dt);
     for (long n = 0; n < steps; n++) {
         const double t = n * dt, p = tank.p, T = tank.T;
-        const int choked = atmosphere.p / p <= rb_nozzle_critical_ratio(tank.gamma);
+        const int choked = atmosphere.p / p <= rb_nozzle_critical_ratio(rb_chamber_gamma(&tank));
         if (!choked && unchoked_at < 0.0) {
             unchoked_at = t;
             p_unchoked = p;
@@ -587,7 +611,7 @@ static int cmd_motor(int argc, char **argv)
         if (n >= log_from && (n - log_from) % stride == 0) {
             double row[6] = { -360.0 + 180.0 * (double)(n - log_from) / (double)half,
                               rb_cyl_piston_x(&g, c.theta) * 1e3, c.gas.V * 1e6,
-                              c.gas.p / 1e5, c.gas.T, c.gas.gamma };
+                              c.gas.p / 1e5, c.gas.T, rb_chamber_gamma(&c.gas) };
             csv_row(csv, row);
             rows++;
         }
@@ -750,7 +774,7 @@ static int write_cycle(const char *path)
             const rb_burn *b = &engine.burn[0];
             double row[18] = { start + n * step_deg,
                                rb_cyl_piston_x(&engine.cyl[0].geom, m * 3.14159265358979323846 / 180.0) * 1e3,
-                               g->V * 1e6, g->p / 1e5, g->T, g->gamma,
+                               g->V * 1e6, g->p / 1e5, g->T, rb_chamber_gamma(g),
                                rb_valve_lift(&d->intake, a) * 1e3, rb_valve_lift(&d->exhaust, a) * 1e3,
                                engine.intake[0].mdot * 1e3, engine.exhaust[0].mdot * 1e3,
                                engine.plenum.p / 1e3, engine.rpm, engine.throttle_pos,
@@ -1665,10 +1689,10 @@ static int pipes_pulse(const char *path)
     rb_pipe_join(&pipe, 1, &outside, 0.0, 0);
     for (int k = 0; k < 64; k++) {   /* a sound wave: squeezed isentropically */
         const double x = (k + 0.5) * pipe.dx, p = p0 + 1000.0 * exp(-(x / 0.2) * (x / 0.2));
-        const double g = cell[k].gamma;
+        const double g = rb_chamber_gamma(&cell[k]);
         rb_chamber_init(&cell[k], cell[k].V, p, T0 * pow(p / p0, (g - 1.0) / g), air);
     }
-    const double c = cell[40].c;
+    const double c = rb_chamber_sound_speed(&cell[40]);
 
     const char *cols[] = { "time_ms", "x_m", "p_Pa", "u_m_s" };
     csv_writer *csv = csv_open(path, cols, 4);
@@ -1840,7 +1864,7 @@ static int cmd_sound(int argc, char **argv)
     const char *out_path = "renders/sound.wav", *csv_path = NULL;
     double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
     double gain = 1.0, os = 4.0;
-    int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0;
+    int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
     rb_config cfg;
 
     rb_config_default(&cfg);
@@ -1894,6 +1918,8 @@ static int cmd_sound(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &cfg.sample_rate);
         else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
             ok = !to_double(take_value(argc, argv, &i), &os);
+        else if (!strcmp(a, "--quality"))
+            ok = (quality = quality_from(take_value(argc, argv, &i))) >= 0;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
             usage(stdout);
             return 0;
@@ -1924,6 +1950,10 @@ static int cmd_sound(int argc, char **argv)
         return 2;
     }
     cfg.oversample = (int)os;
+    if (quality >= 0 && rb_config_quality(&cfg, quality) != RB_OK) {
+        fprintf(stderr, "rb_cli sound: no --quality at that --rate\n");
+        return 2;
+    }
     if (drive == DRIVE_SWEEP) d.inertia = inertia;
     if (equal) {   /* every header as long as their mean */
         double mean = 0.0;
@@ -1942,7 +1972,7 @@ static int cmd_sound(int argc, char **argv)
         return 2;
     }
     rb_engine *e = &sim->engine;
-    rb_engine_init(e, &d, sim->dt);
+    rb_engine_init_at(e, &d, sim->dt, sim->cfg.pipe_rate);   /* at the sim's quality */
     sim->source = RB_SOURCE_ENGINE;
     sim->hear = where;
     rb_sim_listen(sim);
@@ -1989,6 +2019,7 @@ static int cmd_sound(int argc, char **argv)
     else
         printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
     printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
+    printf("  physics at %.0f kHz, the pipes at %.0f kHz\n", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
     float buf[BLOCK_FRAMES];
     const double fs = cfg.sample_rate;
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
@@ -2075,6 +2106,66 @@ static int cmd_sound(int argc, char **argv)
     return 0;
 }
 
+/* rb_cli fuzz: random engines, one after another (native/fuzz.h). */
+static int cmd_fuzz(int argc, char **argv)
+{
+    double sets = 20.0, seconds = 10.0, seed = 1.0, os = 4.0;
+    int quality = -1;
+    for (int i = 1; i < argc; i++) {
+        const char *a = argv[i];
+        int ok = 1;
+        if (!strcmp(a, "--sets"))
+            ok = !to_double(take_value(argc, argv, &i), &sets);
+        else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
+            ok = !to_double(take_value(argc, argv, &i), &seconds);
+        else if (!strcmp(a, "--seed"))
+            ok = !to_double(take_value(argc, argv, &i), &seed);
+        else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
+            ok = !to_double(take_value(argc, argv, &i), &os);
+        else if (!strcmp(a, "--quality"))
+            ok = (quality = quality_from(take_value(argc, argv, &i))) >= 0;
+        else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
+            usage(stdout);
+            return 0;
+        } else
+            ok = 0;
+        if (!ok) {
+            fprintf(stderr, "rb_cli fuzz: bad option or value: %s\n", a);
+            return 2;
+        }
+    }
+    if (!(sets >= 1.0 && sets <= 1e6) || !(seconds > 0.0 && seconds <= 600.0)
+        || !(seed >= 0.0 && seed < 1e15) || !(os >= 1.0 && os <= RB_MAX_OVERSAMPLE)) {
+        fprintf(stderr, "rb_cli fuzz: --sets 1..1e6, --seconds (0, 600], --seed >= 0, "
+                        "--oversample 1..%d\n", RB_MAX_OVERSAMPLE);
+        return 2;
+    }
+    int failed = 0;
+    printf("%8s  %-9s %4s %4s %8s %9s %7s %8s %7s\n", "seed", "preset", "cyl", "set", "max rpm",
+           "max bar", "max K", "repairs", "cpu s");
+    for (long k = 0; k < (long)sets; k++) {
+        const unsigned long long sd = (unsigned long long)seed + (unsigned long long)k;
+        rb_fuzz_result r;
+        const clock_t c0 = clock();
+        const int ok = rb_fuzz_run(sd, seconds, (int)os, quality, &r);
+        const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
+        printf("%8llu  %-9s %4d %4d %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
+               r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes, r.max_rpm,
+               r.max_p / 1e5, r.max_T, r.repairs, cpu, ok ? "ok" : r.what);
+        if (!ok)   /* what it changed, to make it again */
+            for (int j = 0; j < r.tries; j++) {
+                const rb_fuzz_change *c = &r.change[j];
+                if (rb_engine_field_flags(c->field) & RB_EF_READONLY) continue;
+                printf("            %s[%d] = %g%s\n", rb_engine_field_name(c->field), c->index, c->value,
+                       c->rc == RB_OK ? "" : c->rc == RB_CLAMPED ? " (clamped)" : " (refused)");
+            }
+        fflush(stdout);
+        if (!ok) failed++;
+    }
+    printf("%ld runs of %.1f s: %d failed\n", (long)sets, seconds, failed);
+    return failed ? 1 : 0;
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2) {
@@ -2103,6 +2194,8 @@ int main(int argc, char **argv)
         return cmd_pipes(argc - 1, argv + 1);
     if (!strcmp(argv[1], "sound"))
         return cmd_sound(argc - 1, argv + 1);
+    if (!strcmp(argv[1], "fuzz"))
+        return cmd_fuzz(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
         usage(stdout);
         return 0;

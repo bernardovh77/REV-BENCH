@@ -11,6 +11,12 @@
 #                     reach the soft limiter); the boxer with its unequal
 #                     headers and with equal ones; and the test tone
 #   make wasm         build the core for the browser (web/src/wasm/rb_core.wasm)
+#   make fuzz         random engines (a preset with random fields), 20 of them
+#                     for 10 s each on their own crank: nothing may stop being a
+#                     number or run away (several minutes)
+#   make bench        how fast the core runs: each preset held wide open at
+#                     3000 rpm, then the pieces the profile points at
+#   make bench-wasm   the same as WebAssembly, run by Node (needs zig and node)
 #   make clean        delete build output
 #   make help         show this text
 #
@@ -36,7 +42,7 @@ LDLIBS   += -lm
 
 CORE_SRC   := $(wildcard core/src/*.c)
 CORE_HDR   := $(wildcard core/include/*.h core/src/*.h)
-NATIVE_SRC := native/wav.c native/csv.c
+NATIVE_SRC := native/wav.c native/csv.c native/fuzz.c
 CLI_SRC    := native/rb_cli.c
 TEST_SRC   := $(wildcard tests/*.c)
 
@@ -49,8 +55,9 @@ ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
+BENCH := $(BUILD)/rb_bench
 
-.PHONY: all test render wasm clean help
+.PHONY: all test render wasm bench bench-wasm fuzz clean help
 
 all: $(CLI)
 
@@ -60,12 +67,21 @@ $(CLI): $(CLI_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 $(TESTS): $(TEST_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+$(BENCH): $(call obj,native/rb_bench.c) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
 $(BUILD)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 test: $(TESTS)
 	RBT_TMPDIR=$(BUILD) $(TESTS)
+
+bench: $(BENCH)
+	$(BENCH)
+
+fuzz: $(CLI)
+	$(CLI) fuzz --sets 20 --seconds 10
 
 render: $(CLI)
 	@mkdir -p renders
@@ -95,7 +111,8 @@ WASM_OUT ?= web/src/wasm/rb_core.wasm
 WASM_SUM ?= $(WASM_OUT:.wasm=.sources.sha256)
 # Every public function of core/include/rb.h. New API functions go here too.
 WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
-    rb_create rb_create_with rb_destroy rb_step rb_render_block \
+    rb_create rb_create_with rb_config_quality rb_create_with_quality rb_destroy \
+    rb_step rb_render_block \
     rb_set_param rb_get_param rb_param_count rb_param_name rb_param_unit \
     rb_param_min rb_param_max rb_param_default rb_param_flags rb_param_find \
     rb_get_telemetry rb_telemetry_count rb_telemetry_name \
@@ -106,7 +123,7 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_get_cylinder rb_cylinder_field_count rb_cylinder_field_name rb_cylinder_field_unit \
     rb_pipe_count rb_get_pipe rb_pipe_field_count rb_pipe_field_name rb_pipe_field_unit \
     rb_get_pipe_cell rb_pipe_cell_field_count rb_pipe_cell_field_name rb_pipe_cell_field_unit \
-    rb_sample_rate rb_oversample rb_physics_dt rb_alloc_floats rb_free_floats
+    rb_sample_rate rb_oversample rb_physics_dt rb_pipe_rate rb_alloc_floats rb_free_floats
 comma := ,
 WASM_FLAGS := -target wasm32-wasi -mexec-model=reactor -O3 -g0 -std=c11 \
     -Wall -Wextra -Icore/include -Icore/src -Wl$(comma)--strip-debug \
@@ -121,6 +138,16 @@ wasm: $(BUILD)/rb_core.wasm
 $(BUILD)/rb_core.wasm: $(CORE_SRC) $(CORE_HDR)
 	@mkdir -p $(@D)
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc $(WASM_FLAGS) $(CORE_SRC) -o $@
+
+# The benchmark as a WASI program (it has a main and reads the clock), built
+# like the core: Node runs it (tools/bench_wasm.mjs).
+bench-wasm: $(BUILD)/rb_bench.wasm
+	node tools/bench_wasm.mjs $<
+
+$(BUILD)/rb_bench.wasm: native/rb_bench.c $(CORE_SRC) $(CORE_HDR)
+	@mkdir -p $(@D)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi -O3 -g0 -std=c11 \
+	  -Wall -Wextra -Icore/include -Icore/src native/rb_bench.c $(CORE_SRC) -o $@
 
 clean:
 	rm -rf build build-san

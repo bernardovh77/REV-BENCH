@@ -17,28 +17,40 @@ typedef struct species_data {
     double R;            /* J/(kg K): RB_GAS_RU over the molar mass         */
     double lo[5];        /* cp fit 200-1000 K, J/(kg K), powers of T/1000   */
     double hi[5];        /* cp fit 1000-4000 K                              */
+    double k_lo, k_hi;   /* the species' own u(T) constants (see rb_gas)    */
 } species_data;
 
-/* Least-squares fits of the NASA Glenn data (Cantera 3.2, nasa_gas.yaml).
- * Above 1000 K the burned gas uses its *equilibrium* heat capacity at 40 bar
- * (stage 6): hot CO2 and H2O partly dissociate, which soaks up energy that
- * comes back as the gas cools. */
+/* A species' entry, from its name, molar mass and cp fits. The compiler works
+ * out its u(T) constants: with cv = cp - R = c0 + c1 t + ... + c4 t^4
+ * (t = T/1000), u(T) = k + T (c0 + c1 t/2 + c2 t^2/3 + c3 t^3/4 + c4 t^4/5),
+ * where k_lo makes u(T_REF) = 0 and k_hi keeps u continuous at T_MID. Every
+ * property of a mixture is its species' weighted by mass, these constants
+ * too, so rb_gas_init never has to evaluate a polynomial. */
+#define U_TERM(c0, c1, c2, c3, c4, t) \
+    ((c0) + (t) * ((c1) / 2.0 + (t) * ((c2) / 3.0 + (t) * ((c3) / 4.0 + (t) * ((c4) / 5.0)))))
+#define K_LO(R, l0, l1, l2, l3, l4) (-RB_T_REF * U_TERM((l0) - (R), l1, l2, l3, l4, RB_T_REF * 1e-3))
+#define K_HI(R, l0, l1, l2, l3, l4, h0, h1, h2, h3, h4)                                  \
+    (K_LO(R, l0, l1, l2, l3, l4) + RB_T_MID * (U_TERM((l0) - (R), l1, l2, l3, l4, 1.0)   \
+                                              - U_TERM((h0) - (R), h1, h2, h3, h4, 1.0)))
+#define SPECIES_ENTRY(name, M, l0, l1, l2, l3, l4, h0, h1, h2, h3, h4)                   \
+    { name, RB_GAS_RU / (M), { l0, l1, l2, l3, l4 }, { h0, h1, h2, h3, h4 },             \
+      K_LO(RB_GAS_RU / (M), l0, l1, l2, l3, l4),                                          \
+      K_HI(RB_GAS_RU / (M), l0, l1, l2, l3, l4, h0, h1, h2, h3, h4) }
+
+/* Least-squares fits of the NASA Glenn data (Cantera 3.2, nasa_gas.yaml):
+ * 200-1000 K, then 1000-4000 K. Above 1000 K the burned gas uses its
+ * *equilibrium* heat capacity at 40 bar (stage 6): hot CO2 and H2O partly
+ * dissociate, which soaks up energy that comes back as the gas cools. */
 static const species_data SPECIES[RB_NSPECIES] = {
-    [RB_AIR] = {
-        "air", RB_GAS_RU / M_AIR,
-        { 1026.1074, -208.00753, 479.58521, -36.262009, -120.8045 },
-        { 889.08077, 352.75235, -118.96814, 18.864993, -1.1114364 },
-    },
-    [RB_FUEL] = {
-        "fuel", RB_GAS_RU / M_FUEL,
-        { 212.99399, 3318.505, 5565.8456, -9593.0475, 4076.0479 },
-        { 1219.1947, 3380.8607, -1201.0311, 192.83028, -11.509647 },
-    },
-    [RB_BURNED] = {
-        "burned", RB_GAS_RU / M_BURNED,
-        { 988.38783, 245.68805, -144.96926, 408.60824, -237.63136 },
-        { -1104.893625, 5480.652686, -4504.991818, 1556.015261, -173.479527 },
-    },
+    [RB_AIR] = SPECIES_ENTRY("air", M_AIR,
+        1026.1074, -208.00753, 479.58521, -36.262009, -120.8045,
+        889.08077, 352.75235, -118.96814, 18.864993, -1.1114364),
+    [RB_FUEL] = SPECIES_ENTRY("fuel", M_FUEL,
+        212.99399, 3318.505, 5565.8456, -9593.0475, 4076.0479,
+        1219.1947, 3380.8607, -1201.0311, 192.83028, -11.509647),
+    [RB_BURNED] = SPECIES_ENTRY("burned", M_BURNED,
+        988.38783, 245.68805, -144.96926, 408.60824, -237.63136,
+        -1104.893625, 5480.652686, -4504.991818, 1556.015261, -173.479527),
 };
 
 const char *rb_species_name(int species)
@@ -73,26 +85,24 @@ void rb_gas_init(rb_gas *g, const double y[RB_NSPECIES])
         else       w[s] = (s == RB_AIR) ? 1.0 : 0.0;
     }
 
-    /* A mixture's R and cp are its species' weighted by mass. Then cv = cp - R,
-     * and u(T) is its integral from T_REF, continuous at T_MID. */
+    /* A mixture's R, cp and u(T) constants are its species' weighted by mass.
+     * Then cv = cp - R, and u(T)'s polynomial is cv's integrated. */
     const species_data *a = &SPECIES[RB_AIR], *f = &SPECIES[RB_FUEL], *b = &SPECIES[RB_BURNED];
-    const double R = w[RB_AIR] * a->R + w[RB_FUEL] * f->R + w[RB_BURNED] * b->R;
-    double lo[5], hi[5];
-    for (int k = 0; k < 5; k++) {
-        lo[k] = w[RB_AIR] * a->lo[k] + w[RB_FUEL] * f->lo[k] + w[RB_BURNED] * b->lo[k];
-        hi[k] = w[RB_AIR] * a->hi[k] + w[RB_FUEL] * f->hi[k] + w[RB_BURNED] * b->hi[k];
-    }
-    lo[0] -= R;
-    hi[0] -= R;
+    const double wa = w[RB_AIR], wf = w[RB_FUEL], wb = w[RB_BURNED];
+    const double R = wa * a->R + wf * f->R + wb * b->R;
     g->R = R;
     for (int k = 0; k < 5; k++) {
-        g->lo[k] = lo[k];
-        g->hi[k] = hi[k];
-        g->ulo[k] = lo[k] * INTEGRAL[k];
-        g->uhi[k] = hi[k] * INTEGRAL[k];
+        g->lo[k] = wa * a->lo[k] + wf * f->lo[k] + wb * b->lo[k];
+        g->hi[k] = wa * a->hi[k] + wf * f->hi[k] + wb * b->hi[k];
     }
-    g->k_lo = -RB_T_REF * poly(g->ulo, RB_T_REF * 1e-3);
-    g->k_hi = g->k_lo + RB_T_MID * (poly(g->ulo, 1.0) - poly(g->uhi, 1.0));
+    g->lo[0] -= R;
+    g->hi[0] -= R;
+    for (int k = 0; k < 5; k++) {
+        g->ulo[k] = g->lo[k] * INTEGRAL[k];
+        g->uhi[k] = g->hi[k] * INTEGRAL[k];
+    }
+    g->k_lo = wa * a->k_lo + wf * f->k_lo + wb * b->k_lo;
+    g->k_hi = wa * a->k_hi + wf * f->k_hi + wb * b->k_hi;
 }
 
 /* u(T) and cv(T) together (they share the powers of T). Outside the fitted
@@ -135,6 +145,11 @@ double rb_gas_u(const rb_gas *g, double T)
     return u_and_cv(g, T, &cv);
 }
 
+double rb_gas_u_cv(const rb_gas *g, double T, double *cv)
+{
+    return u_and_cv(g, T, cv);
+}
+
 double rb_gas_h(const rb_gas *g, double T)
 {
     return rb_gas_u(g, T) + g->R * T;
@@ -142,17 +157,25 @@ double rb_gas_h(const rb_gas *g, double T)
 
 double rb_gas_T_from_u(const rb_gas *g, double u, double T_guess)
 {
+    double cv;
+    return rb_gas_T_cv_from_u(g, u, T_guess, &cv);
+}
+
+double rb_gas_T_cv_from_u(const rb_gas *g, double u, double T_guess, double *cv)
+{
     /* Newton's method on f(T) = u(T) - u, whose slope is cv(T) > 0. It
      * converges quadratically: a correction dT leaves an error of about
      * (dcv/dT) / (2 cv) dT^2, under 1e-4 dT^2 per kelvin. So once a
      * correction is below a millionth of T, what's left is below 1e-10 K at
-     * engine temperatures. From the previous temperature that's usually one
-     * or two steps. */
+     * engine temperatures. From a good guess (a chamber's update makes one,
+     * chamber.c) that's usually a single step. */
     double T = (T_guess > 0.0 && T_guess < INFINITY) ? T_guess : RB_T_REF;
-    if (!isfinite(u)) return NAN;
+    if (!isfinite(u)) {
+        *cv = rb_gas_cv(g, T);
+        return NAN;
+    }
     for (int i = 0; i < 50; i++) {
-        double cv;
-        const double dT = (u_and_cv(g, T, &cv) - u) / cv;
+        const double dT = (u_and_cv(g, T, cv) - u) / *cv;
         T -= dT;
         if (T < 1.0) T = 1.0;                   /* stay physical while iterating */
         if (fabs(dT) <= 1e-6 * T) break;

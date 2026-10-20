@@ -142,7 +142,7 @@ int rb_load_preset(rb_sim *sim, int preset)
     rb_engine_desc d;
     if (!sim) return RB_ERR_ARG;
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
-    rb_engine_init(&sim->engine, &d, sim->dt);   /* presets are possible engines */
+    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */
     rb_sim_listen(sim);                          /* a new engine: no jump in its flows */
     sim->preset = preset;
     return RB_OK;
@@ -258,7 +258,7 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     if (memcmp(&d, &sim->engine.desc, sizeof d) == 0) return rc;   /* the same engine */
     if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
     else {
-        rb_engine_init(&sim->engine, &d, sim->dt);
+        rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
         rb_sim_listen(sim);
     }
     return rc;
