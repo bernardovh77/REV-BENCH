@@ -250,6 +250,17 @@
   `npm run dev` himself to listen.
 - `REV-BENCH` is a subfolder of the `Personal-Projects` git repo, so don't run `git init` here.
 
+## Claude's cloud sessions
+- They start in the repo's root (Personal-projects), whose CLAUDE.md imports this one.
+- First run `bash REV-BENCH/.claude/hooks/session-start.sh`, unless it already ran as the session's
+  SessionStart hook (it prints "REV-BENCH tools ready"). It installs what the workflow uses and
+  skips what's there: ~/rb-venv with zig 0.17 (`~/rb-venv/bin/python -m ziglang`), numpy,
+  matplotlib and graphify 0.9.92 (linked into /usr/local/bin), and the web app's node_modules in
+  ~/rb-copy/web. Outside the cloud (CLAUDE_CODE_REMOTE unset) it does nothing.
+- The web tests run in that copy: from REV-BENCH, `tar --exclude=web/node_modules
+  --exclude=web/dist --exclude=web/test-results --exclude=build --exclude=renders -cf - . |
+  (cd ~/rb-copy && tar -xf -)`, then `npm test` in ~/rb-copy/web (the e2e test as above).
+
 ## Bernardo
 - Windows + WSL. CS student, strongest in C, so keep the C readable and well commented.
 
@@ -269,10 +280,14 @@ Rules:
 graphify's section above assumes graphify is installed. In this repo:
 - graphify-out/ is in REV-BENCH/, a subfolder of the git repo: run graphify from REV-BENCH/
   (`cd REV-BENCH && graphify query "..."`), since cloud sessions start in the repo's root.
-- Claude's cloud workspace has graphify only when its environment's setup script installs it
-  (`command -v graphify`). Without it: GRAPH_REPORT.md first to find the files, then only those;
-  don't read graph.json or graph.html (about 1 MB each); and say in the stage's report that the
-  graph needs a `graphify update .`.
+- In cloud sessions the setup script above installs graphify. Wherever it's missing
+  (`command -v graphify`): GRAPH_REPORT.md first to find the files, then only those; don't read
+  graph.json or graph.html (about 1 MB each); and say in the stage's report that the graph needs
+  a `graphify update .`.
+- .claude/hooks/graphify-guard.sh is graphify's reminder to query first, for .claude/settings.json
+  to run before searches and reads (`sh .claude/hooks/graphify-guard.sh search|read`). It finds
+  graphify on PATH or in ~/.local/bin and stays quiet in cloud sessions, where it would only
+  start Python before every call.
 - GRAPH_REPORT.md names each community after one of its members ("math", "titles"), not a
   topic: look at what's in it.
 - The graph trails the code until someone runs `graphify update .`: where they disagree, the
