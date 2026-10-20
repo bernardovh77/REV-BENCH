@@ -1,0 +1,133 @@
+"""
+Stage 12c's planted bugs (tools/plant_bugs.py): no two cycles alike (each
+burn's own start and length, the cylinders' own mixture and burn, the exhaust
+valves' flickering jets), the accessories, the rev limiter's soft cut, the
+sim's dyno, and the presets' unequal headers. Each one must make at least one
+of its tests fail.
+"""
+COV = ["test_variation_cov_of_imep"]
+EXACT = ["test_variation_off_is_exact"]
+TRIMS = ["test_variation_cylinders_differ"]
+FLICKER = ["test_variation_flicker"]
+ACCESSORIES = ["test_variation_accessories"]
+SOFT = ["test_variation_soft_cut"]
+DYNO = ["test_variation_dyno_in_the_sim"]
+
+# name: (file, old text, new text, tests to run, timeout in s)
+BUGS = {
+    # each cycle's own burn (engine.c: close_intake)
+    "variation-ignored": ("core/src/engine.c",
+        "    rb_burn *b = &e->burn[i];\n    const double v = variation(e);",
+        "    rb_burn *b = &e->burn[i];\n    const double v = 0.0;",
+        COV + TRIMS, 300),
+    "start-not-varied": ("core/src/engine.c",
+        "b->start_angle = cycle_angle(720.0 - spark_advance(advance - v * VARY_START * expected * start));",
+        "b->start_angle = b->spark_angle;",
+        COV, 300),
+    "length-not-varied": ("core/src/engine.c",
+        "expected * exp(v * VARY_LENGTH * length)",
+        "expected * exp(0.0 * length)",
+        COV, 300),
+    "start-unbounded": ("core/src/engine.c",
+        "b->start_angle = cycle_angle(720.0 - spark_advance(advance - v * VARY_START * expected * start));",
+        "b->start_angle = cycle_angle(720.0 - advance + v * VARY_START * expected * start);",
+        EXACT, 300),
+    "variation-unbounded": ("core/src/engine.c",
+        "    return (v > 0.0) ? ((v < VARY_TOP) ? v : VARY_TOP) : 0.0;",
+        "    return (v == v) ? v : 0.0;",
+        EXACT, 300),
+    "normals-unbounded": ("core/src/engine.c",
+        "    return (z > VARY_MOST) ? VARY_MOST : (z < -VARY_MOST) ? -VARY_MOST : z;",
+        "    return 20.0 * z;",
+        EXACT + COV, 300),
+    # the cylinders' own mixture and burn (engine.c: vary_init, close_intake)
+    "trims-not-centred": ("core/src/engine.c",
+        "        e->trim_fuel[i] -= fuel;\n",
+        "",
+        TRIMS, 300),
+    "fuel-trim-ignored": ("core/src/engine.c",
+        "g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i]) - g->m[RB_FUEL]",
+        "g->m[RB_AIR] / e->afr - g->m[RB_FUEL]",
+        TRIMS, 300),
+    "burn-trim-ignored": ("core/src/engine.c",
+        " * (1.0 + v * CYL_BURN * e->trim_burn[i]);",
+        ";",
+        TRIMS, 300),
+    "burn-trim-from-the-fuel": ("core/src/engine.c",
+        " * (1.0 + v * CYL_BURN * e->trim_burn[i]);",
+        " * (1.0 + v * CYL_BURN * e->trim_fuel[i]);",
+        TRIMS, 300),
+    # the exhaust valves' jets (engine.c: rb_engine_step)
+    "flicker-off": ("core/src/engine.c",
+        "        if (v > 0.0 && e->exhaust[i].area > 0.0) {   /* its jet flickers (stage 12c) */",
+        "        if (0) {",
+        FLICKER, 300),
+    "flicker-unfiltered": ("core/src/engine.c",
+        "            e->flicker[i] += e->flicker_a * (rb_rand_white(&e->rand_flicker) - e->flicker[i]);",
+        "            e->flicker[i] = rb_rand_white(&e->rand_flicker) / e->flicker_norm;",
+        FLICKER, 300),
+    "flicker-not-normalised": ("core/src/engine.c",
+        "    e->flicker_norm = sqrt((2.0 - e->flicker_a) / e->flicker_a);   /* a one-pole's RMS */",
+        "    e->flicker_norm = 1.0;",
+        FLICKER, 300),
+    "flicker-when-off": ("core/src/engine.c",
+        "            double f = 1.0 + v * FLICKER * e->flicker_norm * e->flicker[i];",
+        "            double f = 1.0 + (v + 0.5) * FLICKER * e->flicker_norm * e->flicker[i];",
+        FLICKER, 300),
+    # the accessories (engine.c)
+    "accessories-constant-power": ("core/src/engine.c",
+        "(((rpm > ACCESSORY_FULL_RPM) ? rpm : ACCESSORY_FULL_RPM) * PI / 30.0)",
+        "(rpm * PI / 30.0 + 1e-9)",
+        ACCESSORIES, 120),
+    "accessories-while-cranking": ("core/src/engine.c",
+        "    return (on >= 1.0) ? full : (on > 0.0) ? on * full : 0.0;",
+        "    return full;",
+        ACCESSORIES, 120),
+    "accessories-not-friction": ("core/src/engine.c",
+        " + accessory_torque(d, omega) * 4.0 * PI / rb_engine_displacement(e);",
+        ";",
+        ACCESSORIES, 120),
+    # the rev limiter (engine.c: soft_cut, spark)
+    "no-soft-cut": ("core/src/engine.c",
+        "    if (e->spark_cut || soft_cut(e)) {   /* the rev limiter cuts the spark */",
+        "    if (e->spark_cut) {   /* the rev limiter cuts the spark */",
+        SOFT, 300),
+    "soft-band-above-the-limit": ("core/src/engine.c",
+        "(e->omega * 30.0 / PI - (e->desc.rev_limit - LIMIT_SOFT)) / LIMIT_SOFT;",
+        "(e->omega * 30.0 / PI - (e->desc.rev_limit + LIMIT_SOFT)) / LIMIT_SOFT;",
+        SOFT, 300),
+    "soft-cut-when-held": ("core/src/engine.c",
+        "    if (e->hold_speed) return 0;   /* the engine computer is off while held */\n",
+        "",
+        SOFT, 300),
+    "soft-cut-everything": ("core/src/engine.c",
+        "    return rb_rand_uniform(&e->rand_cycles) < into;",
+        "    return 1;",
+        SOFT, 300),
+    "cuts-not-counted": ("core/src/engine.c",
+        "        e->limiter_cuts++;\n",
+        "",
+        SOFT + ["test_variation_conserves"], 300),
+    # the sim's dyno (rb_sim.c, rb_engine_api.c)
+    "dyno-never-stepped": ("core/src/rb_sim.c",
+        "        if (sim->dyno) rb_dyno_step(sim->dyno, e);\n",
+        "",
+        DYNO, 300),
+    "dyno-kept-on-a-new-preset": ("core/src/rb_engine_api.c",
+        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */\n    sim->dyno = NULL;",
+        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */",
+        DYNO, 300),
+    # the presets (presets.c)
+    "four-headers-alike": ("core/src/presets.c",
+        "    static const double header[4] = { 0.58, 0.40, 0.30, 0.52 };",
+        "    static const double header[4] = { 0.45, 0.45, 0.45, 0.45 };",
+        ["test_audio_cylinders_sound_apart"], 300),
+    "six-headers-alike": ("core/src/presets.c",
+        "    static const double header[6] = { 0.48, 0.40, 0.32, 0.32, 0.40, 0.48 };   /* stage 12c */",
+        "    static const double header[6] = { 0.40, 0.40, 0.40, 0.40, 0.40, 0.40 };   /* stage 12c */",
+        ["test_audio_cylinders_sound_apart"], 300),
+    "four-without-accessories": ("core/src/presets.c",
+        "    d->accessory_power = 800.0;",
+        "    d->accessory_power = 0.0;",
+        ACCESSORIES + ["test_presets_run_on_their_own"], 300),
+}

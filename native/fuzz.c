@@ -122,6 +122,8 @@ int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int qua
      * stalled). */
     rb_engine *e = &sim->engine;
     r->cylinders = e->desc.cylinders;
+    r->variation = 2.0 * uniform(&s);   /* none to twice a real engine's (stage 12c) */
+    e->variation = r->variation;
     sim->source = RB_SOURCE_ENGINE;
     e->hold_speed = 0;
     e->ignition = 1;

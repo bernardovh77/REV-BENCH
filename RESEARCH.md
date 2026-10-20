@@ -210,6 +210,31 @@ What the numbers say:
 - **Done when Bernardo says so.** Numbers in range are necessary, not sufficient: the stages
   aren't done until he says they sound right.
 
+### After stage 12b: a piano note (stage 12c)
+
+Bernardo found stage 12b's renders "too smooth... like a piano note", the 3000 rpm ones sounding
+like an idle should, the limiter's gaps and the deceleration off. More recordings, made as close
+to the pipes as could be found (a Ford GT V8, a Porsche 911T flat-6, a Toyota Tercel four, a
+bumpy-cammed Chevy 350, a Corvette LS6 held at 3000 rpm), and new measures showed:
+- **Real engines' cylinders don't sound alike.** Between their firing orders (for a four: 0.5, 1,
+  1.5, 2.5 ...) real engines have −12 to +11 dB of the firing orders' energy; a cross-plane V8's
+  strongest order can be a half one (the LS6's 2.5). With every header alike and every cylinder
+  identical, REV-BENCH's four had −72 dB idling and −33 to −41 at 3000 rpm: nothing but the firing
+  frequency's harmonics, which is what a note is. Production manifolds' unequal runners and each
+  cylinder's own mixture and burn are where real engines get theirs (`tools/orders.py`).
+- **Each cycle varies.** The cylinders' work varies by 1–3 % of the mean wide open and 4–8 %
+  idling (the COV of IMEP; Heywood 9.4): the flame's early growth with the turbulence and mixture
+  at the plug, a slow start mostly meaning a slow burn.
+- **Idling, a real cylinder still pushes out a pulse.** The four idled at 25 kPa (real engines
+  30–40, held there by their alternator and pumps as well as their friction) and opened its
+  exhaust valves below the exhaust's pressure.
+- **Recordings at the exhaust hear its jet.** A microphone in the tailpipe's puffs (½ρu² of 20 m/s
+  is 80 Pa) picks up turbulence a listener a few metres away doesn't: their low band varies
+  from cycle to cycle more than the sound does. Orders and spectral balance are safer measures.
+- **Limiters bounce.** Soft cuts drop single sparks or injections at random, more nearer the
+  limit (Haltech, HP Academy), and real engines on their limiters stutter 10–30 times a second; in
+  neutral, released, they fall 1000–4000 rpm a second.
+
 ## Browser audio
 
 - **AudioWorklet** runs audio code off the main thread. The old `ScriptProcessorNode` ran on the main

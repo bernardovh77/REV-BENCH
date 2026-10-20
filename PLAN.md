@@ -36,7 +36,8 @@ gets a one-line summary of anything that changed from the plan.
 | 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Bernardo: "dull and really artificial" → S1–S5 |
 | 13 | Performance & stability pass                     | Sound            | ✅     | Renders unchanged; the cross-plane V8 0.59× → 0.76× real time natively (0.46× → 0.72× as WASM). Quality setting: medium 1.09×, low 1.84×. A fuzzer found a stage 12 blow-up. The 4× → 13b |
 | 12b| Flow noise, the engine's own sound & the cabin 🎧 | Sound            | ✅     | Lighthill's tailpipe jets, the valves' and throttle's jets, modal synthesis (combustion, slap, valves, injectors), the mounts, a listener in the driver's seat; above 2 kHz the pulls −40/−26 → −24/−22 dB. Its fuzz run found a stage 10 runaway near a vacuum: pipe faces held under twice sonic |
-| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | ⬜     | Real idles repeat at +5 dB per cycle, ours at +44 (RESEARCH.md) |
+| 12c| Rough, not a piano note: variation, the limiter, the deceleration 🎧 | Sound | ✅ | Each cycle its own (COV 1.2 % wide open, 4.3 % idling), unequal headers (the four's orders between the firing ones −33 → −14 dB, real −12…+11), the accessories, a soft-cut limiter, a free crank on a dyno, pulls ending at idle, revs in neutral (falls of 2100–4050 rpm/s) |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Its core came in 12c; left: the low band repeats at +12…+20 dB (real −2…+13), misfires and partial burns |
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | ⬜     | The jets' noise came in 12b; left: finer exhaust cells, the tailpipe's beaming, the baffles |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | The cabin came in 12b; left: stereo and the places |
@@ -418,6 +419,71 @@ after stage 13: Bernardo asked for it next.
   the throttle shut, the runners near a vacuum ran their flows to 58 times sonic and their gas to
   13 K; each pipe face is held under twice the sonic flow of its gas now (`RB_PIPE_MOST_SONIC`),
   which normal running never reaches. 4.8–6.4 % more instructions. Details in `docs/stage-12b.md`.
+
+#### Stage 12c — Rough, not a piano note: variation, the limiter, the deceleration 🎧 (after 12b)
+Bernardo, after stage 12b's renders: "the 3000 on all engines feel like they should be the idle",
+"too smooth... more raspy and less like a piano note", "the rev limiter is very weird because of
+the huge gap and the deceleration feels very off". He asked for more research: iconic cars with
+these engines, recorded with as little muffling as possible, for their true tone. What the
+recordings and our renders showed (docs/stage-12c.md):
+- **A piano note:** each of our cycles repeats the last exactly (+28 to +38 dB below 500 Hz), and
+  all of the sound below 500 Hz is on the cycle's harmonics. Every real engine measured, idling or
+  at 3000 rpm, repeats at −5 to +9 dB and keeps only 8–50 % of that band on them: their cycles
+  vary. Our exhaust rings long when struck (Q 45–120), but every cycle strikes it the same way, and
+  smoothly.
+- **The cross-plane V8 at half its firing rate:** its strongest order is 2, its firing orders
+  hold 14–22 % of the orders' energy (real V8s: the firing order strongest, 26–77 %): its two
+  banks' exhausts never meet, where real ones have an X- or H-pipe.
+- **The limiter:** our four is cut for 0.6 s at a time in gear; a real one bounces 13–30 times a
+  second.
+- **The deceleration:** after the foot comes off our four loses 146 rpm/s in gear with nothing but
+  the car's inertia (no road load), and the render ends 2 s later still at 6500 rpm; revved in
+  neutral, real engines fall 1000–4000 rpm/s.
+
+The stage:
+- **Cycle-to-cycle variation** in each burn (its start and length), larger the slower the burn
+  (idle, light load), from a seeded generator; small fixed differences between cylinders. This is
+  stage S1's core, brought forward.
+- **Turbulence in the exhaust valves' jets:** the flow through them flickers a few percent, and
+  the pipes carry and filter it.
+- **The held renders on the dyno:** a free crank under stage 9's absorbing dyno, so the speed
+  moves with each firing and cycle.
+- **An H-pipe** joining the cross-plane V8's two exhaust pipes.
+- **A real limiter:** a soft cut that skips single firings at random, more of them the nearer the
+  limit, then a hard cut with a short way back.
+- **Real drives:** road load on the pull; after the limiter the clutch goes in and the engine falls
+  back to idle; a rev in neutral, like the recordings.
+- **The recordings** of iconic engines found (Freesound), measured with the same tools.
+- **Done when:**
+  - idling and at 3000 rpm, below 500 Hz the cycle repeats at −5 to +12 dB and keeps at most
+    half its energy on the cycle's harmonics, as the real engines do;
+  - the COV of IMEP reads 1–3 % wide open and 4–8 % idling; the dyno numbers move under 1 %;
+  - the cross-plane V8's firing order is its strongest at 3000 rpm;
+  - the limiter bounces at 10–30 Hz in neutral, with no cut longer than 0.2 s in gear;
+  - revved in neutral, the engines fall like the recordings (1000–4000 rpm/s from high rpm);
+  - every preset still idles steadily for 30 s.
+- **Bernardo checks:** less smooth, raspier, not a piano note? The limiter and the deceleration?
+
+**Done (2026-10-20).** What the measurements found besides: every cylinder of the four, the six
+and the cross-plane V8 sounded the same (equal headers): between their firing orders the four had
+−72 dB idling, −33 to −41 at 3000 rpm, where real engines have −12 to +11, so the plan gained
+**unequal headers** on those presets, as production manifolds have; and the four idled at 25 kPa
+with its cylinders below the exhaust's pressure when the valves opened (no blowdown), so it gained
+**the accessories** (`accessory_power`, part of the friction: a steady torque below 1500 rpm,
+800–1250 W above), the presets' idle valves and gains retuned for them. The H-pipe wasn't built:
+real cross-plane V8s have as much between their firing orders as ours (the LS6 recording's
+strongest order is 2.5). Against the done-when: the COV of IMEP reads 1.2 % wide open and 4.3 %
+idling, the mean work 0.6 % under the unvaried engine's ✅; the limiter in neutral fires about a
+quarter of its sparks at the limit and bounces off the hard cut 8 times a second, and in gear
+never stops firing for 0.2 s ✅; revved in neutral the presets fall 2100–4050 rpm/s ✅; every
+preset idles steadily ✅; but below 500 Hz the cycle still repeats at +12 to +20 dB (from +28 to
++40; real −2 to +13) and keeps most of its energy on the cycle's harmonics ❌ (part of the
+recordings' irregularity is their microphones in the exhaust's jet), which stays with S1. The
+four's sound between its firing orders went from −33/−41 to −14 dB at 3000 rpm and −72 to −26
+idling; idling from behind its energy above 1 kHz from −37 to −21 dB, its crest from 7 to 11 dB
+(real 9–21). New: `rand.h`, `tests/test_variation.c`, `tools/orders.py`, `compare_real.py`'s
+`steady` kind and five recordings, `rb_cli sound --rev`, `--variation`, `--headers`, `--load`.
+4 % more instructions rendering. Details in `docs/stage-12c.md`.
 
 #### Stage 13 — Performance & stability pass
 - Profile the native build. Optimize memory layout and pipe cell counts, and add a quality setting (sim rate).

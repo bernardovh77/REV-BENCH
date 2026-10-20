@@ -1,6 +1,5 @@
 {
   "3": "pipe.c",
-  "4": "rb_engine_api.c",
   "5": "rb_cli.c",
   "6": "rb-core.ts",
   "8": "main.ts",

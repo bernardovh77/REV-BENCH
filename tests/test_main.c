@@ -68,6 +68,7 @@ void test_audio_engine_reversal_quiet(void);
 void test_audio_mufflers(void);
 void test_audio_intake_mouth(void);
 void test_audio_headers_rumble(void);
+void test_audio_cylinders_sound_apart(void);
 void test_audio_listener_hears_each_tailpipe(void);
 void test_audio_sim_hears_every_source(void);
 /* ---- cylinder (tests/test_cylinder.c) ---- */
@@ -145,6 +146,17 @@ void test_calibration_idle_spark(void);
 void test_engine_pipe_rate(void);
 /* ---- random engines (tests/test_fuzz.c) ---- */
 void test_fuzz_random_engines(void);
+/* ---- no two cycles alike, the accessories, the soft cut (tests/test_variation.c) ---- */
+void test_variation_off_is_exact(void);
+void test_variation_cov_of_imep(void);
+void test_variation_cov_at_idle(void);
+void test_variation_repeatable(void);
+void test_variation_cylinders_differ(void);
+void test_variation_flicker(void);
+void test_variation_accessories(void);
+void test_variation_soft_cut(void);
+void test_variation_conserves(void);
+void test_variation_dyno_in_the_sim(void);
 /* ---- the flow's noise and the engine's own sound (tests/test_noise.c) ---- */
 void test_noise_jet_eighth_power(void);
 void test_noise_valve_jets(void);
@@ -220,6 +232,7 @@ static const struct {
     T(test_audio_mufflers),
     T(test_audio_intake_mouth),
     T(test_audio_headers_rumble),
+    T(test_audio_cylinders_sound_apart),
     T(test_audio_listener_hears_each_tailpipe),
     T(test_audio_sim_hears_every_source),
     T(test_cylinder_geometry),
@@ -290,6 +303,16 @@ static const struct {
     T(test_calibration_idle_spark),
     T(test_engine_pipe_rate),
     T(test_fuzz_random_engines),
+    T(test_variation_off_is_exact),
+    T(test_variation_cov_of_imep),
+    T(test_variation_cov_at_idle),
+    T(test_variation_repeatable),
+    T(test_variation_cylinders_differ),
+    T(test_variation_flicker),
+    T(test_variation_accessories),
+    T(test_variation_soft_cut),
+    T(test_variation_conserves),
+    T(test_variation_dyno_in_the_sim),
     T(test_noise_jet_eighth_power),
     T(test_noise_valve_jets),
     T(test_noise_throttle_hiss),

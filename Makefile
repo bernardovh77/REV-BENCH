@@ -2,17 +2,20 @@
 #
 #   make              build the command-line tool (build/rb_cli)
 #   make test         build and run the unit tests
-#   make render       render the engine's sound (stages 11-12b) to
-#                     renders/*.wav (about four minutes): the four starting and
-#                     idling and pulling, heard from behind the car, idling
+#   make render       render the engine's sound (stages 11-12c) to
+#                     renders/*.wav (about six minutes): the four starting and
+#                     idling, pulling into its rev limiter and back to idle,
+#                     and revved in neutral, heard from behind the car, idling
 #                     over its open bonnet, and from the driver's seat idling
-#                     and pulling; the four at 3000 rpm with each muffler, 1 m
-#                     from its tailpipe; both V8s at 3000 rpm, the cross-plane
-#                     one from every place around the car and in it, and
-#                     pulling (the mufflers' and the cross-plane V8's at half
-#                     gain: they're loud enough to reach the soft limiter); the
-#                     boxer with its unequal headers and with equal ones; and
-#                     the test tone
+#                     and pulling; the four at 3000 rpm on a dyno with each
+#                     muffler, 1 m from its tailpipe; both V8s at 3000 rpm, the
+#                     cross-plane one from every place around the car and in
+#                     it, pulling and revved (the mufflers' and the V8s' at
+#                     half gain: they're loud enough to reach the soft
+#                     limiter); the six and the boxer revved; the boxer with
+#                     its unequal headers and with equal ones; and the test
+#                     tone. Every cycle its own (stage 12c): rb_cli sound's
+#                     --variation 0 renders stage 12b's exact loops
 #   make wasm         build the core for the browser (web/src/wasm/rb_core.wasm)
 #   make fuzz         random engines (a preset with random fields), 20 of them
 #                     for 10 s each on their own crank: nothing may stop being a
@@ -94,6 +97,7 @@ render: $(CLI)
 	$(CLI) tone --out renders/test.wav --csv renders/test.csv
 	$(CLI) sound --preset i4 --idle --out renders/i4-idle.wav
 	$(CLI) sound --preset i4 --sweep --out renders/i4-sweep.wav --csv renders/i4-sweep.csv
+	$(CLI) sound --preset i4 --rev --out renders/i4-rev.wav --csv renders/i4-rev.csv
 	$(CLI) sound --preset i4 --idle --listener front --out renders/i4-idle-front.wav
 	$(CLI) sound --preset i4 --idle --listener cabin --out renders/i4-idle-cabin.wav
 	$(CLI) sound --preset i4 --sweep --listener cabin --out renders/i4-sweep-cabin.wav
@@ -101,11 +105,15 @@ render: $(CLI)
 	  $(CLI) sound --preset i4 --hold --rpm 3000 --muffler $$m --listener tailpipe --gain 0.5 \
 	    --out renders/i4-3000-$$m.wav || exit 1; done
 	for l in behind tailpipe side front cabin; do \
-	  $(CLI) sound --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.5 \
+	  $(CLI) sound --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.4 \
 	    --out renders/v8-cross-3000-$$l.wav || exit 1; done
-	$(CLI) sound --preset v8-cross --sweep --gain 0.5 --out renders/v8-cross-sweep.wav \
+	$(CLI) sound --preset v8-cross --sweep --gain 0.4 --out renders/v8-cross-sweep.wav \
 	  --csv renders/v8-cross-sweep.csv
+	$(CLI) sound --preset v8-cross --rev --gain 0.4 --out renders/v8-cross-rev.wav
 	$(CLI) sound --preset v8-flat --hold --rpm 3000 --out renders/v8-flat-3000.wav
+	$(CLI) sound --preset v8-flat --rev --gain 0.4 --out renders/v8-flat-rev.wav
+	$(CLI) sound --preset i6 --rev --out renders/i6-rev.wav
+	$(CLI) sound --preset boxer4 --rev --out renders/boxer4-rev.wav
 	$(CLI) sound --preset boxer4 --hold --rpm 3000 --out renders/boxer4-3000.wav
 	$(CLI) sound --preset boxer4 --hold --rpm 3000 --equal-headers --out renders/boxer4-3000-equal.wav
 

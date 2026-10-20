@@ -23,18 +23,27 @@
 ## Sound: Bernardo's top priority
 - **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
   cross-plane V8's sweep came close). He asked for research and comparisons with real engines,
-  and for the refining of the sound to be treated as very important.
+  and for the refining of the sound to be treated as very important. After stage 12b's: "the
+  3000 on all engines feel like they should be the idle", "too smooth... less like a piano
+  note", the limiter's "huge gap", the deceleration "very off" (stage 12c's work).
 - **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md's sound track acts
   on them: stage 12b (the jets' noise, the engine's own sound, the cabin; S3 folded into it), then
   S1, S2 and S4, and S5 at the end. Working agreement 6 adds a sound check to every stage. Never
   trade sound for speed silently.
 - **Measuring:** `tools/compare_real.py` measures renders like the recordings of real engines in
-  `tools/real_engines.csv` (Freesound, CC0/CC BY). `fetch` puts the recordings in
-  `renders/real/` once (needs ffmpeg), then `compare [--kind rev] WAV@T0-T1:LABEL...`.
+  `tools/real_engines.csv` (Freesound, CC0/CC BY/Sampling+). `fetch` puts the recordings in
+  `renders/real/` once (needs ffmpeg), then `compare [--kind steady|rev] WAV@T0-T1:LABEL...`.
+  `tools/orders.py CYL WAV@T0-T1@RPMLO-RPMHI:LABEL...` measures the orders between the firing
+  ones: how differently the cylinders sound. Recordings made "at the exhaust" have the jet
+  blowing on the microphone: their low band varies more than a listener's would.
 - **The numbers that matter** (medians at idle):
-  - **Repeating:** a real engine's cycle repeats at about +5 dB below 500 Hz and under 0 dB
-    above. Ours repeats at +38 to +57 dB below 500 Hz, an exact loop: that is the "artificial"
-    (stage S1's work).
+  - **Repeating:** a real engine's cycle repeats at about +5 dB below 500 Hz (−2 to +13) and
+    under 0 dB above. Ours repeated at +28 to +57 dB below 500 Hz, an exact loop: that was the
+    "artificial" and the "piano note". Stage 12c's variation brought it to +12…+20 (S1's work
+    goes on), and the band 0.5–2 kHz to −7 (real −5 to −10).
+  - **Every firing the same:** between their firing orders real engines have −12 to +11 dB of
+    them; with equal headers and identical cylinders the four had −72 idling and −33 to −41 at
+    3000 rpm. Stage 12c (unequal headers, each cylinder its own): −26 and −14.
   - **High frequencies:** the pipes' grid carries nothing above c/(πΔx): 2.4 kHz in the 7.5 cm
     exhaust cells. Real engines keep a broadband floor to 16 kHz (−25 dB of their energy above
     2 kHz). Until stage 12b ours had −59 there: that was the "dull". Stage 12b's noise brought it
@@ -240,6 +249,26 @@
   flow of the gas it comes from, A √(1.4 ρ p). Normal running stays under 1.13 times it; held at
   high rpm with the throttle shut, the runners near a vacuum ran away without it (58 times, gas at
   13 K; `test_engine_vacuum`).
+- Stage 12c, no two cycles alike (`e->variation`, 0 by default so the tests and dyno numbers stay
+  exact; `rb_cli sound` uses 1, the fuzzer 0–2; tests/test_variation.c):
+  - at IVC each burn's start (`b->start_angle`; `b->spark_angle` stays the computer's spark) moves
+    by 7 % of its length and its length by 6 % (RMS), correlated 0.5; each cylinder has its own
+    mixture (2 %) and burn length (4 %), drawn at init with their mean taken away; each exhaust
+    valve's area flickers 15 % (RMS, below 2 kHz) while open. COV of IMEP 1.2 % wide open, 4.3 %
+    idling. `core/src/rand.h` is the seeded generator (noise.c's too): renders repeat exactly;
+  - `b->work`/`b->last_work`: each cylinder's work over its own cycle;
+  - the presets' headers are unequal (the four 0.58/0.40/0.30/0.52 m, the six's outer and the
+    cross-plane V8's front ones longest); `rb_engine_desc_default` keeps equal ones;
+  - `accessory_power` (an engine field, part of the friction): a steady torque below 1500 rpm,
+    the power above, none while cranking; the presets take 800–1250 W, so their idle valves and
+    gains were retuned (docs/stage-12c.md). Twice that made the idle controllers hunt;
+  - the rev limiter's soft cut (`soft_cut`): in the 150 rpm under the limit single sparks are cut
+    at random, more nearer it; the hard cut above as before; `e->limiter_cuts` counts them; off
+    while held;
+  - `sim->dyno` (internal): a dyno a native host put on the crank, stepped before the engine every
+    physics step (`rb_cli sound --hold`); a rebuilt engine drops it;
+  - `rb_cli sound`: `--hold` on that dyno, `--sweep` with the road's load ending clutch-in at idle,
+    `--rev` (neutral revs), `--variation`, `--headers`, `--load`.
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
@@ -252,6 +281,7 @@
   order; pulls' dBA against rpm; third-octave bands side by side; 16-bit WAVs only, so render
   without `--float`),
   `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above),
+  `tools/orders.py` how much is between the firing orders,
   `tools/plant_bugs.py` plants a stage's bugs (see Workflow).
   The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted
   #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered

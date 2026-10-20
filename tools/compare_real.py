@@ -6,10 +6,11 @@ compare_real.py - REV-BENCH's sound against recordings of real engines.
         downloads the recordings listed in tools/real_engines.csv (Freesound
         previews, 128 kbit/s MP3) into renders/real/ and turns each into a mono
         48 kHz WAV (needs ffmpeg: sudo apt install ffmpeg)
-    python3 tools/compare_real.py compare [--kind idle|rev] [WAV@T0-T1:LABEL ...]
-        measures the listed recordings of that kind (idling, the default, or
-        revving; each one's stretch t0..t1 seconds) and each given render the
-        same way, prints the numbers and draws them  -> renders/real-KIND.png
+    python3 tools/compare_real.py compare [--kind idle|steady|rev] [WAV@T0-T1:LABEL ...]
+        measures the listed recordings of that kind (idling, the default; held
+        at a steady speed off idle, like rb_cli sound --hold; or revving; each
+        one's stretch t0..t1 seconds) and each given render the same way,
+        prints the numbers and draws them  -> renders/real-KIND.png
 
 The numbers, all independent of the microphone's level:
   >1k, >2k, >4k  the share of the energy above 1, 2 and 4 kHz, in dB
@@ -24,7 +25,9 @@ The numbers, all independent of the microphone's level:
                  75-267 ms, an idle's 720 degrees at 450-1600 rpm; the bands above
                  500 Hz at the low band's lag), as 10 log10(r / (1 - r)). 0 dB:
                  as much changes as repeats. A sound that repeats exactly reads
-                 +40 dB or more. Idling only: revving changes the cycle's length.
+                 +40 dB or more. Idling (and steady: the lag searched over
+                 17-80 ms, 1500-7000 rpm) only: revving changes the cycle's
+                 length.
 
 -o FILE writes the chart somewhere else. Needs numpy and matplotlib.
 """
@@ -138,7 +141,7 @@ def thirds(x, fs):
     return centres, np.array(share)
 
 
-def measure(path, t0, t1, repeats=True):
+def measure(path, t0, t1, repeats=True, rpm=(450.0, 1600.0)):
     x, fs = read_wav(path)
     x = x[int(t0 * fs):int(t1 * fs)]
     x = x - x.mean()
@@ -157,7 +160,7 @@ def measure(path, t0, t1, repeats=True):
     crest = 20.0 * np.log10(np.max(np.abs(x)) / np.sqrt(np.mean(x * x)))
     reps = []
     if repeats:
-        r_lo, cycle = repeat(band(x, fs, *BANDS[0]), fs, 120.0 / 1600.0, 120.0 / 450.0)
+        r_lo, cycle = repeat(band(x, fs, *BANDS[0]), fs, 120.0 / rpm[1], 120.0 / rpm[0])
         reps = [as_db(r_lo)] + [as_db(repeat(band(x, fs, *b), fs, 0.97 * cycle, 1.03 * cycle)[0])
                                 for b in BANDS[1:]]
     return {"above": [above(1000.0), above(2000.0), above(4000.0)], "slope": slope,
@@ -165,12 +168,13 @@ def measure(path, t0, t1, repeats=True):
 
 
 def compare(args):
-    idle = args.kind == "idle"
+    idle = args.kind != "rev"   # the repeats: idling or steady
+    rpm = (1500.0, 7000.0) if args.kind == "steady" else (450.0, 1600.0)
     real = []
     for row in read_list():
         wav = os.path.join(REAL_DIR, row["id"] + ".wav")
         if row["kind"] == args.kind and os.path.exists(wav):
-            real.append((row["label"], measure(wav, float(row["t0"]), float(row["t1"]), idle)))
+            real.append((row["label"], measure(wav, float(row["t0"]), float(row["t1"]), idle, rpm)))
     if not real:
         print("compare_real: no recordings in renders/real (run: python3 tools/compare_real.py fetch)")
     ours = []
@@ -181,24 +185,25 @@ def compare(args):
             t0, t1 = (float(v) for v in span.split("-"))
         except ValueError:
             sys.exit(f"compare_real: {spec} isn't WAV@T0-T1:LABEL")
-        ours.append((name, measure(path, t0, t1, idle)))
+        ours.append((name, measure(path, t0, t1, idle, rpm)))
     print(f"{'':34s} {'>1k':>6s} {'>2k':>6s} {'>4k':>6s} {'slope':>6s} {'A loss':>6s} {'crest':>6s}"
           + (f"   repeat {'lo':>5s} {'mid':>5s} {'hi':>5s}" if idle else ""))
     for name, m in real + ours:
         print(f"{name[:34]:34s} " + " ".join(f"{v:6.1f}" for v in m["above"])
               + f" {m['slope']:6.1f} {m['a_loss']:6.1f} {m['crest']:6.1f}"
               + ("          " + " ".join(f"{v:5.1f}" for v in m["repeat"]) if idle else ""))
-    chart(real, ours, idle, args.out or os.path.join(HERE, "..", "renders", f"real-{args.kind}.png"))
+    chart(real, ours, idle, args.out or os.path.join(HERE, "..", "renders", f"real-{args.kind}.png"),
+          "idling" if args.kind == "idle" else "held at a steady speed")
 
 
-def chart(real, ours, idle, out):
+def chart(real, ours, idle, out, doing="idling"):
     setup()
     if idle:
         fig, (sp, rp) = plt.subplots(2, 1, figsize=(10, 8.6), facecolor=SURFACE,
                                      gridspec_kw={"height_ratios": [1.25, 1.0], "hspace": 0.42})
         fig.subplots_adjust(left=0.085, right=0.83, top=0.86, bottom=0.07)
-        titles(fig, "Real engines and REV-BENCH, idling",
-               f"{len(real)} recordings of real engines idling (orange) and {len(ours)} of REV-BENCH's "
+        titles(fig, f"Real engines and REV-BENCH, {doing}",
+               f"{len(real)} recordings of real engines {doing} (orange) and {len(ours)} of REV-BENCH's "
                "(blue): where their energy is,\nand how much of each engine cycle repeats in the next")
     else:
         fig, sp = plt.subplots(figsize=(10, 5.4), facecolor=SURFACE)
@@ -264,7 +269,7 @@ def main():
     sub.add_parser("fetch").set_defaults(run=fetch)
     c = sub.add_parser("compare")
     c.add_argument("files", nargs="*")
-    c.add_argument("--kind", choices=("idle", "rev"), default="idle")
+    c.add_argument("--kind", choices=("idle", "steady", "rev"), default="idle")
     c.add_argument("-o", "--out")
     c.set_defaults(run=compare)
     args = p.parse_args()

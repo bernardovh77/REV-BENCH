@@ -5,13 +5,16 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stages 0–13 of 26 done, and 12b. The C core plays in the browser through an
+**Status:** stages 0–13 of 26 done, and 12b and 12c. The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe
 or in the driver's seat, each tailpipe and the intake's mouth at their own distance and off the
 ground. On top of the pipes' sound come the noise of the gas's jets (at the tailpipes, the
 exhaust valves and the throttle) and the engine's own mechanical sound (combustion, piston slap,
-the valves, the injectors), struck into the block's resonances. The physics so
+the valves, the injectors), struck into the block's resonances. No two cycles are alike: each
+burn starts and runs its own way, the cylinders differ a little and their headers aren't all
+alike, as a real engine's; the rev limiter stutters on a soft cut, and let go the engine falls
+back to idle. The physics so
 far: gas properties, chambers and flow through openings,
 a cylinder with a crank and piston, an engine breathing through its cams, valves, throttle
 and intake plenum, burning fuel with heat lost to the walls, and a crank that turns on its
@@ -36,7 +39,7 @@ You need Node.js 22.12 or newer (`node --version`; in WSL, `nvm install 22` is a
 way to get it).
 
 ```bash
-cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH/web
+cd /mnt/c/Users/berna/REV-BENCH/web
 npm install
 npm run dev
 ```
@@ -60,14 +63,15 @@ npm run test:e2e     # browser test; the first time run: npx playwright install 
 You need `gcc` and `make` (`sudo apt install build-essential`).
 
 ```bash
-cd /mnt/c/Users/berna/Personal-Projects/REV-BENCH
+cd /mnt/c/Users/berna/REV-BENCH
 make            # builds build/rb_cli
 make test       # runs the C unit tests
-make render     # the engine's sound (about three minutes) in renders/: the four idling and
-                # pulling (i4-idle.wav, i4-sweep.wav), with each muffler (i4-3000-*.wav), the
-                # cross-plane V8 from each place around the car (v8-cross-3000-*.wav) and
-                # pulling (v8-cross-sweep.wav), the flat-plane V8 (v8-flat-3000.wav), the
-                # boxer with unequal and equal headers (boxer4-3000*.wav), and the test tone
+make render     # the engine's sound (about six minutes) in renders/: the four idling,
+                # pulling and revving in neutral (i4-idle.wav, i4-sweep.wav, i4-rev.wav), with
+                # each muffler (i4-3000-*.wav), the cross-plane V8 from each place around the
+                # car (v8-cross-3000-*.wav), pulling and revving, the flat-plane V8, the six
+                # and the boxer revving (*-rev.wav), the boxer with unequal and equal headers
+                # (boxer4-3000*.wav), and the test tone
 ```
 
 Open the WAVs in `renders\` from Windows Explorer to listen, on headphones or speakers with
