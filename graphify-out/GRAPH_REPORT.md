@@ -1,9 +1,9 @@
-# Graph Report - rev-bench  (2026-10-20)
+# Graph Report - REV-BENCH  (2026-10-20)
 
 ## Corpus Check
-- 109 files · ~394,517 words
+- 109 files · ~394,573 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 9 file(s) not represented in the graph (top: (none) 5, .csv 1, .css 1)
+- Unclassified: 10 file(s) not represented in the graph (top: (none) 5, .zip 1, .csv 1)
 
 ## Summary
 - 1412 nodes · 3932 edges · 66 communities (56 shown, 10 thin omitted)
@@ -11,25 +11,25 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `9a21308c`
+- Built from commit: `9662bb59`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- test_audio.c
+- rb_sim.c
 - rb_cylinder_move
 - rb_engine_step
 - pipe.c
 - rb_engine_api.c
 - rb_cli.c
 - rb-core.ts
-- wav.c
+- string
 - main.ts
-- presets.c
+- Stage 12 — Mufflers, the intake and the listener 🎧
 - package.json
 - setup
 - RbExports
-- test_dyno.c
+- rb_engine_init
 - RbSim
 - style
 - label
@@ -108,7 +108,7 @@
 
 ## Communities (66 total, 10 thin omitted)
 
-### Community 0 - "test_audio.c"
+### Community 0 - "rb_sim.c"
 Cohesion: 0.18
 Nodes (22): config_is_valid(), model_step(), rb_config_default(), rb_config_quality(), rb_init(), rb_onepole_coef(), rb_oversample(), rb_physics_dt() (+14 more)
 
@@ -136,7 +136,7 @@ Nodes (34): rb_engine_displacement(), csv_close(), csv_open(), csv_row(), cmd_bl
 Cohesion: 0.08
 Nodes (40): EngineDescription, PipeDescription, PresetInfo, RB_CLAMPED, RB_EF_ARRAY, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE (+32 more)
 
-### Community 7 - "wav.c"
+### Community 7 - "string"
 Cohesion: 0.13
 Nodes (28): Dither, build_header(), bytes_per_sample(), get_u16(), get_u32(), parse_wav(), put_u16(), put_u32() (+20 more)
 
@@ -144,7 +144,7 @@ Nodes (28): Dither, build_header(), bytes_per_sample(), get_u16(), get_u32(), pa
 Cohesion: 0.08
 Nodes (31): EngineOptions, RevBenchNode, FromWorklet, PROCESSOR_NAME, ProcessorOptions, ToWorklet, CoreInfo, ParamInfo (+23 more)
 
-### Community 9 - "presets.c"
+### Community 9 - "Stage 12 — Mufflers, the intake and the listener 🎧"
 Cohesion: 0.07
 Nodes (26): A muffler is a pipe, Calibration, Cost, Every source at its own distance, Going straight on, Packing, Review of stage 11, Snorkel, air box, filter (+18 more)
 
@@ -156,7 +156,7 @@ Nodes (26): @playwright/test, @types/node, typescript, vite, vitest, description
 Cohesion: 0.24
 Nodes (7): describe(), log_axis(), main(), plot_cycle(), plot_map(), pumping_mep(), setup()
 
-### Community 13 - "test_dyno.c"
+### Community 13 - "rb_engine_init"
 Cohesion: 0.15
 Nodes (20): mark(), rb_dyno_init(), rb_dyno_step(), rb_dyno_sweep(), rb_engine_desc_default(), rb_engine_init(), Tests that can fail, test_audio_intake_mouth() (+12 more)
 
@@ -322,7 +322,7 @@ Nodes (9): rb_cycle_offset(), rb_valve_area(), rb_valve_check(), rb_valve_closes
 
 ### Community 61 - "The workspace"
 Cohesion: 0.33
-Nodes (5): Bernardo's machine (Windows + WSL), Claude's cloud sessions, .claude/settings.json, Moving your copy over (once), The workspace
+Nodes (5): Bernardo's machine (Windows + WSL), Claude's cloud sessions, .claude/settings.json, Moving it out of Personal-Projects (once), The workspace
 
 ### Community 62 - "rb_dc_blocker_init"
 Cohesion: 0.70
@@ -340,8 +340,8 @@ Nodes (5): How others get there, Measured against real engines, Sound realism (O
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Core (C)` connect `test_engine.c` to `test_audio.c`, `audio.c`, `rb_engine_step`, `pipe.c`, `rb_cylinder_move`, `REV-BENCH — notes for Claude`, `RbExports`, `test_dyno.c`, `rb_engine_desc_check`, `math`, `test_noise.c`?**
-  _High betweenness centrality (0.233) - this node is a cross-community bridge._
+- **Why does `Core (C)` connect `test_engine.c` to `rb_sim.c`, `audio.c`, `rb_engine_step`, `pipe.c`, `rb_cylinder_move`, `REV-BENCH — notes for Claude`, `RbExports`, `rb_engine_init`, `rb_engine_desc_check`, `math`, `test_noise.c`?**
+  _High betweenness centrality (0.242) - this node is a cross-community bridge._
 - **Are the 62 inferred relationships involving `rb_engine_step()` (e.g. with `rb_chamber_add_heat()` and `rb_chamber_clear_rates()`) actually correct?**
   _`rb_engine_step()` has 62 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `@types/node`, `typescript`, `vite` to the rest of the system?**
@@ -349,7 +349,7 @@ _Questions this graph is uniquely positioned to answer:_
 - **Should `rb_cylinder_move` be split into smaller, more focused modules?**
   _Cohesion score 0.05552617662612375 - nodes in this community are weakly interconnected._
 - **Why does `RbExports` connect `RbExports` to `rb-core.ts`, `Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet`, `RbSim`, `.process`, `test_engine.c`?**
-  _High betweenness centrality (0.181) - this node is a cross-community bridge._
+  _High betweenness centrality (0.191) - this node is a cross-community bridge._
 - **Are the 40 inferred relationships involving `rb_engine_init()` (e.g. with `Try it` and `Three things that surprised me`) actually correct?**
   _`rb_engine_init()` has 40 INFERRED edges - model-reasoned connections that need verification._
 - **Should `rb_engine_step` be split into smaller, more focused modules?**
