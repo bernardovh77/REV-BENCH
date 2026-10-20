@@ -21,3 +21,11 @@ web/node_modules/
 web/dist/
 web/test-results/
 web/playwright-report/
+
+# graphify: each machine's own bookkeeping (its AST cache, file times, the folder it
+# scanned, a shown-once notice). graph.json, graph.html, GRAPH_REPORT.md and the
+# .graphify_analysis/.graphify_labels files are the graph itself and stay committed.
+graphify-out/cache/
+graphify-out/manifest.json
+graphify-out/.graphify_root
+graphify-out/.cloud-cta-shown

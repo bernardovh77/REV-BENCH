@@ -263,3 +263,21 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 - A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.
+
+## The graph in this repo
+
+graphify's section above assumes graphify is installed. In this repo:
+- graphify-out/ is in REV-BENCH/, a subfolder of the git repo: run graphify from REV-BENCH/
+  (`cd REV-BENCH && graphify query "..."`), since cloud sessions start in the repo's root.
+- Claude's cloud workspace has graphify only when its environment's setup script installs it
+  (`command -v graphify`). Without it: GRAPH_REPORT.md first to find the files, then only those;
+  don't read graph.json or graph.html (about 1 MB each); and say in the stage's report that the
+  graph needs a `graphify update .`.
+- GRAPH_REPORT.md names each community after one of its members ("math", "titles"), not a
+  topic: look at what's in it.
+- The graph trails the code until someone runs `graphify update .`: where they disagree, the
+  code is right.
+- Committed: graph.json, graph.html, GRAPH_REPORT.md, .graphify_analysis.json and the
+  .graphify_labels files. cache/, manifest.json, .graphify_root (the absolute path of the folder
+  it scanned) and .cloud-cta-shown are each machine's own and git-ignored: graphify remakes them,
+  and without a manifest the next update just re-checks every file.
