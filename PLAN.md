@@ -34,7 +34,7 @@ gets a one-line summary of anything that changed from the plan.
 | 10 | 1D exhaust pipes (headers → collector → tailpipe)| Sound            | ✅     | Runners, headers, collectors, exhaust pipes and tailpipes are 1D pipes; a pulse runs at c (−0.16 %) and echoes inverted from an open end; the idle computer looks ahead |
 | 11 | Audio extraction → first WAV renders 🎧          | Sound            | ✅     | A microphone hears the tailpipes' volume flow; anti-alias FIR, DC blocker, soft limiter, TPDF dither; four clean renders. Listening checkpoint |
 | 12 | Mufflers, intake & listener 🎧                    | Sound            | ✅     | 1D mufflers (chambered, packed straight-through, straight pipe); snorkel + air box + filter, the mouth heard; a listener around the car, each source at its distance and off the ground. A pull gets louder; unequal headers rumble. Bernardo: "dull and really artificial" → S1–S5 |
-| 13 | Performance & stability pass                     | Sound            | ⬜     | |
+| 13 | Performance & stability pass                     | Sound            | ✅     | Renders unchanged; the cross-plane V8 0.59× → 0.76× real time natively (0.46× → 0.72× as WASM). Quality setting: medium 1.09×, low 1.84×. A fuzzer found a stage 12 blow-up. The 4× → 13b |
 | S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | ⬜     | Real idles repeat at +5 dB per cycle, ours at +44 (RESEARCH.md) |
 | S2 | Sound: air (flow noise, finer exhaust) 🎧         | Sound realism    | ⬜     | Ours falls off a cliff above 2 kHz: the pipes' grid |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ⬜     | Takes stage 12b's mechanical noise |
@@ -422,6 +422,18 @@ Its flow noise is now stage S2, its mechanical noise S3, and its in-car listener
     then the other sound stages.
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real-time natively at the default
   quality, so it has headroom for WASM in the browser.
+- *Built:* the core is faster where the profile pointed, and the renders are unchanged (they differ
+  from stage 12's 98–120 dB down, the dither): Newton's method for T starts from a predicted guess
+  and hands back cv; γ and the speed of sound are worked out when asked; each species' constants
+  come from the compiler; the nozzle's choke test needs one pow; Woschni is one exp of logs; the
+  pipes multiply by kept reciprocals. On Claude's cloud VM the cross-plane V8 went from 0.59× to
+  0.76× real time natively (0.46× to 0.72× as WebAssembly): not the 4× asked, which moved to stage
+  13b. A quality setting (`rb_config.pipe_rate`, `RB_QUALITY_*`): medium steps the pipes at 24 kHz
+  (the V8 at 1.09×), low the physics at 96 kHz too (1.84×; 1.29× as WebAssembly), with torque and
+  VE within 0.35 % of high and the sound's level within 1 dB; low adds 7–9 % pumping work motored,
+  at the valves. A fuzzer (`rb_cli fuzz`, `make fuzz`) found a stage 12 blow-up: pipes going
+  straight on between bores 1.86 times apart in area (now only within 1.5). `make bench`, `make
+  bench-wasm`, `tools/plant_bugs.py`. Details in `docs/stage-13.md`.
 
 ### Phase 2b — Sound realism (top priority) 🎧
 
@@ -508,14 +520,14 @@ the numbers from `tools/compare_real.py` in the real engines' range, and with Be
 - **Bernardo checks:** listen on headphones.
 
 #### Stage 13b — Performance II: vectorized pipes, implicit valves
-Split from stage 13 (working agreement 2), whose cheap wins and quality setting brought the
-cross-plane V8 from 0.48× to about 0.8× real time natively at high quality (docs/stage-13.md). The
-pipes are now most of the cost, about 70 ns per cell and step, and no single function dominates:
-it's the per-cell work itself.
+Split from stage 13 (working agreement 2), whose cheap wins brought the cross-plane V8 from 0.59×
+to 0.76× real time natively at high quality, and its quality setting to 1.84× at low
+(docs/stage-13.md, "Where the time goes"). The pipes' cells are now most of the cost, their faces
+and their gas's chemistry, and no single function dominates: it's the per-cell work itself.
 - **Structure of arrays for the pipes' cells.** Their state goes in arrays the loops run along, with
   no function calls and branch-free upwinding, so the compiler vectorizes them. Then build the
   WebAssembly core with SIMD (`-msimd128`, in every current browser) and link-time optimization.
-- **The gas mixture without rebuilding it.** The rebuild is 18 % of the time, and the remix
+- **The gas mixture without rebuilding it.** The rebuild is 17 % of the work, and the remix
   threshold can't be raised: it would make T and p jump by up to 1 Pa. Instead, evaluate the
   three species' u(T) and cv(T) weighted by mass (more arithmetic, all of it vectorizable), or
   vectorize the rebuild.

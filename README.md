@@ -5,7 +5,7 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stage 12 of 26 done. The C core plays in the browser through an AudioWorklet
+**Status:** stage 13 of 26 done. The C core plays in the browser through an AudioWorklet
 (still a test tone); natively it renders the engine's own sound to WAV files, as a listener
 around the car hears it: behind it, beside it, over the bonnet or a metre from a tailpipe,
 each tailpipe and the intake's mouth at their own distance and off the ground. The physics so
@@ -21,7 +21,10 @@ with any crank and firing order, and five come ready-made: a 2.0 L four, a 3.0 L
 cross-plane and a flat-plane V8 (each bank its own exhaust), and a 2.0 L flat four with
 unequal headers. On the dyno, the four, the
 six and the flat four make close to the torque and power of the real engines they stand for
-(Toyota's 1AZ-FE, BMW's M54B30 and Subaru's FB20). See [PLAN.md](PLAN.md) for the roadmap and progress,
+(Toyota's 1AZ-FE, BMW's M54B30 and Subaru's FB20). A quality setting trades a little accuracy
+for speed (the heaviest engine, the cross-plane V8, runs at about three quarters of real time
+natively at full quality and nearly twice it at low), and a fuzzer drives random engines to find
+what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
 
 ## Try it in the browser
@@ -150,7 +153,8 @@ native/    Command-line harness, WAV and CSV writers.
 tests/     C unit tests (make test).
 web/       Browser app (Vite + TypeScript): src/core wraps the WASM core, src/audio runs it
            in an AudioWorklet, tests/ has unit and browser tests.
-docs/      One note per stage: what was built and the equations used.
+docs/      One note per stage: what was built and the equations used. workspace.md: where
+           REV-BENCH is worked on and how each place is set up.
 renders/   Output of make render, the rb_cli demos and tools/ (git-ignored).
 tools/     Python scripts that chart the CSV output.
 ```

@@ -51,7 +51,10 @@ CORE_OBJ   := $(call obj,$(CORE_SRC))
 NATIVE_OBJ := $(call obj,$(NATIVE_SRC))
 CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ)
+BENCH_OBJ  := $(call obj,native/rb_bench.c)
+# Every object, for the header dependencies (-MMD) included at the end: one
+# left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -67,7 +70,7 @@ $(CLI): $(CLI_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 $(TESTS): $(TEST_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(BENCH): $(call obj,native/rb_bench.c) $(CORE_OBJ)
+$(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(BUILD)/%.o: %.c

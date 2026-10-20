@@ -16,8 +16,9 @@
   workspace (more with the sanitizers, so run that in filtered parts), and processes started in
   the background can die with a call: run a few bugs per call under `timeout`, and never
   `pkill -f` a pattern that also matches your own command line.
-- After changing a header, rebuild from scratch (`rm -rf` the build's object folders): make has
-  left stale objects with the old struct layouts (stage 13: a segfault).
+- make rebuilds every object whose headers changed (-MMD), if the object is in the Makefile's
+  ALL_OBJ: a new program's objects go there too. Stage 13's segfault after a header change was
+  rb_bench.o, left out of it.
 
 ## Sound: Bernardo's top priority
 - **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
@@ -114,8 +115,11 @@
   open into its first cell and its tailpipe starts from its last, joined as to volumes; a straight
   pipe or straight-through goes straight on (`rb_pipe_onward`) from its exhaust pipe, unless two
   meet there, and into its tailpipe. Joined through a volume, a straight pipe lost two velocity
-  heads and cost more back pressure than the can. The intake: snorkel → air box (fast, with
-  the plenum) → throttle; the engine's books (`mass_in` etc.) count at the snorkel's mouth, not the
+  heads and cost more back pressure than the can. Only bores within `RB_PIPE_ONWARD_MAX_RATIO`
+  (1.5) in area go straight on: across a bigger step the joint pumps the flow into the wide pipe
+  until it blows up (stage 13's fuzzer: 75 mm tailpipes on the V8, 1.86 times its exhaust pipe).
+  The intake: snorkel → air box (fast, with the plenum) → throttle; the engine's books
+  (`mass_in` etc.) count at the snorkel's mouth, not the
   throttle. Pipes: runners, headers, exhaust pipes, tailpipes, then mufflers and the snorkel (new
   kinds and places appended, so old indices hold). Packing adds weight to slow swings
   (R τ per m³: keep it under the gas's density). The boom at 1500–2500 rpm in the four is the whole
@@ -290,9 +294,12 @@ graphify's section above assumes graphify is installed. In this repo:
   start Python before every call.
 - GRAPH_REPORT.md names each community after one of its members ("math", "titles"), not a
   topic: look at what's in it.
+- graphify can't parse core/include/rb.h (its `extern "C"` guard), and headers give it no
+  symbols: the API's declarations aren't in the graph, its definitions (rb_sim.c, ...) are.
 - The graph trails the code until someone runs `graphify update .`: where they disagree, the
   code is right.
 - Committed: graph.json, graph.html, GRAPH_REPORT.md, .graphify_analysis.json and the
   .graphify_labels files. cache/, manifest.json, .graphify_root (the absolute path of the folder
   it scanned) and .cloud-cta-shown are each machine's own and git-ignored: graphify remakes them,
-  and without a manifest the next update just re-checks every file.
+  and without a manifest the next update just re-checks every file. So are its dated backups
+  (graphify-out/2026-10-20/) and .graphify_labels.pending.json, the names it gave new groups.

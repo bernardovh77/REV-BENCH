@@ -47,7 +47,7 @@
 extern "C" {
 #endif
 
-#define RB_VERSION_STRING "0.12.0"
+#define RB_VERSION_STRING "0.13.0"
 
 /* Limits for rb_config. */
 #define RB_MIN_SAMPLE_RATE  8000.0
