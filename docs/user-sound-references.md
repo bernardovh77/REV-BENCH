@@ -104,6 +104,59 @@ like-for-like test, obtain a known RPM/load stretch and verified listener positi
 The outstanding S1 low-band repetition at idle still needs separate work; these
 rev excerpts do not establish an idle target.
 
+## R1b: optional filtered listening copies — 2026-10-21
+
+Bernardo asked to try emphasizing the engine in these same four recordings,
+accounting for possible cabin, exterior and passing-car sections. Sixteen
+additional stereo float WAV excerpts and four filtered MP3 compilations are now
+in `renders/user-reference-previews/filtered/`. The original MP3s, unfiltered
+measurement excerpts, existing previews and comparison catalog are preserved.
+
+This is conservative noise reduction, not source separation. Each excerpt uses
+FFmpeg's two-pole 20 Hz high-pass followed by FFT denoising with a tracked noise
+floor, a 6 dB reduction setting and initial noise floor of -50 dB:
+
+```text
+highpass=f=20:p=2,afftdn=nr=6:nf=-50:tn=1
+```
+
+The 6 dB setting is deliberately modest because an engine's exhaust, intake and
+turbo also contain broadband noise. Road or wind overlapping the engine remains;
+some engine texture can also be reduced. No speech-removal or perfectly isolated
+engine claim is made. Existing speech-screened source intervals are reused.
+
+Stereo and the original pitch/motion are retained. There is no Doppler correction,
+attempt to undo cabin filtering, or shared brightness correction across engines.
+The BMW title suggests a POV/onboard recording, but neither that title nor a
+darker spectrum verifies the camera position for a selected window. The source
+metadata now explicitly marks viewpoints as unverified; cabin/exterior/pass-by
+are possible contexts, not assigned labels. Keep the brighter/darker groups
+separate when comparing.
+
+The float listening excerpts retain the filtered source level and use 10 ms end
+fades. Compilation order is unchanged, with three 0.7-second silence gaps and
+one static gain targeting -3 dBFS before 192 kbit/s MP3 encoding. There is no gate,
+dynamic compressor or pitch shift. Encoding can move peaks slightly. The separate
+`filtered-listening-manifest.json` records source SHA-256 hashes, source intervals,
+viewpoint uncertainty, exact filter chains, compilation positions and static gain.
+These filtered copies must **never** become inputs to spectrum/repetition targets
+or engine calibration; continue using the unfiltered float files in `renders/real`.
+
+Each engine also has a `<key>-raw-then-filtered.mp3` comparison. Its first
+12 seconds are the first source interval with end fades only, followed by a
+0.7-second gap and the same interval filtered. A single gain is shared across
+both halves, preserving the effect on level. These 24.7-second pairs make the
+tradeoff audible without comparing different revs or recording perspectives.
+
+To create only these additional copies, without rewriting the measurement files:
+
+```sh
+python tools/prepare_user_references.py --source-dir C:/Users/berna --ffmpeg /path/to/ffmpeg --filtered-only
+```
+
+Use `--filtered-listening` during a full preparation to create both sets, or
+`--filtered-dir` for another listening-output directory.
+
 ## Validation
 
 All 16 WAVs decode as 12-second, mono, 48 kHz float32 files with finite samples.
@@ -111,6 +164,25 @@ All four previews decode as 50.1-second stereo files. Source ordering, manifest
 positions and the three 0.7-second gaps were checked. The analysis suite now has
 nine passing tests, including custom catalog filtering by engine and acoustic
 group. Brighter/darker plots were generated separately for each preset family.
+
+R1b was generated with native Linux FFmpeg 4.3.1 using isolated library links;
+Claude's setup and installed tools were unchanged. All 16 filtered float excerpts
+decode as finite 12-second stereo 48 kHz audio; all four filtered MP3s decode as
+50.1 seconds of finite stereo audio. Original source hashes match the filtered
+manifest. A real-FFmpeg integration test checks source/catalog/ordinary-preview
+preservation, stereo channel differences, exact excerpt length, the retained
+engine-like harmonic and attenuated subsonic rumble. Set `RB_REFERENCE_FFMPEG`
+to a usable FFmpeg path when the default executable is unavailable; otherwise
+that optional integration test is skipped.
+
+Before compilation gain, the new excerpts' 1–20 Hz energy is reduced by about
+4–10 dB. Their 20–500 Hz energy changes by less than 0.11 dB, while 2–8 kHz drops
+by up to 2.05 dB. These are processing checks against the corresponding existing
+unfiltered mono excerpts, not improved simulation scores or proof of engine
+isolation. The four original MP3s, sixteen measurement WAVs, four ordinary MP3
+previews and comparison catalog are SHA-256 checked before and after a filtered
+preparation; all 25 remain byte-identical. Checks and exact hashes are retained
+in the ignored filtered-output directory.
 
 The previews are engine-dominant excerpts. Overlapping road/wind and other
 mechanical sounds are not perfectly separated; the cleanup is not claimed to

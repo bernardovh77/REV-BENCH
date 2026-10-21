@@ -12,24 +12,34 @@
         {
           "start": 212,
           "end": 224,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 302,
           "end": 314,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 44,
           "end": 56,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 125,
           "end": 137,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         }
-      ]
+      ],
+      "viewpoint_status": "unverified",
+      "viewpoint_note": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only."
     },
     {
       "key": "bmw-m4",
@@ -42,24 +52,34 @@
         {
           "start": 152,
           "end": 164,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 242,
           "end": 254,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 197,
           "end": 209,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 659,
           "end": 671,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         }
-      ]
+      ],
+      "viewpoint_status": "unverified",
+      "viewpoint_note": "The source title says POV, suggesting onboard recording; selected-window camera position is unverified, and brightness does not establish cabin versus exterior."
     },
     {
       "key": "golf-gti",
@@ -72,24 +92,34 @@
         {
           "start": 53,
           "end": 65,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 83,
           "end": 95,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 173,
           "end": 185,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 239,
           "end": 251,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         }
-      ]
+      ],
+      "viewpoint_status": "unverified",
+      "viewpoint_note": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only."
     },
     {
       "key": "mustang-gt",
@@ -102,24 +132,35 @@
         {
           "start": 5,
           "end": 17,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 197,
           "end": 209,
-          "acoustic_group": "brighter"
+          "acoustic_group": "brighter",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 74,
           "end": 86,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         },
         {
           "start": 257,
           "end": 269,
-          "acoustic_group": "darker"
+          "acoustic_group": "darker",
+          "viewpoint_status": "unverified",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
         }
-      ]
+      ],
+      "viewpoint_status": "unverified",
+      "viewpoint_note": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only."
     }
-  ]
+  ],
+  "perspective_policy": "Cabin, exterior and pass-by contexts may coexist in these sources. Acoustic brightness does not identify viewpoint. Preserve stereo and motion; do not remove Doppler or infer a universal EQ target."
 }
