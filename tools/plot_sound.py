@@ -29,7 +29,7 @@ python3-matplotlib).
 import argparse
 import os
 import sys
-import wave
+from audio_wav import read_wav as read_audio_wav
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,16 +52,14 @@ GAIN = 1.0   # the renders' --gain, undone by read_wav (main sets it)
 
 
 def read_wav(path):
-    """Samples (floats, full scale 1, without the render's gain) and the sample
-    rate of a mono WAV."""
+    """Mono PCM16 or float32 samples, without the render's gain, and rate."""
     try:
-        w = wave.open(path)
-    except (OSError, wave.Error) as e:
-        sys.exit(f"plot_sound: cannot read {path}: {e}")
-    if w.getnchannels() != 1 or w.getsampwidth() != 2:
-        sys.exit(f"plot_sound: {path} isn't mono 16-bit PCM (rb_cli sound without --float)")
-    x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float) / 32767.0
-    return x / GAIN, w.getframerate()
+        x, rate = read_audio_wav(path)
+    except (OSError, ValueError) as error:
+        sys.exit(f"plot_sound: cannot read {path}: {error}")
+    if x.shape[1] != 1:
+        sys.exit(f"plot_sound: {path} isn't mono")
+    return x[:, 0] / GAIN, rate
 
 
 def a_weighting(f):

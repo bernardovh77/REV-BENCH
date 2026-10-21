@@ -5,6 +5,7 @@
  * sim's crank.
  */
 #include "dyno.h"
+#include "combustion.h"
 #include "engine.h"
 #include "presets.h"
 #include "rb.h"
@@ -95,7 +96,7 @@ void test_variation_off_is_exact(void)
         CHECK(cycles(&e, 1));
         for (int i = 0; i < 4; i++) {
             const double a = fmod(720.0 - e.burn[i].start_angle + 360.0, 720.0) - 360.0;   /* before TDC */
-            sane &= isfinite(e.cyl[i].gas.p) && e.burn[i].duration <= 180.0 && fabs(a) <= 90.0;
+            sane &= isfinite(e.cyl[i].gas.p) && e.burn[i].duration <= 720.0 && fabs(a) <= 90.0;
         }
     }
     CHECK(sane);
@@ -501,4 +502,123 @@ void test_variation_dyno_in_the_sim(void)
     CHECK_EQ_INT(rb_load_preset(s, rb_preset_find("v8-cross")), RB_OK);
     CHECK(s->dyno == NULL);
     rb_destroy(s);
+}
+
+/* A lean charge's flame cannot finish before the exhaust opens. The old
+ * duration ceiling made it complete anyway. No extra misfire probability:
+ * the charge model sets the pace and EVO leaves fuel/air in the gas. */
+void test_variation_partial_burns(void)
+{
+    for (int life = 0; life < 2; life++) {
+        held(&e, (double)life);
+        e.afr = 26.0;
+        CHECK(cycles(&e, 25));
+        const double evo = rb_valve_opens(&e.desc.exhaust);
+        int seen = 0;
+        for (long k = 0; k < lround(0.4 / DT_FAST) && seen < 6; k++) {
+            const double previous = rb_engine_cylinder_angle(&e, 0);
+            rb_engine_step(&e);
+            const double angle = rb_engine_cylinder_angle(&e, 0);
+            if (!(previous < evo && angle >= evo)) continue;
+            const rb_burn *b = &e.burn[0];
+            CHECK(!b->burning && !b->after_spark);
+            CHECK(b->demand_duration > 200.0 && b->demand_duration <= 720.0);
+            if (life) {
+                CHECK(b->duration > 180.0 && b->duration <= 720.0);
+                CHECK(b->fraction > 0.1 && b->fraction < 0.85);
+                CHECK(e.cyl[0].gas.m[RB_FUEL] > 0.1 * b->burnable);
+                const double available = fmod(evo - b->start_angle + 720.0, 720.0);
+                CHECK_NEAR(b->fraction, rb_wiebe(available, b->duration,
+                           e.desc.wiebe_a, e.desc.wiebe_m), 0.002);
+            } else {
+                CHECK(b->duration <= 180.0);
+                CHECK(b->fraction == 1.0);
+            }
+            seen++;
+        }
+        CHECK_EQ_INT(seen, 6);
+    }
+}
+
+void test_variation_partial_burn_books(void)
+{
+    held(&e, 1.0);
+    e.afr = 26.0;
+    double m0, u0, y0[RB_NSPECIES], m1, u1, y1[RB_NSPECIES];
+    rb_engine_contents(&e, &m0, &u0, y0);
+    CHECK(cycles(&e, 30));
+    rb_engine_contents(&e, &m1, &u1, y1);
+    const double books = e.energy_in - e.energy_out + e.work_on_gas + e.wall_heat
+                       + rb_engine_pipe_heat(&e) + e.heat_released + e.fuel_energy_in;
+    CHECK(e.heat_released > 0.0 && e.species_out[RB_FUEL] > 0.0);
+    CHECK_NEAR(m1 - m0, e.mass_in - e.mass_out + e.fuel_in, 1e-10 * m0);
+    CHECK_NEAR(u1 - u0, books, 1e-9 * e.heat_released);
+    CHECK_NEAR(y1[RB_FUEL] - y0[RB_FUEL], e.species_in[RB_FUEL] - e.species_out[RB_FUEL]
+               + e.fuel_in - e.fuel_burned, 1e-10 * e.fuel_in);
+    CHECK_NEAR(y1[RB_AIR] - y0[RB_AIR], e.species_in[RB_AIR] - e.species_out[RB_AIR]
+               - RB_AFR_STOICH * e.fuel_burned, 1e-10 * e.fuel_in);
+    CHECK_NEAR(y1[RB_BURNED] - y0[RB_BURNED], e.species_in[RB_BURNED] - e.species_out[RB_BURNED]
+               + (1.0 + RB_AFR_STOICH) * e.fuel_burned, 1e-10 * e.fuel_in);
+}
+
+void test_variation_partial_burn_residual(void)
+{
+    /* Isolate dilution from the temperature, pressure, speed and mixture
+     * changes that accompany it in a running engine. At cylinder 1's next
+     * IVC install either charge at the same p/T and stoichiometric AFR;
+     * the existing flame-speed law must leave less of the dilute charge
+     * burned at EVO. These are test charges, not misfire cutoffs. */
+    const double residual[] = { 0.04, 0.44 };
+    double demand[2], duration[2], fraction[2], start[2];
+    for (int case_no = 0; case_no < 2; case_no++) {
+        held(&e, 1.0);
+        e.afr = RB_AFR_STOICH;
+        e.trim_fuel[0] = 0.0;   /* same actual AFR; no extra fuel at IVC */
+        e.spark_map = 0;
+        e.spark = 25.0;          /* same available crank angle in both cases */
+        const double ivc = rb_valve_closes(&e.desc.intake);
+        const double step = 6.0 * e.rpm * DT_FAST;
+        long k = 0;
+        while (!(e.theta <= ivc && e.theta + step > ivc) && k < 5000) {
+            rb_engine_step(&e);
+            k++;
+        }
+        CHECK(k < 5000);
+        if (k >= 5000) return;
+        const double fresh = 1.0 - residual[case_no];
+        const double y[RB_NSPECIES] = {
+            fresh * e.afr / (e.afr + 1.0), fresh / (e.afr + 1.0), residual[case_no]
+        };
+        rb_chamber_init(&e.cyl[0].gas, e.cyl[0].gas.V, 1.22e5, 360.0, y);
+        rb_engine_step(&e);      /* IVC captures the controlled charge first */
+        CHECK_NEAR(e.burn[0].T_ivc, 360.0, 1e-8);
+        CHECK_NEAR(e.burn[0].p_ivc, 1.22e5, 1e-6);
+        CHECK_NEAR(e.burn[0].residual, residual[case_no], 1e-12);
+        demand[case_no] = e.burn[0].demand_duration;
+        duration[case_no] = e.burn[0].duration;
+        /* Start jitter scales with the expected burn length. Pin the
+         * already-generated start to the fixed spark to isolate residence
+         * time as well as charge p/T/AFR and crank speed. */
+        e.burn[0].start_angle = e.burn[0].spark_angle;
+        start[case_no] = e.burn[0].start_angle;
+        const double evo = rb_valve_opens(&e.desc.exhaust);
+        int seen = 0;
+        for (k = 0; k < 5000; k++) {
+            const double previous = rb_engine_cylinder_angle(&e, 0);
+            rb_engine_step(&e);
+            const double angle = rb_engine_cylinder_angle(&e, 0);
+            if (!(previous < evo && angle >= evo)) continue;
+            CHECK(!e.burn[0].burning && !e.burn[0].after_spark);
+            fraction[case_no] = e.burn[0].fraction;
+            seen = 1;
+            break;
+        }
+        CHECK(seen);
+        if (!seen) return;
+    }
+    CHECK_NEAR(start[0], start[1], 1e-12);
+    CHECK(demand[1] > 3.0 * demand[0]);
+    CHECK(duration[1] > 3.0 * duration[0]);
+    CHECK(fraction[0] == 1.0);
+    CHECK(fraction[1] > 0.1 && fraction[1] < 0.85);
 }

@@ -11,6 +11,8 @@ compare_real.py - REV-BENCH's sound against recordings of real engines.
         at a steady speed off idle, like rb_cli sound --hold; or revving; each
         one's stretch t0..t1 seconds) and each given render the same way,
         prints the numbers and draws them  -> renders/real-KIND.png
+        --catalog tools/user_engine_references.csv --engine v8-flat selects
+        locally supplied examples; the default Freesound catalog stays separate.
 
 The numbers, all independent of the microphone's level:
   >1k, >2k, >4k  the share of the energy above 1, 2 and 4 kHz, in dB
@@ -38,7 +40,7 @@ import shutil
 import subprocess
 import sys
 import urllib.request
-import wave
+from audio_wav import read_wav as read_audio_wav
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,8 +54,8 @@ BANDS = [(20.0, 500.0), (500.0, 2000.0), (2000.0, 8000.0)]
 BAND_NAMES = ["below 500 Hz", "0.5–2 kHz", "2–8 kHz"]
 
 
-def read_list():
-    with open(LIST, newline="") as f:
+def read_list(path=LIST):
+    with open(path, newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
 
 
@@ -77,15 +79,12 @@ def fetch(_args):
 
 
 def read_wav(path):
-    """Samples (floats, full scale 1) and the rate of a 16-bit WAV, mixed to mono."""
+    """PCM16 or float32 samples (full scale 1), mixed to mono, and rate."""
     try:
-        w = wave.open(path)
-    except (OSError, wave.Error) as e:
-        sys.exit(f"compare_real: cannot read {path}: {e}")
-    if w.getsampwidth() != 2:
-        sys.exit(f"compare_real: {path} isn't 16-bit PCM")
-    x = np.frombuffer(w.readframes(w.getnframes()), dtype=np.int16).astype(float) / 32768.0
-    return x.reshape(-1, w.getnchannels()).mean(axis=1), w.getframerate()
+        x, rate = read_audio_wav(path)
+    except (OSError, ValueError) as error:
+        sys.exit(f"compare_real: cannot read {path}: {error}")
+    return x.mean(axis=1), rate
 
 
 def band(x, fs, lo, hi):
@@ -171,12 +170,19 @@ def compare(args):
     idle = args.kind != "rev"   # the repeats: idling or steady
     rpm = (1500.0, 7000.0) if args.kind == "steady" else (450.0, 1600.0)
     real = []
-    for row in read_list():
+    for row in read_list(args.catalog):
+        if args.engine and row["engine"] != args.engine:
+            continue
+        if args.place and row["place"] != args.place:
+            continue
         wav = os.path.join(REAL_DIR, row["id"] + ".wav")
         if row["kind"] == args.kind and os.path.exists(wav):
             real.append((row["label"], measure(wav, float(row["t0"]), float(row["t1"]), idle, rpm)))
     if not real:
-        print("compare_real: no recordings in renders/real (run: python3 tools/compare_real.py fetch)")
+        if str(args.catalog) == LIST and not args.engine and not args.place:
+            print("compare_real: no recordings in renders/real (run: python3 tools/compare_real.py fetch)")
+        else:
+            print("compare_real: no matching local reference WAVs for the selected catalog and filters")
     ours = []
     for spec in args.files:
         try:
@@ -270,6 +276,9 @@ def main():
     c = sub.add_parser("compare")
     c.add_argument("files", nargs="*")
     c.add_argument("--kind", choices=("idle", "steady", "rev"), default="idle")
+    c.add_argument("--catalog", default=LIST, help="reference CSV (default: real_engines.csv)")
+    c.add_argument("--engine", help="only references with this exact engine column value")
+    c.add_argument("--place", help="only references with this exact place column value")
     c.add_argument("-o", "--out")
     c.set_defaults(run=compare)
     args = p.parse_args()

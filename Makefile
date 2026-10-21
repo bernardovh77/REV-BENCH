@@ -111,7 +111,7 @@ render: $(CLI)
 	  --csv renders/v8-cross-sweep.csv
 	$(CLI) sound --preset v8-cross --rev --gain 0.4 --out renders/v8-cross-rev.wav
 	$(CLI) sound --preset v8-flat --hold --rpm 3000 --out renders/v8-flat-3000.wav
-	$(CLI) sound --preset v8-flat --rev --gain 0.4 --out renders/v8-flat-rev.wav
+	$(CLI) sound --preset v8-flat --rev --gain 0.38 --out renders/v8-flat-rev.wav
 	$(CLI) sound --preset i6 --rev --out renders/i6-rev.wav
 	$(CLI) sound --preset boxer4 --rev --out renders/boxer4-rev.wav
 	$(CLI) sound --preset boxer4 --hold --rpm 3000 --out renders/boxer4-3000.wav

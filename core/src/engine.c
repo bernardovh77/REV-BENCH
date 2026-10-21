@@ -785,9 +785,10 @@ static double spark_advance(double s)
  * S_L is gasoline's, slowed by burned gas (Metghalchi and Keck's fit, Turns
  * eq. 8.33); nu = mu / rho with mu ~ T^0.7. The charge is taken at intake
  * valve closing: compressed to the spark, its ratios to the reference stay
- * about the same. The burn is kept between half and twice the reference: with
- * more burned gas than about 35 % a real engine starts to misfire, which this
- * model doesn't do. */
+ * about the same. The deterministic calibration keeps the burn between half
+ * and twice the reference. With life enabled (S1b), keep the raw demand:
+ * EVO truncates a burn that cannot finish. This is a finite-time partial
+ * burn model; it does not model spark-kernel failure. */
 #define BURN_REF_RPM    3000.0
 #define BURN_REF_T      360.0     /* K, at IVC: the default four at 3000 rpm, wide open */
 #define BURN_REF_P      1.22e5    /* Pa                                                */
@@ -811,7 +812,7 @@ static double flame_speed(double T, double p, double x, double phi)
 
 /* This cycle's burn, crank degrees from the spark to the end, for cylinder
  * i's trapped charge at `rpm`. */
-static double burn_duration(const rb_engine *e, const rb_burn *b, double rpm)
+static double burn_duration(const rb_engine *e, rb_burn *b, double rpm)
 {
     const double phi = (e->afr > 0.0) ? RB_AFR_STOICH / e->afr : 1.0;
     const double s_l = flame_speed(b->T_ivc, b->p_ivc, b->residual, phi)
@@ -820,6 +821,12 @@ static double burn_duration(const rb_engine *e, const rb_burn *b, double rpm)
     const double n = ((rpm > RB_GAS_PACE_RPM) ? rpm : RB_GAS_PACE_RPM) / BURN_REF_RPM;
     double f = (1.0 - BURN_EDDY_SHARE) + BURN_EDDY_SHARE * sqrt(n * nu) / s_l;
     if (!(f >= 0.5)) f = (f < 0.5) ? 0.5 : 1.0;     /* NaN: the reference */
+    /* Keep the charge model's demand before the old calibration limits.
+     * With life enabled a dilute/lean charge can take longer than the time
+     * until EVO: the existing valve event then leaves the rest unburned.
+     * One cycle is a numerical ceiling, not a claimed misfire threshold. */
+    const double demand = e->desc.burn_duration * f;
+    b->demand_duration = (demand < 720.0) ? demand : 720.0;
     if (f > 2.0) f = 2.0;
     const double duration = e->desc.burn_duration * f;
     return (duration < 180.0) ? duration : 180.0;
@@ -914,9 +921,11 @@ static void close_intake(rb_engine *e, int i)
     const double start = vary_normal(&e->rand_cycles);
     const double length = VARY_ALIKE * start
                         + sqrt(1.0 - VARY_ALIKE * VARY_ALIKE) * vary_normal(&e->rand_cycles);
-    double duration = expected * exp(v * VARY_LENGTH * length) * (1.0 + v * CYL_BURN * e->trim_burn[i]);
-    if (!(duration >= 0.25 * expected)) duration = 0.25 * expected;
-    b->duration = (duration < 180.0) ? duration : 180.0;
+    const double base = (v > 0.0) ? b->demand_duration : expected;
+    double duration = base * exp(v * VARY_LENGTH * length) * (1.0 + v * CYL_BURN * e->trim_burn[i]);
+    if (!(duration >= 0.25 * base)) duration = 0.25 * base;
+    const double ceiling = (v > 0.0) ? 720.0 : 180.0;
+    b->duration = (duration < ceiling) ? duration : ceiling;
     b->start_angle = cycle_angle(720.0 - spark_advance(advance - v * VARY_START * expected * start));
     b->spark_due = 1;
 }

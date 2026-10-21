@@ -20,7 +20,7 @@ firing frequency's harmonics, then the energy of each engine order (0.5, 1,
            idling before stage 12c.
   strongest the seven strongest orders, and their level against the strongest
 
-16-bit WAVs only, as compare_real.py. Needs numpy.
+PCM16 or float32 WAVs, as compare_real.py. Needs numpy.
 """
 import os
 import sys
@@ -61,8 +61,8 @@ def main():
     print(f"{'':34s} {'rpm':>6s} {'firing':>7s} {'others':>7s}  strongest orders (dB)")
     for spec in sys.argv[2:]:
         try:
-            head, label = spec.split(":", 1)
-            path, span, speeds = head.split("@")
+            path, span, tail = spec.split("@", 2)
+            speeds, label = tail.split(":", 1)
             t0, t1 = (float(v) for v in span.split("-"))
             rpm_lo, rpm_hi = (float(v) for v in speeds.split("-"))
         except ValueError:

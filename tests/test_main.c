@@ -157,6 +157,9 @@ void test_variation_accessories(void);
 void test_variation_soft_cut(void);
 void test_variation_conserves(void);
 void test_variation_dyno_in_the_sim(void);
+void test_variation_partial_burns(void);
+void test_variation_partial_burn_books(void);
+void test_variation_partial_burn_residual(void);
 /* ---- the flow's noise and the engine's own sound (tests/test_noise.c) ---- */
 void test_noise_jet_eighth_power(void);
 void test_noise_valve_jets(void);
@@ -313,6 +316,9 @@ static const struct {
     T(test_variation_soft_cut),
     T(test_variation_conserves),
     T(test_variation_dyno_in_the_sim),
+    T(test_variation_partial_burns),
+    T(test_variation_partial_burn_books),
+    T(test_variation_partial_burn_residual),
     T(test_noise_jet_eighth_power),
     T(test_noise_valve_jets),
     T(test_noise_throttle_hiss),

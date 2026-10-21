@@ -231,6 +231,7 @@ typedef struct rb_burn {
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
     double start_angle;           /* ... and of its burn's start: the spark, give or take
                                      this cycle's flame (stage 12c; set at IVC)          */
+    double demand_duration;       /* uncapped charge model, bounded to one cycle (S1b)   */
     double duration;              /* this cycle's burn: crank degrees from its start to
                                      the end (set at IVC)                                */
     int    spark_due;             /* 1 from intake valve closing until the burn starts   */

@@ -1,0 +1,125 @@
+{
+  "note": "User-supplied local MP3 excerpts. Acoustic groups describe relative brightness within each recording, not verified camera positions. All selected windows passed a Silero VAD 0.35 screen with approximately 0.55-second padding; this is not proof of isolated engine stems. Original MP3s stay unchanged.",
+  "recordings": [
+    {
+      "key": "ferrari458",
+      "video_id": "AimvjNzNCwk",
+      "title": "Ferrari 458 Italia exhaust",
+      "preset": "v8-flat",
+      "cylinders": 8,
+      "engine": "Naturally aspirated 4.5 L flat-plane V8",
+      "segments": [
+        {
+          "start": 212,
+          "end": 224,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 302,
+          "end": 314,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 44,
+          "end": 56,
+          "acoustic_group": "darker"
+        },
+        {
+          "start": 125,
+          "end": 137,
+          "acoustic_group": "darker"
+        }
+      ]
+    },
+    {
+      "key": "bmw-m4",
+      "video_id": "udiPG_FwG0E",
+      "title": "620 HP BMW M4 Akrapovic POV",
+      "preset": "i6",
+      "cylinders": 6,
+      "engine": "Turbocharged inline-six; exact generation unverified",
+      "segments": [
+        {
+          "start": 152,
+          "end": 164,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 242,
+          "end": 254,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 197,
+          "end": 209,
+          "acoustic_group": "darker"
+        },
+        {
+          "start": 659,
+          "end": 671,
+          "acoustic_group": "darker"
+        }
+      ]
+    },
+    {
+      "key": "golf-gti",
+      "video_id": "Ws0IlDinQes",
+      "title": "Straight-piped Golf 7 GTI",
+      "preset": "i4",
+      "cylinders": 4,
+      "engine": "EA888 2.0 L turbocharged inline-four",
+      "segments": [
+        {
+          "start": 53,
+          "end": 65,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 83,
+          "end": 95,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 173,
+          "end": 185,
+          "acoustic_group": "darker"
+        },
+        {
+          "start": 239,
+          "end": 251,
+          "acoustic_group": "darker"
+        }
+      ]
+    },
+    {
+      "key": "mustang-gt",
+      "video_id": "oz7Kbh7kZbE",
+      "title": "Straight-piped 2024 Mustang GT",
+      "preset": "v8-cross",
+      "cylinders": 8,
+      "engine": "Naturally aspirated 5.0 L cross-plane V8",
+      "segments": [
+        {
+          "start": 5,
+          "end": 17,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 197,
+          "end": 209,
+          "acoustic_group": "brighter"
+        },
+        {
+          "start": 74,
+          "end": 86,
+          "acoustic_group": "darker"
+        },
+        {
+          "start": 257,
+          "end": 269,
+          "acoustic_group": "darker"
+        }
+      ]
+    }
+  ]
+}

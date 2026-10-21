@@ -21,7 +21,8 @@ csv_writer *csv_open(const char *path, const char *const *columns, int ncols)
     w = calloc(1, sizeof *w);
     if (!w) return NULL;
 
-    w->f = fopen(path, "w");
+    /* Keep identical LF-delimited output on Windows and Unix. */
+    w->f = fopen(path, "wb");
     if (!w->f) {
         free(w);
         return NULL;
