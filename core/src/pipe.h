@@ -160,6 +160,7 @@ typedef struct rb_pipe_end {
  * (the engine keeps them all in one pool); the faces point at the cells, so
  * neither may move once the pipe is set up. */
 typedef struct rb_pipe {
+    int momentum_order; /* 1: donor cell; 2: limited linear momentum reconstruction */
     int    cells;                       /* 1..RB_PIPE_MAX_CELLS                    */
     double length, diameter;            /* m                                       */
     double area, dx;                    /* m^2; m: each cell's length              */

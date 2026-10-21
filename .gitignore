@@ -11,6 +11,7 @@ renders/*
 
 # python caches (tools/)
 __pycache__/
+.venv-analysis/
 
 # zig compiler caches
 .zig-cache/

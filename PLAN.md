@@ -42,6 +42,14 @@ before/after simulation comparisons support regression checks.
   Stop for feedback before the performance refactor or stage 14. S1/S2/S4 stay
   open wherever numerical checks or Bernardo's listening approval remain unmet;
   later implementation work does not establish completed sound acceptance.
+- **Latest listening feedback (S2b):** Bernardo confirmed the I6/flat-V8 boom
+  means the louder, higher tone replacing the burble at lift-off. Limited
+  momentum reconstruction reduces the excess loss of loaded exhaust detail,
+  lowering the measured 600–1600 Hz transition contrast by about 2.9/3.8 dB.
+  The cross-plane example uses unfilled exhaust pipes for a clearer high-RPM
+  note; its previous packed setup remains selectable. Research, rejected
+  timing controls, new listening pairs and limits: `docs/stage-S2b.md`.
+  This is an implementation improvement, not listening approval or completed S1.
 
 Each stage below is sized to fit in **one prompt**. To continue, just say *"do stage N"*
 (or *"next stage"*). After each stage, its box in the tracker is ticked and the "Notes" column
@@ -76,8 +84,9 @@ gets a one-line summary of anything that changed from the plan.
 | S1e | Research and controlled overrun transitions | Sound realism | 🔄 | Timed pedal-lift ignition/fuel transition and immediate-cut control; real falling-pitch intervals documented; consolidated acceptance in docs/checkpoint-13b.md |
 | R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
 | R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
-| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Checkpoint: I4/boxer repeat +19.89/+17.71 dB and V8 COV remain high; ignition failures/listening unresolved. Five new matched dyno sweeps are identical to S1d |
-| S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, optional ultra grid, aperture directivity in stereo scenes; spectral and listening acceptance remain (docs/stage-S2.md) |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Repetition, high V8 idle COV, ignition failures and listening remain unresolved. Historical repeat baselines in checkpoint-13b; S2b dyno bin changes <0.9%, current physics audit retained locally |
+| S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
+| S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Requested feedback checkpoint at entry; benchmark/acceptance gaps in docs/checkpoint-13b.md; optimization remains next |

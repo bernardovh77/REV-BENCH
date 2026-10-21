@@ -42,7 +42,9 @@ def run(bugs, work, name):
     path, old, new, tests, timeout = bugs[name]
     if os.path.exists(work):
         shutil.rmtree(work)
-    shutil.copytree(SRC, work, ignore=shutil.ignore_patterns("web", "build*", "renders", ".git", "docs"))
+    shutil.copytree(SRC, work, ignore=shutil.ignore_patterns(
+        "web", "build*", "renders", ".git", "docs", ".venv*", "venv*",
+        "__pycache__", "graphify-out"))
     target = os.path.join(work, path)
     with open(target) as f:
         text = f.read()

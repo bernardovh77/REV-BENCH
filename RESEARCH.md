@@ -306,3 +306,34 @@ bumpy-cammed Chevy 350, a Corvette LS6 held at 3000 rpm), and new measures showe
 
 `gcc`, `make`, `node`, `npm`, `python3` and `git` are available. **Not installed:** `clang`, `cmake`, `emcc`.
 Stage 2 installs a WASM toolchain.
+
+## 2026-10-21 — Lift-off contrast and loaded pipe transport (S2b)
+
+Bernardo identifies the louder, higher tone replacing the I6/flat-V8 burble at
+lift-off, and a cross-plane V8 that remains muffled near redline. Source-isolated
+float controls put the sustained tone mainly in pipe-flow radiation; immediate
+fuel cut still produces it. Changes to throttle/fuel timing can delay the
+contrast without reducing it and are not adopted.
+
+The first-order donor momentum flux loses more acoustic detail in moving gas.
+A lossless 800 Hz packet retains 39.0% of its perturbation energy with the old
+scheme and 59.9% with limited linear momentum reconstruction after 2.5 ms at
+about 70 m/s; stationary retention is about 100.1% for both. Both directions
+are checked. This is evidence of a numerical contributor, not proof that every
+remaining overrun resonance is artificial. The reconstruction retains mass,
+species and total-energy bookkeeping and does not add an audio gain/pitch effect.
+
+Primary numerical sources: [Thomas and Roe, 1993](https://scholars.duke.edu/publication/1162275),
+[Bidadi and Rani, 2014](https://doi.org/10.1016/j.jcp.2013.12.011),
+and [NASA LAVA reconstruction documentation](https://www.nas.nasa.gov/LAVA/unst_docs/input_file_unstructured/).
+The complete gas scheme is not claimed to be second order or TVD. Existing
+stability guards, two-rate/conservation tests and randomized engines are still
+required. See [the equations, controlled experiments and limits](docs/stage-S2b.md).
+
+The cross-plane sound example also moves from a packed to an unfilled exhaust,
+consistent with the supplied recording's description. This changes modeled
+hardware; it is not calibration of a particular Mustang. The former packed
+configuration remains available with `--muffler straight`. The real references'
+operating conditions and viewpoints remain uncertain. Sound acceptance remains
+Bernardo's listening decision; every subsequent realism issue still requires
+research and appropriate reference evidence, with justified processing cost.

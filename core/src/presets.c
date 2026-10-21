@@ -183,7 +183,10 @@ static void inline6(rb_engine_desc *d)
  * unevenly, 90-180-270-180 degrees apart: the off-beat burble of an American
  * V8, which its twin exhaust (each bank its own collector, pipe, muffler and
  * tailpipe) keeps apart. Each bank's manifold leaves at its back, so the
- * front cylinders' headers are longest (stage 12c). */
+ * front cylinders' headers are longest (stage 12c). The default sound setup
+ * now uses unfilled pipes, following Bernardo's straight-piped Mustang
+ * reference; --muffler straight retains the former packed setup. This is
+ * an open-exhaust example, not a calibrated replica of that Mustang. */
 static void v8_cross(rb_engine_desc *d)
 {
     static const int bank[8] = { 0, 1, 0, 1, 0, 1, 0, 1 };
@@ -205,7 +208,7 @@ static void v8_cross(rb_engine_desc *d)
     intake(d, 80 * MM, 4 * MM2, 6.0 * L);
     runners(d, 450 * MM, 45 * MM);
     exhaust(d, header, 40 * MM, bank, 2.0, 55 * MM, 2, 20 * CM2, 10 * L, 20 * CM2, 0.8, 60 * MM);
-    muffler(d, RB_MUFFLER_STRAIGHT, 450 * MM);
+    muffler(d, RB_MUFFLER_NONE, 450 * MM);
     running(d, 0.30, 350.0, 220.0, 1250.0, 650.0, 95 * MM2, 5.1e-4, 2.6e-4, 7000.0);
 }
 

@@ -11,8 +11,8 @@
 #                     muffler, 1 m from its tailpipe; both V8s at 3000 rpm, the
 #                     cross-plane one from every place around the car and in
 #                     it, pulling and revved (the mufflers' and the V8s' at
-#                     half gain: they're loud enough to reach the soft
-#                     limiter); the six and the boxer revved; the boxer with
+#                     reduced gain to keep headroom below the soft limiter);
+#                     the six and the boxer revved; the boxer with
 #                     its unequal headers and with equal ones; and the test
 #                     tone. Every cycle its own (stage 12c): rb_cli sound's
 #                     --variation 0 renders stage 12b's exact loops
@@ -115,18 +115,18 @@ render: $(CLI)
 	$(CLI) sound $(RENDER_FLAGS) --preset i4 --rev --out $(RENDER_DIR)/i4-rev.wav --csv $(RENDER_DIR)/i4-rev.csv
 	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --listener front --out $(RENDER_DIR)/i4-idle-front.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --listener cabin --out $(RENDER_DIR)/i4-idle-cabin.wav
-	$(CLI) sound $(RENDER_FLAGS) --preset i4 --sweep --listener cabin --out $(RENDER_DIR)/i4-sweep-cabin.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --sweep --listener cabin --gain 0.5 --out $(RENDER_DIR)/i4-sweep-cabin.wav
 	for m in none straight chambered; do \
 	  $(CLI) sound $(RENDER_FLAGS) --preset i4 --hold --rpm 3000 --muffler $$m --listener tailpipe --gain 0.5 \
 	    --out $(RENDER_DIR)/i4-3000-$$m.wav || exit 1; done
 	for l in behind tailpipe side front cabin; do \
-	  $(CLI) sound $(RENDER_FLAGS) --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.4 \
+	  $(CLI) sound $(RENDER_FLAGS) --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.2 \
 	    --out $(RENDER_DIR)/v8-cross-3000-$$l.wav || exit 1; done
-	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --sweep --gain 0.4 --out $(RENDER_DIR)/v8-cross-sweep.wav \
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --sweep --gain 0.2 --out $(RENDER_DIR)/v8-cross-sweep.wav \
 	  --csv $(RENDER_DIR)/v8-cross-sweep.csv
-	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --rev --gain 0.4 --out $(RENDER_DIR)/v8-cross-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --rev --gain 0.2 --out $(RENDER_DIR)/v8-cross-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --hold --rpm 3000 --out $(RENDER_DIR)/v8-flat-3000.wav
-	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --rev --gain 0.38 --out $(RENDER_DIR)/v8-flat-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --rev --gain 0.25 --out $(RENDER_DIR)/v8-flat-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset i6 --rev --out $(RENDER_DIR)/i6-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --rev --out $(RENDER_DIR)/boxer4-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --hold --rpm 3000 --out $(RENDER_DIR)/boxer4-3000.wav

@@ -46,6 +46,7 @@ int rb_pipe_init(rb_pipe *p, rb_chamber *cell, rb_face *face, int cells, double 
         || !cell || (cells > 1 && !face))
         return -1;
     memset(p, 0, sizeof *p);
+    p->momentum_order = 2;
     p->cell = cell;
     p->face = face;
     p->cells = cells;
@@ -424,13 +425,32 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
     f->settled += lag * (f->mdot - f->settled);
 }
 
-/* The momentum flowing through cell k's centre (N), given the flows through
- * its two sides: the cell's mass flow times the velocity of the side the gas
- * comes from (donor cell). */
+/* Limited linear reconstruction of the transported momentum density at a
+ * cell centre, from the staggered faces. Minmod falls back to donor-cell
+ * transport at extrema and boundaries. A single flux is shared by both
+ * adjacent momentum volumes. Mass/species/enthalpy transport is unchanged.
+ * This reduces artificial damping of acoustic detail in a moving stream;
+ * it is not a second-order discretisation of the complete gas system.
+ * Derivation and limits: docs/stage-S2b.md. */
 static double momentum_flux(const rb_pipe *p, int k, double in, double out)
 {
     const double mdot = 0.5 * (in + out);
-    return mdot * ((mdot >= 0.0) ? in : out) * p->cell[k].per_rho * p->per_area;
+    double transported = (mdot >= 0.0) ? in : out;
+    if (p->momentum_order == 2) {
+        double left = 0.0, right = 0.0;
+        if (mdot >= 0.0 && k > 0) {
+            left = in - side_flow(p, k - 1, 0);
+            right = out - in;
+        } else if (mdot < 0.0 && k + 1 < p->cells) {
+            left = out - in;
+            right = side_flow(p, k + 1, 1) - out;
+        }
+        if ((left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0)) {
+            const double slope = copysign(fmin(fabs(left), fabs(right)), left);
+            transported += ((mdot >= 0.0) ? 0.5 : -0.5) * slope;
+        }
+    }
+    return mdot * transported * p->cell[k].per_rho * p->per_area;
 }
 
 /* An end's face: from a chamber's still gas into the pipe the gas loses

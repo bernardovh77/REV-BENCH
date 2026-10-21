@@ -4,6 +4,59 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-21: S2b — lift-off contrast and cross-plane redline
+
+- Bernardo confirmed the boom is the louder, higher tone replacing the burble
+  just after lift-off. Source/layer controls isolate it mainly to pipe flow;
+  immediate/delayed cut and throttle-follower probes do not reliably fix it.
+  Rejected follower code is not shipped; evidence is local in renders/feedback-13b/.
+- Adopted limited linear reconstruction of transported pipe momentum, with
+  minmod and donor fallback at extrema/boundaries. Mass/species/enthalpy and
+  the physical loss models are retained. This is not a complete second-order
+  Euler solver. `sound --momentum-order 1` selects the old donor control.
+- Independent lossless 800 Hz packet test: ~39.0% energy retained with donor
+  transport, ~59.9% with the revision at ~70 m/s, both directions; stationary
+  retention ~100.1%. A genuine numerical contributor to lost loaded detail
+  is demonstrated. It is not proof every remaining pumping resonance is false.
+- Cross V8 now uses unfilled pipes rather than packed straight-through cans,
+  consistent with the user's straight-piped reference description. The old
+  hardware is available with `--muffler straight`; not a calibrated Mustang.
+- Matched asphalt long sweeps at gain 0.15: 600–1600 Hz pre-lift/early-coast
+  contrast changes I6 +9.84 to +6.96 dB, flat V8 +3.51 to -0.32 dB. This is
+  less contrast through restored loaded detail, not a claim that all absolute
+  overrun levels fell. Near the 6500-rpm crossing the cross V8 centroid rises
+  393 to 790 Hz and above-2-kHz share -21.51 to -14.98 dB. Centroid is brightness,
+  not perceived pitch. Listening approval remains open.
+- Unfiltered float WAVs, raw CSV, references, measurements and rejected controls
+  stay in ignored renders/feedback-13b/. tools/measure_lift_feedback.py writes
+  mean-ear-power metrics and separate shared-gain listening pairs. Original
+  recording viewpoints/RPM/load remain uncertain; do not infer positions from
+  brightness. Full longer coasts remain eight seconds before clutch-in.
+- Screenshot recovered through /mnt/c: missing matplotlib in checkpoint_13b's
+  eager compare_real import. Rendering now uses only the standard library;
+  analysis uses ignored .venv-analysis/ with tools/requirements-analysis.txt.
+  Real --long-coast rendering was verified with Python -S and no PYTHONPATH.
+  Fault-test copies exclude virtual environments and Graphify output.
+- Fresh 30-second native physics audit: zero warm stalls in every preset;
+  V8 idle IMEP COV still reaches 12.38% cross / 30.53% flat. Fresh 30-second
+  audio repetition has not been remeasured; prior checkpoint values are historical.
+- Native 165 tests/2583 checks; focused ASan/UBSan 3 tests/23 checks; all three
+  S2b mutants caught; 20 randomized 10-second engines have zero failures.
+  Five full life-enabled dyno sweeps show <0.66% torque/<0.88% power bin changes.
+  23 float renders and new long sweeps report zero limited/non-finite samples.
+  Twenty Python tests, 17 WASM unit tests, production build and browser audio
+  dev/preview pass. The WASM preset test now checks the unfilled default and
+  confirms the prior packed type remains selectable.
+- Corrected the old checkpoint's all-zero limiter claim: its I4 cabin sweep
+  is byte-identical to a control reporting 27 limited samples. Render gains
+  now allow headroom. Fair lift comparisons retain gain 0.15 in both versions.
+- Engine-only cross V8 benchmarks are about 0.52x native / 0.47x WASM;
+  full-stereo cross clip CPU cost rises about 17% here. Default quality/grid
+  stays unchanged; no speed gain or completed 13b target is claimed.
+- Preserved and fast-forwarded Bernardo's newer GitHub README commit 5d97591;
+  its personal project motivation remains intact. CLAUDE.md/.claude/ are unchanged.
+  See docs/stage-S2b.md; S1/S2/S4 remain open and 13b/14 have not started.
+
 ## 2026-10-21: consolidated feedback checkpoint before 13b
 
 - Stop here for Bernardo's feedback. His request resumed development toward

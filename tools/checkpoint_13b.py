@@ -13,11 +13,6 @@ from pathlib import Path
 import struct
 import subprocess
 
-import numpy as np
-
-from audio_wav import read_wav
-from compare_real import measure
-
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i6", "v8-cross", "v8-flat")
 SCENES = ("asphalt", "grass", "wall", "garage", "dyno", "iso", "passby", "cabin")
@@ -35,6 +30,8 @@ def sha(path):
 
 
 def write_float(path, samples, rate):
+    import numpy as np
+
     data = np.asarray(samples, dtype="<f4")
     channels = data.shape[1]
     payload = data.tobytes()
@@ -79,6 +76,9 @@ def render(args):
 
 
 def analyze(args):
+    import numpy as np
+    from audio_wav import read_wav
+    from compare_real import measure
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -178,10 +178,17 @@ def main():
     args.output.mkdir(parents=True,exist_ok=True)
     if args.render:
         render(args)
-    if args.analyze:
-        analyze(args)
     if args.long_coast:
         long_coast(args)
+    if args.analyze:
+        try:
+            analyze(args)
+        except ModuleNotFoundError as error:
+            parser.exit(2, f"Analysis needs {error.name}. Audio rendering uses no Python packages.\n"
+                        "Install analysis tools in an isolated environment:\n"
+                        "  python3 -m venv .venv-analysis\n"
+                        "  .venv-analysis/bin/python -m pip install -r tools/requirements-analysis.txt\n"
+                        "  .venv-analysis/bin/python tools/checkpoint_13b.py --analyze\n")
 
 
 if __name__ == "__main__":

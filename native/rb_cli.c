@@ -190,6 +190,7 @@ static void usage(FILE *f)
         "      --load N          for --idle: a load on the crank once it runs, N m (default 0)\n"
         "      --overrun-transition S   pedal-lift spark transition before fuel cut, 0..2 s\n"
         "                        (default 0.15; 0 selects immediate cut)\n"
+        "      --momentum-order N      pipe momentum: 1 donor-cell control, 2 limited (default)\n"
         "  -s, --seconds S       how long                   (default: 8 idle, 5 hold, 12 rev;\n"
         "                        the sweep ends 1.5 s after it is back at idle)\n"
         "      --muffler TYPE    none (a straight pipe), straight (straight-through, packed) or\n"
@@ -1945,6 +1946,7 @@ static int cmd_sound(int argc, char **argv)
     rb_dyno dyno;
     int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
     int layers = RB_LAYER_ALL, scene = -1;
+    int momentum_order = 2;
     const char *const scenes[RB_SCENE_COUNT] = {"asphalt","grass","wall","garage","dyno","iso","passby","cabin"};
     rb_config cfg;
 
@@ -2003,6 +2005,11 @@ static int cmd_sound(int argc, char **argv)
         else if (!strcmp(a, "--overrun-transition"))
             ok = !to_double(take_value(argc, argv, &i), &overrun_transition)
                  && overrun_transition >= 0.0 && overrun_transition <= 2.0;
+        else if (!strcmp(a, "--momentum-order")) {
+            const char *value = take_value(argc, argv, &i);
+            ok = value && (!strcmp(value, "1") || !strcmp(value, "2"));
+            if (ok) momentum_order = value[0] - '0';
+        }
         else if (!strcmp(a, "--muffler")) {
             const char *v = take_value(argc, argv, &i);
             ok = 0;
@@ -2094,6 +2101,8 @@ static int cmd_sound(int argc, char **argv)
     }
     rb_engine *e = &sim->engine;
     rb_engine_init_at(e, &d, sim->dt, sim->cfg.pipe_rate);   /* at the sim's quality */
+    for (int k = 0; k < rb_engine_pipe_count(e); k++)
+        ((rb_pipe *)rb_engine_pipe(e, k))->momentum_order = momentum_order;
     sim->source = RB_SOURCE_ENGINE;
     sim->hear = where;
     sim->layers = layers;
@@ -2129,8 +2138,9 @@ static int cmd_sound(int argc, char **argv)
     csv_writer *csv = NULL;
     if (csv_path) {
         const char *cols[] = { "t_s", "rpm", "throttle", "spark_cut", "fuel_cut", "out_peak", "out_rms",
-                               "spl_dB", "crank_inertia_kgm2", "overrun_time_s" };
-        csv = csv_open(csv_path, cols, 10);
+                               "spl_dB", "crank_inertia_kgm2", "overrun_time_s",
+                               "throttle_area_m2", "map_kPa" };
+        csv = csv_open(csv_path, cols, 12);
         if (!csv) {
             fprintf(stderr, "rb_cli sound: cannot write %s\n", csv_path);
             wav_close(wav);
@@ -2244,10 +2254,10 @@ static int cmd_sound(int argc, char **argv)
         if (csv) {
             const double rms = rb_get_telemetry(sim, RB_TLM_OUT_RMS);
             const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
-            double row[10] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
+            double row[12] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
                               rb_get_telemetry(sim, RB_TLM_OUT_PEAK), rms,
                               (pa > 0.0) ? 20.0 * log10(pa / 2e-5) : 0.0,
-                              e->desc.inertia, e->overrun_time };
+                              e->desc.inertia, e->overrun_time, e->throttle.area, e->plenum.p * 1e-3 };
             if (csv_row(csv, row) != 0) io_error = 1;
         }
     }

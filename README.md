@@ -12,8 +12,9 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** stages 0-13 of 26 done, plus 12b/12c and sound-realism steps S1a–S1d.
-S1 remains in progress; see `docs/user-sound-references.md` for the local sound examples.
+**Status:** stages 0-13 of 26 done, with ongoing sound work through S2b.
+S1/S2/S4 and listening acceptance remain open. See [the current feedback and
+research notes](docs/stage-S2b.md) and `docs/user-sound-references.md` for local examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe
@@ -37,8 +38,8 @@ cross-plane and a flat-plane V8 (each bank its own exhaust), and a 2.0 L flat fo
 unequal headers. On the dyno, the four, the
 six and the flat four make close to the torque and power of the real engines they stand for
 (Toyota's 1AZ-FE, BMW's M54B30 and Subaru's FB20). A quality setting trades a little accuracy
-for speed (the heaviest engine, the cross-plane V8, runs at about three quarters of real time
-natively at full quality and nearly twice it at low), and a fuzzer drives random engines to find
+for speed; current shared-host measurements and their limits are recorded in
+the stage notes. A fuzzer drives random engines to find
 what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
 

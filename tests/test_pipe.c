@@ -237,6 +237,73 @@ void test_pipe_waves_ride_the_flow(void)
     CHECK_NEAR(up, c - u, 0.01 * (c - u));
 }
 
+/* Acoustic packet energy in a lossless pipe: the sum of compression and
+ * velocity perturbation energies. Compare both flow directions and a
+ * donor-cell control against the same physical initial condition. */
+static double packet_energy_ratio(int order, int direction)
+{
+    static rb_chamber in, out;
+    double base_p[64], base_u[64], rho[64], sound[64];
+    const double pressure = direction == 0 ? 0.0 : 3000.0;
+    rb_chamber_init_reservoir(&in, P0 + (direction >= 0 ? pressure : 0.0), 300.0, AIR);
+    rb_chamber_init_reservoir(&out, P0 + (direction < 0 ? pressure : 0.0), 300.0, AIR);
+    rb_pipe_init(&pipe, cells, faces, 64, 4.0, 0.04, P0, 300.0, AIR, 300.0, 0.0);
+    if (order) pipe.momentum_order = order;
+    rb_pipe_join(&pipe, 0, &in, 0.0, 0);
+    rb_pipe_join(&pipe, 1, &out, 0.0, 0);
+    for (long i = 0; i < lround(1.0 / SLOW_DT); i++) step(&pipe, SLOW_DT);
+    const double c = rb_chamber_sound_speed(&pipe.cell[32]);
+    const double u = rb_pipe_cell_velocity(&pipe, 32);
+    const double sign = direction < 0 ? -1.0 : 1.0;
+    const double wave_number = 2.0 * acos(-1.0) * 800.0 / (c + fabs(u));
+    for (int k = 0; k < 64; k++) {
+        base_p[k] = pipe.cell[k].p;
+        base_u[k] = rb_pipe_cell_velocity(&pipe, k);
+        rho[k] = pipe.cell[k].rho;
+        sound[k] = rb_chamber_sound_speed(&pipe.cell[k]);
+        const double x = (k + 0.5) * pipe.dx - 2.0;
+        const double dp = 100.0 * exp(-x * x / (0.3 * 0.3)) * cos(wave_number * x);
+        squeeze(&pipe, k, base_p[k] + dp, pipe.cell[k].T);
+    }
+    for (int k = 0; k < 63; k++) {
+        const double x = (k + 1.0) * pipe.dx - 2.0;
+        const double dp = 100.0 * exp(-x * x / (0.3 * 0.3)) * cos(wave_number * x);
+        pipe.face[k].mdot += sign * pipe.area * dp / c;
+    }
+    double energy[2] = {0.0, 0.0};
+    for (int pass = 0; pass < 2; pass++) {
+        for (int k = 0; k < 64; k++) {
+            const double v = rb_pipe_cell_velocity(&pipe, k);
+            const double dp = pipe.cell[k].p - base_p[k], dv = v - base_u[k];
+            energy[pass] += (dp * dp / (rho[k] * sound[k] * sound[k]) + rho[k] * dv * dv)
+                            * pipe.area * pipe.dx;
+            if (!pass) pipe.kinetic[k] = 0.5 * pipe.cell[k].mass * v * v;
+        }
+        if (!pass)
+            for (long i = 0; i < lround(0.0025 / SLOW_DT); i++) step(&pipe, SLOW_DT);
+    }
+    return energy[1] / energy[0];
+}
+
+void test_pipe_acoustic_transport(void)
+{
+    for (int direction = -1; direction <= 1; direction++) {
+        const double donor = packet_energy_ratio(1, direction);
+        const double limited = packet_energy_ratio(0, direction); /* shipped default */
+        CHECK(isfinite(limited) && limited > 0.0 && limited < 1.01);
+        if (direction) {
+            /* Ideal lossless transport retains 100%. On this coarse grid
+             * donor-cell retains ~39%, limited transport ~60%. Require a
+             * meaningful reduction in loss without permitting amplification. */
+            CHECK(limited > 0.55 && donor < 0.45);
+            CHECK(limited > 1.35 * donor);
+        } else {
+            CHECK_NEAR(limited, 1.0, 0.01);
+            CHECK_NEAR(limited, donor, 0.005);
+        }
+    }
+}
+
 void test_pipe_walls(void)
 {
     /* Burned gas at 1000 K flowing steadily through a pipe with its walls at

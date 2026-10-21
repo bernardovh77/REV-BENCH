@@ -4,6 +4,13 @@
 **S1, S2 and S4 remain open where acceptance is unmet. Stage 13b's performance
 refactor and stage 14's playable browser engine have not started.**
 
+**Listening follow-up:** Bernardo subsequently identified the I6/flat-V8
+lift-off boom and muffled cross-plane redline. The revised native pipe transport
+and cross-plane exhaust, measurements and new A/B clips are documented in
+[S2b](stage-S2b.md). The original checkpoint files below remain the historical
+before recordings. New full sweeps and short before/after clips live locally
+in ignored `renders/feedback-13b/long-coast/` and `renders/feedback-13b/listening/`.
+
 ## What has progressed
 
 - Researched the robotic V8/I6 deceleration report and added a controlled
@@ -105,8 +112,10 @@ and all sound-realism listening checkpoints still need assessment.
 - All five matched life-enabled dyno sweeps at 250 rpm/s are **byte-identical
   to S1d's accepted sweeps**. The five-preset combustion and idle audits remain
   reproducible. No stage-acceptance thresholds were relaxed.
-- The full standard float render set completes: 23 WAVs, 22 engine diagnostics,
-  zero limited/non-finite samples. Stereo scenes, matched controls, high/ultra
+- The full standard float render set completes: 23 WAVs, 22 engine diagnostics.
+  Correction found during S2b: the original I4 cabin sweep has 27 limited
+  samples; the earlier all-zero claim was inaccurate. The revised render
+  gains provide headroom. Stereo scenes, matched controls, high/ultra
   and long coasts also have zero limited/non-finite diagnostics. Audio manifests
   preserve the actual renderer command and binary hash where recorded.
 

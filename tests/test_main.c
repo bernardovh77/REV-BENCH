@@ -45,6 +45,7 @@ void test_pipe_cells(void);
 void test_pipe_pulse_travels_at_the_speed_of_sound(void);
 void test_pipe_friction(void);
 void test_pipe_waves_ride_the_flow(void);
+void test_pipe_acoustic_transport(void);
 void test_pipe_walls(void);
 void test_pipe_conserves_everything(void);
 void test_pipe_two_rates_agree(void);
@@ -226,6 +227,7 @@ static const struct {
     T(test_pipe_pulse_travels_at_the_speed_of_sound),
     T(test_pipe_friction),
     T(test_pipe_waves_ride_the_flow),
+    T(test_pipe_acoustic_transport),
     T(test_pipe_walls),
     T(test_pipe_conserves_everything),
     T(test_pipe_two_rates_agree),

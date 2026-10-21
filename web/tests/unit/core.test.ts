@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RB_CLAMPED, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE, RB_EF_PER_BANK, RB_EF_PER_CYLINDER,
   RB_EF_READONLY, RB_ERR_ARG, RB_ERR_ID, RB_ERR_READONLY, RB_ERR_VALUE, RB_OK, RB_PIPE_EXHAUST,
-  RB_MUFFLER_CHAMBERED, RB_MUFFLER_STRAIGHT, RB_PIPE_HEADER, RB_PIPE_MUFFLER, RB_PIPE_RUNNER,
+  RB_MUFFLER_CHAMBERED, RB_MUFFLER_NONE, RB_MUFFLER_STRAIGHT, RB_PIPE_HEADER, RB_PIPE_MUFFLER, RB_PIPE_RUNNER,
   RB_PIPE_SNORKEL, RB_PIPE_TAILPIPE, RB_PLACE_AIR, RB_PLACE_AIRBOX, RB_PLACE_COLLECTOR,
   RB_PLACE_EXHAUST_VALVE, RB_PLACE_INTAKE_VALVE, RB_PLACE_MUFFLER, RB_PLACE_MUFFLER_OUTLET, RB_PLACE_PLENUM, RbCore,
   REQUIRED_EXPORTS, type RbSim,
@@ -209,6 +209,9 @@ describe('the pipes through the API (stage 10)', () => {
     expect(pipes[17]).toMatchObject({ kind: RB_PIPE_EXHAUST, number: 1, to: RB_PLACE_MUFFLER, to_number: 1 });
     expect(pipes[19]).toMatchObject({ kind: RB_PIPE_TAILPIPE, number: 1, from_number: 1 });
     expect(pipes[21]).toMatchObject({ kind: RB_PIPE_MUFFLER, number: 1, from_number: 1, to_number: 1 });
+    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_NONE);
+    // The earlier packed exhaust remains available through the same API.
+    expect(sim.setEngine(core.engineFieldId('muffler_type'), 0, RB_MUFFLER_STRAIGHT)).toBe(RB_OK);
     expect(sim.engine().muffler_type).toBe(RB_MUFFLER_STRAIGHT);
     sim.destroy();
   });
