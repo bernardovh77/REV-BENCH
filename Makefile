@@ -144,7 +144,7 @@ WASM_SUM ?= $(WASM_OUT:.wasm=.sources.sha256)
 # Every public function of core/include/rb.h. New API functions go here too.
 WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_create rb_create_with rb_config_quality rb_create_with_quality rb_destroy \
-    rb_step rb_render_block \
+    rb_step rb_render_block rb_render_stereo rb_set_scene \
     rb_set_param rb_get_param rb_param_count rb_param_name rb_param_unit \
     rb_param_min rb_param_max rb_param_default rb_param_flags rb_param_find \
     rb_get_telemetry rb_telemetry_count rb_telemetry_name \

@@ -111,6 +111,8 @@ typedef struct rb_cabin {
     double x1, x2, y1, y2;             /* ... and its state                     */
 } rb_cabin;
 
+double rb_cabin_process(rb_cabin *cb, double rear, double front, double mount, double dt);
+
 typedef struct rb_listener {
     double gain[RB_LISTEN_SOURCES][2];    /* 1 / r of each source's paths (direct,
                                              off the ground), 1/m; 0: no source  */

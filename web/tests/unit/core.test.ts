@@ -43,6 +43,33 @@ function renderSeconds(sim: RbSim, seconds: number): Float32Array {
 }
 
 describe('rb_core.wasm', () => {
+  it('allocates stereo scene output and rejects unsupported scene configurations', () => {
+    const core = RbCore.loadSync(wasm);
+    const x = core.exports;
+    const sim = x.rb_create_with(48000, 4);
+    const highRate = x.rb_create_with(192000, 1);
+    const buffer = x.rb_alloc_floats(256);
+    expect(sim).not.toBe(0);
+    expect(highRate).not.toBe(0);
+    expect(buffer).not.toBe(0);
+    try {
+      expect(x.rb_set_scene(highRate, 0)).toBe(RB_ERR_ARG);
+      expect(x.rb_render_stereo(sim, buffer, 128)).toBe(RB_ERR_ARG);
+      expect(x.rb_set_scene(sim, 6)).toBe(RB_OK);
+      expect(x.rb_set_scene(sim, -1)).toBe(RB_ERR_ARG);
+      expect(x.rb_render_stereo(sim, buffer, 128)).toBe(128);
+      const samples = new Float32Array(x.memory.buffer, buffer, 256);
+      expect(samples.every((v) => Number.isFinite(v) && Math.abs(v) <= 1)).toBe(true);
+      // Stage 14 has not enabled the engine in the browser: the demo tone
+      // remains common to both ears. Native tests exercise engine scenes.
+      for (let i = 0; i < 128; i++) expect(samples[2 * i]).toBe(samples[2 * i + 1]);
+    } finally {
+      x.rb_free_floats(buffer);
+      x.rb_destroy(sim);
+      x.rb_destroy(highRate);
+    }
+  });
+
   it('was rebuilt after the last change to the C sources (if not: make wasm)', () => {
     // Same file list and order as the Makefile: sorted core/include/*.h, core/src/*.{c,h}.
     const root = new URL('../../../', import.meta.url);

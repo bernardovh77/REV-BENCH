@@ -330,8 +330,8 @@ void test_core_quality(void)
 {
     /* Stage 13: the quality levels set the physics and pipe rates together;
      * high is the default. */
-    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4 };
-    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0 };
+    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8 };
+    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0 };
     rb_config c, d;
     rb_sim *s;
 
@@ -350,6 +350,7 @@ void test_core_quality(void)
             rb_destroy(s);
         }
     }
+    rb_config_quality(&c, RB_QUALITY_HIGH);
     CHECK(c.oversample == d.oversample && c.pipe_rate == d.pipe_rate);   /* high = default */
 
     /* A new engine, from a preset or a changed field, keeps the sim's rates. */

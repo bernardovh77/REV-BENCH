@@ -185,7 +185,11 @@ static void usage(FILE *f)
         "      --rpm N           for --hold                 (default 3000)\n"
         "      --throttle X      for --hold, 0..1           (default 1)\n"
         "      --inertia KGM2    for --sweep: crank, flywheel and the car (default 3)\n"
+        "      --coast-seconds S for --sweep: in-gear coast before clutch-in (default 0.4)\n"
+        "      --pull-seconds S  for --sweep: maximum pull before lift (0: limiter only)\n"
         "      --load N          for --idle: a load on the crank once it runs, N m (default 0)\n"
+        "      --overrun-transition S   pedal-lift spark transition before fuel cut, 0..2 s\n"
+        "                        (default 0.15; 0 selects immediate cut)\n"
         "  -s, --seconds S       how long                   (default: 8 idle, 5 hold, 12 rev;\n"
         "                        the sweep ends 1.5 s after it is back at idle)\n"
         "      --muffler TYPE    none (a straight pipe), straight (straight-through, packed) or\n"
@@ -196,6 +200,8 @@ static void usage(FILE *f)
         "                        microphone 1 m behind the (right) tailpipe; side: 4 m to its\n"
         "                        side; front: leaning over the bonnet, by the intake's mouth;\n"
         "                        cabin: in the driver's seat\n"
+        "      --scene NAME      stereo source propagation: asphalt, grass, wall, garage,\n"
+        "                        dyno, iso, passby or cabin (8..96 kHz output)\n"
         "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
         "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
         "                        mechanical sound)\n"
@@ -206,7 +212,7 @@ static void usage(FILE *f)
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
         "      --csv FILE        a row per 128-frame block: speed, throttle, sound level\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
-        "      --quality Q       low, medium or high: the physics and pipe rates together\n"
+        "      --quality Q       low, medium, high or ultra: physics/pipe rates together\n"
         "                        (rb.h: RB_QUALITY_*; high is the default)\n"
         "\n"
         "fuzz options:\n"
@@ -227,7 +233,7 @@ static const char *take_value(int argc, char **argv, int *i)
 }
 
 /* The quality levels by name (rb.h: RB_QUALITY_*). */
-static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high" };
+static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra" };
 
 /* A quality level's number from its name, or -1. */
 static int quality_from(const char *name)
@@ -1934,9 +1940,12 @@ static int cmd_sound(int argc, char **argv)
     const char *out_path = "renders/sound.wav", *csv_path = NULL;
     double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
     double gain = 1.0, os = 4.0, variation = 1.0, idle_load = 0.0;
+    double overrun_transition = 0.15;
+    double coast_seconds = SWEEP_LIFT, pull_seconds = 0.0;
     rb_dyno dyno;
     int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
-    int layers = RB_LAYER_ALL;
+    int layers = RB_LAYER_ALL, scene = -1;
+    const char *const scenes[RB_SCENE_COUNT] = {"asphalt","grass","wall","garage","dyno","iso","passby","cabin"};
     rb_config cfg;
 
     rb_config_default(&cfg);
@@ -1964,6 +1973,12 @@ static int cmd_sound(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &throttle);
         else if (!strcmp(a, "--inertia"))
             ok = !to_double(take_value(argc, argv, &i), &inertia);
+        else if (!strcmp(a, "--coast-seconds"))
+            ok = !to_double(take_value(argc, argv, &i), &coast_seconds)
+                 && coast_seconds >= 0.0 && coast_seconds <= 60.0;
+        else if (!strcmp(a, "--pull-seconds"))
+            ok = !to_double(take_value(argc, argv, &i), &pull_seconds)
+                 && pull_seconds >= 0.0 && pull_seconds <= 120.0;
         else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
             ok = !to_double(take_value(argc, argv, &i), &seconds);
         else if (!strcmp(a, "--listener")) {
@@ -1973,12 +1988,21 @@ static int cmd_sound(int argc, char **argv)
                 if (!strcmp(v, LISTENERS[k])) where = k;
             ok = where >= 0;
         }
+        else if (!strcmp(a, "--scene")) {
+            const char *v = take_value(argc, argv, &i);
+            scene = -1;
+            for (int k=0; v && k<RB_SCENE_COUNT; k++) if (!strcmp(v,scenes[k])) scene=k;
+            ok = scene>=0;
+        }
         else if (!strcmp(a, "--layers"))
             ok = (layers = layers_from(take_value(argc, argv, &i))) > 0;
         else if (!strcmp(a, "--variation"))
             ok = !to_double(take_value(argc, argv, &i), &variation);
         else if (!strcmp(a, "--load"))
             ok = !to_double(take_value(argc, argv, &i), &idle_load);
+        else if (!strcmp(a, "--overrun-transition"))
+            ok = !to_double(take_value(argc, argv, &i), &overrun_transition)
+                 && overrun_transition >= 0.0 && overrun_transition <= 2.0;
         else if (!strcmp(a, "--muffler")) {
             const char *v = take_value(argc, argv, &i);
             ok = 0;
@@ -2077,6 +2101,7 @@ static int cmd_sound(int argc, char **argv)
     rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
     e->ignition = 1;
     e->variation = variation;
+    e->overrun_transition = overrun_transition;
     if (drive == DRIVE_HOLD) {
         e->rpm = rpm;
         e->throttle_pos = throttle;
@@ -2089,7 +2114,13 @@ static int cmd_sound(int argc, char **argv)
         e->starter = 1;
     }
 
-    wav_writer *wav = wav_open(out_path, (int)cfg.sample_rate, 1, use_float ? WAV_FLOAT32 : WAV_PCM16);
+    if (scene>=0 && rb_set_scene(sim,scene)!=RB_OK) {
+        fprintf(stderr,"rb_cli sound: stereo scenes require 8..96 kHz output\n");
+        rb_destroy(sim);
+        return 2;
+    }
+    const int channels=scene>=0 ? 2 : 1;
+    wav_writer *wav = wav_open(out_path, (int)cfg.sample_rate, channels, use_float ? WAV_FLOAT32 : WAV_PCM16);
     if (!wav) {
         fprintf(stderr, "rb_cli sound: cannot write %s (does the folder exist?)\n", out_path);
         rb_destroy(sim);
@@ -2098,8 +2129,8 @@ static int cmd_sound(int argc, char **argv)
     csv_writer *csv = NULL;
     if (csv_path) {
         const char *cols[] = { "t_s", "rpm", "throttle", "spark_cut", "fuel_cut", "out_peak", "out_rms",
-                               "spl_dB" };
-        csv = csv_open(csv_path, cols, 8);
+                               "spl_dB", "crank_inertia_kgm2", "overrun_time_s" };
+        csv = csv_open(csv_path, cols, 10);
         if (!csv) {
             fprintf(stderr, "rb_cli sound: cannot write %s\n", csv_path);
             wav_close(wav);
@@ -2128,11 +2159,13 @@ static int cmd_sound(int argc, char **argv)
             }
     }
     printf("\n");
-    float buf[BLOCK_FRAMES];
+    float buf[2*BLOCK_FRAMES];
     const double fs = cfg.sample_rate;
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
+        if (scene>=0) sim->scene.time=-lround(SOUND_SETTLE*fs/BLOCK_FRAMES)*BLOCK_FRAMES/fs;
         for (long k = 0; k < lround(SOUND_SETTLE * fs / BLOCK_FRAMES); k++)
-            rb_render_block(sim, buf, BLOCK_FRAMES);
+            if (scene>=0) rb_render_stereo(sim,buf,BLOCK_FRAMES);
+            else rb_render_block(sim,buf,BLOCK_FRAMES);
         if (drive == DRIVE_HOLD && e->result.brake_torque > 0.0) {
             /* Stage 12c: from here on a dyno holds it, as on stage 9's test
              * bed, its crank free: each firing and each cycle moves it a
@@ -2174,11 +2207,12 @@ static int cmd_sound(int argc, char **argv)
         }
         if (drive == DRIVE_SWEEP) {
             if (on_limiter < 0.0 && e->limiter_cuts > cuts0) on_limiter = t;
-            if (lifted < 0.0 && on_limiter >= 0.0 && t >= on_limiter + SWEEP_LIMITER) {
+            if (lifted < 0.0 && ((on_limiter >= 0.0 && t >= on_limiter + SWEEP_LIMITER)
+                                || (pull_seconds > 0.0 && t >= pull_seconds))) {
                 e->throttle_pos = 0.0;
                 lifted = t;
             }
-            if (clutch < 0.0 && lifted >= 0.0 && t >= lifted + SWEEP_LIFT) {
+            if (clutch < 0.0 && lifted >= 0.0 && t >= lifted + coast_seconds) {
                 /* The clutch goes in: the car's inertia leaves the crank,
                  * which keeps its speed (its kinetic energy is the engine's
                  * own from now on), and so does the road's load. */
@@ -2197,9 +2231,10 @@ static int cmd_sound(int argc, char **argv)
         }
 
         const int n = (int)(total - frames < BLOCK_FRAMES ? total - frames : BLOCK_FRAMES);
-        rb_render_block(sim, buf, n);
+        if (scene>=0) rb_render_stereo(sim,buf,n);
+        else rb_render_block(sim,buf,n);
         if (wav_write(wav, buf, (size_t)n) != WAV_OK) io_error = 1;
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < channels*n; i++) {
             if (fabs(buf[i]) > peak) peak = fabs(buf[i]);
             sumsq += (double)buf[i] * buf[i];
         }
@@ -2209,25 +2244,27 @@ static int cmd_sound(int argc, char **argv)
         if (csv) {
             const double rms = rb_get_telemetry(sim, RB_TLM_OUT_RMS);
             const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
-            double row[8] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
+            double row[10] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
                               rb_get_telemetry(sim, RB_TLM_OUT_PEAK), rms,
-                              (pa > 0.0) ? 20.0 * log10(pa / 2e-5) : 0.0 };
+                              (pa > 0.0) ? 20.0 * log10(pa / 2e-5) : 0.0,
+                              e->desc.inertia, e->overrun_time };
             if (csv_row(csv, row) != 0) io_error = 1;
         }
     }
     const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
-    const double recorded = frames / fs, rms = frames > 0 ? sqrt(sumsq / frames) : 0.0;
+    const double recorded = frames / fs, rms = frames > 0 ? sqrt(sumsq / (channels*frames)) : 0.0;
 
     if (drive == DRIVE_IDLE) {
         if (released >= 0.0) printf("  key to START; the starter lets go at %.2f s\n", released);
         printf("  idling at %.0f rpm at the end (%.0f-%.0f rpm over the whole run)\n", e->result.rpm, lo, hi);
     } else if (drive == DRIVE_SWEEP) {
         printf("  wide open from %.0f rpm, %.1f kg m^2 on the crank and the road's load", SWEEP_FROM, inertia);
-        if (on_limiter >= 0.0)
-            printf(": on the rev limiter after %.1f s, foot off at %.1f s, clutch in at %.1f s, "
-                   "idling at %.1f s\n", on_limiter, lifted, clutch, idling);
-        else
-            printf(": no rev limiter within %.0f s\n", recorded);
+        if (on_limiter >= 0.0) printf(": on the rev limiter after %.1f s", on_limiter);
+        else printf(": no rev limiter within %.1f s", recorded);
+        if (lifted >= 0.0) printf("; foot off at %.2f s", lifted);
+        if (clutch >= 0.0) printf(", clutch in at %.2f s", clutch);
+        if (idling >= 0.0) printf(", idle/recovery checkpoint at %.2f s", idling);
+        printf("\n");
     } else if (drive == DRIVE_REV) {
         printf("  revved in neutral: a blip at %.1f s, floored at %.1f s", REV_BLIP_AT, REV_FLOOR_AT);
         if (on_limiter >= 0.0) printf(", on the rev limiter at %.2f s", on_limiter);

@@ -1,5 +1,37 @@
 # REV-BENCH — Research notes (stage 0)
 
+## 2026-10-21 — Deceleration and spatial sound continuation
+
+Bernardo's robotic V8/I6 deceleration report remains a listening observation,
+not an established single-cause diagnosis. Investigation separated controller
+entry, combustion/pumping behaviour and recording/listener context.
+
+- **Verified implementation gap:** the former overrun controller cut fuel
+  immediately. Manufacturer ECU documentation supports testing a timed spark
+  transition before cut. The new illustrative calibration and controls are
+  documented in `docs/stage-S1e.md`; the exact sound improvement remains unapproved.
+- **Real-recording evidence:** descending harmonics were inspected in BMW
+  250–253 s, Mustang 257–263 s and Ferrari 302–310 s. Camera position, RPM/load,
+  gear state and Doppler contributions remain uncertain. They are qualitative
+  references, not matched transient calibration measurements.
+- **Unresolved S1 physics:** early flame development and residual-gas coupling
+  warrant further research. A generic random misfire probability would not be
+  justified by the optical-engine evidence cited in `docs/stage-S1e.md`.
+- **Additional acoustic mechanisms:** actual-flow intake/baffle sources and an
+  optional finer grid are documented in `docs/stage-S2.md`. The grid's added
+  cost must be weighed against measured convergence and listening benefit.
+- **Perspective:** separate-source stereo, disk-aperture directivity, image
+  reflections, retarded-time source motion and a damped orthogonal FDN are
+  documented with primary sources and explicit approximations in
+  `docs/stage-S4.md`. These are not measured vehicle/room transfer functions.
+
+The checkpoint additionally separates an eight-second in-gear coast from
+clutch-in and neutral recovery. Its extended duration comes from retaining the
+modeled vehicle inertia, not slowing or pitch-shifting the rendered audio.
+Further recordings may be sought or requested from Bernardo as needed. Keep
+originals and measurements separate from listening aids; realism takes priority
+over processing cost when the benefit is justified.
+
 ## How existing engine simulators make sound
 
 | Project | Approach | Notes |

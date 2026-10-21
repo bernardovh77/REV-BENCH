@@ -682,3 +682,30 @@ void test_audio_engine_bay(void)
     CHECK(db(front_engine / front_rest) > 10.0);
     CHECK(behind_engine < behind_rest);
 }
+
+/* A stationary test fixture isolates the additional sources: no pumping
+ * flow means no generated noise; more real mass flow must increase power. */
+void test_noise_intake_and_baffles(void)
+{
+    rb_engine_desc d;
+    preset_desc("i4", &d);
+    rb_engine_init(&e, &d, DT);
+    rb_noise_init(&n, &e, 19);
+    CHECK_NEAR(flow_rms(&n, RB_NOISE_MOUTH, 1000), 0.0, 0.0);
+    for (int i = 0; i < d.cylinders; i++) {
+        e.intake[i].area = 1e-4;
+        e.intake[i].mdot = 0.01;
+    }
+    const double r1 = flow_rms(&n, RB_NOISE_MOUTH, 30000);
+    const double p1 = n.intake_power;
+    CHECK(p1 > 0.0 && r1 > 0.0);
+    for (int i = 0; i < d.cylinders; i++) e.intake[i].mdot *= 1.25;
+    const double r2 = flow_rms(&n, RB_NOISE_MOUTH, 30000);
+    CHECK(n.intake_power > p1 && r2 > r1);
+    e.tailpipe[0].end_face[0].moved = 0.04;
+    flow_rms(&n, RB_NOISE_TAIL0, 1000);
+    CHECK(n.baffle_power > 0.0);
+    e.desc.muffler_type = RB_MUFFLER_STRAIGHT;
+    flow_rms(&n, RB_NOISE_TAIL0, 1000);
+    CHECK(n.baffle_power == 0.0);
+}

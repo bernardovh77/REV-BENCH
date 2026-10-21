@@ -900,13 +900,18 @@ void test_engine_drives_itself(void)
     run_for(0.3, NULL, &hi);
     CHECK(hi > 2500.0);
     e.throttle_pos = 0.0;
-    const double fuel = e.fuel_in;
     int fuel_cut = 0;
+    double fuel_during_cut = 0.0;
     for (long k = 0; k < 96000; k++) {                         /* coasting down, */
+        const double before_fuel = e.fuel_in;
         rb_engine_step(&e);
-        if (e.fuel_cut) fuel_cut = 1;
+        if (e.fuel_cut) {
+            fuel_cut = 1;
+            fuel_during_cut += e.fuel_in - before_fuel;
+        }
     }
-    CHECK(fuel_cut && e.fuel_in - fuel < 0.05 * fuel / 5.5);   /* the injectors are off */
+    CHECK(fuel_cut);
+    CHECK_NEAR(fuel_during_cut, 0.0, 1e-14); /* after timed entry, injectors are off */
     run_for(2.5, &lo, NULL);
     CHECK(lo > 600.0);                                         /* back down without stalling */
     run_for(0.5, NULL, NULL);

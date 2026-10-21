@@ -148,6 +148,8 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     const rb_engine_desc *d = &e->desc;
     memset(n, 0, sizeof *n);
     n->state = seed ? seed : 0x12B12B12B12BULL;   /* xorshift's state can't be 0 */
+    n->detail_state = n->state ^ 0x52324149524ULL;
+    if (!n->detail_state) n->detail_state = 1;
     n->dt = e->dt;
 
     /* The flow. The tailpipes' jets; the exhaust valves' noise, each
@@ -174,6 +176,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
         n->blow_system[i] = (e->systems == 2) ? d->collector[i] : 0;
     }
     band_init(&n->hiss, INNER_HP_HZ, INNER_LP_HZ, TOP_AIRBOX_HZ, n->dt);
+    band_init(&n->intake_roar, 150.0, 1200.0, TOP_AIRBOX_HZ, n->dt);
 
     /* The engine: its modes, moved by the bore; where its pistons and crank
      * are now, so nothing strikes at the start. */
@@ -219,6 +222,9 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     const double rho0 = air->rho, T0 = air->T;
     const double c0 = sqrt(GAMMA_AIR * air->gas.R * T0);
     const double radiate = rho0 * c0 / (4.0 * PI);   /* p^2 at 1 m per W radiated */
+    n->intake_power = n->baffle_power = 0.0;
+    for (int i = 0; i < d->cylinders; i++)
+        n->intake_power += inner_jet(&e->intake[i], GAMMA_AIR, THROTTLE_ETA);
 
     /* The exhaust valves: each one's noise into its system's way down,
      * arriving when it gets there (a ring the cylinders write ahead into). */
@@ -231,6 +237,24 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     }
 
     for (int s = 0; s < e->systems; s++) {
+        /* Chambered baffles are a downstream constriction. Their generated
+         * noise bypasses the catalyst; use the modeled effective hole area
+         * and upstream gas, with the same low-Mach jet approximation. */
+        if (d->muffler_type == RB_MUFFLER_CHAMBERED) {
+            const rb_face *f = &e->tailpipe[s].end_face[0];
+            rb_orifice hole = {0};
+            hole.a = f->a;
+            hole.b = f->b;
+            hole.area = d->muffler_area;
+            hole.cd = 1.0;
+            hole.mdot = f->moved;
+            const double w = inner_jet(&hole, GAMMA_BURNED, VALVE_ETA);
+            n->baffle_power += w;
+            int delay = (int)fmin(d->tailpipe_length / EXHAUST_C / n->dt,
+                                  RB_NOISE_DELAY - 1.0);
+            const int at = (n->blow_pos + delay) & (RB_NOISE_DELAY - 1);
+            n->blow_ring[s][at] += (float)(sqrt(radiate * w) * white(&n->detail_state));
+        }
         /* The tailpipe's jet: Lighthill's U^8, hot. */
         double jet = 0.0;
         const double q = e->tail_flow[s];
@@ -262,7 +286,9 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     const double w = inner_jet(&e->throttle, GAMMA_AIR, THROTTLE_ETA)
                    + inner_jet(&e->idle_air, GAMMA_AIR, THROTTLE_ETA);
     const double hiss = band_step(&n->hiss, sqrt(radiate * w * PASS_AIRBOX) * white(&n->state));
-    n->out[RB_NOISE_MOUTH] = hiss * n->hiss.norm;
+    const double roar = band_step(&n->intake_roar,
+        sqrt(radiate * n->intake_power * PASS_AIRBOX) * white(&n->detail_state));
+    n->out[RB_NOISE_MOUTH] = hiss * n->hiss.norm + roar * n->intake_roar.norm;
 }
 
 /* ---- the engine ---- */

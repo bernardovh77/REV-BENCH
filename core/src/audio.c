@@ -226,13 +226,12 @@ static void cabin_design(rb_cabin *cb, double dt)
 
 /* In the cabin: what's outside behind it and in front of it through the
  * body, the mounts' share, and the boom. */
-static double cabin(rb_listener *l, double rear, double front, double dt)
+double rb_cabin_process(rb_cabin *cb, double rear, double front, double mount, double dt)
 {
-    rb_cabin *cb = &l->cabin;
     if (cb->dt != dt) cabin_design(cb, dt);
     cb->rear += cb->rear_a * (RB_CABIN_PASS * rear - cb->rear);
     cb->front += cb->front_a * (RB_CABIN_PASS * front - cb->front);
-    const double x = cb->rear + cb->front + l->mount;
+    const double x = cb->rear + cb->front + mount;
     const double y = cb->b0 * x + cb->b1 * cb->x1 + cb->b2 * cb->x2 - cb->a1 * cb->y1 - cb->a2 * cb->y2;
     cb->x2 = cb->x1;
     cb->x1 = x;
@@ -257,7 +256,8 @@ double rb_listener_hear(rb_listener *l, double rho0, double dt)
     const double noise_rear = noise_arriving(l, &noise_front);
     if (!l->inside) return flows + noise_rear + noise_front;
     const double flows_front = rho0 / (4.0 * PI) * change_front / dt;
-    return cabin(l, flows - flows_front + noise_rear, flows_front + noise_front, dt);
+    return rb_cabin_process(&l->cabin, flows - flows_front + noise_rear,
+                            flows_front + noise_front, l->mount, dt);
 }
 
 /* ---- the decimator ---- */

@@ -113,6 +113,9 @@ typedef struct rb_noise {
     int      blow_system[RB_MAX_CYLINDERS];  /* the tailpipe it comes out of    */
     int      blow_pos;
     rb_noise_band hiss;                      /* the throttle's, at the mouth    */
+    rb_noise_band intake_roar;
+    uint64_t detail_state;                  /* separate stream for S2 sources  */
+    double intake_power, baffle_power;      /* W before propagation, diagnostic */
 
     /* the engine */
     rb_noise_mode mode[RB_NOISE_MODES];

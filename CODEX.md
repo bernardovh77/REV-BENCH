@@ -4,6 +4,82 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-21: consolidated feedback checkpoint before 13b
+
+- Stop here for Bernardo's feedback. His request resumed development toward
+  stage 13b, with the consolidated checkpoint at its entry. S1/S2/S4 acceptance
+  is still open; do not mark them complete or proceed to 13b/14 without the
+  next instruction. Full progress and limits: `docs/checkpoint-13b.md`.
+- S1e: actual pedal lifts now enter a timed ignition-retard transition before
+  fuel cut; immediate-cut control is `--overrun-transition 0`. Defaults 0.15 s /
+  12 degrees are illustrative. The timer is armed by pedal use to preserve
+  startup calibration. This does not prove the robotic deceleration is fixed.
+- S2: intake-valve and chambered-baffle noise use modeled flow and a separate
+  random stream; ultra quality optionally doubles physics/pipe resolution.
+  Default high remains. Valve-noise gain is not blindly reduced for a finer
+  1D grid, which does not resolve 3D turbulence.
+- S4: `rb_set_scene` and `rb_render_stereo` add separate-source/ear propagation,
+  aperture directivity, head-shadow approximation, ground/wall images, a damped
+  FDN and retarded-time moving-source Doppler. Eight scenes are available in
+  the native CLI; WASM exports and type declarations are updated. The browser
+  still plays the tone until stage 14. Scene audio supports 8–96 kHz.
+- Bernardo additionally requested longer deceleration. `--coast-seconds 8`
+  keeps the vehicle inertia attached for eight seconds; `--pull-seconds 12`
+  bounds the pull if the limiter is not reached. The three stereo previews
+  under ignored `renders/checkpoint-13b/long-coast/` are 20.66 s I6, 17.22 s
+  cross V8 and 20.21 s flat V8. Their manifest/CSV identify lift and clutch-in.
+  No time stretching, synthetic pops or pitch effects are used.
+- Real falling-pitch candidates: BMW 250–253, Mustang 257–263, Ferrari 302–310 s.
+  Do not promote these to verified neutral revs, loads, RPM or viewpoints.
+  Reference/old/current pairs, scenes, full float renders and matched controls
+  are local under `renders/checkpoint-13b/`; `tools/checkpoint_13b.py` reproduces
+  them. Unfiltered float WAVs remain the measurement inputs.
+- Validation: 164 native tests / 2574 checks; 11 focused ASan/UBSan tests / 50
+  checks (leak detection disabled for sandbox ptrace); 16 Python tests; 17 WASM
+  unit tests; production build; browser audio dev/preview. Ten planted faults
+  are caught. The new independent ear-delay test catches a mutant that the
+  first stereo level-difference check missed. Five full matched dyno CSVs are
+  byte-identical to S1d's accepted after sweeps; 23 standard float renders and
+  all new recorded scenarios report zero limited/non-finite samples.
+- Numerical gaps remain: I4/boxer warm repeat +19.89/+17.71 dB, cross/flat V8
+  idle COV up to 12.27/30.52%; no genuine ignition-kernel failure model. S2 also
+  misses I6/flat full-rev slopes and cross V8 idle high-frequency share.
+  Cross-plane physics is about 0.45x native / 0.39x WASM on this shared host;
+  13b's 4x/2x targets are unmet. Ultra audio costs about 3x high here; its
+  audible value remains unapproved. Realism stays above speed.
+- Tools/dependencies/browser validation stay isolated; Claude's setup remains
+  intact. The Graphify code graph is refreshed for the checkpoint. Commit and
+  sync the coherent checkpoint to the existing main branch, without trailers;
+  keep all source and generated audio ignored.
+
+## 2026-10-21 listening feedback and resumed development
+
+- Bernardo heard little noticeable difference in the recent S1d comparisons; no audible
+  realism improvement or S1 listening approval has been established.
+- Use the supplied real engine recordings as the primary sound reference. V8 and
+  inline-six deceleration sound too robotic to Bernardo. Researching and testing the
+  underlying cause is a priority before choosing a fix. The cause remains unknown;
+  he did not specify which V8 layout. Keep proposed explanations labeled as hypotheses.
+- The next authorized sound work should compare documented real deceleration intervals
+  with corresponding simulated phases, separating neutral rev-down from loaded overrun
+  and retaining uncertainty about cabin/exterior/flyby perspectives. Existing reference
+  processing and measurement rules still apply. See PLAN.md and
+  `docs/user-sound-references.md`.
+- Realism is the absolute priority across the project. A heavier program and greater
+  processing demands on the user's machine are acceptable when the demonstrated realism
+  gain justifies them. Efficiency supports realism; performance targets may be revised
+  with documented evidence of that gain and measured processing demands.
+- Every realism problem requires a research-based, physically justified solution that
+  prioritizes realism while pursuing efficiency. Cite primary sources, document assumptions
+  and limits, validate against real evidence, and measure runtime cost
+  (PLAN.md, working agreement 7).
+- Seek additional reference recordings/sounds when needed, or ask Bernardo for targeted
+  examples. He can provide sounds he finds useful for development. Preserve provenance,
+  intervals, perspective uncertainty and processing notes (PLAN.md, working agreement 8).
+- **Resumed:** Bernardo subsequently requested development through stage 13b, followed
+  by a consolidated feedback checkpoint with progress, current state and listening
+  examples. Continue the small stages; keep S1 open wherever acceptance remains unmet.
+
 ## 2026-10-21 continuation: S1d complete; S1 open
 
 - Found that burn duration used requested AFR while heat release already used

@@ -197,6 +197,30 @@ to idle; Bernardo's assessment is still required.
 Graphify is refreshed after final code and documentation changes; the existing
 Claude graph workflow and setup are preserved.
 
+## Bernardo's listening feedback — 2026-10-21
+
+Bernardo heard little noticeable difference in these comparisons and reiterated that
+the supplied real engine recordings should be the main reference. He finds the V8 and
+inline-six too robotic mainly during deceleration; the exact cause and V8 layout were
+not identified. This feedback does not resolve the S1 listening checkpoint.
+
+He further emphasized that researching the underlying cause of robotic deceleration
+is a priority. Every realism problem requires a research-based solution targeting
+realism and computational efficiency, with evidence, model limits and runtime cost
+documented. Additional reference recordings and sounds may be sought or requested
+from Bernardo, who can provide examples he finds useful. These standing requirements
+are recorded in PLAN.md, working agreements 7–8.
+
+Bernardo clarified that realism is the absolute priority across the whole project.
+A heavier program and higher processing demands on the user's machine are acceptable
+when the demonstrated realism gain justifies them. Efficiency supports that priority;
+document the gain and measured processing cost when making the tradeoff.
+
+PLAN.md records a future comparison of documented real deceleration intervals with
+corresponding simulated phases, preserving recording-perspective uncertainty. Bernardo
+requested a plan update followed by a wait for further instruction; no additional sound
+investigation or tuning is authorized by this feedback alone.
+
 ## Remaining S1 work
 
 Do not mark S1 complete from these passing charge-coupling tests. Low-band

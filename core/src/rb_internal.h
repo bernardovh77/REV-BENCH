@@ -13,6 +13,7 @@
 #include "dyno.h"
 #include "engine.h"
 #include "noise.h"
+#include "scene.h"
 
 #include <stdint.h>
 
@@ -66,6 +67,11 @@ struct rb_sim {
     rb_noise      noise;       /* stage 12b: the flow's and the engine's  */
     rb_decimator  aa;          /* physics rate -> audio rate              */
     rb_dc_blocker dc;
+    int scene_active;
+    rb_scene scene;
+    rb_decimator scene_aa[RB_SCENE_SOURCES];
+    rb_dc_blocker scene_dc[2];
+    double scene_flow[3];
 
     /* ---- model ----
      * Stage 1: a placeholder oscillator that proves the plumbing; stage 11

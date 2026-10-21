@@ -21,6 +21,8 @@ export interface RbExports {
   rb_create_with_quality(sampleRate: number, quality: number): number;
   rb_destroy(sim: number): void;
   rb_reset(sim: number): void;
+  rb_set_scene(sim: number, scene: number): number;
+  rb_render_stereo(sim: number, out: number, frames: number): number;
   rb_render_block(sim: number, out: number, frames: number): number;
   rb_set_param(sim: number, id: number, value: number): number;
   rb_get_param(sim: number, id: number): number;
@@ -70,7 +72,7 @@ export interface RbExports {
 /** Exports this wrapper relies on. The unit tests check rb_core.wasm has them all. */
 export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
   'memory', 'rb_version', 'rb_create_with', 'rb_create_with_quality', 'rb_destroy', 'rb_reset',
-  'rb_render_block',
+  'rb_render_block', 'rb_render_stereo', 'rb_set_scene',
   'rb_set_param', 'rb_get_param', 'rb_param_count', 'rb_param_name', 'rb_param_unit',
   'rb_param_min', 'rb_param_max', 'rb_param_default', 'rb_param_flags',
   'rb_get_telemetry', 'rb_telemetry_count', 'rb_telemetry_name',
@@ -89,6 +91,7 @@ export const REQUIRED_EXPORTS: readonly (keyof RbExports)[] = [
 export const RB_QUALITY_LOW = 0;
 export const RB_QUALITY_MEDIUM = 1;
 export const RB_QUALITY_HIGH = 2;
+export const RB_QUALITY_ULTRA = 3;
 export const RB_OK = 0;
 export const RB_CLAMPED = 1;
 export const RB_ERR_ARG = -1;

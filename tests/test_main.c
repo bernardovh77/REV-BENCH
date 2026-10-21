@@ -147,6 +147,17 @@ void test_engine_pipe_rate(void);
 /* ---- random engines (tests/test_fuzz.c) ---- */
 void test_fuzz_random_engines(void);
 /* ---- no two cycles alike, the accessories, the soft cut (tests/test_variation.c) ---- */
+void test_noise_intake_and_baffles(void);
+void test_scene_doppler_tone(void);
+void test_scene_ear_geometry(void);
+void test_scene_aperture_radiation(void);
+void test_ultra_spatial_resolution(void);
+void test_scene_retarded_time(void);
+void test_scene_propagation_and_room(void);
+void test_scene_api_repeatability(void);
+void test_overrun_retards_combustion(void);
+void test_overrun_transition(void);
+void test_overrun_reset_and_legacy(void);
 void test_variation_off_is_exact(void);
 void test_variation_cov_of_imep(void);
 void test_variation_cov_at_idle(void);
@@ -308,6 +319,17 @@ static const struct {
     T(test_calibration_idle_spark),
     T(test_engine_pipe_rate),
     T(test_fuzz_random_engines),
+    T(test_noise_intake_and_baffles),
+    T(test_scene_doppler_tone),
+    T(test_scene_ear_geometry),
+    T(test_scene_aperture_radiation),
+    T(test_ultra_spatial_resolution),
+    T(test_scene_retarded_time),
+    T(test_scene_propagation_and_room),
+    T(test_scene_api_repeatability),
+    T(test_overrun_retards_combustion),
+    T(test_overrun_transition),
+    T(test_overrun_reset_and_legacy),
     T(test_variation_off_is_exact),
     T(test_variation_cov_of_imep),
     T(test_variation_cov_at_idle),

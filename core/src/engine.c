@@ -454,6 +454,10 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     e->hold_speed = 1;
     e->throttle_pos = 1.0;
     e->ignition = 0;
+    /* An illustrative ECU transition, not a measured calibration for the
+     * reference cars. See docs/stage-S1e.md; zero reproduces immediate cut. */
+    e->overrun_transition = 0.15;
+    e->overrun_retard = 12.0;
     e->afr = RB_AFR_STOICH;
     e->spark = RB_SPARK_DEFAULT;
     e->spark_map = 1;
@@ -475,18 +479,23 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     rb_orifice_init(&e->throttle, &e->airbox, &e->plenum, 0.0, 1.0);
     rb_orifice_init(&e->idle_air, &e->airbox, &e->plenum, 0.0, 1.0);
 
+    /* Optional ultra quality doubles the spatial resolution with the pipe
+     * rate. The pipe CFL limiter and fixed pool still bound every build. */
+    const double grid_scale = fmin(1.0, RB_PIPE_RATE * e->pipe_dt);
+    const double short_cell = SHORT_CELL * grid_scale;
+    const double long_cell = LONG_CELL * grid_scale;
     /* The pipes' cells. If they'd want more than the pool has, each still
      * gets one, and a share of the rest of what it wants (new_pipe): never
      * more than the pool, however many short pipes there are (at most 39). */
     const int runners = d->runner_length > 0.0;
     const int pipes = rb_engine_pipe_count(e);
-    int want = rb_pipe_cells_for(d->snorkel_length, SHORT_CELL, e->pipe_dt), used = 0;
+    int want = rb_pipe_cells_for(d->snorkel_length, short_cell, e->pipe_dt), used = 0;
     for (int i = 0; i < d->cylinders; i++)
-        want += rb_pipe_cells_for(d->header_length[i], SHORT_CELL, e->pipe_dt)
-              + (runners ? rb_pipe_cells_for(d->runner_length, SHORT_CELL, e->pipe_dt) : 0);
-    want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, LONG_CELL, e->pipe_dt)
-          + e->systems * (rb_pipe_cells_for(d->muffler_length, LONG_CELL, e->pipe_dt)
-                          + rb_pipe_cells_for(d->tailpipe_length, LONG_CELL, e->pipe_dt));
+        want += rb_pipe_cells_for(d->header_length[i], short_cell, e->pipe_dt)
+              + (runners ? rb_pipe_cells_for(d->runner_length, short_cell, e->pipe_dt) : 0);
+    want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, long_cell, e->pipe_dt)
+          + e->systems * (rb_pipe_cells_for(d->muffler_length, long_cell, e->pipe_dt)
+                          + rb_pipe_cells_for(d->tailpipe_length, long_cell, e->pipe_dt));
     const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
     const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
 
@@ -494,7 +503,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
      * mouth and opens into the air box through the filter at its end, a
      * laminar loss. The air box is stepped with the plenum and the throttle
      * every physics step, and so is the snorkel's face into it. */
-    new_pipe(e, &e->snorkel, &used, d->snorkel_length, d->snorkel_diameter, SHORT_CELL, room, over,
+    new_pipe(e, &e->snorkel, &used, d->snorkel_length, d->snorkel_diameter, short_cell, room, over,
              d->T_ambient, RUNNER_FRICTION);
     rb_pipe_join(&e->snorkel, 0, &e->intake_air, SNORKEL_ENTRY, 0);
     rb_pipe_join(&e->snorkel, 1, &e->airbox, 0.0, 1);
@@ -521,7 +530,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
          * the valve stepped with the cylinder. */
         if (runners) {
             rb_pipe *r = &e->runner[i];
-            new_pipe(e, r, &used, d->runner_length, d->runner_diameter, SHORT_CELL, room, over,
+            new_pipe(e, r, &used, d->runner_length, d->runner_diameter, short_cell, room, over,
                      RUNNER_WALL, RUNNER_FRICTION);
             rb_pipe_join(r, 0, &e->plenum, RUNNER_ENTRY, 1);
             rb_orifice_init(&e->intake[i], rb_pipe_end_cell(r, 1), gas, 0.0, 1.0);
@@ -533,7 +542,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         /* The header: from the exhaust valve, its first cell stepped with the
          * cylinder, to its collector. */
         rb_pipe *h = &e->header[i];
-        new_pipe(e, h, &used, d->header_length[i], d->header_diameter, SHORT_CELL, room, over,
+        new_pipe(e, h, &used, d->header_length[i], d->header_diameter, short_cell, room, over,
                  HEADER_WALL, EXHAUST_FRICTION);
         rb_orifice_init(&e->exhaust[i], gas, rb_pipe_end_cell(h, 0), 0.0, 1.0);
         rb_pipe_attach(h, 0, gas, &e->exhaust[i]);
@@ -547,7 +556,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
      * packed (pipe.h); chambered, a wide can. */
     for (int s = 0; s < e->systems; s++) {
         rb_pipe *m = &e->muffler[s];
-        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), LONG_CELL, room, over,
+        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), long_cell, room, over,
                  MUFFLER_WALL, EXHAUST_FRICTION);
         if (d->muffler_type == RB_MUFFLER_STRAIGHT) rb_pipe_pack(m, PACKING, PACKING_SETTLE);
     }
@@ -564,7 +573,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     const int alone = e->systems == e->collectors;   /* each muffler has one exhaust pipe */
     for (int c = 0; c < e->collectors; c++) {
         rb_pipe *x = &e->exhaust_pipe[c], *m = &e->muffler[system_of(e, c)];
-        new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, LONG_CELL, room, over,
+        new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, long_cell, room, over,
                  EXHAUST_WALL, EXHAUST_FRICTION);
         rb_pipe_join(x, 0, &e->collector[c], COLLECTOR_ENTRY, 0);
         if (!(straight && alone && rb_pipe_onward(x, m) == 0))
@@ -574,7 +583,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     }
     for (int s = 0; s < e->systems; s++) {
         rb_pipe *t = &e->tailpipe[s], *m = &e->muffler[s];
-        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, LONG_CELL, room, over,
+        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, long_cell, room, over,
                  TAILPIPE_WALL, EXHAUST_FRICTION);
         if (!(straight && rb_pipe_onward(m, t) == 0)) {
             rb_pipe_join(t, 0, rb_pipe_end_cell(m, 1), 0.0, 0);
@@ -886,7 +895,11 @@ static double computer_spark(const rb_engine *e, double duration, double rpm)
         const double s = IDLE_SPARK + IDLE_SPARK_GAIN * (d->idle_rpm - idle_heading(e));
         return (s < 0.0) ? 0.0 : (s < best) ? s : best;
     }
-    return best;
+    /* Overrun entry removes torque through ignition before cutting fuel.
+     * Scheduling still happens once at IVC, never by reshaping the audio. */
+    const double phase = e->overrun_transition > 0.0
+                       ? fmin(e->overrun_time / e->overrun_transition, 1.0) : 0.0;
+    return best - e->overrun_retard * phase;
 }
 
 /* Intake valve closing: the charge is trapped. Inject the fuel for the
@@ -1130,6 +1143,8 @@ static void engine_computer(rb_engine *e)
     e->rpm_recent += (e->rpm_smooth - e->rpm_recent) * (e->dt / RPM_RECENT);
     if (!e->ignition) {            /* switched off: the valve stays where it is */
         e->spark_cut = e->fuel_cut = 0;
+        e->overrun_time = 0.0;
+        e->overrun_armed = 0;
         return;
     }
 
@@ -1139,11 +1154,25 @@ static void engine_computer(rb_engine *e)
     if (!(d->idle_rpm > 0.0)) {
         e->idle_valve = 0.0;
         e->fuel_cut = 0;
+        e->overrun_time = 0.0;
         return;
     }
     const int foot_off = e->throttle_pos < 0.01;   /* NaN counts as on */
-    if (foot_off && e->rpm_smooth > d->idle_rpm + FUEL_CUT_ABOVE) e->fuel_cut = 1;
-    else if (!foot_off || e->rpm_smooth < d->idle_rpm + FUEL_BACK_ABOVE) e->fuel_cut = 0;
+    /* This transition belongs to a pedal lift, not the key-start transient.
+     * Retain startup's existing overspeed protection until the pedal is used. */
+    if (!foot_off) e->overrun_armed = 1;
+    else if (e->rpm_smooth < d->idle_rpm + FUEL_BACK_ABOVE) e->overrun_armed = 0;
+    if (!foot_off || e->rpm_smooth < d->idle_rpm + FUEL_BACK_ABOVE) {
+        e->fuel_cut = 0;
+        e->overrun_time = 0.0;
+    } else if (e->rpm_smooth > d->idle_rpm + FUEL_CUT_ABOVE
+               || e->overrun_time > 0.0 || e->fuel_cut) {
+        const double transition = e->overrun_armed && e->overrun_transition > 0.0
+                                && isfinite(e->overrun_transition)
+                                ? e->overrun_transition : 0.0;
+        e->overrun_time = fmin(e->overrun_time + e->dt, transition);
+        e->fuel_cut = e->overrun_time >= transition;
+    }
 
     const double error = d->idle_rpm - e->rpm_smooth;
     if (e->rpm_smooth > d->cranking_rpm && foot_off
@@ -1240,6 +1269,8 @@ void rb_engine_step(rb_engine *e)
         /* The engine computer is off while held: nothing of its stays cut, and
          * its view of the speed is ready for when the crank is let go. */
         e->spark_cut = e->fuel_cut = 0;
+        e->overrun_time = 0.0;
+        e->overrun_armed = 0;
         e->rpm_smooth = e->rpm_trend = e->rpm_recent = rpm;
         e->friction_torque = rb_engine_fmep(e, e->omega) * rb_engine_displacement(e) / (4.0 * PI);
         turn = e->omega * dt;

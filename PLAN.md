@@ -5,11 +5,43 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
+**Realism is the absolute priority across the whole project.** Computational efficiency
+serves that goal. The program may be heavier and require more processing power on the
+user's machine when the increased realism justifies the cost. Document the demonstrated
+realism gain and measured processing demands. Performance targets may be revised with
+that evidence when needed to preserve or improve realism.
+
 **The sound comes first.** It is Bernardo's top priority: an engine that's hard to tell from a
 real one by ear. After stage 12 he found the renders "dull and really artificial", so the plan
 gained a sound-realism track (stages S1–S5). Its targets come from recordings of real engines,
 and `tools/compare_real.py` measures them (RESEARCH.md, "Sound realism"). Every stage also keeps
 a sound check (working agreement 6).
+
+### Latest listening feedback — 2026-10-21
+
+Bernardo heard little noticeable difference in the recent S1d comparisons. This feedback
+does not establish an audible realism improvement or resolve the S1 listening checkpoint.
+The supplied real engine recordings remain the primary reference for sound realism;
+before/after simulation comparisons support regression checks.
+
+- **Research priority for the next sound work:** investigate why the V8 and inline-six
+  sound too robotic mainly during deceleration. Identifying and testing the underlying
+  cause is a priority before choosing a fix. The cause is unknown, and the V8 layout
+  was not specified; proposed explanations must remain hypotheses until supported by evidence.
+- **Reference comparison:** select and document real lift-off/deceleration intervals,
+  then compare corresponding simulated phases. Distinguish neutral rev-down from loaded
+  overrun and account for possible cabin, exterior and flyby transitions; brightness alone
+  does not establish microphone position. Keep source and processing notes in
+  `docs/user-sound-references.md`, with unfiltered float WAVs used for measurements.
+- **More references when needed:** seek additional engine recordings and sounds, or ask
+  Bernardo for targeted examples. He can provide sounds he finds useful for development.
+  Apply working agreements 7–8 to this investigation and every other realism problem.
+- **Status:** Bernardo resumed development toward stage 13b with a consolidated
+  feedback checkpoint at its entry. That checkpoint is now prepared in
+  `docs/checkpoint-13b.md`, including the requested longer pull/coast scenarios.
+  Stop for feedback before the performance refactor or stage 14. S1/S2/S4 stay
+  open wherever numerical checks or Bernardo's listening approval remain unmet;
+  later implementation work does not establish completed sound acceptance.
 
 Each stage below is sized to fit in **one prompt**. To continue, just say *"do stage N"*
 (or *"next stage"*). After each stage, its box in the tracker is ticked and the "Notes" column
@@ -41,13 +73,14 @@ gets a one-line summary of anything that changed from the plan.
 | S1b | Sound: finite-time partial burns | Sound realism | ✅ | Life-enabled slow burns stop at EVO; 151 native tests, conservation/mutation checks, nominal load unchanged (docs/stage-S1b.md) |
 | S1c | Repeatable five-preset sound and combustion audit | Sound realism | ✅ | 30-second float baselines and per-cylinder COV; I4/boxer repetition misses target, V8 idle COV needs review; physics unchanged (docs/stage-S1c.md) |
 | S1d | Trapped-mixture feedback in burn timing | Sound realism | ✅ | Actual post-injection mixture drives life-enabled flame speed; 153 tests, four mutants caught, full matched dyno changes <0.055%; repetition still unresolved (docs/stage-S1d.md) |
+| S1e | Research and controlled overrun transitions | Sound realism | 🔄 | Timed pedal-lift ignition/fuel transition and immediate-cut control; real falling-pitch intervals documented; consolidated acceptance in docs/checkpoint-13b.md |
 | R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
 | R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
-| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | S1d: I4/boxer warm repeat +19.89/+17.71 dB; V8 idle COV still high; genuine ignition failures and listening checks remain. S1d matched dyno passes |
-| S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | ⬜     | The jets' noise came in 12b; left: finer exhaust cells, the tailpipe's beaming, the baffles |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Checkpoint: I4/boxer repeat +19.89/+17.71 dB and V8 COV remain high; ignition failures/listening unresolved. Five new matched dyno sweeps are identical to S1d |
+| S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, optional ultra grid, aperture directivity in stereo scenes; spectral and listening acceptance remain (docs/stage-S2.md) |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
-| S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | The cabin came in 12b; left: stereo and the places |
-| 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Split from stage 13: its 4× target |
+| S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
+| 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Requested feedback checkpoint at entry; benchmark/acceptance gaps in docs/checkpoint-13b.md; optimization remains next |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -632,6 +665,12 @@ the car the four idling has −18 dB of its energy above 1 kHz, like the recorde
 - **Bernardo checks:** listen on headphones.
 
 #### Stage 13b — Performance II: vectorized pipes, implicit valves
+**Feedback checkpoint requested here (2026-10-21).** Review
+`docs/checkpoint-13b.md` and the real-reference, old/current, stereo-scene and
+extended pull/coast recordings before starting the performance refactor or
+stage 14. S1/S2/S4 acceptance stays open wherever numerical or listening checks
+are unresolved; reaching this consolidated review does not complete them.
+
 Split from stage 13 (working agreement 2), whose cheap wins brought the cross-plane V8 from 0.59×
 to 0.76× real time natively at high quality, and its quality setting to 1.84× at low
 (docs/stage-13.md, "Where the time goes"). The pipes' cells are now most of the cost, their faces
@@ -803,3 +842,21 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
      to change it shows that it didn't.
    - **Never trade sound for speed silently.** A lower default quality is checked by ear and by
      spectrum, not only by the dyno numbers.
+7. **Research every realism problem.** Every problem related to realism must be addressed
+   with a research-based, physically justified solution that prioritizes realism. Pursue
+   computational efficiency while preserving the realism gain; higher processing demands
+   are acceptable when that gain justifies them. Research the cause before choosing the fix:
+   use primary technical sources and relevant real-world evidence, distinguish hypotheses
+   from established findings,
+   and document sources, assumptions and model limits in `RESEARCH.md` and the stage notes.
+   Choose the simplest model supported by that evidence that delivers the required realism.
+   Validate it natively against relevant measurements and recordings,
+   retain Bernardo's listening checkpoint for sound,
+   and measure runtime cost. Document realism gains and efficiency tradeoffs explicitly;
+   a passing test or a faster model alone does not establish improved realism.
+8. **Expand the reference material when needed.** Additional reference recordings and sounds
+   may be searched for, and Bernardo may be asked for specific examples; he can supply sounds
+   he finds useful for development. Record provenance, source intervals, operating conditions,
+   perspective uncertainty and processing. Keep recordings and generated audio in ignored
+   `renders/`, retain unfiltered float WAVs for measurements, and use filtered copies only as
+   listening aids. Reference recordings guide validation of the physics-driven sound.

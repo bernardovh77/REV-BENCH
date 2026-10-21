@@ -336,6 +336,10 @@ typedef struct rb_engine {
     int    spark_cut;       /* 1 while the rev limiter cuts every spark (the hard cut) */
     long   limiter_cuts;    /* sparks the rev limiter cut, soft or hard (stage 12c)    */
     int    fuel_cut;        /* 1 while the injectors are off, coasting (overrun)       */
+    double overrun_transition; /* s from qualifying lift to fuel cut; 0: immediate   */
+    double overrun_time;       /* s in this qualifying lift, saturated at transition */
+    double overrun_retard;     /* deg removed progressively before fuel cut         */
+    int overrun_armed;         /* pedal used since last return to idle               */
 
     /* no two cycles alike (stage 12c; `variation` above) */
     uint64_t rand_cycles;           /* the generator's state for the cycles (rand.h) ...  */

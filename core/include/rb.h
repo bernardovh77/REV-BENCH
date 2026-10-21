@@ -83,6 +83,7 @@ enum {
     RB_QUALITY_MEDIUM,   /* physics at about 192 kHz, the pipes at 24 kHz       */
     RB_QUALITY_HIGH,     /* physics at about 192 kHz, the pipes at 48 kHz: the
                             default, and what the tests and renders use       */
+    RB_QUALITY_ULTRA,    /* optional: physics 384 kHz, pipes 96 kHz, finer grid */
     RB_QUALITY_COUNT
 };
 
@@ -113,6 +114,17 @@ typedef enum rb_telemetry {
 } rb_telemetry;
 
 typedef struct rb_sim rb_sim;   /* opaque simulation state */
+
+/* Stereo acoustic scenes (8..96 kHz audio). Source positions and acoustic
+ * approximations are documented in docs/stage-S4.md. Existing mono listener
+ * defaults are retained until rb_set_scene is called. */
+enum {
+    RB_SCENE_ASPHALT=0, RB_SCENE_GRASS, RB_SCENE_WALL, RB_SCENE_GARAGE,
+    RB_SCENE_DYNO, RB_SCENE_ISO, RB_SCENE_PASSBY, RB_SCENE_CABIN, RB_SCENE_COUNT
+};
+int rb_set_scene(rb_sim *sim, int scene);
+/* Interleaved L/R; returns frames, or RB_ERR_ARG. Requires rb_set_scene. */
+int rb_render_stereo(rb_sim *sim, float *out, int frames);
 
 /* ---- lifecycle ---------------------------------------------------- */
 const char *rb_version(void);
