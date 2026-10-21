@@ -814,7 +814,13 @@ static double flame_speed(double T, double p, double x, double phi)
  * i's trapped charge at `rpm`. */
 static double burn_duration(const rb_engine *e, rb_burn *b, double rpm)
 {
-    const double phi = (e->afr > 0.0) ? RB_AFR_STOICH / e->afr : 1.0;
+    const double target_phi = (e->afr > 0.0) ? RB_AFR_STOICH / e->afr : 1.0;
+    /* Life follows the mixture actually trapped, including cylinder trims
+     * and fuel left by earlier weak burns. Keep life-off's calibrated path.
+     * Without both reactants no flame can release heat; use its old finite
+     * reference duration rather than interpreting a missing ratio as a
+     * measured flammability limit. */
+    const double phi = (variation(e) > 0.0 && b->phi_ivc > 0.0) ? b->phi_ivc : target_phi;
     const double s_l = flame_speed(b->T_ivc, b->p_ivc, b->residual, phi)
                      / flame_speed(BURN_REF_T, BURN_REF_P, BURN_REF_X, 1.0);
     const double nu = pow(b->T_ivc / BURN_REF_T, 1.7) * (BURN_REF_P / b->p_ivc);
@@ -911,6 +917,9 @@ static void close_intake(rb_engine *e, int i)
     b->V_ivc = g->V;
     b->T_ivc = g->T;
     b->residual = g->y[RB_BURNED];
+    const double phi = (g->m[RB_AIR] > 0.0 && g->m[RB_FUEL] > 0.0)
+                     ? RB_AFR_STOICH * (g->m[RB_FUEL] / g->m[RB_AIR]) : 0.0;
+    b->phi_ivc = isfinite(phi) ? phi : 0.0;
     const double rpm = e->hold_speed ? e->rpm : e->omega * 30.0 / PI;
     const double expected = burn_duration(e, b, rpm);
     const double advance = spark_advance(computer_spark(e, expected, rpm));

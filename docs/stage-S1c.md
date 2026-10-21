@@ -65,6 +65,11 @@ telemetry, renderer logs and `sound.json` stay under ignored `renders/s1-audit/`
 Exact commands, core-source and renderer hashes, intervals and processing are
 recorded.
 
+Historical note: the S1c results below used gain 1. S1d found a changed startup
+peak and lowered the audit tool's default recording gain to 0.5 for headroom;
+`--gain 1` selects the original level. This changes the analysis recording,
+not the engine/browser gain. See `docs/stage-S1d.md` for paired validation.
+
 Each file must contain exactly 30 seconds of finite mono audio at 48 kHz, with
 varying audio in each measurement window and renderer diagnostics reporting
 zero limited or non-finite samples. The script rejects incomplete output before

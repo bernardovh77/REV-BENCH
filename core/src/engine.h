@@ -228,6 +228,8 @@ typedef struct rb_burn {
     double p_ivc, V_ivc, T_ivc;   /* trapped charge at intake valve closing, fuel and all
                                      (Woschni's reference)                               */
     double residual;              /* its burned-gas mass fraction                        */
+    double phi_ivc;               /* trapped fuel/air equivalence ratio, after injection;
+                                     0 without both reactants or for an invalid ratio   */
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
     double start_angle;           /* ... and of its burn's start: the spark, give or take
                                      this cycle's flame (stage 12c; set at IVC)          */

@@ -40,9 +40,10 @@ gets a one-line summary of anything that changed from the plan.
 | S1a | Sound analysis: float renders and Windows paths | Sound realism | ✅ | Shared PCM16/float32 reader and Windows paths; validated with native, Python and web checks (docs/stage-S1a.md) |
 | S1b | Sound: finite-time partial burns | Sound realism | ✅ | Life-enabled slow burns stop at EVO; 151 native tests, conservation/mutation checks, nominal load unchanged (docs/stage-S1b.md) |
 | S1c | Repeatable five-preset sound and combustion audit | Sound realism | ✅ | 30-second float baselines and per-cylinder COV; I4/boxer repetition misses target, V8 idle COV needs review; physics unchanged (docs/stage-S1c.md) |
+| S1d | Trapped-mixture feedback in burn timing | Sound realism | ✅ | Actual post-injection mixture drives life-enabled flame speed; 153 tests, four mutants caught, full matched dyno changes <0.055%; repetition still unresolved (docs/stage-S1d.md) |
 | R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
 | R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
-| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | S1c: I4/boxer warm repeat +19.91/+17.71 dB; inspect V8 idle COV; genuine ignition misfires, full dyno and listening checks remain |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | S1d: I4/boxer warm repeat +19.89/+17.71 dB; V8 idle COV still high; genuine ignition failures and listening checks remain. S1d matched dyno passes |
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | ⬜     | The jets' noise came in 12b; left: finer exhaust cells, the tailpipe's beaming, the baffles |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | ⬜     | The cabin came in 12b; left: stereo and the places |

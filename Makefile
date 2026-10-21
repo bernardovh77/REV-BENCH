@@ -31,6 +31,7 @@
 #   make SAN=1 test   build with AddressSanitizer + UBSan (catches memory
 #                     bugs and undefined behaviour), output in build-san/
 #   make BUILD=dir    put build output in another folder
+#   make render RENDER_DIR=dir RENDER_FLAGS=--float   keep a separate float render set
 #   make wasm ZIG=... use a specific zig (default: `zig` if it is on PATH,
 #                     else `python3 -m ziglang` from: pip install ziglang)
 
@@ -42,6 +43,9 @@ ifeq ($(SAN),1)
 endif
 
 BUILD    ?= build
+# Optional isolated render sets; defaults retain the normal listening outputs.
+RENDER_DIR   ?= renders
+RENDER_FLAGS ?=
 CFLAGS   ?= -O2 -g
 CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
 CPPFLAGS += -Icore/include -Icore/src -Inative -MMD -MP
@@ -104,29 +108,29 @@ fuzz: $(CLI)
 	$(CLI) fuzz --sets 20 --seconds 10
 
 render: $(CLI)
-	@mkdir -p renders
-	$(CLI) tone --out renders/test.wav --csv renders/test.csv
-	$(CLI) sound --preset i4 --idle --out renders/i4-idle.wav
-	$(CLI) sound --preset i4 --sweep --out renders/i4-sweep.wav --csv renders/i4-sweep.csv
-	$(CLI) sound --preset i4 --rev --out renders/i4-rev.wav --csv renders/i4-rev.csv
-	$(CLI) sound --preset i4 --idle --listener front --out renders/i4-idle-front.wav
-	$(CLI) sound --preset i4 --idle --listener cabin --out renders/i4-idle-cabin.wav
-	$(CLI) sound --preset i4 --sweep --listener cabin --out renders/i4-sweep-cabin.wav
+	@mkdir -p "$(RENDER_DIR)"
+	$(CLI) tone $(RENDER_FLAGS) --out $(RENDER_DIR)/test.wav --csv $(RENDER_DIR)/test.csv
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --out $(RENDER_DIR)/i4-idle.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --sweep --out $(RENDER_DIR)/i4-sweep.wav --csv $(RENDER_DIR)/i4-sweep.csv
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --rev --out $(RENDER_DIR)/i4-rev.wav --csv $(RENDER_DIR)/i4-rev.csv
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --listener front --out $(RENDER_DIR)/i4-idle-front.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --listener cabin --out $(RENDER_DIR)/i4-idle-cabin.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i4 --sweep --listener cabin --out $(RENDER_DIR)/i4-sweep-cabin.wav
 	for m in none straight chambered; do \
-	  $(CLI) sound --preset i4 --hold --rpm 3000 --muffler $$m --listener tailpipe --gain 0.5 \
-	    --out renders/i4-3000-$$m.wav || exit 1; done
+	  $(CLI) sound $(RENDER_FLAGS) --preset i4 --hold --rpm 3000 --muffler $$m --listener tailpipe --gain 0.5 \
+	    --out $(RENDER_DIR)/i4-3000-$$m.wav || exit 1; done
 	for l in behind tailpipe side front cabin; do \
-	  $(CLI) sound --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.4 \
-	    --out renders/v8-cross-3000-$$l.wav || exit 1; done
-	$(CLI) sound --preset v8-cross --sweep --gain 0.4 --out renders/v8-cross-sweep.wav \
-	  --csv renders/v8-cross-sweep.csv
-	$(CLI) sound --preset v8-cross --rev --gain 0.4 --out renders/v8-cross-rev.wav
-	$(CLI) sound --preset v8-flat --hold --rpm 3000 --out renders/v8-flat-3000.wav
-	$(CLI) sound --preset v8-flat --rev --gain 0.38 --out renders/v8-flat-rev.wav
-	$(CLI) sound --preset i6 --rev --out renders/i6-rev.wav
-	$(CLI) sound --preset boxer4 --rev --out renders/boxer4-rev.wav
-	$(CLI) sound --preset boxer4 --hold --rpm 3000 --out renders/boxer4-3000.wav
-	$(CLI) sound --preset boxer4 --hold --rpm 3000 --equal-headers --out renders/boxer4-3000-equal.wav
+	  $(CLI) sound $(RENDER_FLAGS) --preset v8-cross --hold --rpm 3000 --listener $$l --gain 0.4 \
+	    --out $(RENDER_DIR)/v8-cross-3000-$$l.wav || exit 1; done
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --sweep --gain 0.4 --out $(RENDER_DIR)/v8-cross-sweep.wav \
+	  --csv $(RENDER_DIR)/v8-cross-sweep.csv
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --rev --gain 0.4 --out $(RENDER_DIR)/v8-cross-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --hold --rpm 3000 --out $(RENDER_DIR)/v8-flat-3000.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --rev --gain 0.38 --out $(RENDER_DIR)/v8-flat-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i6 --rev --out $(RENDER_DIR)/i6-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --rev --out $(RENDER_DIR)/boxer4-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --hold --rpm 3000 --out $(RENDER_DIR)/boxer4-3000.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --hold --rpm 3000 --equal-headers --out $(RENDER_DIR)/boxer4-3000-equal.wav
 
 # ---- WebAssembly build for the browser ----------------------------------
 # A standalone module: libc/libm are compiled in, it needs no imports and has

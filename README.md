@@ -5,7 +5,7 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stages 0-13 of 26 done, plus 12b/12c and sound-realism steps S1a/S1b/S1c.
+**Status:** stages 0-13 of 26 done, plus 12b/12c and sound-realism steps S1a–S1d.
 S1 remains in progress; see `docs/user-sound-references.md` for the local sound examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
@@ -150,7 +150,7 @@ With numpy and matplotlib installed, run the reader and analysis regression test
 python -m unittest discover -s tools -p 'test_*.py' -v
 ```
 
-See `docs/stage-S1a.md`, `docs/stage-S1b.md` and `docs/stage-S1c.md` for validation
+See `docs/stage-S1a.md`, `docs/stage-S1b.md`, `docs/stage-S1c.md` and `docs/stage-S1d.md` for validation
 and S1 continuation notes.
 The next S1 audit is reproducible across all five stock presets:
 
@@ -164,6 +164,11 @@ Outputs stay in ignored `renders/s1-audit/`. The sound report measures both
 seconds 3–8 and 6–30, retaining the earlier metric for comparison. Add `--check`
 to fail on low-band repetition outside S1's 0 to +15 dB range. These audits do
 not replace a full dyno sweep or Bernardo's listening checkpoint.
+The sound audit now defaults to gain 0.5 for measurement headroom; `--gain`
+selects another level and `--source-root` identifies an older renderer's source
+snapshot. `rb_cli dyno --variation 1` checks power with engine life enabled
+(the dyno default stays 0). Separate float render sets can be kept with
+`make render RENDER_DIR=renders/my-comparison RENDER_FLAGS=--float`.
 
 Bernardo's four local engine recordings can be prepared with `tools/prepare_user_references.py`;
 `docs/user-sound-references.md` explains the separate catalog, acoustic groups and comparisons.

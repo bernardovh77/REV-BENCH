@@ -622,3 +622,83 @@ void test_variation_partial_burn_residual(void)
     CHECK(fraction[0] == 1.0);
     CHECK(fraction[1] > 0.1 && fraction[1] < 0.85);
 }
+
+void test_variation_trapped_mixture(void)
+{
+    /* Hold p/T/residual and random draws fixed. An already-rich charge
+     * needs no injection: its burn must follow its own mixture, including
+     * retained fuel, rather than the injector's requested leaner mixture. */
+    const double charge_phi[] = { 1.0, 1.5, 1.5, 1.0, 1.5, 1.5, 1.5 };
+    const double target_afr[] = { RB_AFR_STOICH, RB_AFR_STOICH, 20.0,
+                                RB_AFR_STOICH, RB_AFR_STOICH, RB_AFR_STOICH, RB_AFR_STOICH };
+    const double life[] = { 1.0, 1.0, 1.0, 0.0, 0.0, NAN, -1.0 };
+    double demand[7], duration[7];
+    for (int c = 0; c < 7; c++) {
+        held(&e, life[c]);
+        e.afr = target_afr[c];
+        e.trim_fuel[0] = e.trim_burn[0] = 0.0;
+        const double ivc = rb_valve_closes(&e.desc.intake);
+        const double step = 6.0 * e.rpm * DT_FAST;
+        int k;
+        for (k = 0; k < 5000 && !(e.theta <= ivc && e.theta + step > ivc); k++)
+            rb_engine_step(&e);
+        CHECK(k < 5000);
+        if (k >= 5000) return;
+        const double afr = RB_AFR_STOICH / charge_phi[c];
+        const double y[RB_NSPECIES] = { 0.96 * afr / (afr + 1.0),
+                                      0.96 / (afr + 1.0), 0.04 };
+        rb_chamber_init(&e.cyl[0].gas, e.cyl[0].gas.V, 1.22e5, 360.0, y);
+        const double injected = e.fuel_in;
+        rb_engine_step(&e);
+        CHECK_NEAR(e.fuel_in, injected, 1e-15);
+        CHECK_NEAR(e.burn[0].T_ivc, 360.0, 1e-8);
+        CHECK_NEAR(e.burn[0].p_ivc, 1.22e5, 1e-6);
+        CHECK_NEAR(e.burn[0].phi_ivc, charge_phi[c], 1e-12);
+        demand[c] = e.burn[0].demand_duration;
+        duration[c] = e.burn[0].duration;
+    }
+    CHECK(demand[1] > 1.15 * demand[0]);
+    CHECK_NEAR(demand[1], demand[2], 1e-10);
+    CHECK_NEAR(duration[1], duration[2], 1e-10);
+    for (int c = 4; c < 7; c++) {
+        CHECK_NEAR(demand[c], demand[3], 1e-10);  /* legacy life-off path */
+        CHECK_NEAR(duration[c], duration[3], 1e-10);
+    }
+}
+
+void test_variation_trapped_mixture_capture(void)
+{
+    /* Capture follows injection (including the cylinder's fuel trim) and
+     * stays fixed until the next IVC. Missing reactants have no valid phi;
+     * their finite duration fallback does not declare an ignition misfire. */
+    for (int c = 0; c < 3; c++) {
+        held(&e, 1.0);
+        e.afr = RB_AFR_STOICH;
+        e.trim_fuel[0] = 2.0;
+        e.ignition = c == 0;
+        const double ivc = rb_valve_closes(&e.desc.intake);
+        const double step = 6.0 * e.rpm * DT_FAST;
+        int k;
+        for (k = 0; k < 5000 && !(e.theta <= ivc && e.theta + step > ivc); k++)
+            rb_engine_step(&e);
+        CHECK(k < 5000);
+        if (k >= 5000) return;
+        const double afr = RB_AFR_STOICH / 0.8;
+        const double y[RB_NSPECIES] = {
+            c == 0 ? 0.96 * afr / (afr + 1.0) : c == 1 ? 0.96 : 0.0,
+            c == 0 ? 0.96 / (afr + 1.0) : c == 1 ? 0.0 : 0.96, 0.04
+        };
+        rb_chamber_init(&e.cyl[0].gas, e.cyl[0].gas.V, 1.22e5, 360.0, y);
+        const double injected = e.fuel_in;
+        rb_engine_step(&e);
+        const double phi = e.burn[0].phi_ivc, duration = e.burn[0].duration;
+        CHECK_NEAR(phi, c == 0 ? 1.04 : 0.0, 1e-12);
+        CHECK(isfinite(duration) && duration > 0.0 && duration <= 720.0);
+        if (c == 0) CHECK(e.fuel_in > injected);
+        else CHECK(e.fuel_in == injected);
+        e.afr = 26.0;
+        for (k = 0; k < 300; k++) rb_engine_step(&e);
+        CHECK(e.burn[0].phi_ivc == phi);
+        CHECK(e.burn[0].duration == duration);
+    }
+}

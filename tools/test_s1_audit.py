@@ -58,6 +58,14 @@ class S1AuditTests(unittest.TestCase):
             self.assertEqual(audit_s1.main(argv), 1)
             self.assertIn('"s1_complete": false', (Path(directory) / "sound.json").read_text())
 
+    def test_rejects_bad_gain_before_recording(self):
+        for gain in ("0", "-1", "2", "nan", "inf"):
+            with self.subTest(gain=gain), patch.object(audit_s1, "record") as record, \
+                 self.assertRaises(SystemExit) as error:
+                audit_s1.main(["--gain", gain])
+            self.assertEqual(error.exception.code, 2)
+            record.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

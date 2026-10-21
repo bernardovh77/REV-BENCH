@@ -31,11 +31,13 @@ def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def core_fingerprint():
+def core_fingerprint(root=ROOT):
     # Same file ordering as Makefile's committed WebAssembly source fingerprint.
-    paths = sorted(list((ROOT / "core/src").glob("*.c"))
-                   + list((ROOT / "core/src").glob("*.h"))
-                   + list((ROOT / "core/include").glob("*.h")))
+    paths = sorted(list((root / "core/src").glob("*.c"))
+                   + list((root / "core/src").glob("*.h"))
+                   + list((root / "core/include").glob("*.h")))
+    if not paths:
+        raise ValueError(f"no core sources under {root}")
     digest = hashlib.sha256()
     for path in paths:
         digest.update(path.read_bytes())
@@ -82,12 +84,12 @@ def measurements(path):
     return rows
 
 
-def record(cli, preset, output):
+def record(cli, preset, output, gain):
     wav = output / f"{preset}-idle-float.wav"
     telemetry = output / f"{preset}-idle.csv"
     command = [str(cli), "sound", "--preset", preset, "--idle", "--seconds", str(SECONDS),
                "--quality", "high", "--variation", "1", "--listener", "behind",
-               "--gain", "1", "--float", "--out", str(wav), "--csv", str(telemetry)]
+               "--gain", str(gain), "--float", "--out", str(wav), "--csv", str(telemetry)]
     print(f"Recording {preset}: {SECONDS} seconds, default high quality", flush=True)
     result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=900)
     log = output / f"{preset}-idle.log"
@@ -105,21 +107,28 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", type=Path, default=ROOT / "build/rb_cli")
     parser.add_argument("--output", type=Path, default=ROOT / "renders/s1-audit")
+    parser.add_argument("--gain", type=float, default=0.5,
+                        help="recording gain, in (0, 1]; default 0.5 for analysis headroom")
+    parser.add_argument("--source-root", type=Path, default=ROOT,
+                        help="source snapshot used to build --cli (default current repository)")
     parser.add_argument("--preset", choices=PRESETS, action="append",
                         help="audit only the selected preset(s); default all five")
     parser.add_argument("--check", action="store_true", help="also gate low-band repetition")
     args = parser.parse_args(argv)
+    if not 0 < args.gain <= 1:
+        parser.error("--gain must be finite and in (0, 1]")
     cli, output = args.cli.resolve(), args.output.resolve()
     if not cli.is_file():
         parser.error(f"renderer missing: {cli}; build with make first")
     output.mkdir(parents=True, exist_ok=True)
     presets = list(dict.fromkeys(args.preset or PRESETS))
-    provenance = {"core_sources_sha256": core_fingerprint(), "renderer_sha256": sha256(cli),
+    provenance = {"core_sources_sha256": core_fingerprint(args.source_root.resolve()),
+                  "source_root": str(args.source_root.resolve()), "renderer_sha256": sha256(cli),
                   "analysis_sources_sha256": {name: sha256(ROOT / "tools" / name) for name in
                                                ("audit_s1.py", "compare_real.py", "audio_wav.py")},
                   "quality": "high", "physics_rate_hz": 192000, "pipe_rate_hz": 48000,
                   "variation": 1, "seed": "core default initialization",
-                  "listener": "behind", "gain": 1,
+                  "listener": "behind", "gain": args.gain,
                   "processing": "Standard simulated listener, anti-alias/DC filters, gain and "
                                 "soft limiter; float32 WAV; no additional processing.",
                   "metric": "Unchanged compare_real.measure maximum lag correlation; "
@@ -129,7 +138,7 @@ def main(argv=None):
               "remaining": ["Genuine ignition-misfire model", "Full dyno sweep versus baseline",
                             "Bernardo's held/idle and flat-plane rev listening checkpoints"]}
     for preset in presets:
-        report["presets"].append(record(cli, preset, output))
+        report["presets"].append(record(cli, preset, output, args.gain))
     report["all_low_repeat_windows_pass"] = all(
         w["low_repeat_in_s1_range"] for p in report["presets"] for w in p["windows"])
     path = output / "sound.json"

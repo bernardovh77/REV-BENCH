@@ -150,6 +150,7 @@ static void usage(FILE *f)
         "      --rate RPM/S      how fast the sweep climbs  (default 100)\n"
         "      --step RPM        hold each speed in turn, this far apart, instead of sweeping\n"
         "      --throttle X      0..1                       (default 1)\n"
+        "      --variation V     seeded engine life, 0..4   (default 0; sound uses 1)\n"
         "      --cr R, --intake D/L/C, --exhaust D/L/C   compression ratio and cams, as for\n"
         "                        breathe                    (default: the preset's)\n"
         "      --csv FILE        a row per cycle (sweep) or per speed (default renders/dyno.csv)\n"
@@ -1541,7 +1542,7 @@ static int cmd_dyno(int argc, char **argv)
 {
     rb_engine_desc d;
     const char *csv_path = "renders/dyno.csv";
-    double from = 1500.0, to = -1.0, rate = 100.0, step = 0.0, throttle = 1.0;
+    double from = 1500.0, to = -1.0, rate = 100.0, step = 0.0, throttle = 1.0, variation = 0.0;
 
     if (engine_from_args(argc, argv, "dyno", &d)) return 2;
     for (int i = 1; i < argc; i++) {
@@ -1559,6 +1560,8 @@ static int cmd_dyno(int argc, char **argv)
             ok = !to_double(take_value(argc, argv, &i), &step);
         else if (!strcmp(a, "--throttle"))
             ok = !to_double(take_value(argc, argv, &i), &throttle);
+        else if (!strcmp(a, "--variation"))
+            ok = !to_double(take_value(argc, argv, &i), &variation);
         else if (!strcmp(a, "--cr"))
             ok = !to_double(take_value(argc, argv, &i), &d.cr);
         else if (!strcmp(a, "--intake"))
@@ -1589,8 +1592,9 @@ static int cmd_dyno(int argc, char **argv)
                 d.rev_limit);
         return 2;
     }
-    if (!(rate >= 10.0 && rate <= 5000.0) || !(step >= 0.0) || !(throttle >= 0.0 && throttle <= 1.0)) {
-        fprintf(stderr, "rb_cli dyno: --rate must be 10-5000 rpm/s, --step >= 0, --throttle 0-1\n");
+    if (!(rate >= 10.0 && rate <= 5000.0) || !(step >= 0.0) || !(throttle >= 0.0 && throttle <= 1.0)
+        || !(variation >= 0.0 && variation <= 4.0)) {
+        fprintf(stderr, "rb_cli dyno: --rate must be 10-5000 rpm/s, --step >= 0, --throttle 0-1, --variation 0-4\n");
         return 2;
     }
 
@@ -1607,6 +1611,7 @@ static int cmd_dyno(int argc, char **argv)
 
     /* Run the engine up held at the first speed, then hand it to the dyno. */
     rb_engine_init(&engine, &d, 1.0 / 192000.0);
+    engine.variation = variation;
     engine.rpm = from;
     engine.throttle_pos = throttle;
     engine.ignition = 1;

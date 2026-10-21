@@ -4,6 +4,40 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-21 continuation: S1d complete; S1 open
+
+- Found that burn duration used requested AFR while heat release already used
+  actual cylinder fuel/air. With life enabled the burn now uses post-injection
+  trapped equivalence ratio, including cylinder fuel trim and retained fuel.
+- `rb_burn.phi_ivc` captures the ratio at IVC; no new fuel reservoir, stochastic
+  draw, misfire threshold or flame-speed coefficient. The life-off path remains
+  unchanged. Missing reactants use a finite fallback with no burnable charge.
+- Two new native tests cover matched rich charges under different injector
+  targets, post-injection capture, frozen timing, absent reactants and legacy
+  off/NaN/negative variation. Both pass; all four S1d mutants are caught.
+- Full old/new float sets (23 WAVs each), five-preset 30-second idle/work audits
+  and life-enabled dyno sweeps complete under ignored renders/s1d/. All presets
+  have zero warm stalls. Maximum 500-rpm-bin torque/power changes are 0.0541% /
+  0.0345%; matched 3000-rpm torque changes are below 0.0018%.
+- Warm low-band repetition is now I4 +19.89, I6 +11.38, cross V8 +10.20,
+  flat V8 +5.32, boxer +17.71 dB. The I4/boxer issue is essentially unchanged.
+  Cross/flat V8 idle COV still reaches 12.27% / 30.52%; no global variation retune.
+- The cross V8 startup at gain 1 hits six soft-limited samples near 0.339 s.
+  The failed run is preserved under initial-gain1/. Matched audit recordings
+  at gain 0.5 have zero limited/non-finite samples for every preset; audit gain
+  now defaults to 0.5 and --source-root records the before build's actual source.
+  Engine/browser gain and standard render gains remain unchanged. This transient
+  and the changed boxer/flat V8 revs need listening review.
+- Added dyno `--variation` (default 0) and optional Makefile RENDER_DIR /
+  RENDER_FLAGS so validation can preserve paired float sets. Defaults are kept.
+- Validation: 153 native tests / 2517 checks; 16 Python and 16 web unit tests;
+  production build and Chrome dev/preview audio tests pass. ASan/UBSan passes
+  five focused tests / 150 checks (leak detection disabled for sandbox ptrace).
+- WASM rebuilt with existing isolated wasi-sdk: 121148 bytes. Claude's setup
+  is unchanged. See docs/stage-S1d.md and the eight matched listening pairs in
+  renders/s1d/listening/. S1 still requires a genuine ignition model, repetition
+  work, V8 idle investigation and Bernardo's listening approval.
+
 ## 2026-10-21 continuation: S1c and filtered references
 
 - S1c is complete: a native audit (`make audit`) and float idle sound baseline
