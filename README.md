@@ -5,7 +5,7 @@ compression, cams, headers and turbo size, and hear and see the difference in re
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
 
-**Status:** stages 0-13 of 26 done, plus 12b/12c and sound-realism steps S1a/S1b.
+**Status:** stages 0-13 of 26 done, plus 12b/12c and sound-realism steps S1a/S1b/S1c.
 S1 remains in progress; see `docs/user-sound-references.md` for the local sound examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
@@ -150,9 +150,27 @@ With numpy and matplotlib installed, run the reader and analysis regression test
 python -m unittest discover -s tools -p 'test_*.py' -v
 ```
 
-See `docs/stage-S1a.md` and `docs/stage-S1b.md` for validation and S1 continuation notes.
+See `docs/stage-S1a.md`, `docs/stage-S1b.md` and `docs/stage-S1c.md` for validation
+and S1 continuation notes.
+The next S1 audit is reproducible across all five stock presets:
+
+```sh
+make audit                              # 30 s idles + held 3000 rpm cycle statistics
+make                                    # native sound renderer
+python3 tools/audit_s1.py                # 30 s float idle WAVs, logs and measurements
+```
+
+Outputs stay in ignored `renders/s1-audit/`. The sound report measures both
+seconds 3–8 and 6–30, retaining the earlier metric for comparison. Add `--check`
+to fail on low-band repetition outside S1's 0 to +15 dB range. These audits do
+not replace a full dyno sweep or Bernardo's listening checkpoint.
+
 Bernardo's four local engine recordings can be prepared with `tools/prepare_user_references.py`;
 `docs/user-sound-references.md` explains the separate catalog, acoustic groups and comparisons.
+Add `--filtered-only` to create conservative stereo listening copies and matched
+raw/filtered comparisons without rewriting measurement inputs. These listening
+copies preserve uncertain cabin/exterior/pass-by contexts and are excluded
+from calibration.
 
 ## Rebuilding the WebAssembly core
 

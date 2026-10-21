@@ -23,6 +23,7 @@
 #   make bench        how fast the core runs: each preset held wide open at
 #                     3000 rpm, then the pieces the profile points at
 #   make bench-wasm   the same as WebAssembly, run by Node (needs zig and node)
+#   make audit        five-preset S1 physics baseline to renders/s1-audit/physics.csv
 #   make clean        delete build output
 #   make help         show this text
 #
@@ -58,15 +59,17 @@ NATIVE_OBJ := $(call obj,$(NATIVE_SRC))
 CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
 BENCH_OBJ  := $(call obj,native/rb_bench.c)
+AUDIT_OBJ  := $(call obj,native/rb_audit.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
 BENCH := $(BUILD)/rb_bench
+AUDIT := $(BUILD)/rb_audit
 
-.PHONY: all test render wasm bench bench-wasm fuzz clean help
+.PHONY: all test render wasm bench bench-wasm audit fuzz clean help
 
 all: $(CLI)
 
@@ -79,6 +82,9 @@ $(TESTS): $(TEST_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 $(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+$(AUDIT): $(AUDIT_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
 $(BUILD)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
@@ -88,6 +94,11 @@ test: $(TESTS)
 
 bench: $(BENCH)
 	$(BENCH)
+
+audit: $(AUDIT)
+	@mkdir -p renders/s1-audit
+	$(AUDIT) > renders/s1-audit/physics.csv.tmp
+	mv renders/s1-audit/physics.csv.tmp renders/s1-audit/physics.csv
 
 fuzz: $(CLI)
 	$(CLI) fuzz --sets 20 --seconds 10

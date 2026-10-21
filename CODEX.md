@@ -4,6 +4,35 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-21 continuation: S1c and filtered references
+
+- S1c is complete: a native audit (`make audit`) and float idle sound baseline
+  runner (`python3 tools/audit_s1.py`). All five presets finish 30-second idles
+  without warm stalls. Core physics, calibration, quality and WASM are unchanged.
+- Warm low-band repeat is I4 +19.91, I6 +11.36, cross V8 +10.13, flat V8 +5.36,
+  boxer +17.71 dB. I4/boxer still miss the target. See docs/stage-S1c.md.
+- Per-cylinder idle IMEP COV reaches 8.49–12.24% in the cross V8 and 21.40–30.22%
+  in the flat V8. Direct EVO monitoring finds 132/1598 partial completions in
+  the flat idle; a matched 96 kHz run confirms similar behavior. This is not a
+  new regression or an ignition-misfire count. Increasing variation globally
+  would be unjustified; the earlier sampled S1b table could miss these events.
+- Validation: 151 native tests / 2455 checks, 15 Python tests (no skips), 16 web
+  unit tests and production typecheck/build pass. New audits remain diagnostic;
+  they do not replace matched full dyno sweeps or listening approval.
+- R1b is complete: conservative filtered listening copies and matched raw/filtered
+  comparisons of Bernardo's four MP3s. All 25 original/reference/catalog files
+  remain byte-identical. Camera
+  position, cabin/exterior transitions and flybys must not be inferred from
+  brightness alone. Record source intervals and processing in the manifest.
+- S1 remains open until low-band repetition, ignition failures, dyno acceptance
+  and Bernardo's listening checks have been resolved.
+- This continuation has direct WSL execution (GCC 15.2). The older Windows
+  bridge limitations below describe the originating session. Here temporary
+  Python packages and Linux Node 22.16 were isolated under /tmp for validation;
+  nothing was installed into Claude's environment or the mounted project.
+- `CLAUDE.md`, `.claude/`, `core/` and `web/` remain unchanged. The Graphify graph
+  is rebuilt after these source/documentation changes and committed with S1c.
+
 ## 2026-10-21: S1a, S1b and local references
 
 - S1a is complete: shared PCM16/float32 WAV reader, Windows path handling,

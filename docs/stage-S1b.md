@@ -98,6 +98,13 @@ point, not a replacement for a complete dyno sweep.
 
 ## Completed before/after audit
 
+S1c follow-up: the sampled duration maxima above are not an exhaustive monitor
+of every warm cylinder burn. Direct EVO monitoring now finds near-complete
+partial burns in the existing flat-plane V8 idle at both 96 and 192 kHz, alongside
+large per-cylinder net-work COV. See `docs/stage-S1c.md`; this does not change the
+S1b matched before/after torque result, but the sampled table must not be used
+to claim that every warm burn completes.
+
 All five engines were started and run for 30 seconds with life enabled; warm
 idle statistics cover seconds 6 to 30. Held-load runs cover 10 seconds, with
 statistics after second 6. The 3000 rpm wide-open mean brake torque is unchanged
