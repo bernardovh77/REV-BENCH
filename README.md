@@ -52,12 +52,6 @@ the stage notes. A fuzzer drives random engines to find
 what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
 
-Run `make render` to produce **one listening result: `renders/RESULTS.html`**.
-It contains all current engine examples, including five long loaded coasts,
-and plays offline. Each successful run replaces the previous generated set;
-reference recordings are preserved. `make results` rebuilds the page from
-existing audio. See [the render workflow](docs/render-workflow.md).
-
 
 
 
