@@ -12,9 +12,10 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** stages 0-13 of 26 done, with sound work through S2b and a performance
-checkpoint in 13b. See [the current checkpoint](docs/stage-13b.md) for speed,
-unchanged sound and remaining performance requirements. S1/S2/S4 acceptance
+**Status:** stages 0-13 of 26 done, with sound work through S2b, performance
+work in [13b](docs/stage-13b.md), and [researched exhaust configurations](docs/stage-13b-p.md)
+for all five presets. The exhaust work intentionally changes the sound; full
+13b performance/solver requirements remain open. S1/S2/S4 acceptance
 remains open; `docs/user-sound-references.md` documents the local examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
@@ -35,8 +36,11 @@ exhaust pipes, mufflers and tailpipes are 1D pipes, where pressure waves run at 
 sound and tune the engine's breathing and its sound. A muffler can be a chambered can, a
 straight-through packed with wool, or a straight pipe. Engines can be inline, V or boxer
 with any crank and firing order, and five come ready-made: a 2.0 L four, a 3.0 L six, a
-cross-plane and a flat-plane V8 (each bank its own exhaust), and a 2.0 L flat four with
-unequal headers. On the dyno, the four, the
+cross-plane and a flat-plane V8, and a 2.0 L flat four with unequal headers.
+The researched exhausts include model-specific routing, center/rear sections,
+an X crossover or a rear split where appropriate, and a causal outlet radiation
+load. Published dimensions and estimated internals are distinguished in the
+stage notes. On the dyno, the four, the
 six and the flat four make close to the torque and power of the real engines they stand for
 (Toyota's 1AZ-FE, BMW's M54B30 and Subaru's FB20). A quality setting trades a little accuracy
 for speed; current shared-host measurements and their limits are recorded in

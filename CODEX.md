@@ -4,6 +4,73 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: researched exhaust implementation and listening checkpoint
+
+- Bernardo authorizes large sound changes when research/physics support them.
+  The five researched configurations and a causal unflanged outlet load are
+  implemented; full 13b remains open. Do not call its persistent SoA refactor,
+  coupled implicit accuracy requirement or original 4x/2x throughput complete.
+  The latest coupled midpoint port/neighbor-face experiment still misses
+  pumping convergence and stays local, unshipped. See docs/stage-13b.md.
+- Full source/uncertainty ledger: docs/stage-13b-p.md. Primary manufacturer
+  dimensions are distinguished from estimated lengths, bores/wall thickness,
+  silencer cores/packing and junction volumes. Ferrari's two equivalent
+  bank paths and the generic car's outlet locations are explicit limits.
+- All presets now use their own full-path research configuration. Intermediate
+  pipes/cans, twin I6 routing, a finite X and a one-collector/two-rear-path Y
+  are supported. Pipe API indices retain the existing prefix; center/link
+  kinds and places append to the enums. Original generic descriptors remain
+  controls. The boxer idle-air equivalent is recalibrated to 46 mm² with
+  air-area PI gain preserved; stability thresholds are unchanged.
+- The radiation load changes gas momentum and books exterior pressure work;
+  its inertance replaces the old end correction. Frequency response,
+  passivity, pipe/engine conservation and deliberate-fault tests pass.
+  --outlet-radiation constant|unflanged isolates it in native sound renders.
+- Final native 173 tests/3252 checks; ASan/UBSan 9/659 (detect_leaks=0);
+  direct SIMD WASM physics 16/843; eight mutants caught; 20 randomized
+  ten-second runs with no failures/repairs. Python 20, web 17, production
+  build and Chromium audio dev/preview checks pass. Standard float WAVs,
+  five long coasts, equal-gain 3000 rpm controls and a cross-V8 rear-delete
+  control are under ignored renders/13b-complete/. Current 39 WAVs are finite
+  and below the limiter; two standard gains change to .2 (I6 rev, flat V8
+  held 3000) to avoid clipping with the louder new systems.
+- Fresh native five-model dyno steps and 30-second idle / 10-second held-WOT
+  audit are complete. All start without warm stalls. Flat-V8 idle work COV
+  remains 21.21–30.98%, with 162 incomplete modeled burns at EVO. S1 stays
+  open. The exhaust/radiation changes do not solve that combustion issue.
+- The selected packed cross-V8 kit is darker than the previous unfilled
+  setup. A separately named rear-delete control retains new pipes/X/radiation
+  with packing removed; it is not the catalog kit. I6's diagnostic overrun
+  band step is smaller, flat V8's is larger. No universal perceived realism
+  improvement or listening approval is claimed from those measurements.
+- Local listening guide: renders/13b-complete/FEEDBACK.md. tools/exhaust_feedback.py
+  reproduces controls, long coasts, spectra and lift-relative measurements.
+  MP3s use one static whole-clip gain; measurements use raw float WAVs.
+  Supplied reference recordings and perspective caveats are preserved.
+- Final core WASM 158247 bytes; source SHA-256
+  07ce3366e927c09cab6e97e8f8485d2782032662c76673d92149f47e635fe40b.
+  Retained executables/hashes: renders/13b-complete/final-{cli,bench,bench.wasm,core.wasm}.
+  /tmp/rev-bench-b922742 is an experimental modified source copy, not a clean
+  baseline checkout. Rejected solver patches/results are in coupled-probe/.
+- Final otherwise-idle interleaved timing (timing/benchmarks.json): cross V8
+  .656x native and .472x WASM, with the physical exhaust changes. The 4x/2x
+  targets remain unmet; this is not an optimization-only A/B. Other model
+  costs, timing variance and stereo/browser limitations are in 13b-p notes.
+- Graphify queried before exploration, AST refreshed: 1765 nodes, 4818 edges,
+  97 communities. Its pre-existing rb.h parser limitation is now line 414;
+  both C compilers accept the header. CLAUDE.md and .claude/ are unchanged.
+  Stage 14 remains outside this request; keep unresolved acceptance explicit.
+
+## 2026-10-22: full 13b and model-specific exhaust work resumed
+
+Bernardo requests completion of all remaining 13b work plus new stage 13b-p:
+real researched complete exhaust systems for every engine reference, with a
+review of the underlying pipe physics. Large sound changes are authorized
+when research/physics supports them; the b922742 renders are controls rather
+than required targets. The former hold is lifted. Hold again only after this
+work, without entering stage 14. Keep sources, assumptions, validation and
+unmet acceptance explicit; do not promise exact 3D reality from a 1D model.
+
 ## 2026-10-22: stage 13b performance feedback checkpoint
 
 - Bernardo said the S2b renders seem okay and authorized proceeding from them

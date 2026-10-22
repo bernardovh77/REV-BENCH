@@ -140,6 +140,16 @@ typedef struct rb_engine_desc {
                                            * tailpipe                                 */
     double tailpipe_length;               /* m, each                                  */
     double tailpipe_diameter;             /* m                                        */
+    /* Optional researched intermediate section, before the rear silencers.
+     * Zero length preserves the original editable single-silencer layout.
+     * The section follows each collector; its link then enters either its
+     * rear silencer or a shared X/Y junction (junction_volume > 0). */
+    double center_length, center_diameter, center_volume; /* m, m, m^3; 0 volume: inline bore */
+    double center_packing;               /* Pa s/m^2, acoustic-flow resistance per metre */
+    double link_length;                  /* m, same bore as exhaust_pipe_diameter */
+    double junction_volume;              /* m^3; finite common X/Y junction, 0: separate */
+    int junction_before_center;           /* 1: X before intermediate pipes; 0: rear Y */
+    int outlet_radiation;                 /* 1: causal unflanged radiation load */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
     double burn_duration;                 /* crank degrees from the spark to the end,
@@ -302,6 +312,8 @@ typedef struct rb_engine {
     rb_pipe     tailpipe[RB_MAX_COLLECTORS];       /* ... and this starts from its last
                                                     * (through a chambered one's
                                                     * baffles) -> the open air         */
+    rb_pipe     center[RB_MAX_COLLECTORS], link[RB_MAX_COLLECTORS];
+    rb_chamber  junction;                         /* common finite X/Y junction, optional */
     int         collectors, systems;               /* how many of each                 */
     int         pipe_every;                        /* the slow gas steps once every this
                                                     * many physics steps ...           */
@@ -314,6 +326,7 @@ typedef struct rb_engine {
     double      mouth_flow;                        /* ... and the intake's mouth (< 0:
                                                     * drawing air in): the sound's
                                                     * sources (audio.h)               */
+    double      acoustic_energy_out;               /* J: exterior acoustic work already booked */
     long        pipe_steps;                        /* slow steps since rb_engine_init  */
     rb_chamber  cell_pool[RB_ENGINE_CELLS];        /* the pipes' cells ...             */
     rb_face     face_pool[RB_ENGINE_CELLS];        /* ... and the faces between them   */

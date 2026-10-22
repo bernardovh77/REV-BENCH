@@ -104,6 +104,7 @@ static void sort_faces(rb_pipe *p)
 
 void rb_pipe_join(rb_pipe *p, int end, rb_chamber *chamber, double entry_loss, int fast_chamber)
 {
+    memset(&p->radiation[end ? 1 : 0], 0, sizeof p->radiation[0]);
     rb_pipe_end *e = &p->end[end ? 1 : 0];
     rb_face *f = &p->end_face[end ? 1 : 0];
     rb_chamber *cell = rb_pipe_end_cell(p, end);
@@ -127,6 +128,22 @@ void rb_pipe_restrict(rb_pipe *p, int end, double area)
     const double r = p->area / area;
     f->exit = (r > 1.0) ? r * r - 1.0 : 0.0;
     f->entry += (r > 1.0) ? (r - 1.0) * (r - 1.0) : 0.0;
+}
+
+int rb_pipe_radiate(rb_pipe *p, int end, double rho, double c)
+{
+    if (!p || end < 0 || end > 1 || p->end[end].kind != RB_PIPE_JOINED
+        || !p->end[end].chamber->fixed || p->end_face[end].fast
+        || p->end_face[end].packing > 0.0 || p->end_face[end].laminar > 0.0
+        || p->end_face[end].exit > 0.0) return -1;
+    rb_radiation_init(&p->radiation[end], 0.5 * p->diameter, rho, c);
+    if (!p->radiation[end].enabled) return -1;
+    rb_face *f = &p->end_face[end];
+    /* The load already contains the exterior inertance. Keeping the old
+     * end correction as well would count that moving gas twice. */
+    f->length = 0.5 * p->dx;
+    f->per_length = 1.0 / f->length;
+    return 0;
 }
 
 void rb_pipe_resist(rb_pipe *p, int end, double laminar)
@@ -338,8 +355,15 @@ void rb_pipe_flows(rb_pipe *p, int fast, double dt)
     for (int k = 0; k + 1 < n; k++)
         if (!p->face[k].fast) move_gas(&p->face[k], dt, 0, ke[k], ke[k + 1]);
     for (int end = 0; end < 2; end++)   /* the chambers' gas is still */
-        if (p->end[end].kind == RB_PIPE_JOINED && !p->end_face[end].fast)
+        if (p->end[end].kind == RB_PIPE_JOINED && !p->end_face[end].fast) {
             move_gas(&p->end_face[end], dt, 0, end ? ke[n - 1] : 0.0, end ? 0.0 : ke[0]);
+            if (p->radiation[end].enabled) {
+                rb_chamber *cell = rb_pipe_end_cell(p, end);
+                const double power = p->radiation[end].pressure * p->end_face[end].moved * cell->per_rho;
+                rb_chamber_add_heat(cell, -power);
+                p->radiated += dt * power;
+            }
+        }
     if (p->end[1].kind == RB_PIPE_ONWARD)   /* the next pipe's gas moves */
         move_gas(&p->end_face[1], dt, 0, ke[n - 1], kinetic_energy(p->end[1].pipe, 0));
 }
@@ -466,6 +490,19 @@ static void push_end(rb_pipe *p, int end, double shortest, double dt)
     const int inward = end ? (f->mdot < 0.0) : (f->mdot > 0.0);
     const double heads = f->friction + (inward ? 1.0 + f->entry : f->exit);
     push(f, heads, inward ? chamber->rho : cell->rho, 0.0, 0.0, shortest, p->since, dt);
+    rb_radiation *r = &p->radiation[end];
+    if (r->enabled) {
+        double direct, history;
+        rb_radiation_linear(r, dt, &direct, &history);
+        const double per_length = 1.0 / fmax(f->length, shortest);
+        const double density = fmax(cell->rho, 1e-6);
+        f->mdot = (f->mdot - dt * per_length * f->area * history)
+                / (1.0 + dt * per_length * direct / density);
+        const rb_chamber *from = f->mdot >= 0.0 ? f->a : f->b;
+        const double cap = RB_PIPE_MOST_SONIC * f->area * sqrt(1.4 * from->rho * from->p);
+        f->mdot = fmax(-cap, fmin(cap, f->mdot));
+        rb_radiation_step(r, f->mdot / (density * f->area));
+    }
 }
 
 /* Face k, between cells k and k + 1. */

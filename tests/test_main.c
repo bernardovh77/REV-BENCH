@@ -55,6 +55,12 @@ void test_pipe_rings(void);
 void test_pipe_packing(void);
 void test_pipe_most_sonic(void);
 void test_pipe_onward(void);
+void test_exhaust_researched_topology(void);
+void test_exhaust_descriptor_guards(void);
+void test_exhaust_engine_books(void);
+void test_exhaust_junction_scattering_conservation(void);
+void test_radiation_causal_impedance(void);
+void test_radiation_pipe_work(void);
 /* ---- audio (tests/test_audio.c) ---- */
 void test_audio_decimator_filter(void);
 void test_audio_decimator_tones(void);
@@ -239,6 +245,12 @@ static const struct {
     T(test_pipe_packing),
     T(test_pipe_most_sonic),
     T(test_pipe_onward),
+    T(test_exhaust_researched_topology),
+    T(test_exhaust_descriptor_guards),
+    T(test_exhaust_engine_books),
+    T(test_exhaust_junction_scattering_conservation),
+    T(test_radiation_causal_impedance),
+    T(test_radiation_pipe_work),
     T(test_audio_decimator_filter),
     T(test_audio_decimator_tones),
     T(test_audio_dc_blocker),

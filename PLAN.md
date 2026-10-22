@@ -93,7 +93,8 @@ gets a one-line summary of anything that changed from the plan.
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
 | 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
-| 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Feedback checkpoint reached; optimization delivered, implicit probe rejected on pumping accuracy. Full SoA/implicit-valve and 4×/2× acceptance remain open (docs/stage-13b.md) |
+| 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open (latest cross V8 .656x native/.472x WASM); docs/stage-13b.md |
+| 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work, native/WASM/browser validation and long-coast package; assumptions and listening limits in docs/stage-13b-p.md; full 13b remains open |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -678,10 +679,16 @@ the car the four idling has −18 dB of its energy above 1 kHz, like the recorde
 - **Bernardo checks:** listen on headphones.
 
 #### Stage 13b — Performance II: vectorized pipes, implicit valves
-**Feedback checkpoint reached (2026-10-22).** Bernardo said the S2b renders
+**Resumed (2026-10-22):** Bernardo requests completion of the whole stage and
+13b-p below, followed by a hold. Previous checkpoint holds are superseded.
+Research and physics may justify large sound changes; previous renders are
+controls, not calibration targets. Preserve the explicit numerical and
+performance acceptance checks; do not label an unmet target complete.
+
+**Historical feedback checkpoint (2026-10-22).** Bernardo said the S2b renders
 seem okay and authorized proceeding from them. See `docs/stage-13b.md` for the
 new performance work and validation, including the unchanged long coasts.
-Hold here before stage 14. The earlier `docs/checkpoint-13b.md` describes the
+That entry hold was lifted by the instruction above. The earlier `docs/checkpoint-13b.md` describes the
 entry checkpoint. S1/S2/S4 acceptance stays open wherever numerical or listening
 checks are unresolved; this approval does not complete those requirements.
 
@@ -709,7 +716,34 @@ and their gas's chemistry, and no single function dominates: it's the per-cell w
   motored at 1500 rpm wide open.
 - **After the sound stages S1–S4,** which change the hot code (S2's finer exhaust cells above all).
 - **Done when:** the heaviest preset (V8 + full pipes) runs ≥ 4× real time natively and ≥ 2× as
-  WebAssembly at the default quality, with the renders unchanged.
+  WebAssembly at the default quality. Isolate performance changes at identical
+  geometry/physics. Bernardo allows substantial sound changes from the research
+  and physics work in 13b-p; old renders are not timbre constraints. The original
+  throughput and numerical targets remain explicit until an evidence-based
+  revision is recorded; added exhaust realism does not imply those goals passed.
+
+#### Stage 13b-p — Model-specific exhaust research and implementation
+- Research a real complete exhaust configuration for each current engine
+  reference: Toyota 1AZ-FE, BMW M54B30, Mustang-style 5.0 cross-plane V8,
+  Ferrari 458-style flat-plane V8, Subaru FB20. Document the generic engines'
+  limits; do not imply exact vehicle calibration.
+- Manufacturer sources establish fitment, topology and published dimensions.
+  Label inferred lengths, internal diameters, wall thickness, packing and
+  internal silencer geometry explicitly. Cosmetic tips are not flow bores.
+- Represent each full path from exhaust valves through headers, collectors,
+  catalysts, intermediate silencers/crossovers and rear system to the outlets.
+  Extend the architecture wherever the researched topology needs it.
+- Review conservation, wave propagation, junction scattering, area changes,
+  heat/friction, packing and outlet radiation against primary technical
+  sources and independent analytic/numerical tests. A 1D model has a stated
+  validity range; do not claim equivalence to all real 3D flow physics.
+- Validate all five engines, including start/30-second idle, torque/power,
+  clean float WAVs, spectra and extended pull/coast feedback scenarios.
+  Compare the supplied recordings with their perspective uncertainty intact.
+- Sound may change substantially when supported by research and physics.
+  A large difference alone does not prove improved realism. Measure cost,
+  retain per-model evidence and listening acceptance, and refresh Graphify.
+- **Hold after 13b and 13b-p; stage 14 is not authorized by this request.**
 
 ### Phase 3 — Browser
 

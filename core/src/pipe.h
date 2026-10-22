@@ -103,6 +103,7 @@
 
 #include "chamber.h"
 #include "flow.h"
+#include "radiation.h"
 
 /* The most cells one pipe can have. */
 #define RB_PIPE_MAX_CELLS 64
@@ -182,6 +183,8 @@ typedef struct rb_pipe {
                                            rb_pipe_init (< 0: the gas lost heat)   */
     double since;                       /* s the slow cells' rates have run since
                                            they were collected (two rates)         */
+    rb_radiation radiation[2];           /* optional exterior loads at joined ends */
+    double radiated;                    /* J: signed work to the exterior, includes load storage */
 } rb_pipe;
 
 /* The cells for a pipe of `length` (m): about one every `cell` metres, from
@@ -210,6 +213,9 @@ int  rb_pipe_init(rb_pipe *p, rb_chamber *cell, rb_face *face, int cells, double
 /* Joins end `end` (0 or 1) to a chamber through a face; entry_loss is K_in.
  * fast_chamber: the chamber is stepped every physics step. */
 void rb_pipe_join(rb_pipe *p, int end, rb_chamber *chamber, double entry_loss, int fast_chamber);
+/* Replace the constant end correction with a causal unflanged radiation
+ * impedance. Only a plain joined reservoir boundary is supported. */
+int rb_pipe_radiate(rb_pipe *p, int end, double rho, double c);
 
 /* Narrows a joined end to an effective area (Cd included, m^2): see above. */
 void rb_pipe_restrict(rb_pipe *p, int end, double area);

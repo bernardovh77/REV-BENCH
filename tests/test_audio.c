@@ -636,6 +636,18 @@ void test_audio_headers_rumble(void)
     for (int equal = 0; equal < 2; equal++) {
         rb_engine_desc d;
         rb_preset_desc(rb_preset_find("boxer4"), &d);
+        /* Isolate the header mechanism using stage 12's single rear can.
+         * The researched split rear has a different transfer function. */
+        d.center_length = d.link_length = d.junction_volume = 0.0;
+        d.outlet_radiation = 0;
+        d.exhaust_systems = 1;
+        d.exhaust_pipe_length = 1.6;
+        d.exhaust_pipe_diameter = d.tailpipe_diameter = 0.05;
+        d.muffler_type = RB_MUFFLER_CHAMBERED;
+        d.muffler_volume = 0.01;
+        d.muffler_length = 0.45;
+        d.muffler_area = 0.0021;
+        d.tailpipe_length = 0.6;
         if (equal)
             for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.6;
         rb_engine_init(&twin, &d, 1.0 / 192000.0);
@@ -661,10 +673,28 @@ void test_audio_cylinders_sound_apart(void)
         for (int equal = 0; equal < 2; equal++) {
             rb_engine_desc d;
             rb_preset_desc(rb_preset_find(keys[p]), &d);
+            /* Stage 12c's controlled exhaust: an order's amplitude depends
+             * on the whole transfer path, so its old numerical threshold
+             * is not a requirement on every aftermarket system. */
+            d.center_length = d.link_length = d.junction_volume = 0.0;
+            d.outlet_radiation = 0;
+            d.exhaust_systems = 1;
+            d.exhaust_pipe_diameter = 0.05;
+            d.exhaust_pipe_length = p ? 1.6 : 1.8;
+            d.muffler_type = RB_MUFFLER_CHAMBERED;
+            d.muffler_volume = p ? 0.015 : 0.01;
+            d.muffler_length = p ? 0.55 : 0.45;
+            d.muffler_area = p ? 0.0028 : 0.0021;
+            d.tailpipe_length = p ? 0.7 : 0.6;
+            d.tailpipe_diameter = p ? 0.06 : 0.05;
             if (equal)
                 for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.45;
             rb_engine_init(&twin, &d, 1.0 / 192000.0);
             const long n = record_tailpipes(0.4);
+            /* The I6 now has two independent 3-cylinder paths. Compare the
+             * combined exhaust, so "equal" means six evenly spaced pulses. */
+            if (twin.systems == 2)
+                for (long i = 0; i < n; i++) flows[0][i] += flows[1][i];
             const double fire = d.cylinders / 2.0;
             double most = 0.0;
             for (double k = 0.5; k < fire; k += 0.5)
@@ -689,6 +719,11 @@ void test_audio_listener_hears_each_tailpipe(void)
     static double heard[4 * 1920];
     rb_engine_desc d;
     rb_preset_desc(rb_preset_find("v8-cross"), &d);
+    /* A propagation test needs independent bank sources. A merge X mixes
+     * the pulses before they reach the listener; retain that distinction. */
+    d.center_length = d.link_length = d.junction_volume = 0.0;
+    d.outlet_radiation = 0;
+    d.junction_before_center = 0;
     for (int i = 0; i < d.cylinders; i++) d.header_length[i] = 0.40;
     rb_engine_init(&twin, &d, 1.0 / 192000.0);
     const long n = record_tailpipes(0.3);

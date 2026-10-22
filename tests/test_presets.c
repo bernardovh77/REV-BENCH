@@ -8,6 +8,7 @@
 #include "rb_test.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
 
 /* Half the default step: the idle, the limiter and the sparks come out the
@@ -305,6 +306,7 @@ void test_presets_run_on_their_own(void)
         }
         CHECK(n >= 8);
         CHECK_NEAR(sum / n, d.idle_rpm, 10.0);
+        if (!(hi - lo < 15.0)) fprintf(stderr, "idle range %s: %.9g..%.9g rpm\n", rb_preset_key(p), lo, hi);
         CHECK(hi - lo < 15.0);
         CHECK(e.idle_valve > 0.12 && e.idle_valve < 0.18);   /* sized to idle about 15 % open */
 
@@ -708,7 +710,7 @@ void test_api_pipes(void)
     rb_load_preset(s, rb_preset_find("v8-cross"));
     rb_engine *en = &s->engine;
     const rb_engine_desc *d = &en->desc;
-    CHECK_EQ_INT(rb_pipe_count(s), 23);
+    CHECK_EQ_INT(rb_pipe_count(s), 27);
     int wrong = 0;
     for (int k = 0; k < 23; k++) {
         const rb_pipe *p = rb_engine_pipe(en, k);
@@ -726,10 +728,10 @@ void test_api_pipes(void)
                        && from == RB_PLACE_EXHAUST_VALVE && from_number == k - 8
                        && to == RB_PLACE_COLLECTOR && to_number == d->bank[k - 8]
                        && p->end[1].chamber == &en->collector[d->bank[k - 8]]);   /* really */
-        else if (k < 18)  /* each bank's exhaust pipe into its own muffler's inlet, */
+        else if (k < 18)  /* each bank's front pipe into the shared merge X, */
             wrong += !(kind == RB_PIPE_EXHAUST && number == k - 16 && from == RB_PLACE_COLLECTOR
-                       && from_number == k - 16 && to == RB_PLACE_MUFFLER && to_number == k - 16
-                       && p->end[1].chamber == rb_pipe_end_cell(&en->muffler[k - 16], 0));
+                       && from_number == k - 16 && to == RB_PLACE_JUNCTION && to_number == 0
+                       && p->end[1].chamber == &en->junction);
         else if (k < 20)  /* its tailpipe from the muffler's outlet out into the air, */
             wrong += !(kind == RB_PIPE_TAILPIPE && number == k - 18 && from == RB_PLACE_MUFFLER_OUTLET
                        && from_number == k - 18 && to == RB_PLACE_AIR
@@ -743,11 +745,16 @@ void test_api_pipes(void)
                        && to == RB_PLACE_AIRBOX && p->end[1].chamber == &en->airbox);
     }
     CHECK_EQ_INT(wrong, 0);
-    CHECK(isnan(rb_get_pipe(s, 23, RB_PIPE_KIND)) && isnan(rb_get_pipe(s, -1, RB_PIPE_KIND)));
+    CHECK(isnan(rb_get_pipe(s, 27, RB_PIPE_KIND)) && isnan(rb_get_pipe(s, -1, RB_PIPE_KIND)));
+    for (int k = 23; k < 27; k++) {
+        CHECK_EQ_INT(rb_get_pipe(s, k, RB_PIPE_KIND), k < 25 ? RB_PIPE_CENTER : RB_PIPE_LINK);
+        CHECK_EQ_INT(rb_get_pipe(s, k, RB_PIPE_NUMBER), (k - 23) % 2);
+        CHECK_NEAR(rb_get_pipe(s, k, RB_PIPE_LENGTH), rb_engine_pipe(en, k)->length, 1e-15);
+    }
     /* The V8's straight-throughs go on into their pipes; the four's chambered
      * can takes its exhaust pipe at its first cell and gives its tailpipe its
      * last (stage 12). */
-    CHECK(en->exhaust_pipe[0].end[1].kind == RB_PIPE_ONWARD && en->tailpipe[0].end[0].kind == RB_PIPE_ONWARD_FROM);
+    CHECK(en->link[0].end[1].kind == RB_PIPE_ONWARD && en->tailpipe[0].end[0].kind == RB_PIPE_ONWARD_FROM);
     static rb_engine four;
     rb_engine_desc d4;
     rb_engine_desc_default(&d4);
@@ -781,6 +788,6 @@ void test_api_pipes(void)
     CHECK(burned > 50);   /* the exhaust side is full of burned gas ...    */
     CHECK(waves > 20);    /* ... and the pipes are anything but still      */
     CHECK(en->collector[0].y[RB_BURNED] > 0.9 && en->collector[1].y[RB_BURNED] > 0.9);   /* both banks' */
-    CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 23, 0, RB_CELL_PRESSURE)));
+    CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 27, 0, RB_CELL_PRESSURE)));
     rb_destroy(s);
 }

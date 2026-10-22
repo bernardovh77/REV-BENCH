@@ -1,4 +1,48 @@
-# Stage 13b — Performance feedback checkpoint
+# Stage 13b — Performance and solver work
+
+## 2026-10-22 continuation: coupled port experiment and researched exhausts
+
+Bernardo resumed the whole stage and requested a dedicated exhaust substage.
+The former holds below are historical. Stage [13b-p](stage-13b-p.md) documents
+new full-path exhaust configurations and the causal outlet radiation load.
+Those changes intentionally alter sound. They do not make the remaining
+persistent pipe/face SoA refactor or the original throughput targets complete.
+
+A new local experiment couples both valves, their port cells and each port's
+adjacent momentum face. It eliminates the linearized face response, then solves
+two signed nozzle residuals at a midpoint with bounded Newton iterations.
+Species and enthalpy transfers remain paired; unresolved/unsafe states fall
+back to the existing orifice. The frozen-property linearization, face timing
+and operator splitting still need a converged treatment. This is an experiment,
+not production code or a validated new solver.
+
+For motored WOT at 1500 rpm, adiabatic cylinders and 48 kHz pipes, using the
+same pre-exhaust-change geometry as the preceding probe:
+
+| Engine | Midpoint probe at 96 kHz, PMEP Pa | 192 kHz | 384 kHz | 96 vs 192 error |
+| --- | ---: | ---: | ---: | ---: |
+| I4 | 8486.8211 | 8913.1531 | 9127.1476 | −4.78% |
+| Cross V8 | 5735.5675 | 6159.6916 | 6372.3737 | −6.89% |
+
+The lower rate underestimates pumping loss instead of the original explicit
+cap's overestimate. Compared with its own 384 kHz values the probe's 96 kHz
+errors are −7.02% / −9.99%; it is not a satisfactory replacement. A subsequent
+half-piston-work / midpoint-valve-area splitting control changes these results
+only marginally. No 96 kHz accuracy claim or speed gain follows. The prototype
+and exact patches/results stay ignored in
+`renders/13b-complete/coupled-probe/`. This does not rule out a properly converged
+implicit method.
+
+Valve boundary treatment warrants this caution: [Brejaud et al.](https://journals.sagepub.com/doi/abs/10.1177/0954407011409653)
+validate a coupled gas-exchange boundary with experiments; our exploratory
+linearization is not an implementation or validation of their method. The
+current 192 kHz production setting is retained while this acceptance is open.
+
+The implementation below remains the completed 13b-a optimization. Final
+exhaust validation and updated runtime measurements are recorded in 13b-p;
+old exact-WAV-identity statements below refer specifically to b922742 versus
+S2b, before the new physical exhaust configurations.
+
 
 2026-10-22. Bernardo said the S2b renders seem okay and authorized proceeding
 from them to this checkpoint, then holding for feedback. **13b-a is complete;

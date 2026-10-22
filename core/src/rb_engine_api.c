@@ -344,16 +344,37 @@ static void describe_pipe(const rb_engine *e, int k, double out[RB_PIPE_FIELD_CO
         kind = RB_PIPE_EXHAUST, number = k - runners - n;
         from = RB_PLACE_COLLECTOR, from_number = number;
         to = RB_PLACE_MUFFLER, to_number = (e->systems == 2) ? number : 0;
+        if (d->center_length > 0.0) {
+            to = d->junction_before_center ? RB_PLACE_JUNCTION : RB_PLACE_CENTER;
+            to_number = d->junction_before_center ? 0 : number;
+        }
     } else if (k < runners + n + e->collectors + e->systems) {
         kind = RB_PIPE_TAILPIPE, number = k - runners - n - e->collectors;
         from = RB_PLACE_MUFFLER_OUTLET, from_number = number, to = RB_PLACE_AIR, to_number = 0;
     } else if (k < runners + n + e->collectors + 2 * e->systems) {
         kind = RB_PIPE_MUFFLER, number = k - runners - n - e->collectors - e->systems;
         from = RB_PLACE_MUFFLER, from_number = number, to = RB_PLACE_MUFFLER_OUTLET, to_number = number;
-    } else {
+    } else if (k == runners + n + e->collectors + 2 * e->systems) {
         kind = RB_PIPE_SNORKEL, number = 0;
         from = RB_PLACE_AIR, from_number = 0, to = RB_PLACE_AIRBOX, to_number = 0;
+    } else {
+        const int extra = k - runners - n - e->collectors - 2 * e->systems - 1;
+        number = extra % e->collectors;
+        if (extra < e->collectors) {
+            kind = RB_PIPE_CENTER;
+            from = d->junction_before_center ? RB_PLACE_JUNCTION : RB_PLACE_CENTER;
+            from_number = d->junction_before_center ? 0 : number;
+            to = RB_PLACE_CENTER_OUTLET, to_number = number;
+        } else {
+            kind = RB_PIPE_LINK;
+            from = RB_PLACE_CENTER_OUTLET, from_number = number;
+            to = d->junction_volume > 0.0 && !d->junction_before_center
+                ? RB_PLACE_JUNCTION : RB_PLACE_MUFFLER;
+            to_number = to == RB_PLACE_JUNCTION || e->systems == 1 ? 0 : number;
+        }
     }
+    if (kind == RB_PIPE_MUFFLER && d->junction_volume > 0.0 && !d->junction_before_center)
+        from = RB_PLACE_JUNCTION, from_number = 0;
     const rb_pipe *p = rb_engine_pipe(e, k);
     out[RB_PIPE_KIND] = kind;
     out[RB_PIPE_NUMBER] = number;

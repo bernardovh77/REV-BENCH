@@ -7,6 +7,7 @@
  * cylinders 1 and 2 share the front of the crank.
  */
 #include "presets.h"
+#include "exhaust_models.h"
 
 #include "rb.h"
 
@@ -266,7 +267,10 @@ static void boxer4(rb_engine_desc *d)
     d->exhaust = valve(2, 27 * MM, 9.0 * MM, 250.0, 110.0, 0);
     runners(d, 320 * MM, 40 * MM);
     exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 21 * CM2, 10 * L, 21 * CM2, 0.6, 50 * MM);
-    running(d, 0.15, 200.0, 250.0, 800.0, 750.0, 43 * MM2, 2.6e-4, 3.1e-4, 6500.0);
+    /* New split rear: calibrate the equivalent idle-air actuator from the
+     * measured startup response (13b-p), retaining the air-area PI gains. */
+    running(d, 0.15, 200.0, 250.0, 800.0, 750.0, 46 * MM2,
+            2.6e-4 * 43.0 / 46.0, 3.1e-4 * 43.0 / 46.0, 6500.0);
 }
 
 static const preset_info PRESETS[] = {
@@ -305,5 +309,6 @@ int rb_preset_desc(int preset, rb_engine_desc *d)
 {
     if (!d || preset < 0 || preset >= N_PRESETS) return -1;
     PRESETS[preset].build(d);
+    rb_exhaust_model(d, preset);
     return 0;
 }

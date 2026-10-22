@@ -191,6 +191,7 @@ static void usage(FILE *f)
         "      --overrun-transition S   pedal-lift spark transition before fuel cut, 0..2 s\n"
         "                        (default 0.15; 0 selects immediate cut)\n"
         "      --momentum-order N      pipe momentum: 1 donor-cell control, 2 limited (default)\n"
+        "      --outlet-radiation TYPE unflanged (causal load) or constant (old end correction)\n"
         "  -s, --seconds S       how long                   (default: 8 idle, 5 hold, 12 rev;\n"
         "                        the sweep ends 1.5 s after it is back at idle)\n"
         "      --muffler TYPE    none (a straight pipe), straight (straight-through, packed) or\n"
@@ -2009,6 +2010,11 @@ static int cmd_sound(int argc, char **argv)
             const char *value = take_value(argc, argv, &i);
             ok = value && (!strcmp(value, "1") || !strcmp(value, "2"));
             if (ok) momentum_order = value[0] - '0';
+        }
+        else if (!strcmp(a, "--outlet-radiation")) {
+            const char *value = take_value(argc, argv, &i);
+            ok = value && (!strcmp(value, "unflanged") || !strcmp(value, "constant"));
+            if (ok) d.outlet_radiation = !strcmp(value, "unflanged");
         }
         else if (!strcmp(a, "--muffler")) {
             const char *v = take_value(argc, argv, &i);

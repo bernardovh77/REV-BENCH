@@ -136,9 +136,9 @@ render: $(CLI)
 	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --sweep --gain 0.2 --out $(RENDER_DIR)/v8-cross-sweep.wav \
 	  --csv $(RENDER_DIR)/v8-cross-sweep.csv
 	$(CLI) sound $(RENDER_FLAGS) --preset v8-cross --rev --gain 0.2 --out $(RENDER_DIR)/v8-cross-rev.wav
-	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --hold --rpm 3000 --out $(RENDER_DIR)/v8-flat-3000.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --hold --rpm 3000 --gain 0.2 --out $(RENDER_DIR)/v8-flat-3000.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset v8-flat --rev --gain 0.25 --out $(RENDER_DIR)/v8-flat-rev.wav
-	$(CLI) sound $(RENDER_FLAGS) --preset i6 --rev --out $(RENDER_DIR)/i6-rev.wav
+	$(CLI) sound $(RENDER_FLAGS) --preset i6 --rev --gain 0.2 --out $(RENDER_DIR)/i6-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --rev --out $(RENDER_DIR)/boxer4-rev.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --hold --rpm 3000 --out $(RENDER_DIR)/boxer4-3000.wav
 	$(CLI) sound $(RENDER_FLAGS) --preset boxer4 --hold --rpm 3000 --equal-headers --out $(RENDER_DIR)/boxer4-3000-equal.wav

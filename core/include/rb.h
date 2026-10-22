@@ -340,7 +340,9 @@ typedef enum rb_pipe_kind {
     RB_PIPE_EXHAUST,            /* collector -> catalyst and muffler               */
     RB_PIPE_TAILPIPE,           /* muffler -> the open air                         */
     RB_PIPE_MUFFLER,            /* the muffler: its inlet -> its outlet (stage 12) */
-    RB_PIPE_SNORKEL             /* the open air -> the air box (stage 12)          */
+    RB_PIPE_SNORKEL,            /* the open air -> the air box (stage 12)          */
+    RB_PIPE_CENTER,             /* intermediate silencer/pipe (13b-p)             */
+    RB_PIPE_LINK                /* intermediate section -> rear system           */
 } rb_pipe_kind;
 
 /* What a pipe's end opens into. */
@@ -355,7 +357,10 @@ typedef enum rb_pipe_place {
                                    catalysts                                       */
     RB_PLACE_MUFFLER_OUTLET,    /* a muffler's outlet (number: system), where its
                                    tailpipe starts (stage 12)                      */
-    RB_PLACE_AIRBOX             /* the air box, through its filter (stage 12)      */
+    RB_PLACE_AIRBOX,            /* the air box, through its filter (stage 12)      */
+    RB_PLACE_CENTER,
+    RB_PLACE_CENTER_OUTLET,
+    RB_PLACE_JUNCTION           /* finite X/Y exhaust junction                    */
 } rb_pipe_place;
 
 /* A pipe's description. */

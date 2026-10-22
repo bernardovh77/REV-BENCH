@@ -240,6 +240,8 @@ int rb_engine_layout_inline(rb_engine_desc *d, int n)
         x.collector[i] = 0;                         /* into one collector           */
     }
     x.exhaust_systems = 1;
+    x.junction_before_center = 0;
+    x.junction_volume = 0.0;
     if (rb_engine_layout(&x) != 0) return -1;
     *d = x;
     return 0;
@@ -291,7 +293,23 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->header_diameter > 0.01 && d->header_diameter < 0.3)) return -1;
     if (!(d->exhaust_pipe_length >= 0.05 && d->exhaust_pipe_length <= 10.0)) return -1;
     if (!(d->exhaust_pipe_diameter > 0.01 && d->exhaust_pipe_diameter < 0.5)) return -1;
-    if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2 && joined[1]))) return -1;
+    if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2
+        && (joined[1] || d->junction_volume > 0.0)))) return -1;
+    if (!(d->center_length >= 0.0 && d->center_length <= 3.0)
+        || !(d->link_length >= 0.0 && d->link_length <= 3.0)
+        || !(d->junction_volume >= 0.0 && d->junction_volume <= 0.02)) return -1;
+    if (d->junction_before_center != 0 && d->junction_before_center != 1) return -1;
+    if (d->outlet_radiation != 0 && d->outlet_radiation != 1) return -1;
+    if (d->junction_before_center && !(d->junction_volume > 0.0 && joined[1]
+        && d->exhaust_systems == 2)) return -1;
+    if (d->center_length > 0.0) {
+        if (!(d->center_length >= 0.05 && d->center_diameter > 0.01
+            && d->center_diameter < 0.3 && d->center_volume >= 0.0
+            && d->center_volume < 0.05 && d->center_packing >= 0.0
+            && d->center_packing <= 20000.0 && d->link_length >= 0.05)) return -1;
+        if (d->center_volume > 0.0 && !(sqrt(4.0 * d->center_volume
+            / (PI * d->center_length)) < 0.6)) return -1;
+    } else if (d->link_length > 0.0 || d->junction_volume > 0.0) return -1;
     if (!(d->catalyst_area > 0.0 && d->catalyst_area < 0.1)) return -1;
     if (d->muffler_type < RB_MUFFLER_NONE || d->muffler_type > RB_MUFFLER_CHAMBERED) return -1;
     if (!(d->muffler_volume > 0.0 && d->muffler_volume < 1.0)) return -1;
@@ -496,6 +514,9 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, long_cell, e->pipe_dt)
           + e->systems * (rb_pipe_cells_for(d->muffler_length, long_cell, e->pipe_dt)
                           + rb_pipe_cells_for(d->tailpipe_length, long_cell, e->pipe_dt));
+    if (d->center_length > 0.0)
+        want += e->collectors * (rb_pipe_cells_for(d->center_length, long_cell, e->pipe_dt)
+                              + rb_pipe_cells_for(d->link_length, long_cell, e->pipe_dt));
     const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
     const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
 
@@ -571,18 +592,43 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
      * restrictions with a laminar loss at the pipes' ends. */
     const int straight = d->muffler_type != RB_MUFFLER_CHAMBERED;
     const int alone = e->systems == e->collectors;   /* each muffler has one exhaust pipe */
+    const int extended = d->center_length > 0.0;
+    if (d->junction_volume > 0.0)
+        rb_chamber_init(&e->junction, d->junction_volume, d->p_ambient, d->T_ambient, AIR);
     for (int c = 0; c < e->collectors; c++) {
         rb_pipe *x = &e->exhaust_pipe[c], *m = &e->muffler[system_of(e, c)];
         new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, long_cell, room, over,
                  EXHAUST_WALL, EXHAUST_FRICTION);
         rb_pipe_join(x, 0, &e->collector[c], COLLECTOR_ENTRY, 0);
-        if (!(straight && alone && rb_pipe_onward(x, m) == 0))
+        if (extended) {
+            rb_pipe *z = &e->center[c], *l = &e->link[c];
+            const double width = d->center_volume > 0.0
+                ? sqrt(4.0 * d->center_volume / (PI * d->center_length)) : d->center_diameter;
+            new_pipe(e, z, &used, d->center_length, width, long_cell, room, over,
+                     EXHAUST_WALL, EXHAUST_FRICTION);
+            new_pipe(e, l, &used, d->link_length, d->exhaust_pipe_diameter, long_cell, room, over,
+                     EXHAUST_WALL, EXHAUST_FRICTION);
+            if (d->center_packing > 0.0) rb_pipe_pack(z, d->center_packing, PACKING_SETTLE);
+            if (d->junction_before_center) {
+                rb_pipe_join(x, 1, &e->junction, 0.0, 0);
+                rb_pipe_join(z, 0, &e->junction, 0.0, 0);
+            } else if (d->center_volume > 0.0 || rb_pipe_onward(x, z) != 0)
+                rb_pipe_join(x, 1, rb_pipe_end_cell(z, 0), 0.0, 0);
+            if (d->center_volume > 0.0 || rb_pipe_onward(z, l) != 0)
+                rb_pipe_join(l, 0, rb_pipe_end_cell(z, 1), 0.0, 0);
+            if (d->junction_volume > 0.0 && !d->junction_before_center)
+                rb_pipe_join(l, 1, &e->junction, 0.0, 0);
+            else if (!(straight && alone && rb_pipe_onward(l, m) == 0))
+                rb_pipe_join(l, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
+        } else if (!(straight && alone && rb_pipe_onward(x, m) == 0))
             rb_pipe_join(x, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
         rb_pipe_restrict(x, 1, d->catalyst_area);
         rb_pipe_resist(x, 1, CATALYST_LAMINAR);
     }
     for (int s = 0; s < e->systems; s++) {
         rb_pipe *t = &e->tailpipe[s], *m = &e->muffler[s];
+        if (d->junction_volume > 0.0 && !d->junction_before_center)
+            rb_pipe_join(m, 0, &e->junction, 0.0, 0);
         new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, long_cell, room, over,
                  TAILPIPE_WALL, EXHAUST_FRICTION);
         if (!(straight && rb_pipe_onward(m, t) == 0)) {
@@ -593,6 +639,8 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
             }
         }
         rb_pipe_join(t, 1, &e->exhaust_air, TAILPIPE_ENTRY, 0);
+        if (d->outlet_radiation)
+            rb_pipe_radiate(t, 1, e->exhaust_air.rho, rb_chamber_sound_speed(&e->exhaust_air));
     }
     vary_init(e);
     start_cycle(e);
@@ -602,7 +650,8 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
 int rb_engine_pipe_count(const rb_engine *e)
 {
     const int n = e->desc.cylinders;
-    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + 2 * e->systems + 1;
+    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + 2 * e->systems + 1
+         + (e->desc.center_length > 0.0 ? 2 * e->collectors : 0);
 }
 
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
@@ -622,6 +671,12 @@ const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
     if (k < e->systems) return &e->muffler[k];
     k -= e->systems;
     if (k == 0) return &e->snorkel;
+    k--;
+    if (e->desc.center_length > 0.0) {
+        if (k < e->collectors) return &e->center[k];
+        k -= e->collectors;
+        if (k < e->collectors) return &e->link[k];
+    }
     return NULL;
 }
 
@@ -629,12 +684,13 @@ void rb_engine_contents(const rb_engine *e, double *mass, double *energy,
                         double species[RB_NSPECIES])
 {
     double m = 0.0, u = 0.0, y[RB_NSPECIES] = { 0.0 };
-    const rb_chamber *volumes[RB_MAX_CYLINDERS + 2 + RB_MAX_COLLECTORS];
+    const rb_chamber *volumes[RB_MAX_CYLINDERS + 3 + RB_MAX_COLLECTORS];
     int count = 0;
     volumes[count++] = &e->airbox;
     volumes[count++] = &e->plenum;
     for (int i = 0; i < e->desc.cylinders; i++) volumes[count++] = &e->cyl[i].gas;
     for (int c = 0; c < e->collectors; c++) volumes[count++] = &e->collector[c];
+    if (e->desc.junction_volume > 0.0) volumes[count++] = &e->junction;
     for (int k = 0; k < count; k++) {
         m += volumes[k]->mass;
         u += volumes[k]->U;
@@ -1205,6 +1261,7 @@ static void slow_flows(rb_engine *e)
     const double dt = e->pipe_dt;
     const int pipes = rb_engine_pipe_count(e);
     for (int c = 0; c < e->collectors; c++) rb_chamber_clear_rates(&e->collector[c]);
+    if (e->desc.junction_volume > 0.0) rb_chamber_clear_rates(&e->junction);
     for (int k = 0; k < pipes; k++) rb_pipe_clear((rb_pipe *)rb_engine_pipe(e, k), 0);
     for (int k = 0; k < pipes; k++) rb_pipe_flows((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }
@@ -1242,7 +1299,12 @@ static void slow_step(rb_engine *e, step_share *share)
         e->tail_flow[s] = (out->a->rho > 0.0) ? out->moved / out->a->rho : 0.0;
     }
     e->pipe_steps++;
+    double radiated = 0.0;
+    for (int k = 0; k < pipes; k++) radiated += rb_engine_pipe(e, k)->radiated;
+    e->energy_out += radiated - e->acoustic_energy_out;
+    e->acoustic_energy_out = radiated;
     for (int c = 0; c < e->collectors; c++) rb_chamber_integrate(&e->collector[c], dt);
+    if (e->desc.junction_volume > 0.0) rb_chamber_integrate(&e->junction, dt);
     for (int k = 0; k < pipes; k++) rb_pipe_integrate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
     for (int k = 0; k < pipes; k++) rb_pipe_accelerate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }

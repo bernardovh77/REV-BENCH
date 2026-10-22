@@ -1,5 +1,27 @@
 # REV-BENCH — Research notes (stage 0)
 
+## 2026-10-22 — model-specific exhausts and outlet loading
+
+Primary manufacturer sources, the numerical geometry ledger and its explicit
+unknowns now live in [stage 13b-p](docs/stage-13b-p.md). All five presets have
+distinct full-path research configurations. New topology supports successive
+silencers, twin I6 paths, a finite X junction and a rear Y split. Nominal tube
+size and cosmetic tip size are kept separate; proprietary internals are not
+presented as measured data.
+
+The audit found a missing physical loss at the outlet. The researched presets
+now use a causal unflanged radiation impedance in their gas momentum equations,
+with exterior work accounted for. Analytic frequency response, passivity and
+gas-inventory tests accompany it. This is a verified model improvement; whether
+it resolves Bernardo's robotic-deceleration complaint remains a listening
+question. It does not fix the pre-existing V8 combustion-variation problems.
+
+A coupled midpoint valve/port/neighbor-face experiment also remains local and
+unshipped. Unlike the earlier isolated-orifice probe, it includes the adjacent
+momentum face, but still fails the low-rate pumping convergence requirement.
+Its limitations and measurements are recorded in the updated 13b stage note.
+Realism takes precedence over claiming a speed gain from an inaccurate solver.
+
 ## 2026-10-21 — Deceleration and spatial sound continuation
 
 Bernardo's robotic V8/I6 deceleration report remains a listening observation,
