@@ -25,17 +25,24 @@ void rb_exhaust_model(rb_engine_desc *d, int preset)
         d->muffler_area = 0.0019;
         d->tailpipe_length = 0.32;
         break;
-    case 1: /* M54B30/E46 330i: Supersprint oversize twin 54 mm system. */
-        d->exhaust_systems = 2;
+    case 1: /* E46 race: compensated front Y + single 3-inch BimmerWorld/MagnaFlow. */
+        /* Effective equal paths include the front Y's timing compensation.
+         * Lengths and rear-core packing remain estimates (13b-r ledger). */
+        for (int i = 0; i < d->cylinders; i++) d->header_length[i] = 0.42;
+        d->exhaust_systems = 1;
         d->exhaust_pipe_diameter = 0.054 - 2.0 * wall;
-        d->tailpipe_diameter = d->exhaust_pipe_diameter;
+        d->tailpipe_diameter = 0.0762 - 2.0 * wall;
         d->exhaust_pipe_length = 0.55;
-        d->center_length = 0.70; /* unresonated center pipes 787413 */
+        d->center_length = 0.55;
         d->center_diameter = d->exhaust_pipe_diameter;
-        d->link_length = 0.55;
-        d->muffler_type = RB_MUFFLER_STRAIGHT; /* two equivalent cores in rear 787406 */
-        d->muffler_length = 0.52;
-        d->tailpipe_length = 0.25;
+        d->link_length = 0.25;
+        d->junction_volume = 0.00045;
+        d->muffler_type = RB_MUFFLER_STRAIGHT;
+        d->muffler_length = 0.25;
+        d->tailpipe_length = 1.10;
+        d->catalyst_area = 0.25 * 3.14159265358979323846
+                         * d->exhaust_pipe_diameter * d->exhaust_pipe_diameter;
+        d->catalyst_laminar = 0.0; /* race Y replaces the catalyst section */
         break;
     case 2: /* Mustang GT: Borla ATAK 140961, true dual 3-inch + merge X. */
         d->exhaust_pipe_diameter = 0.0762 - 2.0 * wall;
@@ -46,17 +53,25 @@ void rb_exhaust_model(rb_engine_desc *d, int preset)
         d->center_length = 0.80;
         d->center_diameter = d->exhaust_pipe_diameter;
         d->link_length = 0.65;
-        d->muffler_type = RB_MUFFLER_STRAIGHT;
+        d->muffler_type = RB_MUFFLER_NONE; /* physical rear-delete, NOT catalog 140961 */
         d->muffler_length = 0.45;
         d->tailpipe_length = 0.30;
         break;
-    case 3: /* 458: Tubi Style TSFE458C09.003.ANT, unvalved pipe option. */
-        d->exhaust_pipe_diameter = 0.060; /* unpublished bore: explicit estimate */
-        d->tailpipe_diameter = 0.060;
-        d->exhaust_pipe_length = 0.75; /* OEM manifold/catalyst path retained */
+    case 3: /* 458: Kline 63.5 mm X, valve-open path and catalyst bypass. */
+        d->exhaust_pipe_diameter = 0.0635 - 2.0 * wall;
+        d->tailpipe_diameter = d->exhaust_pipe_diameter;
+        d->exhaust_pipe_length = 0.50;
+        d->junction_volume = 0.00035;
+        d->junction_before_center = 1;
+        d->center_length = 0.12;
+        d->center_diameter = d->exhaust_pipe_diameter;
+        d->link_length = 0.12;
         d->muffler_type = RB_MUFFLER_NONE;
-        d->muffler_length = 0.35;
-        d->tailpipe_length = 0.28;
+        d->muffler_length = 0.15;
+        d->tailpipe_length = 0.20;
+        d->catalyst_area = 0.25 * 3.14159265358979323846
+                         * d->exhaust_pipe_diameter * d->exhaust_pipe_diameter;
+        d->catalyst_laminar = 0.0;
         break;
     case 4: /* FB20/XV GP7: HKS LEGAMAX Premium 32018-AF012, 50.8 -> 45x2. */
         d->exhaust_pipe_diameter = 0.0508 - 2.0 * wall;

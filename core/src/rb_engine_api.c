@@ -99,6 +99,7 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_SNORKEL_LENGTH]    = { "snorkel_length",    "m",      0,             0.05,    1.5,     DBL(snorkel_length) },
     [RB_ENG_SNORKEL_DIAMETER]  = { "snorkel_diameter",  "m",      0,             0.03,    0.15,    DBL(snorkel_diameter) },
     [RB_ENG_ACCESSORY_POWER]   = { "accessory_power",   "W",      LIVE,          0.0,     5000.0,  DBL(accessory_power) },
+    [RB_ENG_CATALYST_LAMINAR]  = { "catalyst_laminar",  "Pa s/m", 0,             0.0,     10000.0, DBL(catalyst_laminar) },
 };
 
 typedef struct cylinder_field_info {

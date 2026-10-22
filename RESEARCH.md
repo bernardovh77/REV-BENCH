@@ -402,3 +402,37 @@ configuration remains available with `--muffler straight`. The real references'
 operating conditions and viewpoints remain uncertain. Sound acceptance remains
 Bernardo's listening decision; every subsequent realism issue still requires
 research and appropriate reference evidence, with justified processing cost.
+
+## Stage 13b-r: upper firing harmonics and race exhausts
+
+Bernardo requests a sharper upper register with I6 8500 rpm, cross V8 7500,
+and flat V8 9000. For four-stroke even firing, `f_fire = N*rpm/120` gives
+425/500/600 Hz at those limits; a more prominent second or third harmonic
+can sharpen the perceived tone without modifying crank timing. These are
+not the fundamental frequencies of a historic 18000-rpm F1 engine.
+
+Primary hardware references are the [BimmerWorld/MagnaFlow E46 single-3-inch
+race system](https://www.bimmerworld.com/SpecE46/BimmerWorld-E46-Non-M-Exhaust-System-by-MagnaFlow-Race-Version.html)
+and [compensated front Y](https://www.bimmerworld.com/SpecE46/BimmerWorld-E46-Non-M-Front-Y-Pipe-by-MagnaFlow-Race-Version.html),
+and [Kline's 458 X system](https://www.kline-innovation.com/exhaust-collection/ferrari/458-3/ferrari-458-exhaust/).
+The latter documents dual 63.5 mm tubing in its open-valve path and catalyst
+bypass alternatives. The cross V8 retains the researched Borla-inspired X
+route with a physical rear muffler delete, distinguished from the catalog kit.
+
+The common junction sums incident pressure through acoustic admittances
+`Y=A/(rho*c)` while conserving the actual gas. Opposing bank components can
+cancel; aligned firing harmonics can reinforce. Packing and substrate loss
+attenuate frequencies differently. Use [COMSOL's muffler example](https://doc.comsol.com/6.4/doc/com.comsol.help.models.mph.automotive_muffler/automotive_muffler.html)
+as a reminder that resonance and attenuation depend on the complete geometry;
+shorter pipes do not universally raise engine pitch. No audio pitch multiplier,
+EQ or RPM-dependent volume boost is used in this substage.
+
+The 8500-rpm I6 assumes mechanically prepared hardware. A [supplier's M54
+spring rating](https://nj-performance.com/shop/bmw/m52-m54-m50-vanos-dual-valve-springs-with-retainers-6-cylinder-engines-njperformance-valve-springs/)
+does not validate bottom-end or oil-system durability. [Ford's 7500-rpm
+Dark Horse R bulletin](https://performance.ford.com/content/dam/fordPerformance/motorsport/mustang-challenge/pdfs/MC-TSB-07-6-5-2024-Engine-Calibration.pdf)
+is specific to that race engine, not our generic V8. Engine-strength and
+valve-float modeling remain future work. Full geometry assumptions, native
+convergence, upper-order measurements, processing cost and the changed coast
+contrast are in [stage 13b-r](docs/stage-13b-r.md). New listening approval is
+pending; S1's existing combustion/repetition requirements stay open.

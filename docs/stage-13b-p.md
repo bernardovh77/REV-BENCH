@@ -1,5 +1,9 @@
 # Stage 13b-p — researched exhaust configurations
 
+The configurations and measurements below record stage 13b-p. The current
+I6 and V8 configurations are superseded by [stage 13b-r](stage-13b-r.md);
+the I4 and boxer configurations are unchanged.
+
 2026-10-22. The research configurations, extended topology and radiation load
 are implemented. Native/browser validation and the new listening checkpoint are
 recorded below. This does not complete the remaining performance/implicit-solver

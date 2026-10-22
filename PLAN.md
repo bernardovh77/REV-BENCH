@@ -19,6 +19,18 @@ a sound check (working agreement 6).
 
 ### Latest listening feedback — 2026-10-22
 
+**New request — stage 13b-r:** sharpen the I6 and both V8s near the top of
+their rev ranges using researched exhaust physics. Raise the I6 from 7000
+to **8500 rpm** and the cross V8 from 7000 to **7500 rpm**; retain the flat
+V8's **9000 rpm** limit. Target the final approximately 1000 rpm with coherent
+upper firing harmonics and less attenuation. These are modified research
+configurations; exhaust changes do not validate rotating assembly durability.
+Implementation and native/browser validation are complete; the consolidated
+result includes top-end jump buttons and all long coasts. Hold for listening
+feedback. Measurements and changed coast contrast are in `docs/stage-13b-r.md`.
+The previous hold was lifted
+for this request only; stage 14 and unresolved 13b/S1 goals remain separate.
+
 **Current exhaust checkpoint accepted:** Bernardo considers the changes a
 success and says the sound is "a lot better". Keep these current recordings.
 He requests deletion of superseded generated audio and **one results file at
@@ -105,8 +117,9 @@ gets a one-line summary of anything that changed from the plan.
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
 | 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
-| 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open (latest cross V8 .656x native/.472x WASM); docs/stage-13b.md |
+| 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open; newer physical-model timing in docs/stage-13b-r.md |
 | 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work; Bernardo accepts the improved sound. One current results file includes all long coasts; full 13b remains open |
+| 13b-r | High-RPM exhaust character and revised rev limits | Sound realism | ✅ | I6 8500, cross V8 7500, flat V8 9000 rpm; race Y/X paths, native/WASM conservation and convergence verified, consolidated audio ready for listening feedback; docs/stage-13b-r.md |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -756,6 +769,22 @@ and their gas's chemistry, and no single function dominates: it's the per-cell w
   A large difference alone does not prove improved realism. Measure cost,
   retain per-model evidence and listening acceptance, and refresh Graphify.
 - **Hold after 13b and 13b-p; stage 14 is not authorized by this request.**
+
+#### Stage 13b-r — High-RPM exhaust character and revised limits
+- I6: 8500 rpm, +1500 from its previous setting. Cross V8: 7500 rpm.
+  Flat V8: retain 9000 rpm. The I6 assumes prepared race hardware; mechanical
+  durability and valve float are not validated by this exhaust substage.
+- Research fitted real race exhausts and the pressure-wave mechanisms that
+  bring out upper firing harmonics. Use model-specific Y/X routes, effective
+  flow bores and silencing; label all inferred geometry. No audio pitch shift,
+  added oscillator or RPM-dependent output boost.
+- Validate near the new limits with fired conservation, timestep refinement,
+  native/WASM tests and idle/overrun checks. Record spectra, operating windows
+  and runtime cost; retain reference perspective uncertainty and remaining
+  deceleration questions. Full 13b and S1 acceptance stay separate.
+- **Implemented:** source/assumption ledger and results in `docs/stage-13b-r.md`.
+  Publish `renders/RESULTS.html` with upper-range jump buttons and all long
+  coasts, remove obsolete generated comparison audio, and **hold for feedback**.
 
 ### Phase 3 — Browser
 

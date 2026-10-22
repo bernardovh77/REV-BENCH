@@ -175,7 +175,8 @@ static void inline6(rb_engine_desc *d)
     runners(d, 420 * MM, 40 * MM);
     exhaust(d, header, 36 * MM, collector, 1.6, 50 * MM, 1, 16 * CM2, 15 * L, 28 * CM2, 0.7, 60 * MM);
     muffler(d, RB_MUFFLER_CHAMBERED, 550 * MM);
-    running(d, 0.20, 250.0, 250.0, 950.0, 700.0, 56 * MM2, 4.4e-4, 3.2e-4, 7000.0);
+    /* Prepared race-build assumption (13b-r), not a stock M54 rev rating. */
+    running(d, 0.20, 250.0, 250.0, 950.0, 700.0, 56 * MM2, 4.4e-4, 3.2e-4, 8500.0);
 }
 
 /* 5.0 L 90-degree V8, 92 x 94 mm, with a cross-plane crank: four throws at
@@ -210,7 +211,7 @@ static void v8_cross(rb_engine_desc *d)
     runners(d, 450 * MM, 45 * MM);
     exhaust(d, header, 40 * MM, bank, 2.0, 55 * MM, 2, 20 * CM2, 10 * L, 20 * CM2, 0.8, 60 * MM);
     muffler(d, RB_MUFFLER_NONE, 450 * MM);
-    running(d, 0.30, 350.0, 220.0, 1250.0, 650.0, 95 * MM2, 5.1e-4, 2.6e-4, 7000.0);
+    running(d, 0.30, 350.0, 220.0, 1250.0, 650.0, 95 * MM2, 5.1e-4, 2.6e-4, 7500.0);
 }
 
 /* 4.5 L 90-degree V8, 94 x 81 mm, with a flat-plane crank: two inline-4s on

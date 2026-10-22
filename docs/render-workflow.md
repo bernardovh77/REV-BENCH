@@ -17,9 +17,11 @@ another so clips do not overlap.
 
 The retained current set has **34 recordings**: 23 standard examples, five
 held-3000-rpm researched configurations, five extended coasts and the separate
-cross-V8 rear-delete coast. The latter is a physical modification of the
-research configuration, not the catalog Borla kit. No sound model or engine
-parameters changed during consolidation.
+cross-V8 packed-muffler comparison. Stage 13b-r makes the rear-delete route
+the main cross-V8 configuration; it is a physical modification, not the
+catalog Borla kit. The I6 and V8s have buttons to jump directly to their last
+1000 rpm. Current limits are 8500/7500/9000 rpm. Sources, numerical validation
+and changed coast behavior are in `docs/stage-13b-r.md`.
 
 The portable page contains PCM16 listening copies, using one fixed scalar
 over each complete clip to put its peak at 0.6. This preserves relative level
@@ -43,12 +45,15 @@ make render
 ```
 
 This builds the native renderer, records the standard float set, all five
-extended coast scenarios, five held examples and the cross-V8 rear-delete
+extended coast scenarios, five held examples and the cross-V8 packed-control
 coast in a temporary staging folder. The publisher validates the complete
 34-file inventory, finite audio, output headroom and loaded-coast timing
 before installing `renders/current/` and `renders/RESULTS.html`. Only then is
 the preceding current set removed. A failed render or validation retains the
 last complete result. Reference folders are never passed to deletion code.
+The I6 pull guard is 20 seconds so it can reach the raised limiter; the
+others retain 12 seconds. The three revised engines must reach within 150 rpm
+of their limiter settings, as well as retaining the loaded-coast duration.
 
 To repackage current recordings without changing or rerendering them:
 
@@ -106,3 +111,8 @@ The complete replacement sequence also succeeded on the actual project
 drive, with current/reference hashes rechecked afterward. Graphify was queried
 before exploration and refreshed via AST: **1808 nodes / 4932 edges / 92
 communities**, with the previously documented `rb.h` parser limitation.
+
+That section records the original cleanup validation. Stage 13b-r subsequently
+passes 175 native tests, 29 Python tests and the updated native/WASM/browser
+checks in its stage note. The final portable file is checked for all 34
+players, all four top-end jump buttons, exclusive playback and rapid pause.

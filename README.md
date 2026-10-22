@@ -18,6 +18,9 @@ for all five presets. The exhaust work intentionally changes the sound; full
 13b performance/solver requirements remain open. Bernardo accepted the latest
 exhaust sound as a substantial improvement; the other S1/S2/S4 requirements
 remain open. `docs/user-sound-references.md` documents the local examples.
+The latest [high-rev exhaust substage](docs/stage-13b-r.md) gives the prepared
+I6 an 8500-rpm limit, the cross V8 7500 rpm, and retains the flat V8 at 9000.
+Race Y/X routing and reduced silencing bring out upper firing harmonics.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe

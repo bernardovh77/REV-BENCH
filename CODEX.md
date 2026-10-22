@@ -4,6 +4,54 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: stage 13b-r — high-rev race exhaust checkpoint
+
+- Bernardo requests a sharper F1-style upper register for I6 and both V8s.
+  Implemented: I6 limit 7000→8500, cross V8 7000→7500, flat V8 stays 9000.
+  The I6 assumes mechanically prepared race hardware; kinematic valves and
+  the gas solver do not certify mechanical durability. Sources and explicit
+  geometry estimates: docs/stage-13b-r.md and RESEARCH.md.
+- I6 now uses compensated equal effective paths, two branches into a finite
+  Y and one 3-inch rear system inspired by BimmerWorld/MagnaFlow race parts.
+  Flat V8 uses a Kline-inspired 63.5-mm X, fixed valve-open equivalent paths
+  and catalyst bypass. Cross V8 promotes the previously auditioned physical
+  rear-delete route; the separate current control is the packed rear option.
+  This modified Borla-inspired route is not the catalog kit.
+- Catalyst substrate resistance is now an explicit descriptor/API field:
+  catalyst_laminar (Pa s/m), default25, selected bypasses0; effective throat
+  areas still act separately. Existing public field indices are preserved.
+  No pitch/EQ/extra oscillator or RPM-dependent output gain was introduced.
+- The complete native 175-test suite passes; the final strengthened six-check
+  coherence test passes separately. SIMD WASM18/2031, ASan/UBSan10/2144,
+  Python29, web17, production build, two Chromium tests in each development
+  and production mode pass. Five mutants caught after adding signed flow
+  assertions to the initially pressure-only X-coherence test.
+- 192→384→768 kHz high-rev convergence retains the 48-kHz pipe grid. First
+  refinement changes brake torque <.22%, pumping loss <.24%; all runs have
+  zero state repairs and conservation errors <2.2e-14kg/1.3e-7J. Native/WASM
+  engine-only timing remains below the separate 4x/2x targets; see stage doc.
+- All five start and complete 30-second idle with zero warm stalled steps;
+  20 randomized ten-second runs pass. Flat-V8 idle COV20.59–29.49%, with135
+  incomplete modeled burns. Existing S1/13b acceptance remains open.
+- All34 current clips, five long coasts and four top-end jump buttons are
+  embedded in renders/RESULTS.html. Actual loaded peaks:8429/7457/8957rpm.
+  I6's pull guard is20s; others retain12s. Seventeen accepted recordings,
+  including all I4/boxer examples, remain byte-identical. All59 reference
+  library files are unchanged. Current raw float WAVs remain measurement inputs.
+- Upper harmonics are more prominent, especially both V8s; these metrics do
+  not establish listening acceptance. I6 1–4kHz relative energy is not a
+  uniform increase. Coast-band transition contrast also increases in all
+  three changed models; numerical details and remaining feedback are explicit
+  in the stage doc. Do not conceal it or declare robotic deceleration solved.
+- Source hashes, timings, original/final mutant logs, numerical reports and
+  native/WASM binaries remain in ignored renders/evidence/13b-r/. Old/current
+  comparison audio is deleted after preserving measurements. Claude's setup
+  remains active and unchanged. Hold further development for listening feedback;
+  stage14 and the unresolved persistent-SoA/implicit-valve work were not resumed.
+- Graphify was queried before exploration and refreshed through AST:
+  1842 nodes / 5027 edges / 77 communities. Its existing rb.h extraction
+  limitation is now line415; native/WASM compilers validate the header.
+
 ## 2026-10-22: sound accepted; consolidated results and render cleanup
 
 - Bernardo calls the current changes a success and "a lot better". Record

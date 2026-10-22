@@ -257,6 +257,7 @@ typedef enum rb_engine_field {
     RB_ENG_SNORKEL_DIAMETER,    /* m                                               */
     RB_ENG_ACCESSORY_POWER,     /* W the accessories take once the engine runs:
                                    the alternator, the pumps (stage 12c)           */
+    RB_ENG_CATALYST_LAMINAR,    /* Pa per m/s: linear substrate loss; 0: bypass    */
     RB_ENG_COUNT
 } rb_engine_field;
 

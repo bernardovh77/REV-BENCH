@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   RB_CLAMPED, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE, RB_EF_PER_BANK, RB_EF_PER_CYLINDER,
   RB_EF_READONLY, RB_ERR_ARG, RB_ERR_ID, RB_ERR_READONLY, RB_ERR_VALUE, RB_OK, RB_PIPE_EXHAUST,
-  RB_MUFFLER_CHAMBERED, RB_MUFFLER_STRAIGHT, RB_PIPE_HEADER, RB_PIPE_MUFFLER, RB_PIPE_RUNNER,
+  RB_MUFFLER_CHAMBERED, RB_MUFFLER_STRAIGHT, RB_MUFFLER_NONE, RB_PIPE_HEADER, RB_PIPE_MUFFLER, RB_PIPE_RUNNER,
   RB_PIPE_SNORKEL, RB_PIPE_TAILPIPE, RB_PIPE_CENTER, RB_PIPE_LINK,
   RB_PLACE_JUNCTION, RB_PLACE_CENTER, RB_PLACE_CENTER_OUTLET, RB_PLACE_AIR, RB_PLACE_AIRBOX, RB_PLACE_COLLECTOR,
   RB_PLACE_EXHAUST_VALVE, RB_PLACE_INTAKE_VALVE, RB_PLACE_MUFFLER, RB_PLACE_MUFFLER_OUTLET, RB_PLACE_PLENUM, RbCore,
@@ -215,8 +215,10 @@ describe('the pipes through the API (stage 10)', () => {
     expect(pipes[21]).toMatchObject({ kind: RB_PIPE_MUFFLER, number: 1, from_number: 1, to_number: 1 });
     expect(pipes[23]).toMatchObject({ kind: RB_PIPE_CENTER, number: 0, from: RB_PLACE_JUNCTION });
     expect(pipes[26]).toMatchObject({ kind: RB_PIPE_LINK, number: 1, to: RB_PLACE_MUFFLER });
-    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_STRAIGHT);
+    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_NONE);
     // The earlier packed exhaust remains available through the same API.
+    expect(sim.setEngine(core.engineFieldId('muffler_type'), 0, RB_MUFFLER_STRAIGHT)).toBe(RB_OK);
+    expect(sim.engine().muffler_type).toBe(RB_MUFFLER_STRAIGHT);
     expect(sim.setEngine(core.engineFieldId('muffler_type'), 0, RB_MUFFLER_CHAMBERED)).toBe(RB_OK);
     expect(sim.engine().muffler_type).toBe(RB_MUFFLER_CHAMBERED);
     sim.destroy();
@@ -264,6 +266,7 @@ describe('the engine through the API (stage 8)', () => {
     expect(f('pin')).toMatchObject({ unit: 'deg', flags: RB_EF_PER_CYLINDER });
     expect(f('firing_order')?.flags).toBe(RB_EF_IN_ORDER | RB_EF_INTEGER);
     expect(f('rev_limit')).toMatchObject({ unit: 'rpm', flags: RB_EF_LIVE });
+    expect(f('catalyst_laminar')).toMatchObject({ unit: 'Pa s/m', flags: 0, min: 0 });
     expect(f('runner_length')).toMatchObject({ unit: 'm', flags: 0, min: 0.05, max: 0.8 });
     expect(new Set(info.engineFields.map((x) => x.name)).size).toBe(info.engineFields.length);
     expect(info.cylinderFields.map((x) => x.name)).toEqual([

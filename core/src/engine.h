@@ -192,6 +192,8 @@ typedef struct rb_engine_desc {
     double rev_limit_resume;              /* ... until the crank is back below this   */
     double cranking_rpm;                  /* below this the engine counts as cranking ... */
     double cranking_spark;                /* ... and sparks this late (deg before TDC) */
+    double catalyst_laminar;              /* Pa per m/s: substrate's linear loss;
+                                           * 0 with catalyst bypass pipes (13b-r)    */
 } rb_engine_desc;
 
 /* What went through the engine during one 720-degree cycle. */

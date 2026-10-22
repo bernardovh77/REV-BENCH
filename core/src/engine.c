@@ -127,6 +127,7 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->exhaust_pipe_diameter = 0.050;
     d->exhaust_systems = 1;
     d->catalyst_area = 21e-4;
+    d->catalyst_laminar = CATALYST_LAMINAR;
     d->muffler_type = RB_MUFFLER_CHAMBERED;
     d->muffler_volume = 10e-3;
     d->muffler_length = 0.45;
@@ -311,6 +312,7 @@ int rb_engine_desc_check(const rb_engine_desc *d)
             / (PI * d->center_length)) < 0.6)) return -1;
     } else if (d->link_length > 0.0 || d->junction_volume > 0.0) return -1;
     if (!(d->catalyst_area > 0.0 && d->catalyst_area < 0.1)) return -1;
+    if (!(d->catalyst_laminar >= 0.0 && d->catalyst_laminar <= 10000.0)) return -1;
     if (d->muffler_type < RB_MUFFLER_NONE || d->muffler_type > RB_MUFFLER_CHAMBERED) return -1;
     if (!(d->muffler_volume > 0.0 && d->muffler_volume < 1.0)) return -1;
     if (!(d->muffler_length >= 0.05 && d->muffler_length <= 10.0)) return -1;
@@ -623,7 +625,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         } else if (!(straight && alone && rb_pipe_onward(x, m) == 0))
             rb_pipe_join(x, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
         rb_pipe_restrict(x, 1, d->catalyst_area);
-        rb_pipe_resist(x, 1, CATALYST_LAMINAR);
+        rb_pipe_resist(x, 1, d->catalyst_laminar);
     }
     for (int s = 0; s < e->systems; s++) {
         rb_pipe *t = &e->tailpipe[s], *m = &e->muffler[s];

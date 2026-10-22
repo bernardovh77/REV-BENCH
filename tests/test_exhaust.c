@@ -28,7 +28,7 @@ void test_exhaust_researched_topology(void)
             CHECK(pipe->cell >= engine.cell_pool && pipe->cell + pipe->cells <= engine.cell_pool + RB_ENGINE_CELLS);
         }
         CHECK(cells <= RB_ENGINE_CELLS);
-        if (p != 3) {
+        {
             CHECK(d.center_length > 0.0);
             CHECK_NEAR(engine.link[0].length, d.link_length, 1e-15);
         }
@@ -38,10 +38,12 @@ void test_exhaust_researched_topology(void)
             CHECK_NEAR(engine.center[0].area * engine.center[0].length, 0.0026, 1e-15);
         }
         if (p == 1) {
-            CHECK_EQ_INT(engine.systems, 2);
-            CHECK(engine.link[0].end[1].chamber == rb_pipe_end_cell(&engine.muffler[0], 0));
-            CHECK(engine.link[1].end[1].chamber == rb_pipe_end_cell(&engine.muffler[1], 0));
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0516, 1e-15);
+            CHECK_EQ_INT(engine.collectors, 2);
+            CHECK_EQ_INT(engine.systems, 1);
+            CHECK(engine.link[0].end[1].chamber == &engine.junction);
+            CHECK(engine.link[1].end[1].chamber == &engine.junction);
+            CHECK(engine.muffler[0].end[0].chamber == &engine.junction);
+            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0738, 1e-15);
         }
         if (p == 2) {
             CHECK(engine.exhaust_pipe[0].end[1].chamber == &engine.junction);
@@ -50,7 +52,12 @@ void test_exhaust_researched_topology(void)
             CHECK(engine.center[1].end[0].chamber == &engine.junction);
             CHECK_NEAR(engine.tailpipe[0].diameter, 0.0738, 1e-15);
         }
-        if (p == 3) CHECK_EQ_INT(d.muffler_type, RB_MUFFLER_NONE);
+        if (p == 3) {
+            CHECK_EQ_INT(d.muffler_type, RB_MUFFLER_NONE);
+            CHECK(engine.exhaust_pipe[0].end[1].chamber == &engine.junction);
+            CHECK(engine.exhaust_pipe[1].end[1].chamber == &engine.junction);
+            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0611, 1e-15);
+        }
         if (p == 4) {
             CHECK_EQ_INT(engine.collectors, 1);
             CHECK_EQ_INT(engine.systems, 2);
@@ -77,6 +84,69 @@ void test_exhaust_descriptor_guards(void)
     rb_preset_desc(0, &d);
     d.center_volume = INFINITY;
     CHECK_EQ_INT(rb_engine_desc_check(&d), -1);
+    rb_preset_desc(1, &d);
+    d.catalyst_laminar = NAN;
+    CHECK_EQ_INT(rb_engine_desc_check(&d), -1);
+    d.catalyst_laminar = -1.0;
+    CHECK_EQ_INT(rb_engine_desc_check(&d), -1);
+}
+
+/* Two simultaneous incoming waves at a symmetric X. Opposing pressure
+ * components must cancel at BOTH outlets, rather than merely being mixed
+ * cosmetically by the audio layer. Aligned components must reinforce. */
+void test_exhaust_coherent_x_modes(void)
+{
+    static rb_pipe arm[4];
+    static rb_chamber cell[4][48], junction;
+    static rb_face face[4][48];
+    const double y[RB_NSPECIES] = { 1.0, 0.0, 0.0 };
+    const double dt = 1.0 / 96000.0, area = 0.25 * 3.14159265358979323846 * 0.06 * 0.06;
+    double peak[2][2] = {{0}};
+    double incident_min = 0.0, outgoing_max = 0.0;
+    for (int phase = 0; phase < 2; phase++) {
+        rb_chamber_init(&junction, area * 0.02, 101325.0, 300.0, y);
+        for (int a = 0; a < 4; a++) {
+            rb_pipe_init(&arm[a], cell[a], face[a], 48, 1.2, 0.06,
+                         101325.0, 300.0, y, 300.0, 0.0);
+            rb_pipe_join(&arm[a], 0, &junction, 0.0, 0);
+        }
+        const double c = rb_chamber_sound_speed(&cell[0][0]);
+        const double gamma = rb_chamber_gamma(&cell[0][0]);
+        for (int a = 0; a < 2; a++) {
+            const double sign = a == 1 && phase == 1 ? -1.0 : 1.0;
+            for (int k = 0; k < 48; k++) {
+                const double x = (k + 0.5) * arm[a].dx;
+                const double pressure = 101325.0 + sign * 10.0 * exp(-pow((x - 0.8) / 0.1, 2.0));
+                rb_chamber_init(&cell[a][k], area * arm[a].dx, pressure,
+                    300.0 * pow(pressure/101325.0, (gamma-1.0)/gamma), y);
+            }
+            for (int k = 0; k < 47; k++) {
+                const double x = (k + 1.0) * arm[a].dx;
+                face[a][k].mdot = -sign * area * 10.0 * exp(-pow((x-0.8)/0.1, 2.0)) / c;
+            }
+        }
+        for (int n = 0; n < 480; n++) {
+            rb_chamber_clear_rates(&junction);
+            for (int a = 0; a < 4; a++) rb_pipe_clear(&arm[a], 0);
+            for (int a = 0; a < 4; a++) rb_pipe_flows(&arm[a], 0, dt);
+            rb_chamber_integrate(&junction, dt);
+            for (int a = 0; a < 4; a++) rb_pipe_integrate(&arm[a], 0, dt);
+            for (int a = 0; a < 4; a++) rb_pipe_accelerate(&arm[a], 0, dt);
+            if (phase == 0 && n * dt > 0.0019 && n * dt < 0.0025) {
+                incident_min = fmin(incident_min, arm[0].end_face[0].mdot+arm[1].end_face[0].mdot);
+                outgoing_max = fmax(outgoing_max, arm[2].end_face[0].mdot+arm[3].end_face[0].mdot);
+            }
+            if (n * dt > 0.0025 && n * dt < 0.0048)
+                for (int a = 0; a < 2; a++)
+                    peak[phase][a] = fmax(peak[phase][a], fabs(cell[a+2][12].p-101325.0));
+        }
+    }
+    CHECK(incident_min < -1e-6);
+    CHECK(outgoing_max > 1e-6);
+    for (int outlet = 0; outlet < 2; outlet++) {
+        CHECK(peak[0][outlet] > 7.0 && peak[0][outlet] < 11.0);
+        CHECK(peak[1][outlet] < 0.02 * peak[0][outlet]);
+    }
 }
 
 void test_exhaust_engine_books(void)
@@ -103,6 +173,42 @@ void test_exhaust_engine_books(void)
             int repairs = 0;
             for (int j = 0; j < pipe->cells; j++) repairs += pipe->cell[j].repairs;
             CHECK_EQ_INT(repairs, 0);
+        }
+    }
+}
+
+void test_exhaust_high_rpm_fired_books(void)
+{
+    static const int presets[3] = { 1, 2, 3 };
+    static const double limits[3] = { 8500.0, 7500.0, 9000.0 };
+    for (int test = 0; test < 3; test++) {
+        rb_engine_desc d;
+        rb_preset_desc(presets[test], &d);
+        CHECK_NEAR(d.rev_limit, limits[test], 0.0);
+        rb_engine_init(&engine, &d, 1.0/192000.0);
+        engine.ignition = 1;
+        engine.variation = 1.0;
+        engine.throttle_pos = 1.0;
+        engine.rpm = limits[test] - 250.0;
+        double m0, u0, m1, u1;
+        rb_engine_contents(&engine, &m0, &u0, NULL);
+        const long steps = lround(40.0 * 120.0 / engine.rpm * 192000.0);
+        for (long k = 0; k < steps; k++) rb_engine_step(&engine);
+        rb_engine_contents(&engine, &m1, &u1, NULL);
+        CHECK_NEAR(m1-m0, engine.mass_in-engine.mass_out+engine.fuel_in, m0*1e-10);
+        const double energy = engine.energy_in-engine.energy_out+engine.work_on_gas
+                            +engine.wall_heat+rb_engine_pipe_heat(&engine)
+                            +engine.heat_released+engine.fuel_energy_in;
+        CHECK_NEAR(u1-u0, energy, fabs(engine.heat_released)*1e-9);
+        CHECK(engine.heat_released > 0.0 && engine.result.brake_torque > 0.0);
+        CHECK_EQ_INT(engine.junction.repairs, 0);
+        for (int i = 0; i < d.cylinders; i++) CHECK_EQ_INT(engine.cyl[i].gas.repairs, 0);
+        for (int k = 0; k < rb_engine_pipe_count(&engine); k++) {
+            const rb_pipe *p = rb_engine_pipe(&engine, k);
+            for (int j = 0; j < p->cells; j++) {
+                CHECK(isfinite(p->cell[j].p) && p->cell[j].p > 0.0);
+                CHECK_EQ_INT(p->cell[j].repairs, 0);
+            }
         }
     }
 }

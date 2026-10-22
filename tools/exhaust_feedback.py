@@ -55,7 +55,7 @@ def deceleration_report(output, previous_coasts=None, constant_coasts=None):
             ("previous checkpoint", previous_coasts/(preset+"-long-pull-coast.wav") if previous_coasts else None, .15),
             ("new pipes, constant boundary", constant_coasts/(preset+"-long-coast.wav") if constant_coasts else None, .1),
             ("new pipes, radiation", output/(preset+"-long-coast.wav"), .1),
-            ("rear-delete control (not catalog kit)", output/(preset+"-rear-delete-control.wav"), .1)):
+            ("packed rear control", output/(preset+"-packed-control.wav"), .1)):
             if path is None or not path.exists():
                 continue
             audio, rate = read_wav(path)
@@ -132,15 +132,15 @@ def main():
             name = preset + "-long-coast"
             print("Recording", name, flush=True)
             rows[name] = record(args.cli, args.output, name,
-                ["--preset", preset, "--sweep", "--pull-seconds", "12", "--coast-seconds", "8",
+                ["--preset", preset, "--sweep", "--pull-seconds", "20" if preset == "i6" else "12", "--coast-seconds", "8",
                  "--seconds", "45", "--scene", "asphalt", "--inertia", "3"])
             manifest.write_text(json.dumps(rows, indent=2) + "\n")
         if "v8-cross" in args.presets:
-            name = "v8-cross-rear-delete-control"
+            name = "v8-cross-packed-control"
             print("Recording", name, flush=True)
             rows[name] = record(args.cli, args.output, name,
                 ["--preset", "v8-cross", "--sweep", "--pull-seconds", "12", "--coast-seconds", "8",
-                 "--seconds", "45", "--scene", "asphalt", "--inertia", "3", "--muffler", "none"])
+                 "--seconds", "45", "--scene", "asphalt", "--inertia", "3", "--muffler", "straight"])
             manifest.write_text(json.dumps(rows, indent=2) + "\n")
         return
 

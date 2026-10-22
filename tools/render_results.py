@@ -28,9 +28,9 @@ from audio_wav import read_wav_bytes
 ROOT = Path(__file__).resolve().parents[1]
 ENGINES = {
     "i4": ("Inline four", "Toyota 1AZ-FE · BRExhaust inspiration"),
-    "i6": ("Inline six", "BMW M54B30 · Supersprint inspiration"),
-    "v8-cross": ("Cross-plane V8", "Mustang GT · Borla ATAK inspiration"),
-    "v8-flat": ("Flat-plane V8", "Ferrari 458 · Tubi Style inspiration"),
+    "i6": ("Inline six", "Prepared 8,500 rpm I6 · BimmerWorld/MagnaFlow race Y inspiration"),
+    "v8-cross": ("Cross-plane V8", "7,500 rpm Mustang-inspired V8 · 3-inch X + rear muffler delete"),
+    "v8-flat": ("Flat-plane V8", "9,000 rpm Ferrari 458 inspiration · Kline X, valves open"),
     "boxer4": ("Boxer four", "Subaru FB20 · HKS inspiration"),
 }
 STANDARD = {
@@ -52,8 +52,9 @@ LABELS = {
     "3000-behind": "3000 rpm · behind the car", "3000-tailpipe": "3000 rpm · tailpipe",
     "3000-side": "3000 rpm · beside the car", "3000-front": "3000 rpm · bonnet",
     "3000-cabin": "3000 rpm · cabin", "long-coast": "Full pull + long loaded coast",
-    "rear-delete-control": "Long coast · rear mufflers removed (separate modification)",
+    "packed-control": "Long coast · packed rear mufflers (comparison)",
 }
+REV_LIMITS = {"i6": 8500, "v8-cross": 7500, "v8-flat": 9000}
 
 
 def sha(path):
@@ -66,7 +67,7 @@ def expected_clips():
         for scenario in ("long-coast", "3000-after"):
             clips.append((engine, scenario, f"feedback/{engine}-{scenario}.wav"))
         if engine == "v8-cross":
-            clips.append((engine, "rear-delete-control", "feedback/v8-cross-rear-delete-control.wav"))
+            clips.append((engine, "packed-control", "feedback/v8-cross-packed-control.wav"))
         clips.extend((engine, scenario, f"standard/{engine}-{scenario}.wav")
                      for scenario in STANDARD[engine])
     clips.append(("test", "test", "standard/test.wav"))
@@ -99,14 +100,22 @@ def listening_wav(path):
                  "seconds": len(samples)/channels/rate, "static_preview_gain": gain}
 
 
-def coast_markers(path, seconds):
+def coast_markers(path, seconds, engine):
     with path.with_suffix(".csv").open() as stream:
         rows = list(csv.DictReader(stream))
     lift = next(float(r["t_s"]) for r in rows if float(r["throttle"]) == 0)
     clutch = next(float(r["t_s"]) for r in rows if float(r["crank_inertia_kgm2"]) < 2.9)
     if not (0 < lift < clutch < seconds and 7.98 < clutch-lift < 8.02):
         raise ValueError(f"{path}: missing the eight-second loaded coast")
-    return {"lift_s": lift, "clutch_s": clutch}
+    markers = {"lift_s": lift, "clutch_s": clutch}
+    if engine in REV_LIMITS:
+        limit = REV_LIMITS[engine]
+        if max(float(r["rpm"]) for r in rows if float(r["t_s"]) <= lift) < limit-150:
+            raise ValueError(f"{path}: pull did not reach the requested {limit} rpm limiter region")
+        markers.update(top_band_start_s=next(float(r["t_s"]) for r in rows
+                       if float(r["rpm"]) >= limit-1000 and float(r["throttle"]) > .9),
+                       top_band_rpm=[limit-1000, limit])
+    return markers
 
 
 def write_page(current, destination):
@@ -127,15 +136,21 @@ def write_page(current, destination):
         info.update(source=name, engine=engine, scenario=scenario,
                     preview_sha256=hashlib.sha256(preview).hexdigest())
         markers = ""
-        if scenario in ("long-coast", "rear-delete-control"):
-            info.update(coast_markers(path, info["seconds"]))
+        if scenario in ("long-coast", "packed-control"):
+            info.update(coast_markers(path, info["seconds"], engine))
             markers = (f"Lift at {info['lift_s']:.1f}s · clutch in at {info['clutch_s']:.1f}s"
                        " · 8 seconds of loaded deceleration")
         title = LABELS.get(scenario, "Test tone")
         data = base64.b64encode(preview).decode("ascii")
         detail = markers or f"{info['seconds']:.1f} seconds"
-        card = (f'<article><h3>{escape(title)}</h3><p>{detail}</p>'
-                f'<audio controls preload="none" aria-label="{escape(title, quote=True)}" '
+        jump = ""
+        player_id = f"{engine}-{scenario}"
+        if "top_band_start_s" in info:
+            low, high = info["top_band_rpm"]
+            jump = (f'<button type="button" data-player="{player_id}" data-seek="{info["top_band_start_s"]}">'
+                    f'Hear {low:,}–{high:,} rpm</button>')
+        card = (f'<article><h3>{escape(title)}</h3><p>{detail}</p>{jump}'
+                f'<audio id="{player_id}" controls preload="none" aria-label="{escape(title, quote=True)}" '
                 f'data-source="{escape(name, quote=True)}" src="data:audio/wav;base64,{data}"></audio></article>')
         sections[engine].append(card)
         inventory.append(info)

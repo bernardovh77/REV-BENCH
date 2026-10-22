@@ -86,3 +86,49 @@ test('the C core plays in an AudioWorklet and follows the controls', async ({ pa
   await expect(page.locator('#status')).toContainText('Stopped');
   expect(problems).toEqual([]);
 });
+
+test('the browser loads the high-rev presets and their real exhaust routes', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#start')).toBeEnabled({ timeout: 15_000 });
+  // Exercise the shipped WASM in Chromium; the product UI stays on stage 2's
+  // tone until stage 14. Read the actual asset in both dev and production.
+  const presets = await page.evaluate(async () => {
+    const wasmUrl = performance.getEntriesByType('resource').find(entry => entry.name.endsWith('.wasm'))?.name;
+    if (!wasmUrl) throw new Error('The page did not load a WASM asset');
+    const response = await fetch(wasmUrl);
+    const { instance } = await WebAssembly.instantiate(await response.arrayBuffer(), {});
+    const x = instance.exports as unknown as {
+      memory: WebAssembly.Memory;
+      _initialize?: () => void;
+      rb_create_with(rate: number, oversample: number): number;
+      rb_alloc_floats(count: number): number;
+      rb_free_floats(ptr: number): void;
+      rb_engine_field_find(name: number): number;
+      rb_load_preset(sim: number, preset: number): number;
+      rb_get_engine(sim: number, field: number, index: number): number;
+      rb_destroy(sim: number): void;
+    };
+    x._initialize?.();
+    const sim = x.rb_create_with(48000, 4);
+    if (!sim) throw new Error('Could not create the browser simulation');
+    const text = x.rb_alloc_floats(20);
+    const field = (name: string) => {
+      const bytes = new TextEncoder().encode(name+'\0');
+      new Uint8Array(x.memory.buffer, text, bytes.length).set(bytes);
+      return x.rb_get_engine(sim, x.rb_engine_field_find(text), 0);
+    };
+    const result = ['i6', 'v8-cross', 'v8-flat'].map((key, index) => {
+      if (x.rb_load_preset(sim, index+1) !== 0) throw new Error('Could not load '+key);
+      return { key, limit: field('rev_limit'), systems: field('exhaust_systems'),
+               catalyst: field('catalyst_laminar'), muffler: field('muffler_type') };
+    });
+    x.rb_free_floats(text);
+    x.rb_destroy(sim);
+    return result;
+  });
+  expect(presets).toEqual([
+    { key: 'i6', limit: 8500, systems: 1, catalyst: 0, muffler: 1 },
+    { key: 'v8-cross', limit: 7500, systems: 2, catalyst: 25, muffler: 0 },
+    { key: 'v8-flat', limit: 9000, systems: 2, catalyst: 0, muffler: 0 },
+  ]);
+});

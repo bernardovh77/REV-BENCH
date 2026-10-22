@@ -59,6 +59,8 @@ void test_exhaust_researched_topology(void);
 void test_exhaust_descriptor_guards(void);
 void test_exhaust_engine_books(void);
 void test_exhaust_junction_scattering_conservation(void);
+void test_exhaust_coherent_x_modes(void);
+void test_exhaust_high_rpm_fired_books(void);
 void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
 /* ---- audio (tests/test_audio.c) ---- */
@@ -249,6 +251,8 @@ static const struct {
     T(test_exhaust_descriptor_guards),
     T(test_exhaust_engine_books),
     T(test_exhaust_junction_scattering_conservation),
+    T(test_exhaust_coherent_x_modes),
+    T(test_exhaust_high_rpm_fired_books),
     T(test_radiation_causal_impedance),
     T(test_radiation_pipe_work),
     T(test_audio_decimator_filter),

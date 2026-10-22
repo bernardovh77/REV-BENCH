@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from render_results import expected_clips, listening_wav, render_checkpoint, replace_current, write_page
+from render_results import expected_clips, listening_wav, replace_current, write_page, REV_LIMITS
 
 
 def float_wav(path, samples=(0.1, -0.2, 0.05, -0.1)):
@@ -24,12 +24,14 @@ def float_wav(path, samples=(0.1, -0.2, 0.05, -0.1)):
 
 
 def checkpoint(folder, samples=(0.1, -0.2, 0.05, -0.1)):
-    for _, scenario, name in expected_clips():
+    for engine, scenario, name in expected_clips():
         path = folder/name
-        float_wav(path, samples*3000 if scenario in ("long-coast", "rear-delete-control") else samples)
-        if scenario in ("long-coast", "rear-delete-control"):
+        float_wav(path, samples*3000 if scenario in ("long-coast", "packed-control") else samples)
+        if scenario in ("long-coast", "packed-control"):
+            limit = REV_LIMITS.get(engine, 6500)
             path.with_suffix(".csv").write_text(
-                "t_s,throttle,crank_inertia_kgm2\n0,1,3\n1,0,3\n9,0,0.2\n")
+                f"t_s,throttle,crank_inertia_kgm2,rpm\n0,1,3,1000\n0.5,1,3,{limit-500}\n"
+                f"1,0,3,{limit-80}\n9,0,0.2,2000\n")
 
 
 class Players(HTMLParser):
@@ -58,9 +60,11 @@ class RenderResultsTests(unittest.TestCase):
             cli.write_text(f"#!{sys.executable} -S\n"
                 "from pathlib import Path\nimport sys\n"
                 "args=sys.argv\n"
+                "preset=args[args.index('--preset')+1] if '--preset' in args else 'test'\n"
+                "limit={'i6':8500,'v8-cross':7500,'v8-flat':9000}.get(preset,6500)\n"
                 f"Path(args[args.index('--out')+1]).write_bytes(Path({str(fixture)!r}).read_bytes())\n"
                 "if '--csv' in args:\n"
-                " Path(args[args.index('--csv')+1]).write_text('t_s,throttle,crank_inertia_kgm2\\n0,1,3\\n1,0,3\\n9,0,0.2\\n')\n"
+                " Path(args[args.index('--csv')+1]).write_text(f't_s,throttle,crank_inertia_kgm2,rpm\\n0,1,3,1000\\n0.5,1,3,{limit-500}\\n1,0,3,{limit-80}\\n9,0,0.2,2000\\n')\n"
                 "if args[1]=='sound': print('soft-limited samples 0, non-finite 0')\n")
             cli.chmod(0o755)
             script = Path(__file__).with_name("render_results.py").resolve()
@@ -77,7 +81,7 @@ class RenderResultsTests(unittest.TestCase):
             self.assertEqual(len(list((renders/"current").rglob("*.wav"))), 34)
             recordings = json.loads((renders/"current/feedback/recordings.json").read_text())
             self.assertEqual(len(recordings), 11)
-            self.assertIn("none", recordings["v8-cross-rear-delete-control"]["command"])
+            self.assertIn("straight", recordings["v8-cross-packed-control"]["command"])
             self.assertFalse(list(renders.glob(".pending-results-*")))
 
     def test_listening_gain_preserves_waveform_and_original(self):
@@ -114,6 +118,11 @@ class RenderResultsTests(unittest.TestCase):
                 replace_current(staged, root)
             self.assertEqual((root/"RESULTS.html").read_bytes(), before)
             self.assertTrue((current/"feedback/i6-long-coast.wav").exists())
+            coast.with_suffix(".csv").write_text(
+                "t_s,throttle,crank_inertia_kgm2,rpm\n0,1,3,1000\n1,0,3,7000\n9,0,0.2,2000\n")
+            with self.assertRaisesRegex(ValueError, "limiter region"):
+                replace_current(staged, root)
+            self.assertEqual((root/"RESULTS.html").read_bytes(), before)
 
     def test_replacement_is_portable_and_preserves_references(self):
         with tempfile.TemporaryDirectory() as tmp:
