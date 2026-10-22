@@ -15,8 +15,9 @@ interests as me and give a purpose to my learnings.
 **Status:** stages 0-13 of 26 done, with sound work through S2b, performance
 work in [13b](docs/stage-13b.md), and [researched exhaust configurations](docs/stage-13b-p.md)
 for all five presets. The exhaust work intentionally changes the sound; full
-13b performance/solver requirements remain open. S1/S2/S4 acceptance
-remains open; `docs/user-sound-references.md` documents the local examples.
+13b performance/solver requirements remain open. Bernardo accepted the latest
+exhaust sound as a substantial improvement; the other S1/S2/S4 requirements
+remain open. `docs/user-sound-references.md` documents the local examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe
@@ -48,6 +49,11 @@ the stage notes. A fuzzer drives random engines to find
 what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 [RESEARCH.md](RESEARCH.md) for background, and `docs/` for notes and equations per stage.
 
+Run `make render` to produce **one listening result: `renders/RESULTS.html`**.
+It contains all current engine examples, including five long loaded coasts,
+and plays offline. Each successful run replaces the previous generated set;
+reference recordings are preserved. `make results` rebuilds the page from
+existing audio. See [the render workflow](docs/render-workflow.md).
 
 
 

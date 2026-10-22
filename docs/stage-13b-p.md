@@ -5,6 +5,15 @@ are implemented. Native/browser validation and the new listening checkpoint are
 recorded below. This does not complete the remaining performance/implicit-solver
 requirements of 13b. Stage 14 is outside the authorized scope.
 
+**Listening accepted, 2026-10-22:** Bernardo considers the changes a success
+and says the sound is "a lot better". At his request, superseded generated
+audio is deleted and all 34 current recordings are consolidated into the
+portable `renders/RESULTS.html`, including five long coasts. Current raw float
+originals are in `renders/current/{standard,feedback}/`; retained numerical
+evidence and binaries moved to `renders/evidence/13b-p/`. The earlier paths
+in historical run commands identify their original locations. Reference files
+are unchanged. See [the render workflow](render-workflow.md).
+
 Bernardo explicitly allows large sound changes when research and physics support
 them. Previous WAVs are controls. Realism takes priority over matching their
 timbre or saving processing time. A large audible difference alone is not proof
@@ -127,14 +136,19 @@ that the gas solver resolves combustion shocks or all audible wavelengths.
 
 ## Validation and feedback
 
-All generated material stays in ignored `renders/13b-complete/`. Raw float WAVs
-are the measurement inputs. Old files are retained; preview encodings use a
-single static gain per complete clip and MP3 encoding for listening only.
+All generated material stays in ignored `renders/`. Raw current float WAVs
+are the measurement inputs. Superseded generated audio was removed after
+Bernardo accepted this checkpoint; its numerical comparisons are retained.
+The single results file embeds PCM16 listening copies with one static gain
+per complete clip. The earlier six MP3 previews are also retained with their
+processing manifest under `renders/current/feedback/`.
 
 `tools/exhaust_feedback.py` records five matched 3000 rpm before/after controls
-at the same gain and five extended pull/coast scenarios, then plots spectral
-shape and records raw level changes. It uses the preserved preceding executable
-for the control. `make render` remains the standard regression set.
+at the same gain when an optional preceding executable is supplied, plus five
+extended pull/coast scenarios and the rear-delete control. Analysis plots
+spectral shape and records raw level changes. `make render` now stages both
+the standard regression set and all current coast/held examples, then publishes
+one complete result. `make render-standard` is available for isolated controls.
 
 The supplied BMW M4 recording is turbocharged, whereas the I6 is naturally
 aspirated; the Golf GTI is not a Toyota 1AZ-FE. Their microphone gain, speed/load
@@ -143,7 +157,7 @@ sound references, not transfer functions to fit. Source intervals and separate
 filtered listening copies remain documented in `docs/user-sound-references.md`.
 Brighter/darker groups remain acoustic observations. No original MP3 is modified.
 
-Remaining S1 realism/listening acceptance is separate from this implementation.
+Remaining S1 realism acceptance is separate from this exhaust listening approval.
 In particular, the pre-existing flat-V8 incomplete burns and high idle work COV
 must not be hidden by an exhaust change. Whole-stage 13b completion also requires
 its explicit solver/performance acceptance; the new exhaust does not waive it.
@@ -159,7 +173,7 @@ equivalent actuator is therefore 46 mm², with gains multiplied by 43/46.
 These are model-control calibration values, not published Subaru hardware data.
 The existing startup and load tests pass without loosening their thresholds;
 the final radiation build also passes the full native suite. Raw tuning rows remain in
-`renders/13b-complete/boxer-idle-area.csv`.
+`renders/evidence/13b-p/boxer-idle-area.csv`.
 
 ## Final numerical and listening checks
 
@@ -241,7 +255,8 @@ uncertainty and avoid claiming exact vehicle sound from nominal tube sizes.
 Final core WASM: **158247 bytes**, source fingerprint
 `07ce3366e927c09cab6e97e8f8485d2782032662c76673d92149f47e635fe40b`.
 Logs, binaries, hashes, the geometry-before-radiation controls and rejected
-solver patches are local under `renders/13b-complete/`.
+solver patches and historical numerical comparisons are local under
+`renders/evidence/13b-p/`. Their superseded control audio is no longer retained.
 
 Three final interleaved timing rounds, after the other validation jobs finish,
 compare the b922742 binaries with this physical-model change. Physics stays at
@@ -272,17 +287,18 @@ tests validate the header. Claude's instructions and `.claude/` are preserved.
 
 ## Reproduce the checkpoint
 
-From the repository root, build with `make`, then:
+From the repository root:
 
 ```
-make render RENDER_DIR=renders/13b-complete/final-mono RENDER_FLAGS=--float
-python tools/exhaust_feedback.py --cli build/rb_cli --before-cli PRESERVED_OLD_CLI --output renders/13b-complete/final-feedback
-python tools/exhaust_feedback.py --cli build/rb_cli --output renders/13b-complete/final-feedback --analyze
+make render
+make results   # repackage existing current files without rerendering
 ```
 
-Use `.venv-analysis/bin/python` for analysis dependencies. The optional
-geometry-before-radiation paths in the analysis are the saved local controls,
-not files that the script silently regenerates. Eight-second coasts are loaded
-overrun before clutch-in; they are distinct from the neutral-rev examples.
-The local `renders/13b-complete/FEEDBACK.md` links the listening previews and
-identifies their processing. No audio is committed to GitHub.
+Open `renders/RESULTS.html`; all current listening audio is embedded. Use
+`.venv-analysis/bin/python tools/exhaust_feedback.py --cli build/rb_cli --output renders/current/feedback --analyze`
+for current measurements. Historical geometry-before-radiation and preceding
+checkpoint controls are optional explicit analysis inputs; rerender them from
+the appropriate saved binary if a new comparison is needed. Eight-second
+coasts are loaded overrun before clutch-in, distinct from the neutral examples.
+The current raw WAVs and source hashes are preserved; no audio is committed
+to GitHub. Full workflow and retention rules: `docs/render-workflow.md`.

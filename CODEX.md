@@ -4,6 +4,47 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: sound accepted; consolidated results and render cleanup
+
+- Bernardo calls the current changes a success and "a lot better". Record
+  acceptance of this exhaust listening checkpoint; S1 numerical/combustion
+  checks and the remaining 13b solver/performance work stay open. This turn
+  changes file management only. Hold further development for instruction.
+- The single listening deliverable is now **renders/RESULTS.html**: a portable
+  offline file with all 34 current examples embedded, grouped by engine with
+  the five long loaded coasts first. It includes the separate cross-V8
+  rear-delete modification and standard revs/positions/muffler examples.
+  Browser listening copies use a constant whole-clip gain and PCM16; the
+  original float WAVs are byte-identical and remain measurement inputs.
+- Current originals: renders/current/{standard,feedback}/. Superseded
+  generated audio, including the five old 3000-rpm before controls, is
+  deleted at Bernardo's explicit request. All 59 files in renders/real/ and
+  renders/user-reference-previews/ are hash-verified unchanged. Original
+  user MP3s outside the repo are untouched.
+- Current physics, dyno, timing, binaries, rejected solver evidence and
+  historical before/after measurements moved to renders/evidence/13b-p/;
+  older non-audio evidence is under renders/evidence/history/. Historical
+  paths in the entries below describe prior runs, not retained audio.
+  renders/evidence/retention.json records the relocation/retention checks.
+- `make render` now stages standard float recordings plus all five extended
+  coasts, held controls and the rear-delete coast, then atomically installs
+  the complete result. Failed recording/validation leaves the previous set.
+  `make results` republishes current files without rendering. Isolated
+  research sets use `make render-standard RENDER_DIR=...`; see
+  docs/render-workflow.md. No optional numerical packages are needed to
+  render or publish. Analysis tools continue to use numpy/matplotlib.
+- Full 13b and S1 remain incomplete. CLAUDE.md/.claude/ remain active and
+  unchanged; no physics, engine tuning, or browser app changes in this pass.
+- Cleanup removes 360 superseded generated audio files. Native 173/3252,
+  Python 27 and web 17 tests pass. Chromium plays all 34 embedded clips
+  offline, with one player at a time and no network requests. Seven new
+  publishing tests cover retention, failure rollback, audio conversion and
+  the full Makefile/scenario/publication sequence with a fake simulation.
+- Successful replacement was also verified on the actual project drive,
+  retaining identical current/reference hashes. Graphify queried first and
+  refreshed via AST: 1808 nodes / 4932 edges / 92 communities. The known
+  rb.h parser limitation remains at line 414; native compilation passes.
+
 ## 2026-10-22: researched exhaust implementation and listening checkpoint
 
 - Bernardo authorizes large sound changes when research/physics support them.

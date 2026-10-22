@@ -36,7 +36,7 @@ def record(cli, output, name, options):
             "wav_sha256": sha(wav), "csv_sha256": sha(csv)}
 
 
-def deceleration_report(output):
+def deceleration_report(output, previous_coasts=None, constant_coasts=None):
     import numpy as np
     import matplotlib.pyplot as plt
     from audio_wav import read_wav
@@ -52,11 +52,11 @@ def deceleration_report(output):
     for row, preset in enumerate(PRESETS):
         item = {"preset": preset, "variants": []}
         for side, path, gain in (
-            ("previous checkpoint", ROOT/"renders/stage-13b/long-coast"/(preset+"-long-pull-coast.wav"), .15),
-            ("new pipes, constant boundary", ROOT/"renders/13b-complete/feedback"/(preset+"-long-coast.wav"), .1),
+            ("previous checkpoint", previous_coasts/(preset+"-long-pull-coast.wav") if previous_coasts else None, .15),
+            ("new pipes, constant boundary", constant_coasts/(preset+"-long-coast.wav") if constant_coasts else None, .1),
             ("new pipes, radiation", output/(preset+"-long-coast.wav"), .1),
             ("rear-delete control (not catalog kit)", output/(preset+"-rear-delete-control.wav"), .1)):
-            if not path.exists():
+            if path is None or not path.exists():
                 continue
             audio, rate = read_wav(path)
             if not np.all(np.isfinite(audio)):
@@ -111,7 +111,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cli", type=Path, required=True)
     parser.add_argument("--before-cli", type=Path)
-    parser.add_argument("--output", type=Path, default=ROOT / "renders/13b-complete/feedback")
+    parser.add_argument("--output", type=Path, default=ROOT / "renders/work/exhaust-feedback")
+    parser.add_argument("--previous-coasts", type=Path, help="optional preserved historical coast controls")
+    parser.add_argument("--constant-coasts", type=Path, help="optional geometry-only radiation controls")
     parser.add_argument("--analyze", action="store_true")
     parser.add_argument("--presets", nargs="+", choices=PRESETS, default=PRESETS)
     args = parser.parse_args()
@@ -132,6 +134,13 @@ def main():
             rows[name] = record(args.cli, args.output, name,
                 ["--preset", preset, "--sweep", "--pull-seconds", "12", "--coast-seconds", "8",
                  "--seconds", "45", "--scene", "asphalt", "--inertia", "3"])
+            manifest.write_text(json.dumps(rows, indent=2) + "\n")
+        if "v8-cross" in args.presets:
+            name = "v8-cross-rear-delete-control"
+            print("Recording", name, flush=True)
+            rows[name] = record(args.cli, args.output, name,
+                ["--preset", "v8-cross", "--sweep", "--pull-seconds", "12", "--coast-seconds", "8",
+                 "--seconds", "45", "--scene", "asphalt", "--inertia", "3", "--muffler", "none"])
             manifest.write_text(json.dumps(rows, indent=2) + "\n")
         return
 
@@ -167,7 +176,7 @@ def main():
             edges = np.geomspace(25, 16000, 100)
             power = np.array([spec[(freq >= a) & (freq < b)].sum() for a,b in zip(edges,edges[1:])])
             ax.semilogx(np.sqrt(edges[:-1]*edges[1:]), 10*np.log10(power/spec.sum()+1e-30), label=side)
-        ax.set(title=preset + " — held 3000 rpm, identical gain", xlabel="Hz", ylabel="band energy, dB")
+        ax.set(title=preset + " — held 3000 rpm, render gain 0.1", xlabel="Hz", ylabel="band energy, dB")
         ax.set_xlim(25, 16000)
         ax.set_ylim(-85, 0)
         ax.legend()
@@ -180,7 +189,7 @@ def main():
         rows.append({"preset": preset, **pair})
     fig.savefig(args.output / "spectra.png", dpi=160)
     (args.output / "measurements.json").write_text(json.dumps(rows, indent=2) + "\n")
-    deceleration_report(args.output)
+    deceleration_report(args.output, args.previous_coasts, args.constant_coasts)
 
 
 if __name__ == "__main__":

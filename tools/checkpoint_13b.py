@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Reproduce the local listening checkpoint; original reference audio is never rewritten.
 
-Run make render RENDER_DIR=renders/checkpoint-13b/mono RENDER_FLAGS=--float first.
+Historical comparison helper. New checkpoints use make render and RESULTS.html.
+For this isolated experiment run make render-standard
+RENDER_DIR=renders/checkpoint-13b/mono RENDER_FLAGS=--float first.
 Then pass --cli PATH --render to record controls/scenes; --analyze creates metrics,
 paired listening aids and plots. numpy/matplotlib are the existing analysis deps.
 Reference windows describe falling pitch, not verified throttle, RPM or perspective.

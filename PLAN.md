@@ -19,6 +19,18 @@ a sound check (working agreement 6).
 
 ### Latest listening feedback — 2026-10-22
 
+**Current exhaust checkpoint accepted:** Bernardo considers the changes a
+success and says the sound is "a lot better". Keep these current recordings.
+He requests deletion of superseded generated audio and **one results file at
+the end of every checkpoint**, containing the long coasts and all current
+examples. `make render` now publishes `renders/RESULTS.html`, with embedded
+audio, after the complete render succeeds. Raw current float WAVs stay in
+`renders/current/`; references are preserved. See `docs/render-workflow.md`.
+This listening approval does not close the remaining S1 combustion/repetition
+checks or 13b's solver/performance requirements. Hold further development
+after this file-management task for Bernardo's instruction.
+
+**Earlier feedback:**
 Bernardo heard little noticeable difference in the recent S1d comparisons. This feedback
 does not establish an audible realism improvement or resolve the S1 listening checkpoint.
 The supplied real engine recordings remain the primary reference for sound realism;
@@ -87,14 +99,14 @@ gets a one-line summary of anything that changed from the plan.
 | S1e | Research and controlled overrun transitions | Sound realism | 🔄 | Timed pedal-lift ignition/fuel transition and immediate-cut control; real falling-pitch intervals documented; consolidated acceptance in docs/checkpoint-13b.md |
 | R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
 | R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
-| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Repetition, high V8 idle COV, ignition failures and listening remain unresolved. Historical repeat baselines in checkpoint-13b; S2b dyno bin changes <0.9%, current physics audit retained locally |
+| S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Repetition, high V8 idle COV and ignition requirements remain unresolved. New exhaust sound accepted 2026-10-22; this does not close the remaining S1 checks |
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
 | 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open (latest cross V8 .656x native/.472x WASM); docs/stage-13b.md |
-| 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work, native/WASM/browser validation and long-coast package; assumptions and listening limits in docs/stage-13b-p.md; full 13b remains open |
+| 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work; Bernardo accepts the improved sound. One current results file includes all long coasts; full 13b remains open |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -916,3 +928,13 @@ can't disagree with the sound. It replaces the 2D cutaway that was planned here 
    perspective uncertainty and processing. Keep recordings and generated audio in ignored
    `renders/`, retain unfiltered float WAVs for measurements, and use filtered copies only as
    listening aids. Reference recordings guide validation of the physics-driven sound.
+9. **One current listening result.** Finish every sound checkpoint with
+   `renders/RESULTS.html`, containing all current examples and the five long
+   loaded coasts in one portable file. `make render` stages the complete set
+   and replaces the prior result only after validation; `make results`
+   republishes existing recordings. Keep the current unfiltered measurement
+   WAVs under `renders/current/`. Delete superseded generated audio after the
+   replacement succeeds, retaining useful numerical evidence separately.
+   Preserve `renders/real/`, `renders/user-reference-previews/` and original
+   user recordings. Temporary comparison controls belong in a deliberate
+   separate work folder and are removed after their measurements are saved.

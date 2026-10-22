@@ -1,5 +1,13 @@
 # Stage 13b — Performance and solver work
 
+**Latest handoff, 2026-10-22:** Bernardo accepted the researched exhaust sound
+and requested deletion of older renders. Current listening is consolidated in
+`renders/RESULTS.html`; current float originals are under `renders/current/`.
+Retained solver evidence moved to `renders/evidence/13b-p/`; older numerical
+evidence/binaries are under `renders/evidence/history/`. The historical audio
+paths below were removed at his request. Full 13b remains open; hold further
+development for instruction. See [the render workflow](render-workflow.md).
+
 ## 2026-10-22 continuation: coupled port experiment and researched exhausts
 
 Bernardo resumed the whole stage and requested a dedicated exhaust substage.
@@ -30,7 +38,7 @@ errors are −7.02% / −9.99%; it is not a satisfactory replacement. A subseque
 half-piston-work / midpoint-valve-area splitting control changes these results
 only marginally. No 96 kHz accuracy claim or speed gain follows. The prototype
 and exact patches/results stay ignored in
-`renders/13b-complete/coupled-probe/`. This does not rule out a properly converged
+`renders/evidence/13b-p/coupled-probe/`. This does not rule out a properly converged
 implicit method.
 
 Valve boundary treatment warrants this caution: [Brejaud et al.](https://journals.sagepub.com/doi/abs/10.1177/0954407011409653)
@@ -241,7 +249,7 @@ is refreshed after the changes; its known `rb.h` parser warning does not
 affect compilation. The code, notes, WASM and tracked graph are committed and
 synced to the existing main branch; generated media and experiments stay ignored.
 
-Reproduce with `make test`, `make wasm`, `make test-wasm`, and `make render
+Reproduce the historical isolated standard set with `make test`, `make wasm`, `make test-wasm`, and `make render-standard
 RENDER_DIR=renders/stage-13b/mono RENDER_FLAGS=--float`. Then run
 `tools/checkpoint_13b.py --cli PATH --output renders/stage-13b --long-coast`
 and `tools/performance_13b.py compare`. For timing, preserve the before native

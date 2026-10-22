@@ -2,8 +2,11 @@
 #
 #   make              build the command-line tool (build/rb_cli)
 #   make test         build and run the unit tests
-#   make render       render the engine's sound (stages 11-12c) to
-#                     renders/*.wav (about six minutes): the four starting and
+#   make render       render all standard examples plus five long coasts; finish
+#                     with the single offline renders/RESULTS.html. Replaces
+#                     only renders/current/ after the complete run succeeds.
+#   make render-standard   standard examples only (for isolated regression sets):
+#                     the four starting and
 #                     idling, pulling into its rev limiter and back to idle,
 #                     and revved in neutral, heard from behind the car, idling
 #                     over its open bonnet, and from the driver's seat idling
@@ -32,7 +35,9 @@
 #   make SAN=1 test   build with AddressSanitizer + UBSan (catches memory
 #                     bugs and undefined behaviour), output in build-san/
 #   make BUILD=dir    put build output in another folder
-#   make render RENDER_DIR=dir RENDER_FLAGS=--float   keep a separate float render set
+#   make render-standard RENDER_DIR=dir RENDER_FLAGS=--float   isolated float set
+#   make results      rebuild RESULTS.html from current recordings without rerendering
+#   make render PYTHON=path/to/python   choose Python (no analysis packages needed)
 #   make wasm ZIG=... use a specific zig (default: `zig` if it is on PATH,
 #                     else `python3 -m ziglang` from: pip install ziglang)
 
@@ -44,9 +49,10 @@ ifeq ($(SAN),1)
 endif
 
 BUILD    ?= build
-# Optional isolated render sets; defaults retain the normal listening outputs.
-RENDER_DIR   ?= renders
-RENDER_FLAGS ?=
+# Optional isolated standard sets; full checkpoints use the publisher below.
+RENDER_DIR   ?= renders/work/standard
+RENDER_FLAGS ?= --float
+PYTHON       ?= python3
 CFLAGS   ?= -O3 -g
 CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
 # Strict double arithmetic: keep NaN checks and each cell's operation order.
@@ -84,7 +90,7 @@ TESTS := $(BUILD)/rb_tests
 BENCH := $(BUILD)/rb_bench
 AUDIT := $(BUILD)/rb_audit
 
-.PHONY: all test test-wasm render wasm bench bench-wasm audit fuzz clean help
+.PHONY: all test test-wasm render render-standard results wasm bench bench-wasm audit fuzz clean help
 
 all: $(CLI)
 
@@ -119,6 +125,12 @@ fuzz: $(CLI)
 	$(CLI) fuzz --sets 20 --seconds 10
 
 render: $(CLI)
+	$(PYTHON) tools/render_results.py --cli "$(CLI)" --build "$(BUILD)"
+
+results:
+	$(PYTHON) tools/render_results.py --publish-only
+
+render-standard: $(CLI)
 	@mkdir -p "$(RENDER_DIR)"
 	$(CLI) tone $(RENDER_FLAGS) --out $(RENDER_DIR)/test.wav --csv $(RENDER_DIR)/test.csv
 	$(CLI) sound $(RENDER_FLAGS) --preset i4 --idle --out $(RENDER_DIR)/i4-idle.wav

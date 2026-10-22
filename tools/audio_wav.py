@@ -7,15 +7,12 @@ Only numpy is needed, as in the existing analysis tools.
 import os
 import struct
 
-import numpy as np
 
+def read_wav_bytes(path):
+    """Return validated (sample bytes, format tag, channels, sample rate).
 
-def read_wav(path):
-    """Return (frames x channels float64 samples, sample rate).
-
-    PCM uses 32768 units per full scale; float values retain their original
-    scale, including peaks above 1. Invalid/truncated/non-finite audio raises
-    ValueError rather than silently contaminating spectra and correlations.
+    Container parsing needs only the standard library, so publishing listening
+    results does not require the optional numerical analysis environment.
     """
     with open(path, "rb") as stream:
         header = stream.read(12)
@@ -64,6 +61,19 @@ def read_wav(path):
         raw = stream.read(size)
         if len(raw) != size:
             raise ValueError("truncated sample data")
+    return raw, tag, channels, rate
+
+
+def read_wav(path):
+    """Return (frames x channels float64 samples, sample rate).
+
+    PCM uses 32768 units per full scale; float values retain their original
+    scale, including peaks above 1. Invalid/truncated/non-finite audio raises
+    ValueError rather than silently contaminating spectra and correlations.
+    """
+    import numpy as np
+
+    raw, tag, channels, rate = read_wav_bytes(path)
     samples = np.frombuffer(raw, dtype="<i2" if tag == 1 else "<f4").astype(np.float64)
     if tag == 1:
         samples /= 32768.0
