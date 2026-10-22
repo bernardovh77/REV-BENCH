@@ -1,5 +1,14 @@
 # REV-BENCH — Research notes (stage 0)
 
+## 2026-10-22 — selective exhaust rollback requested
+
+Bernardo prefers the accepted pre-13b-r I6 and flat-V8 exhaust sound. Restore
+those researched Supersprint/Tubi-inspired configurations from 1d6c64a, retain
+I6 8500 rpm, and keep cross V8's current 7500-rpm rear-delete X. This is a
+controlled selection of the existing researched models, not a new physical
+correction or permission to implement the audit backlog. See
+[rollback notes](docs/stage-13b-r-rollback.md). Hold after refreshed results.
+
 ## 2026-10-22 — sound/physics audit, no tuning changes
 
 The complete review is in [the sound physics audit](docs/sound-physics-audit-2026-10-22.md),

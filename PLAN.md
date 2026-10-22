@@ -5,13 +5,20 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current checkpoint — sound/physics review (2026-10-22):** Bernardo requests
-an audit, the complete findings list, then a hold. The review is complete in
+**Current request — selective sound rollback (2026-10-22):** restore the flat
+V8's accepted pre-13b-r exhaust sound; restore that I6 exhaust sound while
+retaining 8500 rpm. Keep the cross V8's sharper exhaust and 7500 rpm limit.
+The consolidated result is regenerated and verified with all long coasts;
+hold now. Scope and
+validation: [rollback notes](docs/stage-13b-r-rollback.md). Audit fixes and stage
+14 are outside this request.
+
+**Previous checkpoint — sound/physics review (2026-10-22):** the review is complete in
 [the sound physics audit](docs/sound-physics-audit-2026-10-22.md): 27 findings,
 with confirmed implementation issues separated from model and validation gaps.
-No production physics/tuning or current recordings were changed. Research-based
-fixes require his next instruction; S1/S1e/S2/S4/full 13b remain open and stage
-14 remains unstarted. This review hold supersedes older continuation requests.
+No production physics/tuning or recordings were changed during that audit.
+Its findings remain a backlog; S1/S1e/S2/S4/full 13b remain open and stage
+14 remains unstarted. The latest rollback request lifts the hold only for this scope.
 
 **Realism is the absolute priority across the whole project.** Computational efficiency
 serves that goal. The program may be heavier and require more processing power on the
@@ -27,7 +34,12 @@ a sound check (working agreement 6).
 
 ### Latest listening feedback — 2026-10-22
 
-**New request — stage 13b-r:** sharpen the I6 and both V8s near the top of
+**Selective rollback:** Bernardo requests the earlier flat-V8 sound and the
+earlier I6 exhaust with its higher rev limit retained. The cross V8 stays as
+currently heard. This supersedes the I6/flat-V8 exhaust choices below, not the
+raised I6 limit. Hold after the updated listening checkpoint.
+
+**Earlier request — stage 13b-r:** sharpen the I6 and both V8s near the top of
 their rev ranges using researched exhaust physics. Raise the I6 from 7000
 to **8500 rpm** and the cross V8 from 7000 to **7500 rpm**; retain the flat
 V8's **9000 rpm** limit. Target the final approximately 1000 rpm with coherent
@@ -127,7 +139,7 @@ gets a one-line summary of anything that changed from the plan.
 | 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open; newer physical-model timing in docs/stage-13b-r.md |
 | 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work; Bernardo accepts the improved sound. One current results file includes all long coasts; full 13b remains open |
-| 13b-r | High-RPM exhaust character and revised rev limits | Sound realism | ✅ | I6 8500, cross V8 7500, flat V8 9000 rpm; race Y/X paths, native/WASM conservation and convergence verified, consolidated audio ready for listening feedback; docs/stage-13b-r.md |
+| 13b-r | High-RPM exhaust character and revised rev limits | Sound realism | ✅ | Selective rollback: I6 retains 8500 with its earlier twin exhaust, flat V8 restores its earlier Tubi-style path at 9000; cross V8 keeps 7500/rear-delete X. See docs/stage-13b-r-rollback.md; hold after updated results |
 | A1 | Complete sound and engine-physics audit | Review | ✅ | 27 findings in docs/sound-physics-audit-2026-10-22.md; audit only, no fixes applied. Hold for Bernardo's instructions; open sound/13b acceptance stays open |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |

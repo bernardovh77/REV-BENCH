@@ -28,7 +28,7 @@ void test_exhaust_researched_topology(void)
             CHECK(pipe->cell >= engine.cell_pool && pipe->cell + pipe->cells <= engine.cell_pool + RB_ENGINE_CELLS);
         }
         CHECK(cells <= RB_ENGINE_CELLS);
-        {
+        if (p != 3) {
             CHECK(d.center_length > 0.0);
             CHECK_NEAR(engine.link[0].length, d.link_length, 1e-15);
         }
@@ -39,11 +39,10 @@ void test_exhaust_researched_topology(void)
         }
         if (p == 1) {
             CHECK_EQ_INT(engine.collectors, 2);
-            CHECK_EQ_INT(engine.systems, 1);
-            CHECK(engine.link[0].end[1].chamber == &engine.junction);
-            CHECK(engine.link[1].end[1].chamber == &engine.junction);
-            CHECK(engine.muffler[0].end[0].chamber == &engine.junction);
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0738, 1e-15);
+            CHECK_EQ_INT(engine.systems, 2);
+            CHECK(engine.link[0].end[1].chamber == rb_pipe_end_cell(&engine.muffler[0], 0));
+            CHECK(engine.link[1].end[1].chamber == rb_pipe_end_cell(&engine.muffler[1], 0));
+            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0516, 1e-15);
         }
         if (p == 2) {
             CHECK(engine.exhaust_pipe[0].end[1].chamber == &engine.junction);
@@ -54,9 +53,8 @@ void test_exhaust_researched_topology(void)
         }
         if (p == 3) {
             CHECK_EQ_INT(d.muffler_type, RB_MUFFLER_NONE);
-            CHECK(engine.exhaust_pipe[0].end[1].chamber == &engine.junction);
-            CHECK(engine.exhaust_pipe[1].end[1].chamber == &engine.junction);
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0611, 1e-15);
+            CHECK_NEAR(engine.tailpipe[0].diameter, 0.060, 1e-15);
+            CHECK_NEAR(d.junction_volume, 0.0, 0.0);
         }
         if (p == 4) {
             CHECK_EQ_INT(engine.collectors, 1);

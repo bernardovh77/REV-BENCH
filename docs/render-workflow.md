@@ -1,5 +1,10 @@
 # Current sound results
 
+Latest selection (2026-10-22): restore the accepted pre-13b-r I6 and flat-V8
+exhaust sounds; I6 keeps 8500 rpm, flat V8 stays 9000 rpm. Cross V8 keeps the
+sharper 7500-rpm rear-delete X. See [rollback notes](stage-13b-r-rollback.md).
+The single result and long-coast workflow below is retained.
+
 2026-10-22. Bernardo accepted the researched exhaust changes: "I consider the
 changes a success" and "a lot better". He requested removal of old renders and
 one result file at the end of each checkpoint, including the long coasts and

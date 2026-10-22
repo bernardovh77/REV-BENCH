@@ -1,5 +1,10 @@
 # Stage 13b-r — high-RPM exhaust character
 
+Current selection: [selective rollback](stage-13b-r-rollback.md) restores the
+pre-13b-r I6/flat-V8 exhausts. I6 stays 8500 rpm, cross V8 keeps this stage's
+7500-rpm rear-delete X setup, flat V8 stays 9000 rpm. The measurements and
+Kline/BimmerWorld choices below describe the earlier 13b-r checkpoint.
+
 Subsequent review: Bernardo describes these renders as “Decent” and requests
 an audit of all sound stages. See [the complete audit](sound-physics-audit-2026-10-22.md)
 for confirmed issues and remaining physics/realism validation. The current

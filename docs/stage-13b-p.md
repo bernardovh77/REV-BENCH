@@ -1,8 +1,10 @@
 # Stage 13b-p — researched exhaust configurations
 
-The configurations and measurements below record stage 13b-p. The current
-I6 and V8 configurations are superseded by [stage 13b-r](stage-13b-r.md);
-the I4 and boxer configurations are unchanged.
+The configurations and measurements below record stage 13b-p. The latest
+[selective rollback](stage-13b-r-rollback.md) restores its I6 and flat-V8
+exhaust definitions, keeping I6 8500 rpm. Cross V8 retains the 13b-r 7500-rpm
+rear-delete X setup; I4/boxer remain unchanged. Historical performance/audio
+measurements below are not new measurements of this mixed selection.
 
 2026-10-22. The research configurations, extended topology and radiation load
 are implemented. Native/browser validation and the new listening checkpoint are

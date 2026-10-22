@@ -1,5 +1,11 @@
 # Sound and engine-physics audit — 2026-10-22
 
+Configuration follow-up: [the requested selective rollback](stage-13b-r-rollback.md)
+restores the pre-13b-r I6/flat-V8 exhausts. The audit below remains evidence for
+the reviewed commit, not a fresh audit of that selection. In particular, the
+I6/flat-V8 bypass examples and flat-V8 X describe the superseded configuration;
+their underlying source-model limitations have not been repaired.
+
 **Review checkpoint: hold for Bernardo's instructions.** Reviewed production
 commit `bd98ab9438e6165f8aea669cebd8d2c6670508a0`. The current sound is a useful,
 improved checkpoint, but it is not yet a validated reproduction of these real

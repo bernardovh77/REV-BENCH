@@ -127,8 +127,8 @@ test('the browser loads the high-rev presets and their real exhaust routes', asy
     return result;
   });
   expect(presets).toEqual([
-    { key: 'i6', limit: 8500, systems: 1, catalyst: 0, muffler: 1 },
+    { key: 'i6', limit: 8500, systems: 2, catalyst: 25, muffler: 1 },
     { key: 'v8-cross', limit: 7500, systems: 2, catalyst: 25, muffler: 0 },
-    { key: 'v8-flat', limit: 9000, systems: 2, catalyst: 0, muffler: 0 },
+    { key: 'v8-flat', limit: 9000, systems: 2, catalyst: 25, muffler: 0 },
   ]);
 });

@@ -28,9 +28,9 @@ from audio_wav import read_wav_bytes
 ROOT = Path(__file__).resolve().parents[1]
 ENGINES = {
     "i4": ("Inline four", "Toyota 1AZ-FE · BRExhaust inspiration"),
-    "i6": ("Inline six", "Prepared 8,500 rpm I6 · BimmerWorld/MagnaFlow race Y inspiration"),
+    "i6": ("Inline six", "8,500 rpm I6 · restored Supersprint-inspired twin exhaust"),
     "v8-cross": ("Cross-plane V8", "7,500 rpm Mustang-inspired V8 · 3-inch X + rear muffler delete"),
-    "v8-flat": ("Flat-plane V8", "9,000 rpm Ferrari 458 inspiration · Kline X, valves open"),
+    "v8-flat": ("Flat-plane V8", "9,000 rpm Ferrari 458 inspiration · restored Tubi-style exhaust"),
     "boxer4": ("Boxer four", "Subaru FB20 · HKS inspiration"),
 }
 STANDARD = {

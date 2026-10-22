@@ -4,6 +4,32 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: selective I6/flat-V8 sound rollback
+
+- Bernardo requests the accepted exhaust sound from before 13b-r for flat V8
+  and I6, preserving I6 8500 rpm and the complete current cross-V8 setup.
+  Restore cases 1 and 3 of exhaust_models.c exactly from commit 1d6c64a.
+  Cross V8 retains 7500 rpm, rear muffler delete, X and the packed control.
+  Flat V8 remains 9000 rpm; I4/boxer are unchanged.
+- The I6 returns to unequal headers and twin Supersprint-inspired 54-mm OD
+  paths with catalysts/packed rears. Flat V8 returns to its Tubi-inspired
+  unvalved 60-mm equivalent bores, original lengths and retained catalysts.
+  Generic X/Y/radiation/catalyst APIs and the audit diagnostic remain available.
+- Complete: rebuilt WASM and single RESULTS.html with all 34 examples and five
+  long coasts. All 27 unaffected WAVs/previews, including all 10 cross-V8 clips,
+  are byte-identical to the starting checkpoint. Four flat-V8 sources and the
+  held I6 exactly match accepted pre-13b-r hashes. All 59 references unchanged.
+- Native 175/4472, SIMD WASM 15/2022, ASan/UBSan exhaust 6/1712, Python 29, web 17,
+  production build and two Chromium checks per mode pass. Full validation:
+  docs/stage-13b-r-rollback.md and ignored renders/evidence/13b-r-rollback/.
+  Graphify queried/refreshed via AST: 1890 nodes/5111 edges/89 communities,
+  known rb.h extraction limit 415. Actual I6 peak 8425.70 rpm confirms the
+  retained 8500-rpm soft-limiter range. Generic solver/source physics unchanged.
+- This is a requested preference rollback, not implementation of the audit
+  fixes. Prior sound-physics findings describe commit bd98ab9; bypass and
+  flat-V8-X examples there are historical after this rollback. S1/S1e/S2/S4/
+  full 13b stay open, stage 14 unstarted. Hold now for Bernardo's instructions.
+
 ## 2026-10-22: complete sound/physics review — hold for instructions
 
 - Bernardo requests an audit of all sound stages, a list of mistakes/gaps,

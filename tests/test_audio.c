@@ -687,9 +687,8 @@ void test_audio_cylinders_sound_apart(void)
             d.muffler_area = p ? 0.0028 : 0.0021;
             d.tailpipe_length = p ? 0.7 : 0.6;
             d.tailpipe_diameter = p ? 0.06 : 0.05;
-            /* 13b-r's race I6 intentionally has compensated equal paths.
-             * This historical mechanism check needs its original unequal
-             * production-manifold fixture, including the catalyst loss. */
+            /* Keep the unequal production-manifold mechanism fixture and
+             * its catalyst loss explicit, independently of preset tuning. */
             if (p) {
                 static const double header[6] = { .48, .40, .32, .32, .40, .48 };
                 for (int i = 0; i < 6; i++) d.header_length[i] = header[i];
