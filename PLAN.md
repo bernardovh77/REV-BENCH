@@ -5,7 +5,17 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — selective sound rollback (2026-10-22):** restore the flat
+**Current request — initial audio bottleneck diagnosis (2026-10-22):** review
+the architecture and assess the proposed neural-audio failure modes. The
+[diagnostic notes](docs/audio-bottleneck-diagnosis-2026-10-22.md) confirm that
+the current renderer is physical/procedural, with no trained neural generator
+or loss function. Inspect spatial/mean-flow acoustic transport and source
+coupling first; final output limiting is inactive in the current recordings.
+These are ranked hypotheses and proposed measurements, not authorization to
+implement the audit backlog or replace the renderer. Current sound and open
+stage statuses are preserved; hold development after this review.
+
+**Previous request — selective sound rollback (2026-10-22):** restore the flat
 V8's accepted pre-13b-r exhaust sound; restore that I6 exhaust sound while
 retaining 8500 rpm. Keep the cross V8's sharper exhaust and 7500 rpm limit.
 The consolidated result is regenerated and verified with all long coasts;

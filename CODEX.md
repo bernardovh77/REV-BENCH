@@ -4,6 +4,32 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: initial audio bottleneck diagnosis
+
+- Bernardo asks for an architecture review and initial bottleneck hypothesis,
+  using common neural-audio failure modes as questions. Notes and proposed
+  first experiment: docs/audio-bottleneck-diagnosis-2026-10-22.md.
+- Current C renderer is physics/procedural, without a trained audio model,
+  vocoder or training loss. Default output/engine/pipe rates are 48/192/48 kHz;
+  the coarse CSV is telemetry, not audio-generation input. Native recordings
+  contain the engine; interactive browser engine integration awaits stage 14.
+- First suspect: spatial and mean-flow acoustic attenuation; the existing
+  S2b frictionless 800-Hz moving-packet fixture retains about 59.9% energy.
+  Next inspect procedural high-frequency source conditions/transmission,
+  topology and excitation/state transitions. Audible importance remains a
+  hypothesis; average torque convergence does not validate audio transport.
+- Fresh hash-verified raw measurements: all 33 engine WAV peaks below the
+  output limiter knee. Current logs report no limited samples. Long-coast
+  crest I6/cross/flat is 16.11/19.99/17.93 dB. Whole-clip scalar preview gain
+  preserves temporal dynamics but masks between-clip absolute levels.
+  Evidence: renders/evidence/audio-bottleneck-2026-10-22/measurements.json.
+- Primary DDSP/HiFi-GAN/DiffWave papers inform the conditional neural advice;
+  no GAN/diffusion implementation is authorized. Current I6/flat rollback
+  remains selected; historical bypass/flat-X examples are superseded.
+- Graphify queried; documentation-only review, no code-graph refresh needed.
+  No production or test sources/audio/Claude setup changed; no suite rerun.
+  S1/S1e/S2/S4/full 13b remain open, stage 14 unstarted. Hold development.
+
 ## 2026-10-22: selective I6/flat-V8 sound rollback
 
 - Bernardo requests the accepted exhaust sound from before 13b-r for flat V8
