@@ -40,6 +40,8 @@ void test_blowdown_converges_with_time_step(void);
 void test_stiff_equalisation_has_no_overshoot(void);
 void test_mixing_tracks_species(void);
 void test_filling_heats_the_tank(void);
+void test_chamber_batch_matches_scalar(void);
+void test_chamber_batch_repairs(void);
 /* ---- pipes (tests/test_pipe.c) ---- */
 void test_pipe_cells(void);
 void test_pipe_pulse_travels_at_the_speed_of_sound(void);
@@ -223,6 +225,8 @@ static const struct {
     T(test_stiff_equalisation_has_no_overshoot),
     T(test_mixing_tracks_species),
     T(test_filling_heats_the_tank),
+    T(test_chamber_batch_matches_scalar),
+    T(test_chamber_batch_repairs),
     T(test_pipe_cells),
     T(test_pipe_pulse_travels_at_the_speed_of_sound),
     T(test_pipe_friction),

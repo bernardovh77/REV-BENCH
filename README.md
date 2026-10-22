@@ -12,9 +12,10 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** stages 0-13 of 26 done, with ongoing sound work through S2b.
-S1/S2/S4 and listening acceptance remain open. See [the current feedback and
-research notes](docs/stage-S2b.md) and `docs/user-sound-references.md` for local examples.
+**Status:** stages 0-13 of 26 done, with sound work through S2b and a performance
+checkpoint in 13b. See [the current checkpoint](docs/stage-13b.md) for speed,
+unchanged sound and remaining performance requirements. S1/S2/S4 acceptance
+remains open; `docs/user-sound-references.md` documents the local examples.
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe

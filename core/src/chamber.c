@@ -133,6 +133,91 @@ void rb_chamber_integrate(rb_chamber *ch, double dt)
     rb_chamber_update(ch);
 }
 
+void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt)
+{
+    /* Eight lanes keep the scratch data in L1. The arithmetic within each
+     * lane has the scalar solver's order, without reductions across cells
+     * or fast-math (NaN guards remain meaningful). */
+    enum { LANES = 8 };
+    int base = 0;
+    for (; base + LANES <= count; base += LANES) {
+        double c[5][LANES], a[5][LANES], constant[LANES];
+        double target[LANES], guess[LANES], T[LANES], Tc[LANES], cv[LANES];
+        double correction[LANES], per_kg[LANES];
+        int active[LANES];
+        for (int j = 0; j < LANES; j++) {
+            rb_chamber *g = &ch[base + j];
+            active[j] = 0;
+            /* Unusual inputs retain the complete scalar repair path. */
+            int normal = !g->fixed && isfinite(g->U + g->dU * dt);
+            double mass = 0.0;
+            for (int s = 0; s < RB_NSPECIES; s++) {
+                const double m = g->m[s] + g->dm[s] * dt;
+                normal &= m >= 0.0 && m < INFINITY;
+                mass += m;
+            }
+            normal &= mass > RB_MASS_EPS && mass < INFINITY;
+            if (!normal) {
+                rb_chamber_integrate(g, dt);
+                /* Dummy air lanes avoid undefined uninitialised arithmetic. */
+                for (int k = 0; k < 5; k++) c[k][j] = a[k][j] = 0.0;
+                c[0][j] = a[0][j] = 1.0;
+                constant[j] = target[j] = 0.0;
+                guess[j] = T[j] = Tc[j] = RB_T_REF;
+                per_kg[j] = 0.0;
+                continue;
+            }
+            for (int s = 0; s < RB_NSPECIES; s++) g->m[s] += g->dm[s] * dt;
+            g->U += g->dU * dt;
+            g->mass = mass;
+            per_kg[j] = 1.0 / mass;
+            for (int s = 0; s < RB_NSPECIES; s++) g->y[s] = g->m[s] * per_kg[j];
+            remix(g);             /* unchanged 1e-8 threshold and coefficients */
+            target[j] = g->U * per_kg[j];
+            guess[j] = g->T;
+            if (g->cv > 0.0) guess[j] += (target[j] - g->u) / g->cv;
+            T[j] = guess[j] > 0.0 && guess[j] < INFINITY ? guess[j] : RB_T_REF;
+            Tc[j] = T[j] < RB_T_LO ? RB_T_LO : T[j] > RB_T_HI ? RB_T_HI : T[j];
+            const int low = T[j] <= RB_T_MID;
+            const double *cp = low ? g->gas.lo : g->gas.hi;
+            const double *up = low ? g->gas.ulo : g->gas.uhi;
+            for (int k = 0; k < 5; k++) { c[k][j] = cp[k]; a[k][j] = up[k]; }
+            constant[j] = low ? g->gas.k_lo : g->gas.k_hi;
+            active[j] = 1;
+        }
+        /* No calls or loop-carried dependencies in the hot polynomial loop.
+         * Clang/GCC can use SIMD without reassociating a cell's arithmetic. */
+#if defined(__clang__)
+#pragma clang loop vectorize(enable) interleave(disable) unroll(disable)
+#endif
+        for (int j = 0; j < LANES; j++) {
+            const double clamp = Tc[j];
+            const double t = clamp * 1e-3;
+            cv[j] = c[0][j] + t * (c[1][j] + t * (c[2][j] + t * (c[3][j] + t * c[4][j])));
+            const double u = constant[j] + clamp *
+                (a[0][j] + t * (a[1][j] + t * (a[2][j] + t * (a[3][j] + t * a[4][j]))));
+            correction[j] = (u + cv[j] * (T[j] - clamp) - target[j]) / cv[j];
+            T[j] -= correction[j];
+        }
+        for (int j = 0; j < LANES; j++) {
+            if (!active[j]) continue;
+            rb_chamber *g = &ch[base + j];
+            g->u = target[j];
+            if (T[j] < 1.0) T[j] = 1.0;
+            if (isfinite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]) {
+                g->T = T[j];
+                g->cv = cv[j];
+            } else {
+                /* Restart from the original guess, so even the iteration cap
+                 * and the last-iteration cv match the scalar solver. */
+                g->T = rb_gas_T_cv_from_u(&g->gas, target[j], guess[j], &g->cv);
+            }
+            derive(g, per_kg[j]);
+        }
+    }
+    for (; base < count; base++) rb_chamber_integrate(&ch[base], dt);
+}
+
 /* One trapezoidal volume step for a chamber with gas in it. */
 static void volume_step(rb_chamber *ch, double V_new)
 {

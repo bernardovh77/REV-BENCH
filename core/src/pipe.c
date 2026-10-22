@@ -382,8 +382,10 @@ void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
         if (cell_is_fast(p, k)) continue;
         const double v = velocity(p, k, flow[k], flow[k + 1]);
         cell_heat(p, k, (v == v) ? 0.5 * v * v : 0.0, flow[k], flow[k + 1], dt, per_dt);
-        rb_chamber_integrate(&p->cell[k], dt);
     }
+    const int first = p->fast[0] ? 1 : 0;
+    const int last = n - (p->fast[1] ? 1 : 0);
+    rb_chamber_integrate_many(p->cell + first, last > first ? last - first : 0, dt);
     p->since = 0.0;       /* their rates are in */
 }
 

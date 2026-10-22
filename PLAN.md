@@ -17,7 +17,7 @@ gained a sound-realism track (stages S1–S5). Its targets come from recordings 
 and `tools/compare_real.py` measures them (RESEARCH.md, "Sound realism"). Every stage also keeps
 a sound check (working agreement 6).
 
-### Latest listening feedback — 2026-10-21
+### Latest listening feedback — 2026-10-22
 
 Bernardo heard little noticeable difference in the recent S1d comparisons. This feedback
 does not establish an audible realism improvement or resolve the S1 listening checkpoint.
@@ -36,10 +36,11 @@ before/after simulation comparisons support regression checks.
 - **More references when needed:** seek additional engine recordings and sounds, or ask
   Bernardo for targeted examples. He can provide sounds he finds useful for development.
   Apply working agreements 7–8 to this investigation and every other realism problem.
-- **Status:** Bernardo resumed development toward stage 13b with a consolidated
-  feedback checkpoint at its entry. That checkpoint is now prepared in
-  `docs/checkpoint-13b.md`, including the requested longer pull/coast scenarios.
-  Stop for feedback before the performance refactor or stage 14. S1/S2/S4 stay
+- **Status (2026-10-22):** Bernardo approved proceeding from the S2b renders
+  through stage 13b and then holding for feedback. The performance pass and
+  its accuracy investigation are documented in `docs/stage-13b.md`; the older
+  `docs/checkpoint-13b.md` is historical. Stop at the new checkpoint before
+  stage 14. S1/S2/S4 stay
   open wherever numerical checks or Bernardo's listening approval remain unmet;
   later implementation work does not establish completed sound acceptance.
 - **Latest listening feedback (S2b):** Bernardo confirmed the I6/flat-V8 boom
@@ -49,7 +50,9 @@ before/after simulation comparisons support regression checks.
   The cross-plane example uses unfilled exhaust pipes for a clearer high-RPM
   note; its previous packed setup remains selectable. Research, rejected
   timing controls, new listening pairs and limits: `docs/stage-S2b.md`.
-  This is an implementation improvement, not listening approval or completed S1.
+  Bernardo subsequently said the renders seem okay and authorized using them
+  as the performance regression baseline. This does not close S1's numerical
+  or ignition-model requirements or establish full S2/S4 acceptance.
 
 Each stage below is sized to fit in **one prompt**. To continue, just say *"do stage N"*
 (or *"next stage"*). After each stage, its box in the tracker is ticked and the "Notes" column
@@ -89,7 +92,8 @@ gets a one-line summary of anything that changed from the plan.
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
-| 13b| Performance II: vectorized pipes, implicit valves| Sound            | ⬜     | Requested feedback checkpoint at entry; benchmark/acceptance gaps in docs/checkpoint-13b.md; optimization remains next |
+| 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
+| 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Feedback checkpoint reached; optimization delivered, implicit probe rejected on pumping accuracy. Full SoA/implicit-valve and 4×/2× acceptance remain open (docs/stage-13b.md) |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |
@@ -674,11 +678,20 @@ the car the four idling has −18 dB of its energy above 1 kHz, like the recorde
 - **Bernardo checks:** listen on headphones.
 
 #### Stage 13b — Performance II: vectorized pipes, implicit valves
-**Feedback checkpoint requested here (2026-10-21).** Review
-`docs/checkpoint-13b.md` and the real-reference, old/current, stereo-scene and
-extended pull/coast recordings before starting the performance refactor or
-stage 14. S1/S2/S4 acceptance stays open wherever numerical or listening checks
-are unresolved; reaching this consolidated review does not complete them.
+**Feedback checkpoint reached (2026-10-22).** Bernardo said the S2b renders
+seem okay and authorized proceeding from them. See `docs/stage-13b.md` for the
+new performance work and validation, including the unchanged long coasts.
+Hold here before stage 14. The earlier `docs/checkpoint-13b.md` describes the
+entry checkpoint. S1/S2/S4 acceptance stays open wherever numerical or listening
+checks are unresolved; this approval does not complete those requirements.
+
+**Small-stage split (working agreement 2):** 13b-a batches pipe thermodynamics
+in a temporary structure-of-arrays workspace and vectorizes mixture rebuilds,
+without replacing the canonical chamber storage or changing valve physics.
+The full persistent SoA/face refactor and a genuinely coupled implicit valve
+solve remain in 13b. A frozen-property backward-Euler orifice probe increases
+the low-rate pumping error and is rejected. The 4×/2× target below is retained
+and remains unmet; do not advance to stage 14 or call the whole stage complete.
 
 Split from stage 13 (working agreement 2), whose cheap wins brought the cross-plane V8 from 0.59×
 to 0.76× real time natively at high quality, and its quality setting to 1.84× at low

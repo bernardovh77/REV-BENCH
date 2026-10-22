@@ -91,13 +91,15 @@ void rb_gas_init(rb_gas *g, const double y[RB_NSPECIES])
     const double wa = w[RB_AIR], wf = w[RB_FUEL], wb = w[RB_BURNED];
     const double R = wa * a->R + wf * f->R + wb * b->R;
     g->R = R;
+    /* Keep each coefficient and its integral together in this loop. Each
+     * coefficient is independent, so SIMD does not reorder species sums. */
+#if defined(__clang__)
+#pragma clang loop vectorize(enable) interleave(disable) unroll(disable)
+#endif
     for (int k = 0; k < 5; k++) {
-        g->lo[k] = wa * a->lo[k] + wf * f->lo[k] + wb * b->lo[k];
-        g->hi[k] = wa * a->hi[k] + wf * f->hi[k] + wb * b->hi[k];
-    }
-    g->lo[0] -= R;
-    g->hi[0] -= R;
-    for (int k = 0; k < 5; k++) {
+        const double subtract_R = k == 0 ? R : 0.0;
+        g->lo[k] = (wa * a->lo[k] + wf * f->lo[k] + wb * b->lo[k]) - subtract_R;
+        g->hi[k] = (wa * a->hi[k] + wf * f->hi[k] + wb * b->hi[k]) - subtract_R;
         g->ulo[k] = g->lo[k] * INTEGRAL[k];
         g->uhi[k] = g->hi[k] * INTEGRAL[k];
     }

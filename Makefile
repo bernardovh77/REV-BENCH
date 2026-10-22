@@ -23,6 +23,7 @@
 #   make bench        how fast the core runs: each preset held wide open at
 #                     3000 rpm, then the pieces the profile points at
 #   make bench-wasm   the same as WebAssembly, run by Node (needs zig and node)
+#   make test-wasm    run gas/batched-cell/pipe checks in the SIMD WASM build
 #   make audit        five-preset S1 physics baseline to renders/s1-audit/physics.csv
 #   make clean        delete build output
 #   make help         show this text
@@ -46,8 +47,18 @@ BUILD    ?= build
 # Optional isolated render sets; defaults retain the normal listening outputs.
 RENDER_DIR   ?= renders
 RENDER_FLAGS ?=
-CFLAGS   ?= -O2 -g
+CFLAGS   ?= -O3 -g
 CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
+# Strict double arithmetic: keep NaN checks and each cell's operation order.
+# Disable LTO with LTO=0 for tools/profilers that require separate objects.
+LTO ?= 1
+ifneq ($(SAN),1)
+ifeq ($(LTO),1)
+  CFLAGS  += -flto
+  LDFLAGS += -flto
+endif
+endif
+CFLAGS += -ffp-contract=off
 CPPFLAGS += -Icore/include -Icore/src -Inative -MMD -MP
 LDLIBS   += -lm
 
@@ -73,7 +84,7 @@ TESTS := $(BUILD)/rb_tests
 BENCH := $(BUILD)/rb_bench
 AUDIT := $(BUILD)/rb_audit
 
-.PHONY: all test render wasm bench bench-wasm audit fuzz clean help
+.PHONY: all test test-wasm render wasm bench bench-wasm audit fuzz clean help
 
 all: $(CLI)
 
@@ -89,7 +100,7 @@ $(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 $(AUDIT): $(AUDIT_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(BUILD)/%.o: %.c
+$(BUILD)/%.o: %.c Makefile
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
@@ -157,7 +168,8 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_get_pipe_cell rb_pipe_cell_field_count rb_pipe_cell_field_name rb_pipe_cell_field_unit \
     rb_sample_rate rb_oversample rb_physics_dt rb_pipe_rate rb_alloc_floats rb_free_floats
 comma := ,
-WASM_FLAGS := -target wasm32-wasi -mexec-model=reactor -O3 -g0 -std=c11 \
+WASM_OPT ?= -O3 -msimd128 -flto -ffp-contract=off
+WASM_FLAGS := -target wasm32-wasi -mexec-model=reactor $(WASM_OPT) -g0 -std=c11 \
     -Wall -Wextra -Icore/include -Icore/src -Wl$(comma)--strip-debug \
     $(foreach f,$(WASM_EXPORTS),-Wl$(comma)--export=$(f))
 
@@ -167,7 +179,7 @@ wasm: $(BUILD)/rb_core.wasm
 	@cat $(sort $(CORE_SRC) $(CORE_HDR)) | sha256sum | cut -d' ' -f1 > $(WASM_SUM)
 	@echo "wrote $(WASM_OUT) ($$(wc -c < $(WASM_OUT)) bytes) and $(WASM_SUM)"
 
-$(BUILD)/rb_core.wasm: $(CORE_SRC) $(CORE_HDR)
+$(BUILD)/rb_core.wasm: $(CORE_SRC) $(CORE_HDR) Makefile
 	@mkdir -p $(@D)
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc $(WASM_FLAGS) $(CORE_SRC) -o $@
 
@@ -176,10 +188,21 @@ $(BUILD)/rb_core.wasm: $(CORE_SRC) $(CORE_HDR)
 bench-wasm: $(BUILD)/rb_bench.wasm
 	node tools/bench_wasm.mjs $<
 
-$(BUILD)/rb_bench.wasm: native/rb_bench.c $(CORE_SRC) $(CORE_HDR)
+$(BUILD)/rb_bench.wasm: native/rb_bench.c $(CORE_SRC) $(CORE_HDR) Makefile
 	@mkdir -p $(@D)
-	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi -O3 -g0 -std=c11 \
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
 	  -Wall -Wextra -Icore/include -Icore/src native/rb_bench.c $(CORE_SRC) -o $@
+
+# These tests need no filesystem access: the same C assertions exercise the
+# actual WebAssembly SIMD and scalar-fallback code, not only its exports.
+WASM_TEST_FILTER ?= chamber_batch gas pipe_acoustic_transport pipe_conserves_everything pipe_two_rates_agree
+test-wasm: $(BUILD)/rb_tests.wasm
+	node tools/bench_wasm.mjs $< $(WASM_TEST_FILTER)
+
+$(BUILD)/rb_tests.wasm: $(TEST_SRC) $(CORE_SRC) $(CORE_HDR) $(NATIVE_SRC) tests/rb_test.h Makefile
+	@mkdir -p $(@D)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
+	  -Wall -Wextra -Icore/include -Icore/src -Inative $(TEST_SRC) $(CORE_SRC) $(NATIVE_SRC) -o $@
 
 clean:
 	rm -rf build build-san

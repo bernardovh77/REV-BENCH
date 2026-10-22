@@ -99,6 +99,12 @@ static inline void rb_chamber_add_heat(rb_chamber *ch, double qdot)
 /* Applies the collected rates over dt (forward Euler) and updates. */
 void rb_chamber_integrate(rb_chamber *ch, double dt);
 
+/* Contiguous pipe cells, with the same integration and repair rules. A small
+ * structure-of-arrays workspace evaluates their first Newton correction in
+ * parallel; difficult states use the scalar solver. No persistent shadow
+ * state: faces and the public cell API always see the updated chambers. */
+void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt);
+
 /* Moves dm kg of gas (negative: takes it away) of composition y carrying
  * enthalpy h straight into the chamber's masses and energy, without waiting
  * for the end of the step. Its total mass follows at once; T, p and the rest

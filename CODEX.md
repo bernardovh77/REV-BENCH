@@ -4,6 +4,52 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: stage 13b performance feedback checkpoint
+
+- Bernardo said the S2b renders seem okay and authorized proceeding from them
+  through 13b, followed by a hold for feedback. The entry hold in the older
+  sections was lifted for this pass. **Hold now before further 13b or stage 14.**
+- 13b-a is complete: eight-cell SoA thermodynamic scratch kernel, scalar
+  repair/Newton fallback, vectorized mixture coefficient rebuild, native
+  O3/LTO and WASM SIMD/LTO. Canonical chambers, the fast port cells, 1e-8
+  remix threshold, default rates/grid and all sound/calibration settings stay.
+  This is not the full persistent pipe/face SoA conversion.
+- All 23 standard float WAVs and three extended stereo coasts are byte-identical
+  to S2b. All 25 engine diagnostics are clean. The three current MP3 previews
+  reuse verified encodings of the same float source. Raw audio, telemetry,
+  hashes, plots and commands remain ignored in renders/stage-13b/.
+- Three interleaved benchmark rounds: cross V8 native 0.546x -> 0.649x,
+  WASM 0.455x -> 0.485x (about 19%/7% higher throughput). These time engine
+  physics, not stereo audio or worklet deadlines. Host variation is retained
+  in benchmarks.json; small gains on other presets need cautious interpretation.
+- A research-only frozen-property backward-Euler orifice probe worsens
+  96 kHz motored WOT pumping error vs 192 kHz: I4 10.78% -> 20.93%, cross V8
+  12.66% -> 29.87%, with pipes fixed at 48 kHz. It omits port-face coupling,
+  freezes thermal coefficients and applies to all orifices. Rejected: no
+  probe code/option enters the core. Patch/source/results stay local.
+- Full 13b remains open: persistent pipe/face SoA, properly coupled implicit
+  valve accuracy, and 4x native/2x WASM at default quality are unresolved.
+  PLAN.md records the small-stage split explicitly; do not mark the whole
+  stage complete, lower default quality or proceed to 14 at this checkpoint.
+- Native 167 tests/2709 checks; focused ASan/UBSan 5 tests/149 checks
+  (detect_leaks=0 for sandbox ptrace); direct SIMD WASM C tests 9/310;
+  all six final mutants caught; 20 randomized ten-second engines have
+  zero failures/repairs (before the final overflow-only guard; final native
+  randomized tests pass too). Python 20, web 17, build and browser audio dev/preview
+  pass. make test-wasm exercises the same physics assertions in WASI.
+- No fresh full dyno sweep, 30-second idle-COV or repetition audit is claimed.
+  Native dyno/conservation tests pass and exact audio identity is established.
+  S1's numerical/ignition requirements and broader S2/S4 acceptance remain
+  open. The permission to proceed from the renders is not blanket completion.
+- The final source fingerprint and SIMD WASM are committed. Native renders and
+  WASM physics/browser checks include the specific-energy overflow guard.
+  Emitted f64x2
+  polynomial operations and native vectorization reports are retained locally.
+- Graphify was queried before exploration and refreshed after the changes.
+  CLAUDE.md/.claude/ and isolated environments are preserved. The checkpoint
+  is committed/synced to main. See docs/stage-13b.md for measured limits,
+  current long-coast examples and reproduction instructions.
+
 ## 2026-10-21: S2b — lift-off contrast and cross-plane redline
 
 - Bernardo confirmed the boom is the louder, higher tone replacing the burble

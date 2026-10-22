@@ -330,6 +330,49 @@ The complete gas scheme is not claimed to be second order or TVD. Existing
 stability guards, two-rate/conservation tests and randomized engines are still
 required. See [the equations, controlled experiments and limits](docs/stage-S2b.md).
 
+## 2026-10-22 — Preserve realism while batching pipe thermodynamics (13b)
+
+The accepted S2b sound is the regression baseline for this performance pass.
+The numerical model, 192 kHz default physics/48 kHz pipes, momentum limiter,
+grid, mixture threshold and source/scene settings are retained. Eight-cell
+SoA scratch arrays expose independent polynomial evaluations to SIMD; each
+lane retains the scalar Horner evaluation and Newton correction. Scalar
+fallback preserves difficult/empty/corrupt states and the iteration limit.
+Canonical chamber storage and the cell API remain shared with the faces.
+
+[LLVM's vectorizer documentation](https://llvm.org/docs/Vectorizers.html)
+distinguishes independent lane arithmetic from reductions that would require
+floating-point reassociation. We use the former, with no fast-math and with
+contraction disabled. [Clang's LTO documentation](https://clang.llvm.org/docs/CommandGuide/clang.html)
+and [the WebAssembly SIMD guide](https://emscripten.org/docs/porting/simd.html)
+describe the build options. GCC's report and emitted WebAssembly `f64x2`
+instructions verify that the new loop vectorizes; enabling a flag alone
+would not establish that. Exact scalar-oracle tests run natively and as WASM.
+
+An isolated frozen-property backward-Euler nozzle probe does **not** establish
+the roadmap's coupled implicit valve/port solution. With all pipes at 48 kHz,
+96 kHz motored WOT pumping error against 192 kHz is 10.78% I4 / 12.66% cross V8;
+the probe worsens it to 20.93% / 29.87%. The baseline's 384 kHz results are
+within 0.32% of 192 kHz in this test. The probe freezes thermal coefficients
+and leaves the neighbouring port momentum face outside the nonlinear solve;
+it also applies to all orifices. These are limitations, not proof that a
+properly coupled implicit method cannot work. Its extra nozzle iterations
+also cost more. It is rejected and kept only in ignored research output.
+
+[SUNDIALS' mathematical discussion](https://sundials.readthedocs.io/en/v6.6.1/cvode/Mathematics_link.html)
+separates stiff integration, nonlinear convergence and error control;
+[COMSOL's integration notes](https://www.comsol.com/support/knowledgebase/1062)
+describe backward Euler's numerical damping. Stability alone is insufficient
+for sound fidelity or accurate pumping. A future coupled solve must include
+the port-face exchange and validate pressure/flow phase, energy/species,
+time-step convergence, sound and cost before lowering the default rate.
+
+All 23 standard float WAVs and three extended stereo coasts are byte-identical
+to S2b, so this pass claims preserved sound and lower computing cost, not a
+new realism gain. Primary recordings retain the same provenance and uncertain
+viewpoints; no reference processing or acoustic calibration changes.
+See [the checkpoint and remaining requirements](docs/stage-13b.md).
+
 The cross-plane sound example also moves from a packed to an unfilled exhaust,
 consistent with the supplied recording's description. This changes modeled
 hardware; it is not calibration of a particular Mustang. The former packed
