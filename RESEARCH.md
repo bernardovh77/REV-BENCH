@@ -1,5 +1,28 @@
 # REV-BENCH — Research notes (stage 0)
 
+## 2026-10-22 — sound/physics audit, no tuning changes
+
+The complete review is in [the sound physics audit](docs/sound-physics-audit-2026-10-22.md),
+with 27 findings, code locations, independent probes, source links and the
+remaining stage acceptance. Implementation issues are separated from known
+approximations and missing validation. Hold for Bernardo's instructions.
+
+Two physical checks are especially consequential. The varied burn can start
+before the recorded ECU spark; flame development must be distinguished from
+the ignition event. The procedural internal-jet model uses upstream density
+to infer throat Mach, so physically choked nozzle flow reads about Mach .58.
+[NASA's compressible-flow derivation](https://www.grc.nasa.gov/www/k-12/airplane/mflchk.html)
+distinguishes these states. Its apparent source-power error must be corrected
+with the empirical coefficient/model validation, not an automatic output boost.
+
+The gas network follows new X/Y/catalyst-bypass/center paths, while procedural
+noise still uses old outlet assignment, incomplete delay and type-only losses.
+Research must join these layers consistently. Perforate impedance and reactive
+versus dissipative muffler physics are described by the
+[COMSOL/KTH muffler example](https://doc.comsol.com/6.4/doc/com.comsol.help.models.aco.perforated_muffler/perforated_muffler.html).
+Conservation and mean torque convergence alone cannot verify these acoustic
+transfers. Robotic deceleration remains a priority with no asserted single cause.
+
 ## 2026-10-22 — model-specific exhausts and outlet loading
 
 Primary manufacturer sources, the numerical geometry ledger and its explicit

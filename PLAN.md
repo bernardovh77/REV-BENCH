@@ -5,6 +5,14 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
+**Current checkpoint — sound/physics review (2026-10-22):** Bernardo requests
+an audit, the complete findings list, then a hold. The review is complete in
+[the sound physics audit](docs/sound-physics-audit-2026-10-22.md): 27 findings,
+with confirmed implementation issues separated from model and validation gaps.
+No production physics/tuning or current recordings were changed. Research-based
+fixes require his next instruction; S1/S1e/S2/S4/full 13b remain open and stage
+14 remains unstarted. This review hold supersedes older continuation requests.
+
 **Realism is the absolute priority across the whole project.** Computational efficiency
 serves that goal. The program may be heavier and require more processing power on the
 user's machine when the increased realism justifies the cost. Document the demonstrated
@@ -120,6 +128,7 @@ gets a one-line summary of anything that changed from the plan.
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open; newer physical-model timing in docs/stage-13b-r.md |
 | 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work; Bernardo accepts the improved sound. One current results file includes all long coasts; full 13b remains open |
 | 13b-r | High-RPM exhaust character and revised rev limits | Sound realism | ✅ | I6 8500, cross V8 7500, flat V8 9000 rpm; race Y/X paths, native/WASM conservation and convergence verified, consolidated audio ready for listening feedback; docs/stage-13b-r.md |
+| A1 | Complete sound and engine-physics audit | Review | ✅ | 27 findings in docs/sound-physics-audit-2026-10-22.md; audit only, no fixes applied. Hold for Bernardo's instructions; open sound/13b acceptance stays open |
 | 14 | Real-time engine in the browser                  | Browser          | ⬜     | First playable 🎮 |
 | 15 | Control panel (presets + parameters)             | Browser          | ⬜     | |
 | 16 | Gauges + live dyno chart                         | Browser          | ⬜     | |

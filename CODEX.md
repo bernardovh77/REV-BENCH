@@ -4,6 +4,33 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-22: complete sound/physics review — hold for instructions
+
+- Bernardo requests an audit of all sound stages, a list of mistakes/gaps,
+  then a hold. No sound fixes are authorized by this review request.
+- Full findings and stage coverage: docs/sound-physics-audit-2026-10-22.md.
+  It records 27 findings: nine confirmed implementation/numerical issues and
+  eighteen model/validation items. P1 priorities include ignition causality,
+  compressible jet source conditions, source routing/transmission, combustion
+  model selection, deceleration diagnosis and acoustic convergence.
+- New tools/sound_physics_audit.c is a read-only diagnostic linked to the
+  unchanged production core. It reproduces heat before recorded spark,
+  wrong sonic Mach inference, X/Y noise isolation, omitted center/link delay,
+  bypass catalyst attenuation, the variation-zero physics discontinuity and
+  interpolation coloration. The fuzzer also omits junction state/repairs.
+- Fresh native 175/4444, Python 29 (no skips), web 17 and ASan/UBSan diagnostic
+  pass. Existing tests do not establish physical correctness of these missing
+  integrations. No new browser e2e/WASM-physics run or fresh complete sound/COV
+  audit is claimed. Retained results are clearly labeled in the review.
+- No production core, preset, web UI, audio, reference or Claude setup changes.
+  Current RESULTS.html and its manifest hashes are preserved; no old audio
+  sets were recreated. Logs/hashes: renders/evidence/sound-audit-2026-10-22/.
+- Graphify queried and AST refreshed: 1883 nodes / 5097 edges / 97 communities;
+  its known rb.h extraction limit remains line 415. This is the code graph
+  refresh, not a new semantic extraction of all research documents.
+- S1/S1e/S2/S4/full 13b stay open; stage 14 stays unstarted. Research fixes and
+  validate realism/runtime only after Bernardo's next instruction. Hold here.
+
 ## 2026-10-22: stage 13b-r — high-rev race exhaust checkpoint
 
 - Bernardo requests a sharper F1-style upper register for I6 and both V8s.

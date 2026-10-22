@@ -1,5 +1,10 @@
 # Stage 13b-r — high-RPM exhaust character
 
+Subsequent review: Bernardo describes these renders as “Decent” and requests
+an audit of all sound stages. See [the complete audit](sound-physics-audit-2026-10-22.md)
+for confirmed issues and remaining physics/realism validation. The current
+recordings are preserved. Hold for instructions; no fixes applied in the audit.
+
 2026-10-22. Bernardo requests a sharper, louder, F1-style roar over roughly
 the final 1000 rpm of the I6 and both V8s. The I6 limit becomes 8500 rpm
 (+1500), cross V8 7500 (+500), and flat V8 stays at 9000. The accepted prior
