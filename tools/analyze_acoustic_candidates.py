@@ -6,6 +6,7 @@ different. An acoustically inaccurate but conservative candidate is a result,
 not a reason to conceal its rows or change the measurement tolerance.
 """
 import argparse
+from checkpoint_sections import publish_section
 import base64
 import cmath
 import csv
@@ -242,9 +243,7 @@ def publish(target, summary, figures):
     link = '<a href="#transport-candidates">Renderer prototypes</a>'
     if link not in html:
         html = html.replace("</nav>", link+"</nav>", 1)
-    pending = target.with_name(target.stem+".s2d.pending.html")
-    pending.write_text(html)
-    pending.replace(target)
+    publish_section(target, 'transport-candidates', '\n'.join(text))
 
 
 def main():

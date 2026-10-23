@@ -15,7 +15,8 @@
 enum { RB_AC_JUNCTION, RB_AC_BOUNDARY, RB_AC_RADIATION };
 enum { RB_AC_ALLPASS, RB_AC_LINEAR };
 enum { RB_AC_OK = 0, RB_AC_ARGUMENT = -1, RB_AC_CAPACITY = -2,
-       RB_AC_TOPOLOGY = -3, RB_AC_SHORT_DELAY = -4, RB_AC_STATE = -5 };
+       RB_AC_TOPOLOGY = -3, RB_AC_SHORT_DELAY = -4, RB_AC_STATE = -5,
+       RB_AC_ORDER = -6 };
 
 typedef struct {
     int kind;
@@ -49,6 +50,7 @@ typedef struct {
      * numerical_loss is interpolation loss; propagation_loss is specified gain. */
     double source_work, terminal_work, numerical_loss, propagation_loss;
     unsigned long long steps, failures;
+    int received; /* current tick's incident waves exposed; storage not consumed */
 } rb_ac_state;
 typedef struct {
     double wave[RB_AC_NODES]; /* incident drive Pa at one-port boundaries */
@@ -63,6 +65,12 @@ int rb_ac_add_edge(rb_ac_plan *p, int a, int b, double length, double area,
 size_t rb_ac_samples(const rb_ac_plan *p);
 int rb_ac_prepare(const rb_ac_plan *p, rb_ac_state *s, double *storage, size_t samples);
 int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive);
+/* Receive is read-only with respect to delay/storage/work. Commit accepts this
+ * tick's drive once; invalid drives can be corrected and retried without delay.
+ * Port flow positive INTO graph at a source is -rb_ac_node_flow(s,node). */
+int rb_ac_receive(rb_ac_state *s);
+double rb_ac_incident(const rb_ac_state *s, int node); /* one-port, Pa */
+int rb_ac_commit(rb_ac_state *s, const rb_ac_drive *drive);
 double rb_ac_energy(const rb_ac_state *s);
 double rb_ac_balance(const rb_ac_state *s); /* starts from rest */
 double rb_ac_node_flow(const rb_ac_state *s, int node); /* into one-port node */

@@ -45,6 +45,40 @@ class Players(HTMLParser):
 
 
 class RenderResultsTests(unittest.TestCase):
+    def test_complete_checkpoint_rebuild_preserves_registered_sections_and_diagnostics(self):
+        from checkpoint_sections import adopt_current
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            current = root/"current"
+            checkpoint(current)
+            write_page(current, root/"RESULTS.html")
+            diagnostic = current/"experiment/retained.wav"
+            float_wav(diagnostic)
+            original = diagnostic.read_bytes()
+            page = root/"RESULTS.html"
+            page.write_text(page.read_text().replace('</main>',
+                '<!-- AUDIO EXPERIMENT BEGIN --><section id="audio-experiment"><audio controls '
+                'src="data:audio/wav;base64,UklGRg=="></audio></section>'
+                '<!-- AUDIO EXPERIMENT END --></main>'))
+            adopt_current(root)
+            write_page(current, page)
+            first = Players(); first.feed(page.read_text())
+            self.assertEqual(len(first.sources), 35)
+            write_page(current, page)
+            again = Players(); again.feed(page.read_text())
+            self.assertEqual(again.sources, first.sources)
+            staged = root/"pending/next"
+            checkpoint(staged)
+            replace_current(staged, root)
+            rebuilt = Players(); rebuilt.feed(page.read_text())
+            self.assertEqual(rebuilt.sources, first.sources)
+            self.assertEqual(diagnostic.read_bytes(), original)
+            before = page.read_bytes()
+            diagnostic.write_bytes(b"damaged diagnostic")
+            with self.assertRaisesRegex(ValueError, 'fingerprint'):
+                write_page(current, page)
+            self.assertEqual(page.read_bytes(), before)
+
     def test_full_makefile_and_scenario_pipeline_without_site_packages(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -5,7 +5,20 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — architecture/progress review with grill-with-docs (2026-10-23):**
+**Current request — implement the agreed next checkpoint (2026-10-23):**
+Bernardo authorizes completing the next step and splitting it as needed.
+Completed three bounded parts: **S2d-R**, a declared complete results inventory
+and atomic rebuild; **S2d-0b**, current-tick acoustic receive/commit and explicit
+open-port ownership; **S2d-B1a**, a homogeneous open gas/characteristic duct
+proof with retained spatial nonlinear/entropy transport. Reflected load,
+accepted mass/tag/total-energy flux and two gas/network interface positions pass
+the stated native fixtures. [Results and method](docs/stage-S2d-0b-B1a.md).
+The proof is native only; it does not qualify production mixture gas, changing
+thermal backgrounds, full engines, runtime or listening acceptance. Preserve
+accepted renders, references and Claude setup. Only these bounded substages
+are closed; the production-engine and evolving-background work remains open.
+
+**Previous request — architecture/progress review with grill-with-docs (2026-10-23):**
 Review the production program, native prototypes and evidence before selecting
 the next step. [The review](docs/review-acoustic-architecture-2026-10-23.md)
 supports interface-first S2d-0 work followed by a small common-clock B1 coupling
@@ -207,10 +220,13 @@ gets a one-line summary of anything that changed from the plan.
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S2c | Independent source and acoustic transport experiment | Sound realism | ✅ | 241 guarded pipe cases/71 exclusions, 30 engine trajectories, 3 actual ECU coasts; source/phase/cost findings and architecture decision method in docs/stage-S2c.md. Production sound unchanged; listening acceptance separate |
-| S2d | Acoustic-preserving transport decision | Sound realism | 🔄 | Initial A1/B0 native candidates and 344 cases in docs/stage-S2d.md; A1 acoustic rejection, B0 passes stated quiescent band. Mean-flow/reflected-engine coupling and architecture promotion remain open |
-| S2d-0 | Geometry, port contracts and baseline profiling | Sound realism | 🔄 | Five semantic topology snapshots, intake-only identity control, source hashes and stereo/profile controls implemented. Full acoustic compiler, conservative gas interface and complete production cap trace remain open |
+| S2d | Acoustic-preserving transport decision | Sound realism | 🔄 | Initial A1/B0 and bounded open-duct proof in docs/stage-S2d-0b-B1a.md. Production-engine/mixture, evolving thermal/reversing-flow, runtime and architecture promotion remain open |
+| S2d-0 | Geometry, port contracts and baseline profiling | Sound realism | 🔄 | Semantic topology snapshots, baseline controls and bounded current-tick/open-duct contracts implemented. Full acoustic compiler, production-mixture/graph adapter and complete production cap trace remain open |
 | S2d-A | Conservative nonlinear transport comparison | Sound realism | 🔄 | Constant-gamma HLLC/MC/SSP-RK2 control, shock/contact/rarefaction and conservation checks implemented. Upper-band accuracy fails; mixture EOS and engine/valve adapters remain open |
 | S2d-B0 | Initial quiescent acoustic graph fixtures | Sound realism | ✅ | Preallocated bidirectional graph: delays, weighted branches, cavity/source/radiation/loss books; 220 cases and one-second loops. Acceptance is limited to homogeneous zero-flow fixtures, not real engine/exhaust realism |
+| S2d-R | Complete results inventory and rebuild | Sound realism tooling | ✅ | Declared sections/diagnostics survive full atomic rebuild and replacement; all 48 players and 158 preserved-file hashes verified |
+| S2d-0b | Current-tick coupling interface | Sound realism | ✅ | B0 receive/commit, port orientation and bounded duct flux/failure contracts tested; production-mixture/graph adapter remains parent S2d-0 work |
+| S2d-B1a | Homogeneous open-port gas/acoustic proof | Sound realism | ✅ | 15 constant-gamma physical cases pass: real mass/tag/energy transfer, two partitions, ≤1.30% waveform error, correct reflection and one-second leaky-domain growth screens. Whole-fixture cost measured; no engine/runtime qualification |
 | S2e | Unified geometry-aware source/exhaust transfer | Sound realism | ⬜ | Consistent pulse/noise routes, throat states, X/Y, temperature/flow, packing/perforates and load/radiation validation |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S3b | Engine-specific turbulence and structure | Sound realism | ⬜ | State-conditioned unresolved sources, pressure-force/body transfer, modes, mounts and accessory timing; no arbitrary random detail |

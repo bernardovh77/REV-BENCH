@@ -24,6 +24,7 @@ import sys
 import tempfile
 
 from audio_wav import read_wav_bytes
+from checkpoint_sections import adopt_current, carry_diagnostics, compose, diagnostic_names
 
 ROOT = Path(__file__).resolve().parents[1]
 ENGINES = {
@@ -118,9 +119,10 @@ def coast_markers(path, seconds, engine):
     return markers
 
 
-def write_page(current, destination):
+def write_page(current, destination, renders=None):
     """Validate the complete inventory before atomically replacing the single file."""
-    expected = {name for _, _, name in expected_clips()}
+    renders = current.parent if renders is None else renders
+    expected = {name for _, _, name in expected_clips()} | diagnostic_names(current, renders)
     actual = {str(p.relative_to(current)) for p in current.rglob("*.wav")}
     if actual != expected:
         raise ValueError(f"Incomplete checkpoint: missing {sorted(expected-actual)}; "
@@ -169,6 +171,7 @@ def write_page(current, destination):
                               "Measurements use the byte-identical unfiltered float originals."}
     page = template.replace("<!-- CONTENT -->", "".join(body)).replace("<!-- GENERATED -->", generated).replace(
         "<!-- MANIFEST -->", json.dumps(manifest, ensure_ascii=True).replace("<", "\\u003c"))
+    page = compose(page, renders)
     temporary = destination.with_suffix(".html.tmp")
     try:
         temporary.write_text(page, encoding="utf-8")
@@ -187,7 +190,8 @@ def replace_current(staged, renders):
     if current.is_symlink() or (renders / "RESULTS.html").is_symlink():
         raise ValueError("Refusing to replace a symlink")
     page = staged / "RESULTS.html"
-    write_page(staged, page)
+    carry_diagnostics(current, staged, renders)
+    write_page(staged, page, renders)
     backup = staged.parent / "previous"
     if current.exists():
         current.rename(backup)
@@ -232,9 +236,12 @@ def main():
     parser.add_argument("--cli", type=Path, default=ROOT/"build/rb_cli")
     parser.add_argument("--build", default="build")
     parser.add_argument("--publish-only", action="store_true")
+    parser.add_argument("--adopt-current", action="store_true", help="register existing research/reference sections and diagnostic assets once")
     args = parser.parse_args()
     renders = ROOT / "renders"
     renders.mkdir(exist_ok=True)
+    if args.adopt_current:
+        adopt_current(renders)
     if args.publish_only:
         write_page(renders/"current", renders/"RESULTS.html")
     else:

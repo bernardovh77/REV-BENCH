@@ -4,6 +4,66 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: next checkpoint implemented — bounded open coupling proof
+
+- Bernardo authorizes completing the next step, split as needed. Three bounded
+  substages are complete: S2d-R publication, S2d-0b current-tick interface and
+  S2d-B1a homogeneous open gas/characteristic duct proof. Full method, evidence,
+  reproduction and limits: docs/stage-S2d-0b-B1a.md. Parent S2d-0/S2d/S1/full13b
+  remain open; stage14 remains unstarted. Accepted engine sounds are preserved.
+- Publication now uses tools/checkpoint_sections.py: hashed local sections and
+  diagnostic inventory in ignored renders/checkpoint/manifest.json. All three
+  research/reference producers share the composer. The one-time migration
+  --adopt-current is already done. Ordinary --publish-only rebuilds all48
+  players; fresh accepted renders carry42 registered diagnostic WAVs before
+  atomic replacement. Unknown, missing or changed inputs fail before install.
+- B0 wave.[ch] exposes receive/incident/commit so current returning pressure is
+  available before the caller solves its boundary; no extra tick is inserted.
+  Invalid drives can be retried without consuming storage twice. Legacy step
+  matches the phased path exactly in the fractional-delay control. Source
+  export into the graph is negative rb_ac_node_flow, per its port orientation.
+- New experiments/acoustics/coupled_duct.[ch] retains one physical conserved
+  state per cell: rho, momentum, total energy and passive tagged density.
+  MC/RK2 gas-region stages share the same accepted flux with a characteristic
+  streaming region. Conservative nonlinear/contact/entropy corrections remain
+  spatially resolved downstream. No duplicate acoustic energy or added p'Q.
+  Physical pressure subtracts kinetic energy; characteristic a+b does not.
+- This is a constant-gamma, sample-aligned, homogeneous reference duct with
+  explicit capacity/grid/state/CFL failure. It is NOT an engine adapter or
+  arbitrary B0 multiport coupling. Production mixture EOS, compiled complete
+  exhausts, moving backgrounds, heat/reversal, real components and deployed
+  engine runtime/listening validation remain required.
+- Fifteen physical cases pass: two interface positions plus all-FV control at
+  three amplitudes, negative/matched/positive reflected-load controls and
+  three one-second source-free screens. These have a matched left end, not
+  trapped closed-loop growth tests. Worst split pressure waveform error1.30%,
+  return-peak error2.5ticks, per-quantity relative region balance4.75e-12.
+  Moving tagged contacts pass both directions against analytic advection.
+- Whole-fixture median costs39.4/69.8/83.7ms for2.33ms modeled time at
+  cuts168/280/560: below real time. No production speedup or higher hardware
+  requirement is justified. Source-free energy and conserved books are
+  separate checks. An initially rejected mixed-unit absolute-balance screen
+  and80-bit roundoff control are retained, not hidden; final gate uses
+  independently scaled kg/Ns/J/tagged-kg residuals.
+- Validation: native193tests/7766checks, Python42/no skips, web17,
+  ASan/UBSan18candidate/coupling tests/3294checks. All six deliberate faults
+  are caught: stale return, added delay, unmatched flux, duplicate energy,
+  lost tagged advection, kinetic energy misreported as pressure. Existing
+  S2d wrong-return-sign mutation anchor updated and that individual control
+  is caught; the older full matrix was not rerun. No core/WASM source changed.
+- Offline result: all48players, exclusive playback, four jump buttons,
+  two new/six retained plots pass with no network or page errors. All158
+  preserved file hashes and48audio payloads match the starting snapshot.
+  Ignored evidence: renders/evidence/coupling-proof-2026-10-23/, including
+  raw fields/traces, source hashes, rejected screen, precision control,
+  costs, validation logs and browser preview. Measurement sources match.
+- Graphify AST refreshed:2298nodes/6295edges/126communities, knownrb.h:415
+  warning retained; no semantic-document extraction claimed. User-added
+  .agents/ and skills-lock.json remain untouched and unstaged. Claude setup
+  remains active. Next dependent work: production-mixture/graph port adapter
+  and complete geometry/cap observability, then hot/reversing/multiport
+  coupling controls before changing engine sound.
+
 ## 2026-10-23: grill-with-docs review — next checkpoint agreed
 
 - User requests analysis of progress, production/prototype structure and next

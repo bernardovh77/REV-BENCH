@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from audio_wav import read_wav
+from checkpoint_sections import publish_section
 from analyze_audio_source_probe import powers, signal_metrics
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -290,9 +291,7 @@ def publish(evidence, figures, comparisons):
     link = '<a href="#audio-experiment">Research results</a>'
     if link not in html:
         html = html.replace('</nav>', link+'</nav>', 1)
-    pending = target.with_suffix('.pending.html')
-    pending.write_text(html)
-    pending.replace(target)
+    publish_section(target, 'audio-experiment', '\n'.join(parts))
 
 
 def main():

@@ -1,5 +1,28 @@
 # Current sound results
 
+2026-10-23 update: the single page now combines **48 listening players**: the
+34 accepted engine examples below, 12 S2c diagnostic clips and two matched
+real-reference pairs. Research plots include S2c, initial S2d and the open
+coupling proof. Existing PCM16 engine preview processing below applies to the
+34 accepted examples; reference MP3 pairs and diagnostic clips retain their
+own explicitly documented processing and gains.
+
+`renders/checkpoint/manifest.json` declares hashed section fragments and all
+retained diagnostic assets. The current folder has 34 accepted float WAVs
+plus 42 registered diagnostic WAVs; they are not unrecognized extra renders.
+One `python3 -S tools/render_results.py --publish-only` rebuilds the complete
+page without simulation, FFmpeg or analysis packages. `make render` validates
+fresh accepted recordings and carries the declared diagnostics/sections before
+atomically installing the whole checkpoint. Missing or changed registered
+inputs fail before replacing the last good result. Each research/reference
+producer registers through the same composer; repeat publication adds no
+duplicate sections. See [the checkpoint](stage-S2d-0b-B1a.md).
+
+The existing result was migrated once with `--adopt-current`; do not pass that
+flag again to an already registered checkpoint. Self-contained section
+fragments are local generated assets, not alternate result pages. The one
+file to open remains `renders/RESULTS.html`.
+
 Latest selection (2026-10-22): restore the accepted pre-13b-r I6 and flat-V8
 exhaust sounds; I6 keeps 8500 rpm, flat V8 stays 9000 rpm. Cross V8 keeps the
 sharper 7500-rpm rear-delete X. See [rollback notes](stage-13b-r-rollback.md).
@@ -52,7 +75,8 @@ make render
 This builds the native renderer, records the standard float set, all five
 extended coast scenarios, five held examples and the cross-V8 packed-control
 coast in a temporary staging folder. The publisher validates the complete
-34-file inventory, finite audio, output headroom and loaded-coast timing
+34 accepted examples plus registered diagnostics, finite accepted audio,
+output headroom and loaded-coast timing
 before installing `renders/current/` and `renders/RESULTS.html`. Only then is
 the preceding current set removed. A failed render or validation retains the
 last complete result. Reference folders are never passed to deletion code.
@@ -87,6 +111,9 @@ renders/
   current/standard/           # current unfiltered float originals + telemetry
   current/feedback/           # current held and long-coast originals + provenance
   current/results.json        # source/preview hashes and processing
+  current/experiment/         # retained registered diagnostic float WAVs
+  checkpoint/manifest.json    # hashes and inventory for complete republication
+  checkpoint/sections/        # self-contained registered section fragments
   real/                      # original reference excerpts — preserved
   user-reference-previews/    # reference/filtered listening library — preserved
   evidence/13b-p/             # retained physics/dyno/timing/rejected solver evidence

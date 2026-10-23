@@ -124,17 +124,50 @@ int rb_ac_prepare(const rb_ac_plan *p, rb_ac_state *s, double *storage, size_t s
     return RB_AC_OK;
 }
 
-int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive)
+static int valid_drive(const rb_ac_state *s, const rb_ac_drive *drive)
 {
     if (!s || !s->plan || !drive) return RB_AC_ARGUMENT;
     const rb_ac_plan *p=s->plan;
-    const double dt=1/p->rate;
     for (int n=0;n<p->nodes;n++) {
         const double w=drive->wave[n], q=drive->flow[n];
         if (!isfinite(w) || !isfinite(q) ||
             (p->node[n].kind != RB_AC_BOUNDARY && w != 0) ||
             (p->node[n].kind != RB_AC_JUNCTION && q != 0)) return RB_AC_ARGUMENT;
     }
+    return RB_AC_OK;
+}
+
+int rb_ac_receive(rb_ac_state *s)
+{
+    if (!s || !s->plan) return RB_AC_ARGUMENT;
+    if (s->received) return RB_AC_ORDER;
+    const rb_ac_plan *p=s->plan;
+    for (int port=0;port<2*p->edges;port++) {
+        const rb_ac_line *l=&s->line[port];
+        const double x=l->ring[l->index];
+        const double y=l->fraction > 0 ?
+            (l->interpolation == RB_AC_ALLPASS ? l->coefficient*x+l->complement*l->memory :
+             (1-l->fraction)*x+l->fraction*l->memory) : x;
+        s->incoming[port^1]=l->gain*y;
+    }
+    s->received=1;
+    return RB_AC_OK;
+}
+
+double rb_ac_incident(const rb_ac_state *s, int node)
+{
+    if (!s || !s->plan || !s->received || node < 0 || node >= s->plan->nodes ||
+        s->degree[node] != 1) return NAN;
+    return s->incoming[s->ports[node][0]];
+}
+
+int rb_ac_commit(rb_ac_state *s, const rb_ac_drive *drive)
+{
+    const int status=valid_drive(s,drive);
+    if (status) return status;
+    if (!s->received) return RB_AC_ORDER;
+    const rb_ac_plan *p=s->plan;
+    const double dt=1/p->rate;
     for (int port=0;port<2*p->edges;port++) {
         rb_ac_line *l=&s->line[port];
         const double x=l->ring[l->index];
@@ -204,7 +237,16 @@ int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive)
         l->index=(l->index+1)%l->count;
     }
     s->steps++;
+    s->received=0;
     return RB_AC_OK;
+}
+
+int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive)
+{
+    const int status=valid_drive(s,drive);
+    if (status) return status;
+    const int received=rb_ac_receive(s);
+    return received ? received : rb_ac_commit(s,drive);
 }
 
 double rb_ac_energy(const rb_ac_state *s)

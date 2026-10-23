@@ -18,6 +18,7 @@ replacing the original catalog. --publish-filtered embeds matched listening
 pairs into the existing RESULTS.html, preserving its engine examples.
 """
 import argparse
+from checkpoint_sections import publish_section
 import base64
 import csv
 import hashlib
@@ -168,9 +169,7 @@ def publish_filtered(directory):
     link = '<a href="#user-references">New references</a>'
     if link not in page:
         page = page.replace('</nav>', link + '</nav>', 1)
-    temporary = target.with_suffix('.pending.html')
-    temporary.write_text(page, encoding="utf-8")
-    temporary.replace(target)
+    publish_section(target, 'user-references', '\n'.join(parts))
 
 
 def prepare(args):

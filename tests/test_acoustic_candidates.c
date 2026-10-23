@@ -25,6 +25,34 @@ static void chain(rb_ac_plan *p, double fraction, int interpolation, double refl
     CHECK_EQ_INT(rb_ac_add_edge(p,0,1,(64+fraction)*343/48000,AREA,1,interpolation),0);
 }
 
+void test_candidate_current_tick_interface(void)
+{
+    rb_ac_plan p; rb_ac_state full, phased;
+    chain(&p,.37,RB_AC_ALLPASS,-1);
+    double *one=prepare(&p,&full), *two=prepare(&p,&phased);
+    rb_ac_drive drive={0};
+    CHECK_EQ_INT(rb_ac_commit(&phased,&drive),RB_AC_ORDER);
+    for (int tick=0;tick<300;tick++) {
+        drive.wave[0]=tick==0 ? 10:0;
+        CHECK_EQ_INT(rb_ac_receive(&phased),RB_AC_OK);
+        CHECK_EQ_INT(rb_ac_receive(&phased),RB_AC_ORDER);
+        const double arrival=rb_ac_incident(&phased,0);
+        CHECK(isfinite(arrival));
+        if (tick==128) CHECK(arrival < -1);
+        if (tick==20) {
+            drive.wave[0]=NAN;
+            CHECK_EQ_INT(rb_ac_commit(&phased,&drive),RB_AC_ARGUMENT);
+            CHECK(rb_ac_incident(&phased,0)==arrival);
+            drive.wave[0]=0;
+        }
+        CHECK_EQ_INT(rb_ac_commit(&phased,&drive),RB_AC_OK);
+        CHECK_EQ_INT(rb_ac_step(&full,&drive),RB_AC_OK);
+        CHECK(phased.pressure[0]==full.pressure[0]);
+        CHECK(rb_ac_energy(&phased)==rb_ac_energy(&full));
+    }
+    free(one); free(two);
+}
+
 void test_candidate_wave_guards(void)
 {
     rb_ac_plan p; rb_ac_state s;

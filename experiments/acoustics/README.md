@@ -31,6 +31,35 @@ short edges up, clip growing pressure or silently repair a failed state.
 Graph coefficient updates, moving gas and nonlinear engine coupling remain
 future work. Do not inject full graph output on top of the old exhaust sound.
 
+## Open-port coupling checkpoint
+
+`coupled_duct.[ch]` adds the bounded [S2d-B1a proof](../../docs/stage-S2d-0b-B1a.md):
+one physical conserved state per cell, upstream nonlinear FV integration,
+downstream characteristic streaming and distributed nonlinear/entropy transport.
+It is a uniform-area constant-gamma duct experiment, not a production engine or
+arbitrary B0 graph adapter. Density, momentum, total energy and passive tagged
+gas cross one accepted interface. Total energy already owns pressure work;
+do not add a separate acoustic energy reservoir. Actual physical pressure
+includes kinetic-energy subtraction; reported characteristic amplitudes do not.
+
+B0 now offers receive/incident/commit at the same tick; the legacy step wrapper
+is retained. A received state can retry an invalid drive without consuming
+delay storage. A duplicate receive or wrong-phase commit is an error. Plans
+stay immutable. The coupled-duct experiment has its own encapsulated tick and
+rejects non-sample-aligned geometry, inadmissible states and excessive residual
+CFL without clipping/repairing them. Both remain allocation-free.
+
+```sh
+make BUILD=/tmp/rev-bench-s2d-next LTO=0 coupled-probe
+PYTHONPATH=tools .venv-analysis/bin/python tools/run_coupled_duct.py
+PYTHONPATH=tools .venv-analysis/bin/python tools/coupled_duct_report.py
+```
+
+The whole-engine gas/EOS adapter, arbitrary multiports, evolving backgrounds,
+temperature/reversal and runtime/listening promotion remain open. The
+downstream correction grid is retained at the common rate in this proof;
+no inexpensive reduced mean model or real-time improvement is claimed.
+
 ## Reproduce
 
 From the repository root, using an isolated build directory:
