@@ -4,6 +4,13 @@
 
 static int positive(double x) { return isfinite(x) && x > 0.0; }
 
+static int failed(rb_ac_state *s)
+{
+    s->failures++;
+    s->received=0;
+    return RB_AC_STATE;
+}
+
 int rb_ac_init(rb_ac_plan *p, double rate, double rho, double c)
 {
     if (!p || !positive(rate) || rate > 1000000 || rate < 8000 ||
@@ -48,7 +55,10 @@ static int validate(const rb_ac_plan *p, size_t *samples)
         !positive(p->rho) || p->rho > 100 || !positive(p->c) || p->c > 3000 ||
         p->nodes < 1 || p->nodes > RB_AC_NODES || p->edges < 1 ||
         p->edges > RB_AC_EDGES) return RB_AC_ARGUMENT;
+    const double rho_c=p->rho*p->c, bulk=rho_c*p->c, dt=1/p->rate;
+    if (!positive(rho_c) || !positive(bulk)) return RB_AC_ARGUMENT;
     int degrees[RB_AC_NODES]={0};
+    double admittance[RB_AC_NODES]={0};
     for (int i=0;i<p->edges;i++) {
         const rb_ac_edge *e=&p->edge[i];
         if (e->a < 0 || e->a >= p->nodes || e->b < 0 || e->b >= p->nodes ||
@@ -57,6 +67,10 @@ static int validate(const rb_ac_plan *p, size_t *samples)
             (e->interpolation != RB_AC_ALLPASS && e->interpolation != RB_AC_LINEAR))
             return RB_AC_ARGUMENT;
         const double d=p->rate*e->length/p->c;
+        const double z=rho_c/e->area;
+        if (!positive(z) || !positive(1/z) || !positive(dt/z) ||
+            !positive(p->rate*z)) return RB_AC_ARGUMENT;
+        admittance[e->a]+=1/z; admittance[e->b]+=1/z;
         if (d < 1 || d > 10000000) return RB_AC_SHORT_DELAY;
         *samples += 2*(size_t)floor(d);
         if (++degrees[e->a] > RB_AC_DEGREE || ++degrees[e->b] > RB_AC_DEGREE)
@@ -67,6 +81,9 @@ static int validate(const rb_ac_plan *p, size_t *samples)
         if (!degrees[n]) return RB_AC_TOPOLOGY;
         if (v->kind == RB_AC_JUNCTION) {
             if (!isfinite(v->volume) || v->volume < 0 || v->volume > 10) return RB_AC_ARGUMENT;
+            const double compliance=v->volume/bulk, memory=2*compliance/dt;
+            if (!isfinite(compliance) || (v->volume > 0 && !(compliance > 0)) ||
+                !isfinite(memory) || !positive(admittance[n]+memory)) return RB_AC_ARGUMENT;
         } else if (v->kind == RB_AC_BOUNDARY) {
             if (degrees[n] != 1 || !isfinite(v->reflection) || fabs(v->reflection) > 1)
                 return RB_AC_TOPOLOGY;
@@ -79,6 +96,13 @@ static int validate(const rb_ac_plan *p, size_t *samples)
                 if (p->edge[k].a == n || p->edge[k].b == n) area=p->edge[k].area;
             if (fabs(area-3.14159265358979323846*v->radius*v->radius) > 1e-10*area)
                 return RB_AC_TOPOLOGY;
+            rb_radiation r;
+            double direct, history;
+            rb_radiation_init(&r,v->radius,p->rho,p->c);
+            rb_radiation_linear(&r,dt,&direct,&history);
+            if (!positive(r.tau) || !isfinite(direct) || !isfinite(history) ||
+                !isfinite(r.b0) || !isfinite(r.b1) || !isfinite(r.b2) ||
+                !isfinite(r.a1) || !isfinite(r.a2)) return RB_AC_ARGUMENT;
         } else return RB_AC_TOPOLOGY;
     }
     return RB_AC_OK;
@@ -127,6 +151,7 @@ int rb_ac_prepare(const rb_ac_plan *p, rb_ac_state *s, double *storage, size_t s
 static int valid_drive(const rb_ac_state *s, const rb_ac_drive *drive)
 {
     if (!s || !s->plan || !drive) return RB_AC_ARGUMENT;
+    if (s->failures) return RB_AC_STATE;
     const rb_ac_plan *p=s->plan;
     for (int n=0;n<p->nodes;n++) {
         const double w=drive->wave[n], q=drive->flow[n];
@@ -140,6 +165,7 @@ static int valid_drive(const rb_ac_state *s, const rb_ac_drive *drive)
 int rb_ac_receive(rb_ac_state *s)
 {
     if (!s || !s->plan) return RB_AC_ARGUMENT;
+    if (s->failures) return RB_AC_STATE;
     if (s->received) return RB_AC_ORDER;
     const rb_ac_plan *p=s->plan;
     for (int port=0;port<2*p->edges;port++) {
@@ -149,6 +175,7 @@ int rb_ac_receive(rb_ac_state *s)
             (l->interpolation == RB_AC_ALLPASS ? l->coefficient*x+l->complement*l->memory :
              (1-l->fraction)*x+l->fraction*l->memory) : x;
         s->incoming[port^1]=l->gain*y;
+        if (!isfinite(s->incoming[port^1])) return failed(s);
     }
     s->received=1;
     return RB_AC_OK;
@@ -156,7 +183,7 @@ int rb_ac_receive(rb_ac_state *s)
 
 double rb_ac_incident(const rb_ac_state *s, int node)
 {
-    if (!s || !s->plan || !s->received || node < 0 || node >= s->plan->nodes ||
+    if (!s || !s->plan || s->failures || !s->received || node < 0 || node >= s->plan->nodes ||
         s->degree[node] != 1) return NAN;
     return s->incoming[s->ports[node][0]];
 }
@@ -221,21 +248,30 @@ int rb_ac_commit(rb_ac_state *s, const rb_ac_drive *drive)
             pressure=(2*direct*s->incoming[first]/rho_c+history)/(1+direct/rho_c);
             const double b=pressure-s->incoming[first];
             s->outgoing[first]=b;
-            rb_radiation_step(&s->radiation[n],(s->incoming[first]-b)/rho_c);
+            const double velocity=(s->incoming[first]-b)/rho_c;
+            /* Do not silently invoke the shared filter's protective reset. */
+            if (!isfinite(velocity) || fabs(velocity) > 1e6 ||
+                !isfinite(rb_radiation_step(&s->radiation[n],velocity))) return failed(s);
             s->terminal_work+=dt/s->impedance[first]
                 *(s->incoming[first]*s->incoming[first]-b*b);
         }
         s->pressure[n]=pressure;
-        if (!isfinite(pressure)) { s->failures++; return RB_AC_STATE; }
+        if (!isfinite(pressure) || !isfinite(s->stored_pressure[n]) ||
+            !isfinite(s->source_work) || !isfinite(s->terminal_work)) return failed(s);
     }
     for (int port=0;port<2*p->edges;port++) {
         rb_ac_line *l=&s->line[port];
         const double b=s->outgoing[port], old=l->ring[l->index];
-        if (!isfinite(b)) { s->failures++; return RB_AC_STATE; }
+        if (!isfinite(b)) return failed(s);
         l->energy += b*b-old*old;
+        if (!isfinite(l->energy)) return failed(s);
         l->ring[l->index]=b;
         l->index=(l->index+1)%l->count;
     }
+    const double energy=rb_ac_energy(s);
+    const double balance=s->source_work-s->terminal_work-s->numerical_loss-s->propagation_loss-energy;
+    if (!isfinite(s->numerical_loss) || !isfinite(s->propagation_loss) ||
+        !isfinite(energy) || !isfinite(balance)) return failed(s);
     s->steps++;
     s->received=0;
     return RB_AC_OK;
@@ -251,7 +287,7 @@ int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive)
 
 double rb_ac_energy(const rb_ac_state *s)
 {
-    if (!s || !s->plan) return NAN;
+    if (!s || !s->plan || s->failures) return NAN;
     const rb_ac_plan *p=s->plan;
     double energy=0;
     for (int k=0;k<2*p->edges;k++) {
@@ -268,12 +304,13 @@ double rb_ac_energy(const rb_ac_state *s)
 
 double rb_ac_balance(const rb_ac_state *s)
 {
+    if (!s || !s->plan || s->failures) return NAN;
     return s->source_work-s->terminal_work-s->numerical_loss-s->propagation_loss-rb_ac_energy(s);
 }
 
 double rb_ac_node_flow(const rb_ac_state *s, int node)
 {
-    if (!s || !s->plan || node < 0 || node >= s->plan->nodes || s->degree[node] != 1) return NAN;
+    if (!s || !s->plan || s->failures || node < 0 || node >= s->plan->nodes || s->degree[node] != 1) return NAN;
     const int k=s->ports[node][0];
     return (s->incoming[k]-s->outgoing[k])/s->impedance[k];
 }

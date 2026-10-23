@@ -1,5 +1,11 @@
 # Brief review of completed Stages 001–036
 
+**Subsequent implementation:** Bernardo authorized the two new reproduced
+repairs after this review. [112](stage-112.md) addresses C08 publication
+recovery; [113](stage-113.md) addresses C07 derived/numerical guards. The review
+and reproduction results below describe their original baseline. C01–C06 stay
+open with their existing owners; neither repair closes their broader gates.
+
 2026-10-23. Baseline `62910fa05bed75cc303a94eb41584d2c7785a9c1`.
 Bernardo requests a brief retrospective for mistakes or problems that could
 affect future development, followed by a hold. This is a review, not permission

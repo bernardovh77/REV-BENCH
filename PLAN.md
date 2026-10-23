@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-23. **One sequence: Stages 001–111.** This file is the only
+Updated 2026-10-23. **One sequence: Stages 001–113.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,12 +28,12 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current instruction: hold after review.** The [completed-stage retrospective](docs/review-completed-stages-2026-10-23.md)
-covers 001–036, retains the existing open physics/integration risks and records
-two additional reproduced gaps: extreme-input acoustic guards and interrupted
-results-fragment writes. No fixes or later stages have started. Resume only on
-Bernardo's instruction; the publication gap needs a bounded follow-up before
-the next affected sound publication.
+**Current instruction: hold after completed C07/C08 repairs.** The
+[completed-stage retrospective](docs/review-completed-stages-2026-10-23.md)
+covers 001–036. Its two newly reproduced gaps receive appended Stages 112/113
+so existing IDs stay stable. These bounded repairs are complete; do not resume 037
+without Bernardo's instruction. The six retained physics/integration risk
+groups keep their existing owners.
 
 **Next default execution: Stage 037 — shared build, geometry, event and snapshot
 contracts.** Stage 039 references can proceed independently after 036; acquire
@@ -183,7 +183,7 @@ historical rows are not a claim that all current audio goals have passed.
 | --- | --- | --- | --- |
 | [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Not started | 035, 038 |
 | [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Not started | 037, 038 |
-| [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044 |
+| [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Not started | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |
 | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Not started | 046, 047 |
@@ -295,6 +295,13 @@ historical rows are not a claim that all current audio goals have passed.
 | [109](docs/roadmap/13-optional.md#stage-109) | Anti-lag system | Optional | 102, 084, 085, 087 |
 | [110](docs/roadmap/13-optional.md#stage-110) | 3D garage or dyno-room environment | Optional | 102 |
 | [111](docs/roadmap/13-optional.md#stage-111) | Synchronized video capture | Optional | 102 |
+
+### 14. Bounded review repairs (execute before 037)
+
+| Stage | Deliverable | Status | Depends on |
+| --- | --- | --- | --- |
+| [112](docs/roadmap/14-review-fixes.md#stage-112) | Recoverable checkpoint section publication — C08 | Complete | 033, 036 |
+| [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic derived-state and numerical failure guards — C07 | Complete | 032, 034, 036 |
 
 ## Release gates and unresolved legacy obligations
 

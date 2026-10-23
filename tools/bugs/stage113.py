@@ -1,0 +1,21 @@
+"""B0 numerical failures must be visible and require re-preparation."""
+BUGS = {
+    "accept-derived-overflow": ("experiments/acoustics/wave.c",
+        "if (!positive(z) || !positive(1/z) || !positive(dt/z) ||\n            !positive(p->rate*z)) return RB_AC_ARGUMENT;",
+        "/* fault: no impedance/weight domain validation */",
+        ["test_candidate_wave_derived_domain"], 20),
+    "hide-work-overflow": ("experiments/acoustics/wave.c",
+        "if (!isfinite(pressure) || !isfinite(s->stored_pressure[n]) ||\n            !isfinite(s->source_work) || !isfinite(s->terminal_work)) return failed(s);",
+        "if (!isfinite(pressure) || !isfinite(s->stored_pressure[n]) ||\n            !isfinite(s->source_work) || !isfinite(s->terminal_work)) return RB_AC_OK;",
+        ["test_candidate_wave_overflow_requires_prepare"], 20),
+    "reuse-failed-state": ("experiments/acoustics/wave.c",
+        "s->failures++;\n    s->received=0;", "/* fault: failed state is reusable */\n    s->received=0;",
+        ["test_candidate_wave_overflow_requires_prepare"], 20),
+    "overflow-delay-storage": ("experiments/acoustics/wave.c",
+        "if (!isfinite(l->energy)) return failed(s);", "l->energy=isfinite(l->energy) ? l->energy:0;",
+        ["test_candidate_wave_storage_and_radiation_limits"], 20),
+    "silent-radiation-reset": ("experiments/acoustics/wave.c",
+        "if (!isfinite(velocity) || fabs(velocity) > 1e6 ||\n                !isfinite(rb_radiation_step(&s->radiation[n],velocity))) return failed(s);",
+        "rb_radiation_step(&s->radiation[n],velocity);",
+        ["test_candidate_wave_storage_and_radiation_limits"], 20),
+}

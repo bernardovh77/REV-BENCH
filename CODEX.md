@@ -4,6 +4,40 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: C07/C08 repairs — checkpoint and HOLD
+
+- Bernardo authorizes the necessary review fixes, then a saved checkpoint and
+  hold. Appended canonical112/113 preserve existing IDs; all six retained
+  physics/integration risk groups keep their owners. Stage037 is not started.
+- 112 repairs C08 with staged, hash-verified immutable section fragments;
+  page-install failure restores the previous manifest. Partial fragment/page/
+  manifest writes and install faults preserve rebuild/retry and other sections.
+  Calls are serialized; no multi-file crash-atomic or persistent-failure claim.
+  Existing registered legacy fragment paths remain valid. See docs/stage-112.md.
+- 113 repairs C07: validate finite derived impedance/admittance/bulk/compliance/
+  radiation coefficients; detect invalid runtime books/storage/pressure; terminal
+  numerical failure requires prepare and observers returnNaN. Invalid-argument
+  retry still works. Report the shared radiation filter's extreme-velocity guard
+  rather than silently invoke it. Production core/radiation/WASM unchanged.
+  Scope and commands: docs/stage-113.md. No broadened physical-validity claim.
+- 48 ordinary native B0 controls have identical non-timing CSV fields versus
+  baseline fba9bf0. Median measured small-fixture CPU cost is1.215x; prototype
+  median173x real time, not a full-engine/runtime claim. Five new deliberate
+  faults and the updated existing extra-feedback-delay fault are caught.
+- Passed:196native/7897checks;45Python;17web;ASan/UBSan18candidate/2593checks.
+  Complete results rebuild and offline48-player playback, exclusive play,
+  four jump buttons and all eight plots pass. All158protected files and48
+  embedded preview payloads preserved; no rerender or reference filtering.
+- Local logs/comparison/source hashes/preservation/browser evidence:
+  renders/evidence/fixes-112-113-2026-10-23/. Graphify refreshed after code:
+  2524nodes/6770edges/151communities; knownrb.h parser limitation retained.
+  Roadmap:113unique IDs, acyclic dependencies,62legacy/27audit mappings and
+  978local links pass. Preserve user-added .agents/ and
+  skills-lock.json without staging. Claude setup stays active and unchanged.
+- HOLD for Bernardo's instruction after checkpoint sync. Next planned feature
+  remains037;112/113 close only the new reproduced guard/publication defects,
+  not S1/S1e/S2/S4/full13b realism or runtime acceptance.
+
 ## 2026-10-23: brief completed-stage review — HOLD
 
 - Bernardo requests review of every completed stage, then hold. Scope and all

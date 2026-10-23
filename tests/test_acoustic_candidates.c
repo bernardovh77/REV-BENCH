@@ -74,6 +74,84 @@ void test_candidate_wave_guards(void)
     free(storage);
 }
 
+void test_candidate_wave_derived_domain(void)
+{
+    rb_ac_plan p; rb_ac_state s;
+    double storage[256];
+    chain(&p,0,RB_AC_ALLPASS,-1);
+    p.edge[0].area=1e-310;
+    CHECK_EQ_INT(rb_ac_prepare(&p,&s,storage,256),RB_AC_ARGUMENT);
+    CHECK_EQ_INT(rb_ac_samples(&p),0);
+    chain(&p,0,RB_AC_ALLPASS,-1);
+    p.rho=1e-320;
+    CHECK_EQ_INT(rb_ac_prepare(&p,&s,storage,256),RB_AC_ARGUMENT);
+    chain(&p,0,RB_AC_ALLPASS,-1);
+    p.node[0].kind=RB_AC_JUNCTION;
+    p.node[0].volume=1;
+    p.rho=1e-300;
+    p.c=1e-20;
+    p.edge[0].length=64*p.c/p.rate;
+    CHECK_EQ_INT(rb_ac_prepare(&p,&s,storage,256),RB_AC_ARGUMENT);
+    /* No arbitrary engine-pressure or pipe-size clamp in the ordinary domain. */
+    chain(&p,.37,RB_AC_ALLPASS,-1);
+    double *ordinary=prepare(&p,&s);
+    rb_ac_drive d={0}; d.wave[0]=1e6;
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_OK);
+    CHECK(isfinite(rb_ac_energy(&s)));
+    CHECK(isfinite(rb_ac_balance(&s)));
+    free(ordinary);
+}
+
+void test_candidate_wave_overflow_requires_prepare(void)
+{
+    rb_ac_plan p; rb_ac_state s;
+    chain(&p,.37,RB_AC_ALLPASS,-1);
+    double *storage=prepare(&p,&s);
+    rb_ac_drive d={0}; d.wave[0]=1e200;
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_STATE);
+    CHECK_EQ_INT(s.failures,1);
+    CHECK_EQ_INT(s.steps,0);
+    d.wave[0]=1;
+    CHECK_EQ_INT(rb_ac_receive(&s),RB_AC_STATE);
+    CHECK_EQ_INT(rb_ac_commit(&s,&d),RB_AC_STATE);
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_STATE);
+    CHECK_EQ_INT(s.failures,1);
+    CHECK(isnan(rb_ac_energy(&s)));
+    CHECK(isnan(rb_ac_balance(&s)));
+    CHECK(isnan(rb_ac_incident(&s,0)));
+    CHECK(isnan(rb_ac_node_flow(&s,0)));
+    CHECK_EQ_INT(rb_ac_prepare(&p,&s,storage,rb_ac_samples(&p)),RB_AC_OK);
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_OK);
+    CHECK_EQ_INT(s.failures,0);
+    CHECK(isfinite(rb_ac_balance(&s)));
+    free(storage);
+}
+
+void test_candidate_wave_storage_and_radiation_limits(void)
+{
+    rb_ac_plan p; rb_ac_state s;
+    chain(&p,0,RB_AC_ALLPASS,0);
+    double *storage=prepare(&p,&s);
+    rb_ac_drive d={0}; d.wave[0]=1e154;
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_OK);
+    /* Each square fits, but their accumulated delay-line storage does not. */
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_STATE);
+    CHECK_EQ_INT(s.failures,1);
+    free(storage);
+    chain(&p,0,RB_AC_ALLPASS,0);
+    p.node[1].kind=RB_AC_RADIATION; p.node[1].radius=.02;
+    storage=prepare(&p,&s);
+    d.wave[0]=1e9;
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_OK);
+    d.wave[0]=0;
+    for (int tick=1;tick<64;tick++) CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_OK);
+    /* The shared radiation filter guards |velocity| > 1e6 by zeroing it.
+     * The research caller must report that intervention, not silently use it. */
+    CHECK_EQ_INT(rb_ac_step(&s,&d),RB_AC_STATE);
+    CHECK_EQ_INT(s.failures,1);
+    free(storage);
+}
+
 void test_candidate_wave_delay_and_return(void)
 {
     rb_ac_plan p; rb_ac_state s;

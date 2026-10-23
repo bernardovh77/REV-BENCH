@@ -3,7 +3,9 @@
 
 /* Native S2d-B0 research implementation. Frozen homogeneous gas, U=0;
  * pressure waves in Pa, volume flow in m^3/s, power in W. No engine adapter.
- * Plans are immutable after prepare; storage is caller-owned. */
+ * Plans are immutable after prepare; storage is caller-owned. Derived
+ * coefficients must be finite/representable. These guards do not qualify
+ * arbitrary amplitudes or extend the frozen, linear acoustic model. */
 #include "radiation.h"
 #include <stddef.h>
 
@@ -67,6 +69,8 @@ int rb_ac_prepare(const rb_ac_plan *p, rb_ac_state *s, double *storage, size_t s
 int rb_ac_step(rb_ac_state *s, const rb_ac_drive *drive);
 /* Receive is read-only with respect to delay/storage/work. Commit accepts this
  * tick's drive once; invalid drives can be corrected and retried without delay.
+ * A numerical RB_AC_STATE is terminal: work/storage may be partly consumed;
+ * all processing rejects until prepare resets the state. Observers return NaN.
  * Port flow positive INTO graph at a source is -rb_ac_node_flow(s,node). */
 int rb_ac_receive(rb_ac_state *s);
 double rb_ac_incident(const rb_ac_state *s, int node); /* one-port, Pa */

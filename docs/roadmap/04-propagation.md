@@ -41,7 +41,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-045"></a>
 ## Stage 045 — General zero-flow open gas-to-graph coupling
 
-**Dependencies:** [034](../../docs/roadmap/02-existing-sound.md#stage-034), [035](../../docs/roadmap/02-existing-sound.md#stage-035), [043](../../docs/roadmap/04-propagation.md#stage-043), [044](../../docs/roadmap/04-propagation.md#stage-044)
+**Dependencies:** [034](../../docs/roadmap/02-existing-sound.md#stage-034), [035](../../docs/roadmap/02-existing-sound.md#stage-035), [043](../../docs/roadmap/04-propagation.md#stage-043), [044](../../docs/roadmap/04-propagation.md#stage-044), [113](14-review-fixes.md#stage-113)
 
 **Deliverable:** Connect retained production-mixture gas to the actual B0 graph for supported arbitrary physical lengths. Define current receive/solve/commit, pressure/flow normals and one accepted mass/species/total-energy interface flux with reflected load.
 

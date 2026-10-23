@@ -40,4 +40,9 @@ not replacements for D01–D09/R01–R18. Development is held for instruction.
 | R17 | Real-time delivery unresolved | [062](05-engine-qualification.md#stage-062), [069](07-browser.md#stage-069) | [077](08-3d.md#stage-077), [084](09-turbo.md#stage-084), [099](12-release.md#stage-099), [102](12-release.md#stage-102) | Actual full-engine callbacks, tails/max/observed misses/memory on named hardware and deployed product. |
 | R18 | Isolated tests / ambiguous completion | [036](03-contracts-and-sources.md#stage-036) | [060](05-engine-qualification.md#stage-060), [061](05-engine-qualification.md#stage-061), [063](05-engine-qualification.md#stage-063), [069](07-browser.md#stage-069), [099](12-release.md#stage-099), [102](12-release.md#stage-102) | Independent fixtures, failure controls, production path and separate numerical/realism/runtime/user acceptance. |
 
+The later [completed-stage review](../review-completed-stages-2026-10-23.md)
+also reproduced C07/C08. Their bounded repairs are [113](../stage-113.md)
+(derived-state/numerical guards) and [112](../stage-112.md) (section publication).
+These do not close any broader D/R physics, realism or runtime obligation.
+
 Every realism-changing stage also checks whether it reopens a previously accepted finding. Turbo, knock/damage, new layouts, learned integration and final tuning repeat affected physics, listening and runtime checks; base-engine acceptance is not inherited outside its envelope.

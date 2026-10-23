@@ -12,13 +12,17 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** [the canonical roadmap](PLAN.md) now uses Stages **001–111**,
+**Status:** [the canonical roadmap](PLAN.md) now uses Stages **001–113**,
 with a [crosswalk for every old ID](docs/roadmap/legacy-map.md). Native engine
 physics, five presets, rendering and bounded acoustic experiments exist. The
 latest [open-duct coupling proof](docs/stage-S2d-0b-B1a.md) passes its stated
 numerical fixtures; it is below real time and does not yet connect the full
 production engine to the acoustic graph. The browser is still the tone scaffold;
 product 3D, turbo, knock/damage and expanded layouts remain planned.
+
+The [review repairs](docs/roadmap/14-review-fixes.md) harden checkpoint
+publication and acoustic numerical failure handling. Accepted engine audio
+stays unchanged; broader sound-physics/integration gates remain open.
 
 **Next: Stage 037**, shared build/geometry/event/snapshot contracts, followed by
 causal source and propagation qualification before the playable browser and 3D.

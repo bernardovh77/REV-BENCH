@@ -65,6 +65,9 @@ void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
+void test_candidate_wave_derived_domain(void);
+void test_candidate_wave_overflow_requires_prepare(void);
+void test_candidate_wave_storage_and_radiation_limits(void);
 void test_candidate_current_tick_interface(void);
 void test_coupled_duct_conservative_open_port(void);
 void test_coupled_duct_entropy_and_guards(void);
@@ -275,6 +278,9 @@ static const struct {
     T(test_radiation_causal_impedance),
     T(test_radiation_pipe_work),
     T(test_candidate_wave_guards),
+    T(test_candidate_wave_derived_domain),
+    T(test_candidate_wave_overflow_requires_prepare),
+    T(test_candidate_wave_storage_and_radiation_limits),
     T(test_candidate_current_tick_interface),
     T(test_coupled_duct_conservative_open_port),
     T(test_coupled_duct_entropy_and_guards),

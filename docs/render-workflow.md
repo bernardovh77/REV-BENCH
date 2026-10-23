@@ -18,6 +18,14 @@ inputs fail before replacing the last good result. Each research/reference
 producer registers through the same composer; repeat publication adds no
 duplicate sections. See [the checkpoint](stage-S2d-0b-B1a.md).
 
+[Stage 112](stage-112.md) additionally protects registered fragments from
+interrupted section updates: new fragments are complete, hash-verified and
+immutable before publication. Ordinary write/install exceptions preserve the
+previous rebuildable checkpoint, including page-install rollback. Serialize
+producers; this does not promise concurrent writers, multi-file crash atomicity
+or recovery from persistent storage failure. Unreferenced internal fragments
+may remain after a failed attempt; the published result is still one file.
+
 The existing result was migrated once with `--adopt-current`; do not pass that
 flag again to an already registered checkpoint. Self-contained section
 fragments are local generated assets, not alternate result pages. The one
