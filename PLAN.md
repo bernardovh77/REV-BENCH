@@ -28,6 +28,13 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
+**Current instruction: hold after review.** The [completed-stage retrospective](docs/review-completed-stages-2026-10-23.md)
+covers 001–036, retains the existing open physics/integration risks and records
+two additional reproduced gaps: extreme-input acoustic guards and interrupted
+results-fragment writes. No fixes or later stages have started. Resume only on
+Bernardo's instruction; the publication gap needs a bounded follow-up before
+the next affected sound publication.
+
 **Next default execution: Stage 037 — shared build, geometry, event and snapshot
 contracts.** Stage 039 references can proceed independently after 036; acquire
 missing evidence early without blocking unrelated numerical fixtures.

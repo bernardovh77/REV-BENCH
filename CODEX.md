@@ -4,6 +4,32 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: brief completed-stage review — HOLD
+
+- Bernardo requests review of every completed stage, then hold. Scope and all
+  001–036 coverage: docs/review-completed-stages-2026-10-23.md. No core/prototype
+  source, audio, references or Claude setup changes; do not start037 or fixes.
+- Six existing risk groups remain: causal combustion/variation/injector events;
+  acoustic/thermal/guard validity; incompatible pulse/noise/listener paths;
+  unmatched references/high-RPM assumptions; prototype-to-engine/runtime limits;
+  shared geometry/event/rebuild and actual browser integration contracts.
+- C07 newly reproduced: B0 accepts finite but extreme input and can returnOK
+  with infinite energy/work and zero failures; tiny positive area can produce
+  infinite prepared impedance. This is an input/derived-book guard gap before
+  general adapter use, not a normal-pressure/current-render failure. Owners
+  037/038/045; ordinary bounded fixture results remain valid.
+- C08 newly reproduced in a temporary folder: publisher overwrites a registered
+  section before its rollback try. A partial write/exception leaves the previous
+  page and manifest intact but corrupts the fragment; next hash-checked rebuild
+  fails. Stage033 needs a bounded follow-up before affected publication. No fix
+  or new execution stage allocated during this review.
+- Two reproduction sources/outputs, source hashes and focused tests live under
+  ignored renders/evidence/completed-review-2026-10-23/. Existing global-suite
+  counts are historical, not freshly rerun. Graphify queried; source topology
+  unchanged. Preserve .agents/ and skills-lock.json without staging.
+- HOLD for further instructions. Stage037 remains the next planned item only;
+  do not interpret Ready status as permission to resume development.
+
 ## 2026-10-23: canonical whole-project roadmap — Stage 036
 
 - Bernardo requests a definitive renumbered plan covering prototypes, testing,

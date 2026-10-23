@@ -4,6 +4,12 @@
 
 This assigns all **D01–D09 / R01–R18** findings to explicit stages. It does not close any finding or erase the original audit's superseded-configuration caveats. Completion requires a linked execution record and affected integration/acceptance evidence. Scoped limitations and deferred mechanisms remain labeled, not reported as implemented fixes.
 
+The later [completed-stage review](../review-completed-stages-2026-10-23.md)
+also records C07 (prototype derived-state/energy guards; owners 037/038/045)
+and C08 (interrupted results-fragment write; bounded publication follow-up
+needed before the next affected checkpoint). Those are additional findings,
+not replacements for D01–D09/R01–R18. Development is held for instruction.
+
 | Finding | Issue | Primary owner | Required cross-checks | Evidence needed for closure |
 | --- | --- | --- | --- | --- |
 | D01 | Pre-spark heat release | [040](03-contracts-and-sources.md#stage-040) | [057](05-engine-qualification.md#stage-057), [059](05-engine-qualification.md#stage-059) | Zero pre-actual-ignition heat, event/fuel/work books and an early-heat fault. |
