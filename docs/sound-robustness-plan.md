@@ -6,6 +6,14 @@ accepted I6/flat/cross exhaust selection remains the baseline. This document
 defines subsequent work; completing the experiment does not automatically
 implement every stage below or close S1/S2/S4/13b.
 
+The 2026-10-23 [S2d implementation specification](stage-S2d-design.md) turns
+the next architecture comparison into explicit topology/port contracts,
+conservative and wave-network algorithms, reflected-load coupling, source
+ownership, mixed-rate/runtime tests and staged deliverables. It also specifies
+standalone engine-specific learned-DSP controls and conditional source-only
+integration. This is a completed design checkpoint, not completed S2d/S2e/S6
+implementation or listening acceptance.
+
 ## Engineering direction
 
 Use the gas simulation as the causal source of firing timing, pressure/flow,
@@ -87,6 +95,15 @@ waveform generators and offline component characterization. It recommends a
 coupled gas/acoustic prototype against the improved-1D control, with the
 learned model as a data-dependent additional benchmark. No architecture is
 promoted solely from published reconstruction scores.
+
+Use the [implementation specification](stage-S2d-design.md) for the A0/A1/B0/B1
+comparison, equations, source/flux ownership and C integration boundaries.
+Begin with fixed-background fixtures, then return-load/mean-flow coupling;
+validate any reduced-rate scheduler against a common-rate control. Retain
+downstream hot/cold gas advection and species inventories. A two-wave line
+alone cannot reproduce entrainment or contact fronts. Learned complete-sound
+comparators stay outside engine feedback; only identified unresolved-source
+parameters may later enter the shared physical graph.
 
 **Candidate A: improve the conservative 1D gas network.** Reconstruct/update
 the coupled transported variables consistently, retain robust nonlinear

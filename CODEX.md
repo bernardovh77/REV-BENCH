@@ -4,6 +4,40 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: S2d implementation specification
+
+- Bernardo requests a concrete technical design for improved conservative 1D
+  versus coupled gas/acoustic rendering and engine-specific learned synthesis.
+  Specification: docs/stage-S2d-design.md. Architecture sketches, equations,
+  proposed C module/API boundaries, experiment arms and small implementation
+  steps are documented; none is presented as an implemented prototype.
+- A0 remains the accepted production control. A1 starts as an isolated coupled-
+  variable conservative duct solver. B0 starts with a quiescent wave/scattering
+  graph; B1 returns its load to a retained nonlinear gas region using one
+  conservative boundary flux. Mean advection/thermal/species transport cannot
+  disappear when acoustic propagation changes. Shared geometry owns all pulse/
+  unresolved-source paths and exactly one radiation load.
+- Mean-flow energy, entropy/front transport, coefficient-change work and
+  short-component/direct-feedthrough solves are explicit gates. Test the known
+  hot/refined growth and partition failures; separate temperature, reversal
+  and mixing before assigning the I6 coast rise to numerical damping.
+- L0 pulse and learned order/noise gain comparators remain outside physical
+  feedback. Prefer offline fitting/export to conventional C DSP. Published
+  16-kHz/synthetic limits do not establish 48-kHz or unseen-exhaust validity.
+  Conditional L1 fits identified unresolved sources through the validated
+  geometry graph; no duplicate resolved combustion pulses/resonance filters.
+- Cost: current native stereo baseline is below real time. Adding a graph to
+  all existing downstream gas work cannot establish a performance gain. Profile
+  first; replace only validated degrees of freedom. Existing callback target
+  remains proposed/unachieved; stronger hardware needs measured realism benefit.
+- Current checkpoint edits documentation only. Graphify queried for coupling
+  sites; source topology is unchanged, so no AST rebuild is needed. No new
+  audio/model/training/core/WASM/preset/Claude changes. S2d/S2e/S6 and parent
+  sound/13b acceptance stay open; stage14 unstarted. Next entry: S2d-0.
+- Documentation links/fences/whitespace and 1,000 static-junction equation
+  checks pass; RESULTS.html hash matches S2c. These are design checks, not
+  prototype acceptance. Native/web suites were not rerun for documentation.
+
 ## 2026-10-23: S2c experiment and sound-generation roadmap
 
 - Bernardo authorizes the experiment, results and a robust method/plan, then

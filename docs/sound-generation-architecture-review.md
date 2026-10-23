@@ -11,6 +11,12 @@ parameter model as an additional research control when suitable real data are
 available. A generic waveform GAN/diffusion replacement is not yet supported
 by this project's evidence.
 
+The [S2d implementation specification](stage-S2d-design.md) now defines the
+experimental arms, architecture sketches, conservative-variable and wave-port
+equations, reflected-load/mean-flow coupling, C module boundaries, learned-DSP
+deployment and staged validation/runtime gates. It is a design checkpoint;
+no alternative renderer or trained model has been implemented or promoted.
+
 ## Why changing the architecture may help
 
 The experiment exposes numerical dispersion/loss in the current gas network

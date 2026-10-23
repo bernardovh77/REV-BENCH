@@ -5,7 +5,20 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — S2c experiment and sound robustness plan (2026-10-23):**
+**Current request — acoustic-renderer implementation design (2026-10-23):**
+Bernardo asks for a technical plan, architecture sketches and algorithms for
+the conservative-1D versus coupled gas/acoustic comparison, plus engine-specific
+learned synthesis deployed as conventional DSP. The
+[S2d implementation specification](docs/stage-S2d-design.md) defines the shared
+geometry, reflected-load/flux contract, numerical candidates, source placement,
+mean-flow/thermal separation, mixed-rate tests and runtime gates. It also
+defines standalone learned controls and conditional source-parameter integration,
+with real-data, bandwidth and unseen-exhaust validation. Design is complete;
+no candidate implementation or production sound change is claimed. Start
+implementation at S2d-0, then isolated A1/B0 fixtures. Parent sound/13b stages
+remain open and stage 14 remains unstarted.
+
+**Previous request — S2c experiment and sound robustness plan (2026-10-23):**
 Bernardo authorizes the proposed source/transport experiment and asks for the
 results and a method for further realism. Run independent spatial/pipe-time/
 engine-time controls, isolate same-trajectory sources, compare documented raw
@@ -156,7 +169,7 @@ gets a one-line summary of anything that changed from the plan.
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S2c | Independent source and acoustic transport experiment | Sound realism | ✅ | 241 guarded pipe cases/71 exclusions, 30 engine trajectories, 3 actual ECU coasts; source/phase/cost findings and architecture decision method in docs/stage-S2c.md. Production sound unchanged; listening acceptance separate |
-| S2d | Acoustic-preserving transport decision | Sound realism | ⬜ | Compare conservative 1D and coupled hybrid candidates using amplitude/phase, nonlinear behavior, interfaces and cost; no replacement selected yet |
+| S2d | Acoustic-preserving transport decision | Sound realism | ⬜ | Implementation specification in docs/stage-S2d-design.md: A1 conservative transport vs B0/B1 reflected-load graph, flux/energy ownership and staged fixtures; design complete, candidates not implemented/selected |
 | S2e | Unified geometry-aware source/exhaust transfer | Sound realism | ⬜ | Consistent pulse/noise routes, throat states, X/Y, temperature/flow, packing/perforates and load/radiation validation |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S3b | Engine-specific turbulence and structure | Sound realism | ⬜ | State-conditioned unresolved sources, pressure-force/body transfer, modes, mounts and accessory timing; no arbitrary random detail |
@@ -180,7 +193,7 @@ gets a one-line summary of anything that changed from the plan.
 | 23 | More layouts & presets                           | Polish           | ⬜     | |
 | 24 | UX polish, save/share builds, quality settings   | Polish           | ⬜     | |
 | S5 | Sound: tuning by ear 🎧                           | Polish           | ⬜     | Once everything is built |
-| S6 | Optional conditioned learned residual | Research | ⬜ | Only after physical validation, matched data and a demonstrated residual gap; compare structured DSP/GAN/diffusion with causal controls and listening/runtime evidence |
+| S6 | Optional conditioned learned residual | Research | ⬜ | S2d design specifies standalone pulse/learned-gain DSP benchmarks; source-only integration requires matched real data, physical validation and an unmet gap. Hardware/high-band/control/listening/runtime gates remain open |
 | 25 | Deploy to Vercel + README                        | Ship             | ⬜     | 🚀 |
 | 26 | Optional extras (gearbox, 2-stroke, export, ...) | Extras           | ⬜     | Pick à la carte |
 
