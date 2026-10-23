@@ -468,3 +468,21 @@ valve-float modeling remain future work. Full geometry assumptions, native
 convergence, upper-order measurements, processing cost and the changed coast
 contrast are in [stage 13b-r](docs/stage-13b-r.md). New listening approval is
 pending; S1's existing combustion/repetition requirements stay open.
+
+## S2c experiment and architecture comparison — 2026-10-23
+
+The source/transport experiment is complete in [stage S2c](docs/stage-S2c.md).
+It distinguishes numerical dispersion/loss, coherent pipe sources, additional
+noise and presentation filtering. The evidence supports comparing an improved
+conservative 1D control with coupled nonlinear-gas/acoustic-network rendering;
+it does not yet establish a better sounding replacement. Current engine
+settings and Claude setup remain selected.
+
+[The robustness plan](docs/sound-robustness-plan.md) defines staged, proposed
+acceptance gates, data needs, source/load consistency, whole-engine listening
+and measured cost. [The architecture review](docs/sound-generation-architecture-review.md)
+evaluates changing generation, including recent engine-specific learned
+representations and the limits of their evidence. [The primary-source
+companion](docs/audio-robustness-research.md) records validity domains and maps
+all existing audit findings. A faster timestep, brighter spectrum or neural
+model is not itself evidence of realism.

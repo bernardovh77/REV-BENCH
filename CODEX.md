@@ -4,6 +4,58 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: S2c experiment and sound-generation roadmap
+
+- Bernardo authorizes the experiment, results and a robust method/plan, then
+  explicitly requests research into changing sound generation. Complete
+  evidence/method: docs/stage-S2c.md. Future stage gates:
+  docs/sound-robustness-plan.md; primary sources and all 27 audit mappings:
+  docs/audio-robustness-research.md. Architecture comparison:
+  docs/sound-generation-architecture-review.md.
+- Transport: 312 matrix configurations, 241 guarded/71 spatial exclusions.
+  Fine space reduces phase/loss; time alone can worsen energy retention.
+  At zero flow 2 kHz, 37.5→9.375 mm improves phase134.65→8.30 degrees despite
+  ~100% perturbation energy throughout. Independent discrete dispersion
+  predicts the errors. Refined hot-flow growth is scoped to the tested
+  segmented network; partition sensitivity leaves interface/bulk attribution open.
+- Source matrix: 30 trajectories/60 captures, three engines/two RPMs/five
+  independent or combined rate/grid controls. Baseline mono production identity
+  is exactly0 in six checks; simultaneous stems reconstruct within ~1e-15.
+  Engine-rate doubling changes upper-band fraction≤.15dB; finer space at fixed
+  pipe time changes I6/cross/flat by+5.93/.85/5.29dB. These are spectral changes,
+  not listening realism acceptance. All repairs/limiter counts0.
+- Held injection-off is not ECU overrun; residual heat and synthesized injector
+  clicks are documented. Three additional ten-second actual-ECU coasts trace
+  lift .5s, fuel cut .65s, clutch8.5s. I6 early coast rises6.06dB, dominated by
+  pipe pulses while added flow noise falls. No idle checkpoint by10s is claimed.
+- Actual early-coast tail end-cell gas T drops848→319/904→312/974→316K;
+  this is local near-mouth gas, not wall/whole-exhaust cooling. Boundary
+  entrainment, transient thermal behavior and numerical mixing need separation;
+  do not attribute the transition to mean-flow damping alone.
+- Native production-stereo cost control (cross6500,O3,LTO0,no trace output):
+  median CPU real-time factor .563 baseline/.211 combined ultra. These are not
+  WASM, engine-only or callback acceptance results. Uniform refinement is costly.
+- Recommended next comparison: acoustic-preserving conservative1D vs coupled
+  nonlinear gas/acoustic network with reflected source loading and common
+  geometry-dependent pulse/noise transfer. Recent engine-specific pulse/learned
+  parameter papers are relevant benchmarks, not proof of arbitrary hardware
+  physics. Neural residual remains conditional on matched data and an unmet gap.
+- Six raw stereo reference intervals retain unknown RPM/load/perspective;
+  M4 turbo/NA-I6 mismatch remains. Current33 engine WAVs/59 reference files
+  are preserved; all34 accepted examples/five full coasts stay in RESULTS.html,
+  with appended plots/twelve common-gain diagnostic comparisons. Selected
+  float diagnostics are grouped in renders/current/experiment/; temporary
+  controls are cleaned after publication validation, numeric evidence retained.
+- Native175/4472,Python29,web17,transport/source ASan/UBSan and meaningful
+  analyzer/spectral self-checks pass. Offline result/graph details are in the
+  final evidence manifest: all46clips play, original34previews/59references
+  unchanged, original4jumpbuttons and4plots valid. Removed252temporary
+  controls/1.75GB; kept42selectedfloats together, republication after cleanup
+  passes. GraphifyAST2011nodes/5485edges/113communities, knownrb.h:415 limit;
+  no document semantic extraction claimed. No engine/preset/WASM/Claude edits.
+  S1/S1e/S2/S4/full13b remain open; stage14 unstarted. Future stages are planned,
+  not silently implemented by this experimental checkpoint.
+
 ## 2026-10-22: initial audio bottleneck diagnosis
 
 - Bernardo asks for an architecture review and initial bottleneck hypothesis,

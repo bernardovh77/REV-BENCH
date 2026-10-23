@@ -5,15 +5,24 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — initial audio bottleneck diagnosis (2026-10-22):** review
-the architecture and assess the proposed neural-audio failure modes. The
-[diagnostic notes](docs/audio-bottleneck-diagnosis-2026-10-22.md) confirm that
-the current renderer is physical/procedural, with no trained neural generator
-or loss function. Inspect spatial/mean-flow acoustic transport and source
-coupling first; final output limiting is inactive in the current recordings.
-These are ranked hypotheses and proposed measurements, not authorization to
-implement the audit backlog or replace the renderer. Current sound and open
-stage statuses are preserved; hold development after this review.
+**Current request — S2c experiment and sound robustness plan (2026-10-23):**
+Bernardo authorizes the proposed source/transport experiment and asks for the
+results and a method for further realism. Run independent spatial/pipe-time/
+engine-time controls, isolate same-trajectory sources, compare documented raw
+references and publish the findings in the existing single results file.
+The [sound robustness plan](docs/sound-robustness-plan.md) defines the following
+small stages, research/measurement gates and a conditional neural-model path.
+The [generation-architecture review](docs/sound-generation-architecture-review.md)
+explicitly compares changing the renderer with refining the current solver.
+S2c is complete: [results and method](docs/stage-S2c.md). Current exhaust settings
+remain the baseline, with the experiment appended to the single RESULTS.html.
+This authorizes the experiment and plan; it does not silently implement the
+entire subsequent roadmap or close unresolved listening/physics acceptance.
+
+**Previous request — initial bottleneck diagnosis:** the
+[diagnostic notes](docs/audio-bottleneck-diagnosis-2026-10-22.md) identify the
+current physical/procedural renderer, acoustic transport/source-coupling
+hypotheses and inactive output limiter. No trained audio model is present.
 
 **Previous request — selective sound rollback (2026-10-22):** restore the flat
 V8's accepted pre-13b-r exhaust sound; restore that I6 exhaust sound while
@@ -139,15 +148,23 @@ gets a one-line summary of anything that changed from the plan.
 | S1c | Repeatable five-preset sound and combustion audit | Sound realism | ✅ | 30-second float baselines and per-cylinder COV; I4/boxer repetition misses target, V8 idle COV needs review; physics unchanged (docs/stage-S1c.md) |
 | S1d | Trapped-mixture feedback in burn timing | Sound realism | ✅ | Actual post-injection mixture drives life-enabled flame speed; 153 tests, four mutants caught, full matched dyno changes <0.055%; repetition still unresolved (docs/stage-S1d.md) |
 | S1e | Research and controlled overrun transitions | Sound realism | 🔄 | Timed pedal-lift ignition/fuel transition and immediate-cut control; real falling-pitch intervals documented; consolidated acceptance in docs/checkpoint-13b.md |
+| S1f | Causal excitation and complete diagnostics | Sound realism | ⬜ | Pre-spark heat, continuous variation control, actual injection events, residual-state validity and full repair/cap observability; gates in docs/sound-robustness-plan.md |
 | R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
 | R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
+| R2 | Matched recordings and calibration data | Sound realism | ⬜ | Stable perspective/RPM/load and known hardware, especially NA I6/boxer; raw stereo, held-out sessions and explicit uncertainty |
 | S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Repetition, high V8 idle COV and ignition requirements remain unresolved. New exhaust sound accepted 2026-10-22; this does not close the remaining S1 checks |
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
+| S2c | Independent source and acoustic transport experiment | Sound realism | ✅ | 241 guarded pipe cases/71 exclusions, 30 engine trajectories, 3 actual ECU coasts; source/phase/cost findings and architecture decision method in docs/stage-S2c.md. Production sound unchanged; listening acceptance separate |
+| S2d | Acoustic-preserving transport decision | Sound realism | ⬜ | Compare conservative 1D and coupled hybrid candidates using amplitude/phase, nonlinear behavior, interfaces and cost; no replacement selected yet |
+| S2e | Unified geometry-aware source/exhaust transfer | Sound realism | ⬜ | Consistent pulse/noise routes, throat states, X/Y, temperature/flow, packing/perforates and load/radiation validation |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
+| S3b | Engine-specific turbulence and structure | Sound realism | ⬜ | State-conditioned unresolved sources, pressure-force/body transfer, modes, mounts and accessory timing; no arbitrary random detail |
 | S4 | Sound: stereo and the place 🎧                    | Sound realism    | 🔄     | Eight native/WASM scenes, separate sources/ears, Doppler and damped room tail; listening acceptance pending (docs/stage-S4.md) |
+| S4b | Validated listener and recording transfer | Sound realism | ⬜ | Delay bandwidth, vehicle/cabin geometry, moving histories and known-position response comparisons |
 | 13b-a | Batched pipe thermodynamics and SIMD | Sound | ✅ | Strict double SIMD workspace, vectorized mixtures, LTO; sound identity and validation in docs/stage-13b.md |
 | 13b| Performance II: vectorized pipes, implicit valves| Sound            | 🔄     | Coupled port/neighbor-face probe still misses convergence; persistent SoA and 4x/2x targets remain open; newer physical-model timing in docs/stage-13b-r.md |
+| 13b-c | Measured fidelity tiers and runtime | Sound realism | ⬜ | Optimize the validated model; native/WASM parity, callback tails/memory/underruns and explicit hardware requirements; realism gains justify cost |
 | 13b-p | Model-specific complete exhaust systems and pipe physics research | Sound realism | ✅ | Five research configurations, X/Y and center sections, causal radiation work; Bernardo accepts the improved sound. One current results file includes all long coasts; full 13b remains open |
 | 13b-r | High-RPM exhaust character and revised rev limits | Sound realism | ✅ | Selective rollback: I6 retains 8500 with its earlier twin exhaust, flat V8 restores its earlier Tubi-style path at 9000; cross V8 keeps 7500/rear-delete X. See docs/stage-13b-r-rollback.md; hold after updated results |
 | A1 | Complete sound and engine-physics audit | Review | ✅ | 27 findings in docs/sound-physics-audit-2026-10-22.md; audit only, no fixes applied. Hold for Bernardo's instructions; open sound/13b acceptance stays open |
@@ -163,6 +180,7 @@ gets a one-line summary of anything that changed from the plan.
 | 23 | More layouts & presets                           | Polish           | ⬜     | |
 | 24 | UX polish, save/share builds, quality settings   | Polish           | ⬜     | |
 | S5 | Sound: tuning by ear 🎧                           | Polish           | ⬜     | Once everything is built |
+| S6 | Optional conditioned learned residual | Research | ⬜ | Only after physical validation, matched data and a demonstrated residual gap; compare structured DSP/GAN/diffusion with causal controls and listening/runtime evidence |
 | 25 | Deploy to Vercel + README                        | Ship             | ⬜     | 🚀 |
 | 26 | Optional extras (gearbox, 2-stroke, export, ...) | Extras           | ⬜     | Pick à la carte |
 
