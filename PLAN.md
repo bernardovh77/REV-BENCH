@@ -5,7 +5,22 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — additional cross V8 references (2026-10-23):**
+**Current request — architecture/progress review with grill-with-docs (2026-10-23):**
+Review the production program, native prototypes and evidence before selecting
+the next step. [The review](docs/review-acoustic-architecture-2026-10-23.md)
+supports interface-first S2d-0 work followed by a small common-clock B1 coupling
+proof. It identifies same-tick feedback/port-sign integration hazards, missing
+gas-state/guard contracts, native/browser differences and a confirmed results
+rebuild regression (76 current WAVs versus 34 expected). Bernardo accepts both
+scope recommendations: interface/coupling proof first, plus a separate
+complete-checkpoint publication repair before more audio. This review records
+the agreed next development scope; it does not implement those fixes or select
+a production renderer. [Domain terms](GLOSSARY.md) and the
+[prototype ownership decision](docs/adr/0001-coupled-exhaust-ownership.md)
+separate the agreed experiment from an unaccepted production architecture.
+Existing acceptance statuses and the accepted sounds remain unchanged.
+
+**Previous request — additional cross V8 references (2026-10-23):**
 Import Bernardo's rcf.lorax and viper_ws9 clips with light listening-only
 filtering. Both are recorded behind the cars at approximately 3 m from the
 tailpipes according to Bernardo; preserve that context without treating it as
@@ -185,8 +200,8 @@ gets a one-line summary of anything that changed from the plan.
 | S1d | Trapped-mixture feedback in burn timing | Sound realism | ✅ | Actual post-injection mixture drives life-enabled flame speed; 153 tests, four mutants caught, full matched dyno changes <0.055%; repetition still unresolved (docs/stage-S1d.md) |
 | S1e | Research and controlled overrun transitions | Sound realism | 🔄 | Timed pedal-lift ignition/fuel transition and immediate-cut control; real falling-pitch intervals documented; consolidated acceptance in docs/checkpoint-13b.md |
 | S1f | Causal excitation and complete diagnostics | Sound realism | ⬜ | Pre-spark heat, continuous variation control, actual injection events, residual-state validity and full repair/cap observability; gates in docs/sound-robustness-plan.md |
-| R1 | User sound reference recordings | Sound realism | ✅ | 16 local excerpts, brighter/darker groups, stereo previews and separate comparison catalog (docs/user-sound-references.md) |
-| R1b | Filtered reference listening copies | Sound realism | ✅ | 16 stereo filtered excerpts, four compilations and four matched raw/filtered pairs; 25 existing files byte-identical (docs/user-sound-references.md) |
+| R1 | User sound reference recordings | Sound realism | ✅ | 16 selected excerpts plus two full rear/approximately-3-m cross V8 clips; six sources / 18 catalog entries. Unannotated states and perspective evidence in docs/user-sound-references.md |
+| R1b | Filtered reference listening copies | Sound realism | ✅ | Original 16 filtered excerpts plus two full rear cross V8 clips; matched original/filtered listening pairs. Raw measurement files preserved; details in docs/user-sound-references.md |
 | R2 | Matched recordings and calibration data | Sound realism | ⬜ | Stable perspective/RPM/load and known hardware, especially NA I6/boxer; raw stereo, held-out sessions and explicit uncertainty |
 | S1 | Sound: life (cycle-to-cycle variation) 🎧         | Sound realism    | 🔄     | Repetition, high V8 idle COV and ignition requirements remain unresolved. New exhaust sound accepted 2026-10-22; this does not close the remaining S1 checks |
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |

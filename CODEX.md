@@ -4,6 +4,42 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: grill-with-docs review — next checkpoint agreed
+
+- User requests analysis of progress, production/prototype structure and next
+  step. docs/review-acoustic-architecture-2026-10-23.md records evidence,
+  confirmed structural findings and the agreed next checkpoint. No source,
+  physics, audio, preset or Claude setup changes.
+- The explicitly invoked wrapper requires grilling/domain-modeling. Companion
+  skills were absent locally and read from mattpocock/skills upstream. Their
+  fact-finding instruction authorized read-only agent reviews; their interview
+  requires waiting for scope answers before dependent implementation. Bernardo
+  answered yes to both recommendations: interface/coupling-first physics scope
+  and a complete-results-rebuild repair before the next audio checkpoint.
+- B0's current drive-first monolithic step cannot expose this tick's returning
+  waves for an external gas solve without an API change or duplicated internals.
+  Its one-port flow sign also needs orientation at the gas boundary. These
+  are integration hazards, not failures of the current static B0 fixtures.
+- Geometry remains a snapshot; changing background gas and conservative
+  coupling/guard observability remain unimplemented. A1's current rejection
+  applies to that tested configuration. Production/native stereo and browser
+  mono have separate validation/runtime requirements. The browser page remains
+  the stage2 test-tone scaffold; interactive engine integration is stillstage14,
+  unstarted. No learned engine exists.
+- Confirmed publication regression introduced by accumulated experiment files:
+  renders/current contains76WAVs; write_page expects34 and rejects42extra.
+  Reproduced failure before writes; RESULTS.html unchanged. Three append
+  publishers plus the replacing standard render do not provide a complete
+  one-command48-player rebuild. Proposed fix: one declared checkpoint inventory
+  and atomic composition; do not delete accepted/reference/evidence assets.
+- Retained S2d344rows/18exclusions, aggregate CSVs and47source hashes match.
+  Existing test counts are historical validation; no full suites/experiments
+  rerun for this documentation review. Graphify queried; AST topology unchanged.
+- GLOSSARY.md records resolved terms only. docs/adr/0001-coupled-exhaust-ownership.md
+  records accepted prototype scope, not a production replacement. This review
+  does not implement the agreed next checkpoint. Parent sound/13b stages
+  remain open. Preserve user-added .agents/ and skills-lock.json without staging.
+
 ## 2026-10-23: additional rear cross V8 references — hold after import
 
 - Bernardo supplies rcf.lorax / DeztBYHSkCj and viper_ws9 / DewsrGHTcOZ
