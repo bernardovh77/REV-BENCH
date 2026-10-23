@@ -5,7 +5,17 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — acoustic-renderer experiments and development (2026-10-23):**
+**Current request — additional cross V8 references (2026-10-23):**
+Import Bernardo's rcf.lorax and viper_ws9 clips with light listening-only
+filtering. Both are recorded behind the cars at approximately 3 m from the
+tailpipes according to Bernardo; preserve that context without treating it as
+calibrated geometry or correcting them to 1 m. Keep unfiltered stereo float
+measurement audio, document provenance and processing in
+[the reference notes](docs/user-sound-references.md), and add matched listening
+copies to the single RESULTS.html. Hold after this import; S2d development and
+all unresolved sound/13b acceptance checks remain open.
+
+**Previous request — acoustic-renderer experiments and development (2026-10-23):**
 Bernardo authorizes starting development from the S2d design. The first native
 checkpoint implements isolated conservative A1 and quiescent acoustic B0
 candidates, semantic topology/identity controls and production profiling.

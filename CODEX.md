@@ -4,6 +4,36 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: additional rear cross V8 references — hold after import
+
+- Bernardo supplies rcf.lorax / DeztBYHSkCj and viper_ws9 / DewsrGHTcOZ
+  as cross-plane V8 references. Both are recorded behind the car at roughly
+  3 m from the tailpipes according to him. Preserve this user-reported context;
+  exact geometry, vehicle/exhaust, motion and recording calibration are unknown.
+- Source definitions: tools/rear_v8_reference_sources.json. Full decoded clips
+  are approximately 52.013 s and 15.186 s, registered in the existing user
+  reference catalog as user-reported-rear-3m. Unfiltered 48-kHz stereo float
+  measurement WAVs remain source-level; do not fold channels before measuring
+  power. Legacy compare_real.py still folds to mono; use audio_wav and the S2c
+  per-channel analysis for these stereo references.
+- Light listening processing uses the existing 20-Hz high-pass / 6-dB FFT
+  noise-reduction chain and 10-ms end fades, without distance EQ/gain or pitch
+  correction. Filtered copies and raw-then-filtered pairs are local under
+  renders/user-reference-previews/rear-v8/; pairs are embedded in RESULTS.html.
+  Each pair shares one fixed gain; source-to-source levels are uncalibrated.
+- docs/user-sound-references.md records intervals, provenance, caveats,
+  reproduction and validation. No new speech/isolation claim. Preserve original
+  clips, previous references, accepted renders, core/WASM and Claude's setup.
+- Hold for Bernardo's next instruction after this reference checkpoint.
+  Do not continue acoustic development or close S1/S2d/full 13b acceptance.
+- Validation: native189/4820, Python38 without skips, web17; all48 offline
+  players, exclusive playback, four original seek buttons and six prior plots
+  pass. Both measurement files equal direct source decode; filtered frame counts
+  match. All108 older hashed files and46 embedded previews remain unchanged.
+  Graphify AST refreshed to2159nodes/5933edges/112communities, knownrb.h:415
+  limit. No semantic extraction is claimed. FFT end flushing now preserves
+  fractional clip endings; the added integration check exercises this case.
+
 ## 2026-10-23: S2d initial native experiments and development
 
 - Bernardo authorizes starting development from the design. Actual modules,

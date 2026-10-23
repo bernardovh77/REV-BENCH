@@ -1,0 +1,62 @@
+{
+  "note": "Two local MP3s supplied by Bernardo on 2026-10-23 as cross-plane V8 references. Preserve the complete decoded recordings, stereo and source level for measurements. Operating-state intervals have not been annotated or speech-screened; do not assume isolated engine stems.",
+  "perspective_policy": "Both recorded outside behind the car at approximately 3 m from the tailpipes, according to Bernardo. This is user-reported context, not an independently measured microphone geometry. No 3-m to 1-m gain/EQ or Doppler correction; motion, ground/reflections, microphone directivity and automatic gain are unknown.",
+  "recordings": [
+    {
+      "key": "rcf-lorax",
+      "video_id": "DeztBYHSkCj",
+      "source_filename": "Video by rcf.lorax [DeztBYHSkCj].mp3",
+      "source_url": "",
+      "source_sha256": "6642ad1478b745f26de499ce2f4f5777377d89b19a30dede81322fcc7e099e2e",
+      "title": "Cross V8 reference — rcf.lorax",
+      "preset": "v8-cross",
+      "cylinders": 8,
+      "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+      "measurement_channels": 2,
+      "viewpoint_status": "user-reported",
+      "viewpoint_note": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+      "distance_m_approx": 3,
+      "distance_evidence": "user-reported; no calibration",
+      "decoded_frames_48k": 2496610,
+      "segments": [
+        {
+          "start": 0,
+          "end": 52.012708,
+          "acoustic_group": "rear-3m",
+          "place": "user-reported-rear-3m",
+          "viewpoint_status": "user-reported",
+          "perspective_transition": "not annotated; retain any recorded motion",
+          "operating_state": "full clip; RPM, load and state transitions unannotated"
+        }
+      ]
+    },
+    {
+      "key": "viper-ws9",
+      "video_id": "DewsrGHTcOZ",
+      "source_filename": "Video by viper_ws9 [DewsrGHTcOZ].mp3",
+      "source_url": "",
+      "source_sha256": "c0890755e88d75da92643b4cfccf3277ffbad5f857784656d4646c6b3705de15",
+      "title": "Cross V8 reference — viper_ws9",
+      "preset": "v8-cross",
+      "cylinders": 8,
+      "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+      "measurement_channels": 2,
+      "viewpoint_status": "user-reported",
+      "viewpoint_note": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+      "distance_m_approx": 3,
+      "distance_evidence": "user-reported; no calibration",
+      "decoded_frames_48k": 728921,
+      "segments": [
+        {
+          "start": 0,
+          "end": 15.185854,
+          "acoustic_group": "rear-3m",
+          "place": "user-reported-rear-3m",
+          "viewpoint_status": "user-reported",
+          "perspective_transition": "not annotated; retain any recorded motion",
+          "operating_state": "full clip; RPM, load and state transitions unannotated"
+        }
+      ]
+    }
+  ]
+}

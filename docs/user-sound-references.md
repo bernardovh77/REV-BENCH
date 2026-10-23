@@ -1,8 +1,10 @@
 # Bernardo's engine sound examples — 2026-10-21
 
-Four local MP3s supplied by Bernardo now provide 16 engine-dominant reference
-excerpts. They supplement the Freesound collection; the simulator still generates
-its own audio from the physics. Source audio is kept local in ignored renders/.
+Six local MP3s supplied by Bernardo now provide 18 reference entries. The original
+four contribute 16 selected engine-dominant excerpts; the two new cross V8 entries
+retain full clips and unannotated operating states. They supplement the Freesound
+collection; the simulator still generates its own audio from the physics.
+Source audio is kept local in ignored renders/.
 
 ## What the references represent
 
@@ -187,3 +189,113 @@ in the ignored filtered-output directory.
 The previews are engine-dominant excerpts. Overlapping road/wind and other
 mechanical sounds are not perfectly separated; the cleanup is not claimed to
 produce studio-isolated engine stems.
+
+## Additional rear cross V8 recordings — 2026-10-23
+
+Bernardo supplies two further clips for **v8-cross**. He states that **both were
+recorded outside behind the car, approximately 3 m from the tailpipes**. This
+is stronger viewpoint evidence than the inferred brighter/darker groups above,
+but is not a calibrated measurement of microphone geometry. Car/engine model,
+exhaust, RPM/load, motion, microphone response, automatic gain, edits and ground
+reflections remain unverified. The handles do not establish vehicle identity.
+
+| Source MP3 | Preserved source interval | 48-kHz decoded frames | Catalog ID |
+| --- | --- | ---: | --- |
+| Video by rcf.lorax [DeztBYHSkCj].mp3 | 0–52.012708 s, full decoded clip | 2,496,610 | user-rcf-lorax-rear-3m-0 |
+| Video by viper_ws9 [DewsrGHTcOZ].mp3 | 0–15.185854 s, full decoded clip | 728,921 | user-viper-ws9-rear-3m-0 |
+
+Decoded duration excludes MP3 codec padding; interval endpoints are rounded to
+microseconds. Source definitions, SHA-256 fingerprints and perspective evidence
+are in `tools/rear_v8_reference_sources.json`. Both entries append to
+`tools/user_engine_references.csv` with `place=user-reported-rear-3m`. Their
+`kind=rev` is a broad catalog selection category, **not verified operating-state
+annotation**. No idle, load, lift-off or coast timestamps or speech-screening
+results are asserted for these new clips. Select and inspect intervals before
+using them as phase-specific targets. Their hosting platform and source URLs
+are unverified; the catalog does not invent a YouTube URL from the filenames.
+The supplied originals remain unchanged and redistribution is not granted.
+
+### Processing and distance
+
+- Measurements: `renders/real/user-{rcf-lorax,viper-ws9}-rear-3m-0.wav`, full
+  source-level **48-kHz stereo IEEE float32**. Decode/resample only; no EQ,
+  denoising, gain, fade or channel averaging. Resampling the 44.1-kHz MP3s
+  adds no original bandwidth or fidelity. The old 16 mono measurement excerpts
+  are preserved; new stereo sources avoid cancellation from folding channels.
+- Lightly filtered listening copies:
+  `renders/user-reference-previews/rear-v8/filtered/`. Same conservative
+  `highpass=f=20:p=2,afftdn=nr=6:nf=-50:tn=1` chain as R1b, followed by 10-ms
+  end fades. A 100-ms zero pad flushes the FFT filter, then the output is
+  trimmed to the exact source interval **before** fading. This prevents the
+  incomplete final FFT block from truncating the recording; duration and
+  unfiltered source samples are checked separately.
+- Original-then-filtered pairs: each full original listening segment, 0.7 s of
+  silence, then the corresponding filtered segment. The original half has
+  only 10-ms end fades. Both halves share one static gain targeting −3 dBFS
+  before 192-kbit/s MP3 encoding; there is no compression, gating, pitch shift
+  or time stretching. Gains differ between recordings, so pair loudness is
+  not a source-to-source or absolute-SPL comparison. Manifests record gains,
+  exact processing and sequence times.
+- **Distance is context, not a corrective EQ target.** Keep these in their
+  rear/approximately-3-m group. No 3-m-to-1-m gain boost, brightness restoration,
+  cabin inverse filter or Doppler correction is applied. Unknown mic gain,
+  reflections, direction and motion prevent that calibration. For later
+  comparisons, render the virtual listener with corresponding geometry and
+  inspect the remaining recording uncertainty instead of forcing a match.
+- Filtering is a modest listening aid, not an isolated engine stem. Overlapping
+  wind, speech, road/ambient noise or music may remain; broadband engine texture
+  can also be reduced. **Use only unfiltered float WAVs for measurements**, with
+  channel powers measured separately before averaging. `compare_real.py` still
+  folds stereo to mono; use `audio_wav.read_wav` and the S2c per-channel analysis
+  for these new sources until that legacy analysis limitation is addressed.
+
+### Reproduction and checkpoint
+
+From the repository root, with an executable FFmpeg:
+
+```sh
+python tools/prepare_user_references.py --source-dir /mnt/c/Users/berna \
+  --ffmpeg /path/to/ffmpeg --config tools/rear_v8_reference_sources.json \
+  --append-catalog --preview-dir renders/user-reference-previews/rear-v8 \
+  --filtered-listening --filtered-dir renders/user-reference-previews/rear-v8/filtered \
+  --publish-filtered
+```
+
+The command verifies supplied source fingerprints before writing, preserves
+existing catalog rows and adds no duplicate IDs on an identical rerun. Use
+`--filtered-only` in place of `--filtered-listening` to regenerate only listening
+artifacts. The results page must already exist: publication adds a marked
+reference section and retains all engine examples, long coasts and research
+plots. Both matched pairs are embedded in the existing `renders/RESULTS.html`
+under **New references**, so no separate results page is introduced.
+
+Preservation hashes and signal checks are retained locally in
+`renders/user-reference-previews/rear-v8/validation.json` and
+`preservation-before.json`; playback checks are in `browser-validation.json`.
+Production sound, engine settings and acoustic-renderer development are unchanged.
+**Hold for Bernardo's next instruction after this import.**
+
+Validation: both raw stereo float WAVs equal a direct decode/resample of their
+supplied MP3s sample for sample. Filtered WAVs retain the same complete frame
+counts and are finite. The 108 previously hashed files (including accepted WAVs,
+old reference audio and Claude setup) and all 46 existing embedded preview
+payloads are unchanged; the page now has 48 playable recordings. Original MP3
+fingerprints match. The catalog has 18 unique entries with its original rows
+preserved.
+
+Measured listening-filter changes, with channel powers averaged after spectral
+analysis (8192-sample Hann blocks, first/last 100 ms omitted):
+
+| Clip | 6–20 Hz | 20–500 Hz | 500–2000 Hz | 2–8 kHz | 8–16 kHz |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| rcf.lorax | −4.260 dB | −0.008 dB | −0.001 dB | −0.020 dB | −0.040 dB |
+| viper_ws9 | −4.655 dB | −0.004 dB | approximately 0 dB | −0.015 dB | −0.183 dB |
+
+These quantify this light listening treatment, not engine isolation or calibrated
+distance response. Native tests pass (189 tests / 4820 checks), Python analysis
+tests pass (38, no skips, including real-FFmpeg stereo/catalog and fractional-end
+regressions), and web unit tests pass (17). Offline Chromium checks all 48
+players, exclusive playback, four original top-band seek buttons and six retained
+research plots. Graphify's AST graph was refreshed to 2159 nodes / 5933 edges /
+112 communities; the existing `rb.h:415` extraction limitation remains. No
+semantic extraction of these documentation/data additions is claimed.
