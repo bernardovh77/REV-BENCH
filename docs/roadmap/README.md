@@ -9,8 +9,8 @@ rejection rule. They are specifications, not a second status tracker.
 This roadmap was agreed in scope/order with Bernardo on 2026-10-23. It changes
 planning and documentation, not engine sound, production physics or deployment.
 Stages 001–035 preserve historical implementation/experiment evidence;
-036 establishes this roadmap. Appended review repairs 112/113 precede the next
-default feature task 037. Recordings in 039
+036 establishes this roadmap. Appended review repairs 112/113 precede the
+completed contracts stage 037. Next default is 038. Recordings in 039
 may be developed alongside independent numerical work. Future stage numbers
 are not evidence that their work has started.
 

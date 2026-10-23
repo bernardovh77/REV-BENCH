@@ -24,8 +24,13 @@ The [review repairs](docs/roadmap/14-review-fixes.md) harden checkpoint
 publication and acoustic numerical failure handling. Accepted engine audio
 stays unchanged; broader sound-physics/integration gates remain open.
 
-**Next: Stage 037**, shared build/geometry/event/snapshot contracts, followed by
-causal source and propagation qualification before the playable browser and 3D.
+The [shared versioned contracts](contracts/README.md) now have a
+[five-preset native proof](docs/stage-037.md), including stable identities and
+explicit event/clock/snapshot/rebuild rules. Their production APIs and runtime
+delivery remain later work.
+
+**Next: Stage 038**, numerical guard and flux observability, followed by causal
+source and propagation qualification before the playable browser and 3D.
 The [stage protocol](docs/roadmap/README.md) separates experiment results,
 production integration, runtime and Bernardo's realism acceptance. Full release
 includes the original feature scope; learned synthesis and extras are conditional.

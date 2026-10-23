@@ -1,0 +1,422 @@
+{
+  "cylinders": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "bore": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "stroke": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "rod": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "compression_ratio": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "banks": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "bank_angle": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "bank"
+  },
+  "bank": {
+    "unit": "1",
+    "integer": true,
+    "shape": "cylinder"
+  },
+  "pin": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "cylinder"
+  },
+  "position": {
+    "unit": "m",
+    "integer": false,
+    "shape": "cylinder"
+  },
+  "firing_order": {
+    "unit": "1",
+    "integer": true,
+    "shape": "cylinder"
+  },
+  "firing_angle": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "cylinder"
+  },
+  "intake_valves": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "intake_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "intake_port": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "intake_lift": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "intake_duration": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "intake_center": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "intake_cd": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_valves": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "exhaust_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_port": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_lift": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_duration": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_center": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_cd": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "throttle_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "throttle_shaft": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "throttle_closed_angle": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "throttle_cd": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "throttle_leak_area": {
+    "unit": "m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "plenum_volume": {
+    "unit": "m^3",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "airbox_volume": {
+    "unit": "m^3",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "snorkel_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "snorkel_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "runner_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "runner_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "header_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "cylinder"
+  },
+  "header_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "collector": {
+    "unit": "1",
+    "integer": true,
+    "shape": "cylinder"
+  },
+  "exhaust_pipe_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_pipe_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "exhaust_systems": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "catalyst_area": {
+    "unit": "m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "muffler_type": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "muffler_volume": {
+    "unit": "m^3",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "muffler_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "muffler_area": {
+    "unit": "m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "tailpipe_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "tailpipe_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "center_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "center_diameter": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "center_volume": {
+    "unit": "m^3",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "center_packing": {
+    "unit": "Pa s/m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "link_length": {
+    "unit": "m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "junction_volume": {
+    "unit": "m^3",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "junction_before_center": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "outlet_radiation": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "ambient_pressure": {
+    "unit": "Pa",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "ambient_temperature": {
+    "unit": "K",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "burn_duration": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "wiebe_a": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "wiebe_m": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "mixture_spread": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "combustion_efficiency": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "heat_transfer": {
+    "unit": "1",
+    "integer": true,
+    "shape": "scalar"
+  },
+  "wall_temperature": {
+    "unit": "K",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "inertia": {
+    "unit": "kg m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "fmep_constant": {
+    "unit": "Pa",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "fmep_pressure": {
+    "unit": "1",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "fmep_speed": {
+    "unit": "Pa s/m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "fmep_speed2": {
+    "unit": "Pa s^2/m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "accessory_power": {
+    "unit": "W",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "starter_torque": {
+    "unit": "N m",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "starter_free_speed": {
+    "unit": "rad/s",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "idle_speed": {
+    "unit": "rad/s",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "idle_valve_area": {
+    "unit": "m^2",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "idle_gain_p": {
+    "unit": "s/rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "idle_gain_i": {
+    "unit": "1/rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "rev_limit": {
+    "unit": "rad/s",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "rev_limit_resume": {
+    "unit": "rad/s",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "cranking_speed": {
+    "unit": "rad/s",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "cranking_spark": {
+    "unit": "rad",
+    "integer": false,
+    "shape": "scalar"
+  },
+  "catalyst_laminar": {
+    "unit": "Pa s/m",
+    "integer": false,
+    "shape": "scalar"
+  }
+}

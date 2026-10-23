@@ -97,3 +97,18 @@ _Avoid_: slow motion when only unrelated cosmetic movement is slowed
 A labeled depiction that explains an engine process without claiming a
 spatially resolved physical result, such as a flame shape from lumped burn fraction.
 _Avoid_: CFD result or resolved flame front without that physical solution
+
+**Build revision**:
+The immutable configuration version, distinct from the running-state generation.
+A cold reset may keep this revision while replacing all running state.
+_Avoid_: generation when referring only to a tuning/configuration edit
+
+**Prepared-state generation**:
+The identity of one installed engine state, its compiled topology, event history
+and observation epoch. Rebuild/reset invalidates old handles and observations.
+_Avoid_: pipe index or native pointer as a persistent identity
+
+**Logical boundary graph**:
+Component interfaces and their semantic connections, distinct from a solver's
+cells/faces and from the spatial centerline used to depict the physical route.
+_Avoid_: mesh when referring to logical component connectivity

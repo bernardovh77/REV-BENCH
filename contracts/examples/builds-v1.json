@@ -1,0 +1,4069 @@
+[
+  {
+    "build_id": "i4",
+    "extensions": {},
+    "generation": "1",
+    "geometry": {
+      "components": [
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i4/runner-0",
+          "kind": "runner",
+          "length_m": 0.33,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/runner-0:0",
+              "node_id": "i4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/runner-0:1",
+              "node_id": "i4/intake-valve-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i4/runner-1",
+          "kind": "runner",
+          "length_m": 0.33,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/runner-1:0",
+              "node_id": "i4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/runner-1:1",
+              "node_id": "i4/intake-valve-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i4/runner-2",
+          "kind": "runner",
+          "length_m": 0.33,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/runner-2:0",
+              "node_id": "i4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/runner-2:1",
+              "node_id": "i4/intake-valve-2"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i4/runner-3",
+          "kind": "runner",
+          "length_m": 0.33,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/runner-3:0",
+              "node_id": "i4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/runner-3:1",
+              "node_id": "i4/intake-valve-3"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0010178760197630929,
+          "centerline_m": null,
+          "id": "i4/header-0",
+          "kind": "header",
+          "length_m": 0.58,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/header-0:0",
+              "node_id": "i4/exhaust-valve-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/header-0:1",
+              "node_id": "i4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0010178760197630929,
+          "centerline_m": null,
+          "id": "i4/header-1",
+          "kind": "header",
+          "length_m": 0.4,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/header-1:0",
+              "node_id": "i4/exhaust-valve-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/header-1:1",
+              "node_id": "i4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0010178760197630929,
+          "centerline_m": null,
+          "id": "i4/header-2",
+          "kind": "header",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/header-2:0",
+              "node_id": "i4/exhaust-valve-2"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/header-2:1",
+              "node_id": "i4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0010178760197630929,
+          "centerline_m": null,
+          "id": "i4/header-3",
+          "kind": "header",
+          "length_m": 0.52,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/header-3:0",
+              "node_id": "i4/exhaust-valve-3"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/header-3:1",
+              "node_id": "i4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "i4/exhaust-0",
+          "kind": "exhaust",
+          "length_m": 0.65,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/exhaust-0:0",
+              "node_id": "i4/collector-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/exhaust-0:1",
+              "node_id": "i4/center-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "i4/tailpipe-0",
+          "kind": "tailpipe",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/tailpipe-0:0",
+              "node_id": "i4/muffler-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/tailpipe-0:1",
+              "node_id": "i4/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.016576875259013673,
+          "centerline_m": null,
+          "id": "i4/muffler-0",
+          "kind": "muffler",
+          "length_m": 0.7239,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/muffler-0:0",
+              "node_id": "i4/muffler-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/muffler-0:1",
+              "node_id": "i4/muffler-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.003848451000647497,
+          "centerline_m": null,
+          "id": "i4/snorkel",
+          "kind": "snorkel",
+          "length_m": 0.35,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/snorkel:0",
+              "node_id": "i4/ambient-intake-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/snorkel:1",
+              "node_id": "i4/airbox-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.010774968918358888,
+          "centerline_m": null,
+          "id": "i4/center-0",
+          "kind": "center",
+          "length_m": 0.2413,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/center-0:0",
+              "node_id": "i4/center-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/center-0:1",
+              "node_id": "i4/center-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "i4/link-0",
+          "kind": "link",
+          "length_m": 1.05,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i4/link-0:0",
+              "node_id": "i4/center-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i4/link-0:1",
+              "node_id": "i4/muffler-inlet-0"
+            }
+          ]
+        }
+      ],
+      "engine_to_vehicle": null,
+      "frame": "engine",
+      "nodes": [
+        {
+          "id": "i4/plenum-0",
+          "kind": "plenum"
+        },
+        {
+          "id": "i4/intake-valve-0",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i4/intake-valve-1",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i4/intake-valve-2",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i4/intake-valve-3",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i4/exhaust-valve-0",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i4/collector-0",
+          "kind": "collector"
+        },
+        {
+          "id": "i4/exhaust-valve-1",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i4/exhaust-valve-2",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i4/exhaust-valve-3",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i4/center-inlet-0",
+          "kind": "center-inlet"
+        },
+        {
+          "id": "i4/muffler-outlet-0",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "i4/ambient-exhaust-0",
+          "kind": "ambient-exhaust"
+        },
+        {
+          "id": "i4/muffler-inlet-0",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "i4/ambient-intake-0",
+          "kind": "ambient-intake"
+        },
+        {
+          "id": "i4/airbox-0",
+          "kind": "airbox"
+        },
+        {
+          "id": "i4/center-outlet-0",
+          "kind": "center-outlet"
+        }
+      ],
+      "representation": "legacy-logical"
+    },
+    "kind": "engine-build",
+    "parameters": {
+      "accessory_power": [
+        800
+      ],
+      "airbox_volume": [
+        0.008
+      ],
+      "ambient_pressure": [
+        101325
+      ],
+      "ambient_temperature": [
+        298.15
+      ],
+      "bank": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "bank_angle": [
+        0
+      ],
+      "banks": [
+        1
+      ],
+      "bore": [
+        0.086
+      ],
+      "burn_duration": [
+        1.0471975511965976
+      ],
+      "catalyst_area": [
+        0.0021
+      ],
+      "catalyst_laminar": [
+        25
+      ],
+      "center_diameter": [
+        0.0484
+      ],
+      "center_length": [
+        0.2413
+      ],
+      "center_packing": [
+        0
+      ],
+      "center_volume": [
+        0.0026
+      ],
+      "collector": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "combustion_efficiency": [
+        0.98
+      ],
+      "compression_ratio": [
+        10
+      ],
+      "cranking_spark": [
+        0.08726646259971647
+      ],
+      "cranking_speed": [
+        41.8879020478639
+      ],
+      "cylinders": [
+        4
+      ],
+      "exhaust_cd": [
+        0.7
+      ],
+      "exhaust_center": [
+        4.363323129985824
+      ],
+      "exhaust_diameter": [
+        0.028
+      ],
+      "exhaust_duration": [
+        4.363323129985824
+      ],
+      "exhaust_lift": [
+        0.009
+      ],
+      "exhaust_pipe_diameter": [
+        0.0484
+      ],
+      "exhaust_pipe_length": [
+        0.65
+      ],
+      "exhaust_port": [
+        0.023799999999999998
+      ],
+      "exhaust_systems": [
+        1
+      ],
+      "exhaust_valves": [
+        2
+      ],
+      "firing_angle": [
+        0,
+        9.42477796076938,
+        3.141592653589793,
+        6.283185307179586
+      ],
+      "firing_order": [
+        0,
+        2,
+        3,
+        1
+      ],
+      "fmep_constant": [
+        38000
+      ],
+      "fmep_pressure": [
+        0.005
+      ],
+      "fmep_speed": [
+        5300
+      ],
+      "fmep_speed2": [
+        40
+      ],
+      "header_diameter": [
+        0.036
+      ],
+      "header_length": [
+        0.58,
+        0.4,
+        0.3,
+        0.52
+      ],
+      "heat_transfer": [
+        1
+      ],
+      "idle_gain_i": [
+        0.002291831180523293
+      ],
+      "idle_gain_p": [
+        0.002291831180523293
+      ],
+      "idle_speed": [
+        83.7758040957278
+      ],
+      "idle_valve_area": [
+        4.7e-05
+      ],
+      "inertia": [
+        0.16
+      ],
+      "intake_cd": [
+        0.7
+      ],
+      "intake_center": [
+        8.203047484373348
+      ],
+      "intake_diameter": [
+        0.033
+      ],
+      "intake_duration": [
+        4.363323129985824
+      ],
+      "intake_lift": [
+        0.0095
+      ],
+      "intake_port": [
+        0.028050000000000002
+      ],
+      "intake_valves": [
+        2
+      ],
+      "junction_before_center": [
+        0
+      ],
+      "junction_volume": [
+        0
+      ],
+      "link_length": [
+        1.05
+      ],
+      "mixture_spread": [
+        0.07
+      ],
+      "muffler_area": [
+        0.0019
+      ],
+      "muffler_length": [
+        0.7239
+      ],
+      "muffler_type": [
+        2
+      ],
+      "muffler_volume": [
+        0.012
+      ],
+      "outlet_radiation": [
+        1
+      ],
+      "pin": [
+        0,
+        3.141592653589793,
+        3.141592653589793,
+        0
+      ],
+      "plenum_volume": [
+        0.0025
+      ],
+      "position": [
+        0,
+        0.096,
+        0.192,
+        0.28800000000000003
+      ],
+      "rev_limit": [
+        712.0943348136864
+      ],
+      "rev_limit_resume": [
+        701.6223593017204
+      ],
+      "rod": [
+        0.143
+      ],
+      "runner_diameter": [
+        0.04
+      ],
+      "runner_length": [
+        0.33
+      ],
+      "snorkel_diameter": [
+        0.07
+      ],
+      "snorkel_length": [
+        0.35
+      ],
+      "starter_free_speed": [
+        26.17993877991494
+      ],
+      "starter_torque": [
+        200
+      ],
+      "stroke": [
+        0.086
+      ],
+      "tailpipe_diameter": [
+        0.0484
+      ],
+      "tailpipe_length": [
+        0.32
+      ],
+      "throttle_cd": [
+        0.8
+      ],
+      "throttle_closed_angle": [
+        0.12217304763960307
+      ],
+      "throttle_diameter": [
+        0.06
+      ],
+      "throttle_leak_area": [
+        2e-06
+      ],
+      "throttle_shaft": [
+        0.008
+      ],
+      "wall_temperature": [
+        430
+      ],
+      "wiebe_a": [
+        5
+      ],
+      "wiebe_m": [
+        2
+      ]
+    },
+    "required_features": [],
+    "schema_version": 1,
+    "sources": [
+      {
+        "component_id": "i4/tailpipe-0",
+        "id": "i4/tailpipe-0/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "i4/tailpipe-0:1"
+      },
+      {
+        "component_id": "i4/snorkel",
+        "id": "i4/snorkel/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "i4/snorkel:0"
+      }
+    ],
+    "revision": "1"
+  },
+  {
+    "build_id": "i6",
+    "extensions": {},
+    "generation": "1",
+    "geometry": {
+      "components": [
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-0",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-0:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-0:1",
+              "node_id": "i6/intake-valve-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-1",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-1:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-1:1",
+              "node_id": "i6/intake-valve-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-2",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-2:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-2:1",
+              "node_id": "i6/intake-valve-2"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-3",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-3:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-3:1",
+              "node_id": "i6/intake-valve-3"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-4",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-4:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-4:1",
+              "node_id": "i6/intake-valve-4"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "i6/runner-5",
+          "kind": "runner",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/runner-5:0",
+              "node_id": "i6/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/runner-5:1",
+              "node_id": "i6/intake-valve-5"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-0",
+          "kind": "header",
+          "length_m": 0.48,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-0:0",
+              "node_id": "i6/exhaust-valve-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-0:1",
+              "node_id": "i6/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-1",
+          "kind": "header",
+          "length_m": 0.4,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-1:0",
+              "node_id": "i6/exhaust-valve-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-1:1",
+              "node_id": "i6/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-2",
+          "kind": "header",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-2:0",
+              "node_id": "i6/exhaust-valve-2"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-2:1",
+              "node_id": "i6/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-3",
+          "kind": "header",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-3:0",
+              "node_id": "i6/exhaust-valve-3"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-3:1",
+              "node_id": "i6/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-4",
+          "kind": "header",
+          "length_m": 0.4,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-4:0",
+              "node_id": "i6/exhaust-valve-4"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-4:1",
+              "node_id": "i6/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "i6/header-5",
+          "kind": "header",
+          "length_m": 0.48,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/header-5:0",
+              "node_id": "i6/exhaust-valve-5"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/header-5:1",
+              "node_id": "i6/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/exhaust-0",
+          "kind": "exhaust",
+          "length_m": 0.55,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/exhaust-0:0",
+              "node_id": "i6/collector-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/exhaust-0:1",
+              "node_id": "i6/center-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/exhaust-1",
+          "kind": "exhaust",
+          "length_m": 0.55,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/exhaust-1:0",
+              "node_id": "i6/collector-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/exhaust-1:1",
+              "node_id": "i6/center-inlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/tailpipe-0",
+          "kind": "tailpipe",
+          "length_m": 0.25,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/tailpipe-0:0",
+              "node_id": "i6/muffler-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/tailpipe-0:1",
+              "node_id": "i6/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/tailpipe-1",
+          "kind": "tailpipe",
+          "length_m": 0.25,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/tailpipe-1:0",
+              "node_id": "i6/muffler-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/tailpipe-1:1",
+              "node_id": "i6/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/muffler-0",
+          "kind": "muffler",
+          "length_m": 0.52,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/muffler-0:0",
+              "node_id": "i6/muffler-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/muffler-0:1",
+              "node_id": "i6/muffler-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/muffler-1",
+          "kind": "muffler",
+          "length_m": 0.52,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/muffler-1:0",
+              "node_id": "i6/muffler-inlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/muffler-1:1",
+              "node_id": "i6/muffler-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0063617251235193305,
+          "centerline_m": null,
+          "id": "i6/snorkel",
+          "kind": "snorkel",
+          "length_m": 0.4,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/snorkel:0",
+              "node_id": "i6/ambient-intake-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/snorkel:1",
+              "node_id": "i6/airbox-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/center-0",
+          "kind": "center",
+          "length_m": 0.7,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/center-0:0",
+              "node_id": "i6/center-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/center-0:1",
+              "node_id": "i6/center-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/center-1",
+          "kind": "center",
+          "length_m": 0.7,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/center-1:0",
+              "node_id": "i6/center-inlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/center-1:1",
+              "node_id": "i6/center-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/link-0",
+          "kind": "link",
+          "length_m": 0.55,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/link-0:0",
+              "node_id": "i6/center-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/link-0:1",
+              "node_id": "i6/muffler-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.00209116973393551,
+          "centerline_m": null,
+          "id": "i6/link-1",
+          "kind": "link",
+          "length_m": 0.55,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "i6/link-1:0",
+              "node_id": "i6/center-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "i6/link-1:1",
+              "node_id": "i6/muffler-inlet-1"
+            }
+          ]
+        }
+      ],
+      "engine_to_vehicle": null,
+      "frame": "engine",
+      "nodes": [
+        {
+          "id": "i6/plenum-0",
+          "kind": "plenum"
+        },
+        {
+          "id": "i6/intake-valve-0",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/intake-valve-1",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/intake-valve-2",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/intake-valve-3",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/intake-valve-4",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/intake-valve-5",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "i6/exhaust-valve-0",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/collector-0",
+          "kind": "collector"
+        },
+        {
+          "id": "i6/exhaust-valve-1",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/exhaust-valve-2",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/exhaust-valve-3",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/collector-1",
+          "kind": "collector"
+        },
+        {
+          "id": "i6/exhaust-valve-4",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/exhaust-valve-5",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "i6/center-inlet-0",
+          "kind": "center-inlet"
+        },
+        {
+          "id": "i6/center-inlet-1",
+          "kind": "center-inlet"
+        },
+        {
+          "id": "i6/muffler-outlet-0",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "i6/ambient-exhaust-0",
+          "kind": "ambient-exhaust"
+        },
+        {
+          "id": "i6/muffler-outlet-1",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "i6/muffler-inlet-0",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "i6/muffler-inlet-1",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "i6/ambient-intake-0",
+          "kind": "ambient-intake"
+        },
+        {
+          "id": "i6/airbox-0",
+          "kind": "airbox"
+        },
+        {
+          "id": "i6/center-outlet-0",
+          "kind": "center-outlet"
+        },
+        {
+          "id": "i6/center-outlet-1",
+          "kind": "center-outlet"
+        }
+      ],
+      "representation": "legacy-logical"
+    },
+    "kind": "engine-build",
+    "parameters": {
+      "accessory_power": [
+        950
+      ],
+      "airbox_volume": [
+        0.01
+      ],
+      "ambient_pressure": [
+        101325
+      ],
+      "ambient_temperature": [
+        298.15
+      ],
+      "bank": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "bank_angle": [
+        0
+      ],
+      "banks": [
+        1
+      ],
+      "bore": [
+        0.084
+      ],
+      "burn_duration": [
+        1.0471975511965976
+      ],
+      "catalyst_area": [
+        0.0016
+      ],
+      "catalyst_laminar": [
+        25
+      ],
+      "center_diameter": [
+        0.0516
+      ],
+      "center_length": [
+        0.7
+      ],
+      "center_packing": [
+        0
+      ],
+      "center_volume": [
+        0
+      ],
+      "collector": [
+        0,
+        0,
+        0,
+        1,
+        1,
+        1
+      ],
+      "combustion_efficiency": [
+        0.98
+      ],
+      "compression_ratio": [
+        10.5
+      ],
+      "cranking_spark": [
+        0.08726646259971647
+      ],
+      "cranking_speed": [
+        41.8879020478639
+      ],
+      "cylinders": [
+        6
+      ],
+      "exhaust_cd": [
+        0.7
+      ],
+      "exhaust_center": [
+        4.363323129985824
+      ],
+      "exhaust_diameter": [
+        0.027
+      ],
+      "exhaust_duration": [
+        4.363323129985824
+      ],
+      "exhaust_lift": [
+        0.009300000000000001
+      ],
+      "exhaust_pipe_diameter": [
+        0.0516
+      ],
+      "exhaust_pipe_length": [
+        0.55
+      ],
+      "exhaust_port": [
+        0.022949999999999998
+      ],
+      "exhaust_systems": [
+        2
+      ],
+      "exhaust_valves": [
+        2
+      ],
+      "firing_angle": [
+        0,
+        8.377580409572781,
+        4.1887902047863905,
+        10.471975511965978,
+        2.0943951023931953,
+        6.283185307179586
+      ],
+      "firing_order": [
+        0,
+        4,
+        2,
+        5,
+        1,
+        3
+      ],
+      "fmep_constant": [
+        38000
+      ],
+      "fmep_pressure": [
+        0.005
+      ],
+      "fmep_speed": [
+        5300
+      ],
+      "fmep_speed2": [
+        40
+      ],
+      "header_diameter": [
+        0.036000000000000004
+      ],
+      "header_length": [
+        0.48,
+        0.4,
+        0.32,
+        0.32,
+        0.4,
+        0.48
+      ],
+      "heat_transfer": [
+        1
+      ],
+      "idle_gain_i": [
+        0.003055774907364391
+      ],
+      "idle_gain_p": [
+        0.004201690497626038
+      ],
+      "idle_speed": [
+        73.30382858376184
+      ],
+      "idle_valve_area": [
+        5.6e-05
+      ],
+      "inertia": [
+        0.2
+      ],
+      "intake_cd": [
+        0.7
+      ],
+      "intake_center": [
+        8.203047484373348
+      ],
+      "intake_diameter": [
+        0.032
+      ],
+      "intake_duration": [
+        4.363323129985824
+      ],
+      "intake_lift": [
+        0.0097
+      ],
+      "intake_port": [
+        0.0272
+      ],
+      "intake_valves": [
+        2
+      ],
+      "junction_before_center": [
+        0
+      ],
+      "junction_volume": [
+        0
+      ],
+      "link_length": [
+        0.55
+      ],
+      "mixture_spread": [
+        0.07
+      ],
+      "muffler_area": [
+        0.0028
+      ],
+      "muffler_length": [
+        0.52
+      ],
+      "muffler_type": [
+        1
+      ],
+      "muffler_volume": [
+        0.015
+      ],
+      "outlet_radiation": [
+        1
+      ],
+      "pin": [
+        0,
+        4.1887902047863905,
+        2.0943951023931953,
+        2.0943951023931953,
+        4.1887902047863905,
+        0
+      ],
+      "plenum_volume": [
+        0.004
+      ],
+      "position": [
+        0,
+        0.091,
+        0.182,
+        0.273,
+        0.364,
+        0.45499999999999996
+      ],
+      "rev_limit": [
+        890.117918517108
+      ],
+      "rev_limit_resume": [
+        879.645943005142
+      ],
+      "rod": [
+        0.145
+      ],
+      "runner_diameter": [
+        0.04
+      ],
+      "runner_length": [
+        0.42
+      ],
+      "snorkel_diameter": [
+        0.09
+      ],
+      "snorkel_length": [
+        0.4
+      ],
+      "starter_free_speed": [
+        26.17993877991494
+      ],
+      "starter_torque": [
+        250
+      ],
+      "stroke": [
+        0.09
+      ],
+      "tailpipe_diameter": [
+        0.0516
+      ],
+      "tailpipe_length": [
+        0.25
+      ],
+      "throttle_cd": [
+        0.8
+      ],
+      "throttle_closed_angle": [
+        0.12217304763960307
+      ],
+      "throttle_diameter": [
+        0.07
+      ],
+      "throttle_leak_area": [
+        3e-06
+      ],
+      "throttle_shaft": [
+        0.008
+      ],
+      "wall_temperature": [
+        430
+      ],
+      "wiebe_a": [
+        5
+      ],
+      "wiebe_m": [
+        2
+      ]
+    },
+    "required_features": [],
+    "schema_version": 1,
+    "sources": [
+      {
+        "component_id": "i6/tailpipe-0",
+        "id": "i6/tailpipe-0/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "i6/tailpipe-0:1"
+      },
+      {
+        "component_id": "i6/tailpipe-1",
+        "id": "i6/tailpipe-1/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "i6/tailpipe-1:1"
+      },
+      {
+        "component_id": "i6/snorkel",
+        "id": "i6/snorkel/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "i6/snorkel:0"
+      }
+    ],
+    "revision": "1"
+  },
+  {
+    "build_id": "v8-cross",
+    "extensions": {},
+    "generation": "1",
+    "geometry": {
+      "components": [
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-0",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-0:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-0:1",
+              "node_id": "v8-cross/intake-valve-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-1",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-1:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-1:1",
+              "node_id": "v8-cross/intake-valve-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-2",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-2:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-2:1",
+              "node_id": "v8-cross/intake-valve-2"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-3",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-3:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-3:1",
+              "node_id": "v8-cross/intake-valve-3"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-4",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-4:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-4:1",
+              "node_id": "v8-cross/intake-valve-4"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-5",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-5:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-5:1",
+              "node_id": "v8-cross/intake-valve-5"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-6",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-6:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-6:1",
+              "node_id": "v8-cross/intake-valve-6"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0015904312808798326,
+          "centerline_m": null,
+          "id": "v8-cross/runner-7",
+          "kind": "runner",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/runner-7:0",
+              "node_id": "v8-cross/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/runner-7:1",
+              "node_id": "v8-cross/intake-valve-7"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-0",
+          "kind": "header",
+          "length_m": 0.52,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-0:0",
+              "node_id": "v8-cross/exhaust-valve-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-0:1",
+              "node_id": "v8-cross/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-1",
+          "kind": "header",
+          "length_m": 0.52,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-1:0",
+              "node_id": "v8-cross/exhaust-valve-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-1:1",
+              "node_id": "v8-cross/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-2",
+          "kind": "header",
+          "length_m": 0.44,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-2:0",
+              "node_id": "v8-cross/exhaust-valve-2"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-2:1",
+              "node_id": "v8-cross/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-3",
+          "kind": "header",
+          "length_m": 0.44,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-3:0",
+              "node_id": "v8-cross/exhaust-valve-3"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-3:1",
+              "node_id": "v8-cross/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-4",
+          "kind": "header",
+          "length_m": 0.36,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-4:0",
+              "node_id": "v8-cross/exhaust-valve-4"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-4:1",
+              "node_id": "v8-cross/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-5",
+          "kind": "header",
+          "length_m": 0.36,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-5:0",
+              "node_id": "v8-cross/exhaust-valve-5"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-5:1",
+              "node_id": "v8-cross/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-6",
+          "kind": "header",
+          "length_m": 0.28,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-6:0",
+              "node_id": "v8-cross/exhaust-valve-6"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-6:1",
+              "node_id": "v8-cross/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "v8-cross/header-7",
+          "kind": "header",
+          "length_m": 0.28,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/header-7:0",
+              "node_id": "v8-cross/exhaust-valve-7"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/header-7:1",
+              "node_id": "v8-cross/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/exhaust-0",
+          "kind": "exhaust",
+          "length_m": 0.8,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/exhaust-0:0",
+              "node_id": "v8-cross/collector-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/exhaust-0:1",
+              "node_id": "v8-cross/junction-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/exhaust-1",
+          "kind": "exhaust",
+          "length_m": 0.8,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/exhaust-1:0",
+              "node_id": "v8-cross/collector-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/exhaust-1:1",
+              "node_id": "v8-cross/junction-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/tailpipe-0",
+          "kind": "tailpipe",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/tailpipe-0:0",
+              "node_id": "v8-cross/muffler-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/tailpipe-0:1",
+              "node_id": "v8-cross/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/tailpipe-1",
+          "kind": "tailpipe",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/tailpipe-1:0",
+              "node_id": "v8-cross/muffler-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/tailpipe-1:1",
+              "node_id": "v8-cross/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/muffler-0",
+          "kind": "muffler",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/muffler-0:0",
+              "node_id": "v8-cross/muffler-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/muffler-0:1",
+              "node_id": "v8-cross/muffler-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/muffler-1",
+          "kind": "muffler",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/muffler-1:0",
+              "node_id": "v8-cross/muffler-inlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/muffler-1:1",
+              "node_id": "v8-cross/muffler-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0063617251235193305,
+          "centerline_m": null,
+          "id": "v8-cross/snorkel",
+          "kind": "snorkel",
+          "length_m": 0.4,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/snorkel:0",
+              "node_id": "v8-cross/ambient-intake-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/snorkel:1",
+              "node_id": "v8-cross/airbox-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/center-0",
+          "kind": "center",
+          "length_m": 0.8,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/center-0:0",
+              "node_id": "v8-cross/junction-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/center-0:1",
+              "node_id": "v8-cross/center-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/center-1",
+          "kind": "center",
+          "length_m": 0.8,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/center-1:0",
+              "node_id": "v8-cross/junction-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/center-1:1",
+              "node_id": "v8-cross/center-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/link-0",
+          "kind": "link",
+          "length_m": 0.65,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/link-0:0",
+              "node_id": "v8-cross/center-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/link-0:1",
+              "node_id": "v8-cross/muffler-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.004277623973054399,
+          "centerline_m": null,
+          "id": "v8-cross/link-1",
+          "kind": "link",
+          "length_m": 0.65,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-cross/link-1:0",
+              "node_id": "v8-cross/center-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-cross/link-1:1",
+              "node_id": "v8-cross/muffler-inlet-1"
+            }
+          ]
+        }
+      ],
+      "engine_to_vehicle": null,
+      "frame": "engine",
+      "nodes": [
+        {
+          "id": "v8-cross/plenum-0",
+          "kind": "plenum"
+        },
+        {
+          "id": "v8-cross/intake-valve-0",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-1",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-2",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-3",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-4",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-5",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-6",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/intake-valve-7",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-0",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/collector-0",
+          "kind": "collector"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-1",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/collector-1",
+          "kind": "collector"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-2",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-3",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-4",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-5",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-6",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/exhaust-valve-7",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-cross/junction-0",
+          "kind": "junction"
+        },
+        {
+          "id": "v8-cross/muffler-outlet-0",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "v8-cross/ambient-exhaust-0",
+          "kind": "ambient-exhaust"
+        },
+        {
+          "id": "v8-cross/muffler-outlet-1",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "v8-cross/muffler-inlet-0",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "v8-cross/muffler-inlet-1",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "v8-cross/ambient-intake-0",
+          "kind": "ambient-intake"
+        },
+        {
+          "id": "v8-cross/airbox-0",
+          "kind": "airbox"
+        },
+        {
+          "id": "v8-cross/center-outlet-0",
+          "kind": "center-outlet"
+        },
+        {
+          "id": "v8-cross/center-outlet-1",
+          "kind": "center-outlet"
+        }
+      ],
+      "representation": "legacy-logical"
+    },
+    "kind": "engine-build",
+    "parameters": {
+      "accessory_power": [
+        1250
+      ],
+      "airbox_volume": [
+        0.012
+      ],
+      "ambient_pressure": [
+        101325
+      ],
+      "ambient_temperature": [
+        298.15
+      ],
+      "bank": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "bank_angle": [
+        0.7853981633974483,
+        -0.7853981633974483
+      ],
+      "banks": [
+        2
+      ],
+      "bore": [
+        0.092
+      ],
+      "burn_duration": [
+        1.0471975511965976
+      ],
+      "catalyst_area": [
+        0.002
+      ],
+      "catalyst_laminar": [
+        25
+      ],
+      "center_diameter": [
+        0.0738
+      ],
+      "center_length": [
+        0.8
+      ],
+      "center_packing": [
+        0
+      ],
+      "center_volume": [
+        0
+      ],
+      "collector": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "combustion_efficiency": [
+        0.98
+      ],
+      "compression_ratio": [
+        10.5
+      ],
+      "cranking_spark": [
+        0.08726646259971647
+      ],
+      "cranking_speed": [
+        41.8879020478639
+      ],
+      "cylinders": [
+        8
+      ],
+      "exhaust_cd": [
+        0.7
+      ],
+      "exhaust_center": [
+        4.328416544945937
+      ],
+      "exhaust_diameter": [
+        0.031
+      ],
+      "exhaust_duration": [
+        4.537856055185257
+      ],
+      "exhaust_lift": [
+        0.0105
+      ],
+      "exhaust_pipe_diameter": [
+        0.0738
+      ],
+      "exhaust_pipe_length": [
+        0.8
+      ],
+      "exhaust_port": [
+        0.02635
+      ],
+      "exhaust_systems": [
+        2
+      ],
+      "exhaust_valves": [
+        2
+      ],
+      "firing_angle": [
+        0,
+        10.995574287564276,
+        4.71238898038469,
+        3.141592653589793,
+        7.853981633974483,
+        6.283185307179586,
+        9.42477796076938,
+        1.5707963267948966
+      ],
+      "firing_order": [
+        0,
+        7,
+        3,
+        2,
+        5,
+        4,
+        6,
+        1
+      ],
+      "fmep_constant": [
+        38000
+      ],
+      "fmep_pressure": [
+        0.005
+      ],
+      "fmep_speed": [
+        5300
+      ],
+      "fmep_speed2": [
+        40
+      ],
+      "header_diameter": [
+        0.04
+      ],
+      "header_length": [
+        0.52,
+        0.52,
+        0.44,
+        0.44,
+        0.36,
+        0.36,
+        0.28,
+        0.28
+      ],
+      "heat_transfer": [
+        1
+      ],
+      "idle_gain_i": [
+        0.002482817112233567
+      ],
+      "idle_gain_p": [
+        0.004870141258611998
+      ],
+      "idle_speed": [
+        68.06784082777885
+      ],
+      "idle_valve_area": [
+        9.499999999999999e-05
+      ],
+      "inertia": [
+        0.3
+      ],
+      "intake_cd": [
+        0.7
+      ],
+      "intake_center": [
+        8.237954069413236
+      ],
+      "intake_diameter": [
+        0.036000000000000004
+      ],
+      "intake_duration": [
+        4.537856055185257
+      ],
+      "intake_lift": [
+        0.011
+      ],
+      "intake_port": [
+        0.030600000000000002
+      ],
+      "intake_valves": [
+        2
+      ],
+      "junction_before_center": [
+        1
+      ],
+      "junction_volume": [
+        0.0012
+      ],
+      "link_length": [
+        0.65
+      ],
+      "mixture_spread": [
+        0.07
+      ],
+      "muffler_area": [
+        0.002
+      ],
+      "muffler_length": [
+        0.45
+      ],
+      "muffler_type": [
+        0
+      ],
+      "muffler_volume": [
+        0.01
+      ],
+      "outlet_radiation": [
+        1
+      ],
+      "pin": [
+        0,
+        0,
+        1.5707963267948966,
+        1.5707963267948966,
+        4.71238898038469,
+        4.71238898038469,
+        3.141592653589793,
+        3.141592653589793
+      ],
+      "plenum_volume": [
+        0.006
+      ],
+      "position": [
+        0,
+        0.022,
+        0.111,
+        0.133,
+        0.222,
+        0.244,
+        0.333,
+        0.35500000000000004
+      ],
+      "rev_limit": [
+        785.3981633974482
+      ],
+      "rev_limit_resume": [
+        774.9261878854822
+      ],
+      "rod": [
+        0.155
+      ],
+      "runner_diameter": [
+        0.045
+      ],
+      "runner_length": [
+        0.45
+      ],
+      "snorkel_diameter": [
+        0.09
+      ],
+      "snorkel_length": [
+        0.4
+      ],
+      "starter_free_speed": [
+        23.03834612632515
+      ],
+      "starter_torque": [
+        350
+      ],
+      "stroke": [
+        0.094
+      ],
+      "tailpipe_diameter": [
+        0.0738
+      ],
+      "tailpipe_length": [
+        0.3
+      ],
+      "throttle_cd": [
+        0.8
+      ],
+      "throttle_closed_angle": [
+        0.12217304763960307
+      ],
+      "throttle_diameter": [
+        0.08
+      ],
+      "throttle_leak_area": [
+        4e-06
+      ],
+      "throttle_shaft": [
+        0.01
+      ],
+      "wall_temperature": [
+        430
+      ],
+      "wiebe_a": [
+        5
+      ],
+      "wiebe_m": [
+        2
+      ]
+    },
+    "required_features": [],
+    "schema_version": 1,
+    "sources": [
+      {
+        "component_id": "v8-cross/tailpipe-0",
+        "id": "v8-cross/tailpipe-0/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-cross/tailpipe-0:1"
+      },
+      {
+        "component_id": "v8-cross/tailpipe-1",
+        "id": "v8-cross/tailpipe-1/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-cross/tailpipe-1:1"
+      },
+      {
+        "component_id": "v8-cross/snorkel",
+        "id": "v8-cross/snorkel/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-cross/snorkel:0"
+      }
+    ],
+    "revision": "1"
+  },
+  {
+    "build_id": "v8-flat",
+    "extensions": {},
+    "generation": "1",
+    "geometry": {
+      "components": [
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-0",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-0:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-0:1",
+              "node_id": "v8-flat/intake-valve-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-1",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-1:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-1:1",
+              "node_id": "v8-flat/intake-valve-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-2",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-2:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-2:1",
+              "node_id": "v8-flat/intake-valve-2"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-3",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-3:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-3:1",
+              "node_id": "v8-flat/intake-valve-3"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-4",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-4:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-4:1",
+              "node_id": "v8-flat/intake-valve-4"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-5",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-5:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-5:1",
+              "node_id": "v8-flat/intake-valve-5"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-6",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-6:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-6:1",
+              "node_id": "v8-flat/intake-valve-6"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001963495408493621,
+          "centerline_m": null,
+          "id": "v8-flat/runner-7",
+          "kind": "runner",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/runner-7:0",
+              "node_id": "v8-flat/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/runner-7:1",
+              "node_id": "v8-flat/intake-valve-7"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-0",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-0:0",
+              "node_id": "v8-flat/exhaust-valve-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-0:1",
+              "node_id": "v8-flat/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-1",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-1:0",
+              "node_id": "v8-flat/exhaust-valve-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-1:1",
+              "node_id": "v8-flat/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-2",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-2:0",
+              "node_id": "v8-flat/exhaust-valve-2"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-2:1",
+              "node_id": "v8-flat/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-3",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-3:0",
+              "node_id": "v8-flat/exhaust-valve-3"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-3:1",
+              "node_id": "v8-flat/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-4",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-4:0",
+              "node_id": "v8-flat/exhaust-valve-4"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-4:1",
+              "node_id": "v8-flat/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-5",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-5:0",
+              "node_id": "v8-flat/exhaust-valve-5"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-5:1",
+              "node_id": "v8-flat/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-6",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-6:0",
+              "node_id": "v8-flat/exhaust-valve-6"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-6:1",
+              "node_id": "v8-flat/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001385442360233099,
+          "centerline_m": null,
+          "id": "v8-flat/header-7",
+          "kind": "header",
+          "length_m": 0.6,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/header-7:0",
+              "node_id": "v8-flat/exhaust-valve-7"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/header-7:1",
+              "node_id": "v8-flat/collector-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/exhaust-0",
+          "kind": "exhaust",
+          "length_m": 0.75,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/exhaust-0:0",
+              "node_id": "v8-flat/collector-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/exhaust-0:1",
+              "node_id": "v8-flat/muffler-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/exhaust-1",
+          "kind": "exhaust",
+          "length_m": 0.75,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/exhaust-1:0",
+              "node_id": "v8-flat/collector-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/exhaust-1:1",
+              "node_id": "v8-flat/muffler-inlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/tailpipe-0",
+          "kind": "tailpipe",
+          "length_m": 0.28,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/tailpipe-0:0",
+              "node_id": "v8-flat/muffler-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/tailpipe-0:1",
+              "node_id": "v8-flat/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/tailpipe-1",
+          "kind": "tailpipe",
+          "length_m": 0.28,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/tailpipe-1:0",
+              "node_id": "v8-flat/muffler-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/tailpipe-1:1",
+              "node_id": "v8-flat/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/muffler-0",
+          "kind": "muffler",
+          "length_m": 0.35,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/muffler-0:0",
+              "node_id": "v8-flat/muffler-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/muffler-0:1",
+              "node_id": "v8-flat/muffler-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0028274333882308137,
+          "centerline_m": null,
+          "id": "v8-flat/muffler-1",
+          "kind": "muffler",
+          "length_m": 0.35,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/muffler-1:0",
+              "node_id": "v8-flat/muffler-inlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/muffler-1:1",
+              "node_id": "v8-flat/muffler-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0063617251235193305,
+          "centerline_m": null,
+          "id": "v8-flat/snorkel",
+          "kind": "snorkel",
+          "length_m": 0.3,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "v8-flat/snorkel:0",
+              "node_id": "v8-flat/ambient-intake-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "v8-flat/snorkel:1",
+              "node_id": "v8-flat/airbox-0"
+            }
+          ]
+        }
+      ],
+      "engine_to_vehicle": null,
+      "frame": "engine",
+      "nodes": [
+        {
+          "id": "v8-flat/plenum-0",
+          "kind": "plenum"
+        },
+        {
+          "id": "v8-flat/intake-valve-0",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-1",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-2",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-3",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-4",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-5",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-6",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/intake-valve-7",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-0",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/collector-0",
+          "kind": "collector"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-1",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/collector-1",
+          "kind": "collector"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-2",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-3",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-4",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-5",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-6",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/exhaust-valve-7",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "v8-flat/muffler-inlet-0",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "v8-flat/muffler-inlet-1",
+          "kind": "muffler-inlet"
+        },
+        {
+          "id": "v8-flat/muffler-outlet-0",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "v8-flat/ambient-exhaust-0",
+          "kind": "ambient-exhaust"
+        },
+        {
+          "id": "v8-flat/muffler-outlet-1",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "v8-flat/ambient-intake-0",
+          "kind": "ambient-intake"
+        },
+        {
+          "id": "v8-flat/airbox-0",
+          "kind": "airbox"
+        }
+      ],
+      "representation": "legacy-logical"
+    },
+    "kind": "engine-build",
+    "parameters": {
+      "accessory_power": [
+        950
+      ],
+      "airbox_volume": [
+        0.012
+      ],
+      "ambient_pressure": [
+        101325
+      ],
+      "ambient_temperature": [
+        298.15
+      ],
+      "bank": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "bank_angle": [
+        0.7853981633974483,
+        -0.7853981633974483
+      ],
+      "banks": [
+        2
+      ],
+      "bore": [
+        0.094
+      ],
+      "burn_duration": [
+        1.0471975511965976
+      ],
+      "catalyst_area": [
+        0.0023
+      ],
+      "catalyst_laminar": [
+        25
+      ],
+      "center_diameter": [
+        0
+      ],
+      "center_length": [
+        0
+      ],
+      "center_packing": [
+        0
+      ],
+      "center_volume": [
+        0
+      ],
+      "collector": [
+        0,
+        1,
+        0,
+        1,
+        0,
+        1,
+        0,
+        1
+      ],
+      "combustion_efficiency": [
+        0.98
+      ],
+      "compression_ratio": [
+        12.5
+      ],
+      "cranking_spark": [
+        0.08726646259971647
+      ],
+      "cranking_speed": [
+        41.8879020478639
+      ],
+      "cylinders": [
+        8
+      ],
+      "exhaust_cd": [
+        0.7
+      ],
+      "exhaust_center": [
+        4.39822971502571
+      ],
+      "exhaust_diameter": [
+        0.032
+      ],
+      "exhaust_duration": [
+        4.71238898038469
+      ],
+      "exhaust_lift": [
+        0.011
+      ],
+      "exhaust_pipe_diameter": [
+        0.06
+      ],
+      "exhaust_pipe_length": [
+        0.75
+      ],
+      "exhaust_port": [
+        0.0272
+      ],
+      "exhaust_systems": [
+        2
+      ],
+      "exhaust_valves": [
+        2
+      ],
+      "firing_angle": [
+        0,
+        10.995574287564276,
+        9.42477796076938,
+        7.853981633974483,
+        3.141592653589793,
+        1.5707963267948966,
+        6.283185307179586,
+        4.71238898038469
+      ],
+      "firing_order": [
+        0,
+        5,
+        4,
+        7,
+        6,
+        3,
+        2,
+        1
+      ],
+      "fmep_constant": [
+        38000
+      ],
+      "fmep_pressure": [
+        0.005
+      ],
+      "fmep_speed": [
+        5300
+      ],
+      "fmep_speed2": [
+        40
+      ],
+      "header_diameter": [
+        0.042
+      ],
+      "header_length": [
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6,
+        0.6
+      ],
+      "heat_transfer": [
+        1
+      ],
+      "idle_gain_i": [
+        0.0032467608390746652
+      ],
+      "idle_gain_p": [
+        0.004010704565915763
+      ],
+      "idle_speed": [
+        104.71975511965977
+      ],
+      "idle_valve_area": [
+        0.000135
+      ],
+      "inertia": [
+        0.18
+      ],
+      "intake_cd": [
+        0.7
+      ],
+      "intake_center": [
+        8.168140899333462
+      ],
+      "intake_diameter": [
+        0.038
+      ],
+      "intake_duration": [
+        4.71238898038469
+      ],
+      "intake_lift": [
+        0.012
+      ],
+      "intake_port": [
+        0.032299999999999995
+      ],
+      "intake_valves": [
+        2
+      ],
+      "junction_before_center": [
+        0
+      ],
+      "junction_volume": [
+        0
+      ],
+      "link_length": [
+        0
+      ],
+      "mixture_spread": [
+        0.07
+      ],
+      "muffler_area": [
+        0.0023
+      ],
+      "muffler_length": [
+        0.35
+      ],
+      "muffler_type": [
+        0
+      ],
+      "muffler_volume": [
+        0.009000000000000001
+      ],
+      "outlet_radiation": [
+        1
+      ],
+      "pin": [
+        0,
+        0,
+        3.141592653589793,
+        3.141592653589793,
+        3.141592653589793,
+        3.141592653589793,
+        0,
+        0
+      ],
+      "plenum_volume": [
+        0.006
+      ],
+      "position": [
+        0,
+        0.02,
+        0.104,
+        0.124,
+        0.208,
+        0.22799999999999998,
+        0.312,
+        0.332
+      ],
+      "rev_limit": [
+        942.4777960769379
+      ],
+      "rev_limit_resume": [
+        932.0058205649719
+      ],
+      "rod": [
+        0.135
+      ],
+      "runner_diameter": [
+        0.05
+      ],
+      "runner_length": [
+        0.3
+      ],
+      "snorkel_diameter": [
+        0.09
+      ],
+      "snorkel_length": [
+        0.3
+      ],
+      "starter_free_speed": [
+        26.17993877991494
+      ],
+      "starter_torque": [
+        300
+      ],
+      "stroke": [
+        0.081
+      ],
+      "tailpipe_diameter": [
+        0.06
+      ],
+      "tailpipe_length": [
+        0.28
+      ],
+      "throttle_cd": [
+        0.8
+      ],
+      "throttle_closed_angle": [
+        0.12217304763960307
+      ],
+      "throttle_diameter": [
+        0.09
+      ],
+      "throttle_leak_area": [
+        4e-06
+      ],
+      "throttle_shaft": [
+        0.01
+      ],
+      "wall_temperature": [
+        430
+      ],
+      "wiebe_a": [
+        5
+      ],
+      "wiebe_m": [
+        2
+      ]
+    },
+    "required_features": [],
+    "schema_version": 1,
+    "sources": [
+      {
+        "component_id": "v8-flat/tailpipe-0",
+        "id": "v8-flat/tailpipe-0/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-flat/tailpipe-0:1"
+      },
+      {
+        "component_id": "v8-flat/tailpipe-1",
+        "id": "v8-flat/tailpipe-1/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-flat/tailpipe-1:1"
+      },
+      {
+        "component_id": "v8-flat/snorkel",
+        "id": "v8-flat/snorkel/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "v8-flat/snorkel:0"
+      }
+    ],
+    "revision": "1"
+  },
+  {
+    "build_id": "boxer4",
+    "extensions": {},
+    "generation": "1",
+    "geometry": {
+      "components": [
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "boxer4/runner-0",
+          "kind": "runner",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/runner-0:0",
+              "node_id": "boxer4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/runner-0:1",
+              "node_id": "boxer4/intake-valve-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "boxer4/runner-1",
+          "kind": "runner",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/runner-1:0",
+              "node_id": "boxer4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/runner-1:1",
+              "node_id": "boxer4/intake-valve-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "boxer4/runner-2",
+          "kind": "runner",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/runner-2:0",
+              "node_id": "boxer4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/runner-2:1",
+              "node_id": "boxer4/intake-valve-2"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0012566370614359172,
+          "centerline_m": null,
+          "id": "boxer4/runner-3",
+          "kind": "runner",
+          "length_m": 0.32,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/runner-3:0",
+              "node_id": "boxer4/plenum-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/runner-3:1",
+              "node_id": "boxer4/intake-valve-3"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "boxer4/header-0",
+          "kind": "header",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/header-0:0",
+              "node_id": "boxer4/exhaust-valve-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/header-0:1",
+              "node_id": "boxer4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "boxer4/header-1",
+          "kind": "header",
+          "length_m": 0.75,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/header-1:0",
+              "node_id": "boxer4/exhaust-valve-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/header-1:1",
+              "node_id": "boxer4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "boxer4/header-2",
+          "kind": "header",
+          "length_m": 0.45,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/header-2:0",
+              "node_id": "boxer4/exhaust-valve-2"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/header-2:1",
+              "node_id": "boxer4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.001017876019763093,
+          "centerline_m": null,
+          "id": "boxer4/header-3",
+          "kind": "header",
+          "length_m": 0.75,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/header-3:0",
+              "node_id": "boxer4/exhaust-valve-3"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/header-3:1",
+              "node_id": "boxer4/collector-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "boxer4/exhaust-0",
+          "kind": "exhaust",
+          "length_m": 1,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/exhaust-0:0",
+              "node_id": "boxer4/collector-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/exhaust-0:1",
+              "node_id": "boxer4/center-inlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0014253091710071531,
+          "centerline_m": null,
+          "id": "boxer4/tailpipe-0",
+          "kind": "tailpipe",
+          "length_m": 0.22,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/tailpipe-0:0",
+              "node_id": "boxer4/muffler-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/tailpipe-0:1",
+              "node_id": "boxer4/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0014253091710071531,
+          "centerline_m": null,
+          "id": "boxer4/tailpipe-1",
+          "kind": "tailpipe",
+          "length_m": 0.22,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/tailpipe-1:0",
+              "node_id": "boxer4/muffler-outlet-1"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/tailpipe-1:1",
+              "node_id": "boxer4/ambient-exhaust-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0014253091710071531,
+          "centerline_m": null,
+          "id": "boxer4/muffler-0",
+          "kind": "muffler",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/muffler-0:0",
+              "node_id": "boxer4/junction-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/muffler-0:1",
+              "node_id": "boxer4/muffler-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0014253091710071531,
+          "centerline_m": null,
+          "id": "boxer4/muffler-1",
+          "kind": "muffler",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/muffler-1:0",
+              "node_id": "boxer4/junction-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/muffler-1:1",
+              "node_id": "boxer4/muffler-outlet-1"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.003848451000647497,
+          "centerline_m": null,
+          "id": "boxer4/snorkel",
+          "kind": "snorkel",
+          "length_m": 0.35,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/snorkel:0",
+              "node_id": "boxer4/ambient-intake-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/snorkel:1",
+              "node_id": "boxer4/airbox-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "boxer4/center-0",
+          "kind": "center",
+          "length_m": 0.42,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/center-0:0",
+              "node_id": "boxer4/center-inlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/center-0:1",
+              "node_id": "boxer4/center-outlet-0"
+            }
+          ]
+        },
+        {
+          "area_m2": 0.0018398423216483264,
+          "centerline_m": null,
+          "id": "boxer4/link-0",
+          "kind": "link",
+          "length_m": 0.85,
+          "ports": [
+            {
+              "axis_sign": 1,
+              "id": "boxer4/link-0:0",
+              "node_id": "boxer4/center-outlet-0"
+            },
+            {
+              "axis_sign": -1,
+              "id": "boxer4/link-0:1",
+              "node_id": "boxer4/junction-0"
+            }
+          ]
+        }
+      ],
+      "engine_to_vehicle": null,
+      "frame": "engine",
+      "nodes": [
+        {
+          "id": "boxer4/plenum-0",
+          "kind": "plenum"
+        },
+        {
+          "id": "boxer4/intake-valve-0",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "boxer4/intake-valve-1",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "boxer4/intake-valve-2",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "boxer4/intake-valve-3",
+          "kind": "intake-valve"
+        },
+        {
+          "id": "boxer4/exhaust-valve-0",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "boxer4/collector-0",
+          "kind": "collector"
+        },
+        {
+          "id": "boxer4/exhaust-valve-1",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "boxer4/exhaust-valve-2",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "boxer4/exhaust-valve-3",
+          "kind": "exhaust-valve"
+        },
+        {
+          "id": "boxer4/center-inlet-0",
+          "kind": "center-inlet"
+        },
+        {
+          "id": "boxer4/muffler-outlet-0",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "boxer4/ambient-exhaust-0",
+          "kind": "ambient-exhaust"
+        },
+        {
+          "id": "boxer4/muffler-outlet-1",
+          "kind": "muffler-outlet"
+        },
+        {
+          "id": "boxer4/junction-0",
+          "kind": "junction"
+        },
+        {
+          "id": "boxer4/ambient-intake-0",
+          "kind": "ambient-intake"
+        },
+        {
+          "id": "boxer4/airbox-0",
+          "kind": "airbox"
+        },
+        {
+          "id": "boxer4/center-outlet-0",
+          "kind": "center-outlet"
+        }
+      ],
+      "representation": "legacy-logical"
+    },
+    "kind": "engine-build",
+    "parameters": {
+      "accessory_power": [
+        800
+      ],
+      "airbox_volume": [
+        0.008
+      ],
+      "ambient_pressure": [
+        101325
+      ],
+      "ambient_temperature": [
+        298.15
+      ],
+      "bank": [
+        0,
+        1,
+        0,
+        1
+      ],
+      "bank_angle": [
+        1.5707963267948966,
+        -1.5707963267948966
+      ],
+      "banks": [
+        2
+      ],
+      "bore": [
+        0.084
+      ],
+      "burn_duration": [
+        1.0471975511965976
+      ],
+      "catalyst_area": [
+        0.0021000000000000003
+      ],
+      "catalyst_laminar": [
+        25
+      ],
+      "center_diameter": [
+        0.0484
+      ],
+      "center_length": [
+        0.42
+      ],
+      "center_packing": [
+        1500
+      ],
+      "center_volume": [
+        0
+      ],
+      "collector": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "combustion_efficiency": [
+        0.98
+      ],
+      "compression_ratio": [
+        10.5
+      ],
+      "cranking_spark": [
+        0.08726646259971647
+      ],
+      "cranking_speed": [
+        41.8879020478639
+      ],
+      "cylinders": [
+        4
+      ],
+      "exhaust_cd": [
+        0.7
+      ],
+      "exhaust_center": [
+        4.363323129985824
+      ],
+      "exhaust_diameter": [
+        0.027
+      ],
+      "exhaust_duration": [
+        4.363323129985824
+      ],
+      "exhaust_lift": [
+        0.009000000000000001
+      ],
+      "exhaust_pipe_diameter": [
+        0.0484
+      ],
+      "exhaust_pipe_length": [
+        1
+      ],
+      "exhaust_port": [
+        0.022949999999999998
+      ],
+      "exhaust_systems": [
+        2
+      ],
+      "exhaust_valves": [
+        2
+      ],
+      "firing_angle": [
+        0,
+        6.283185307179586,
+        3.141592653589793,
+        9.42477796076938
+      ],
+      "firing_order": [
+        0,
+        2,
+        1,
+        3
+      ],
+      "fmep_constant": [
+        38000
+      ],
+      "fmep_pressure": [
+        0.005
+      ],
+      "fmep_speed": [
+        5300
+      ],
+      "fmep_speed2": [
+        40
+      ],
+      "header_diameter": [
+        0.036000000000000004
+      ],
+      "header_length": [
+        0.45,
+        0.75,
+        0.45,
+        0.75
+      ],
+      "heat_transfer": [
+        1
+      ],
+      "idle_gain_i": [
+        0.00276722007575865
+      ],
+      "idle_gain_p": [
+        0.0023208942570879
+      ],
+      "idle_speed": [
+        78.53981633974483
+      ],
+      "idle_valve_area": [
+        4.6e-05
+      ],
+      "inertia": [
+        0.15
+      ],
+      "intake_cd": [
+        0.7
+      ],
+      "intake_center": [
+        8.203047484373348
+      ],
+      "intake_diameter": [
+        0.032
+      ],
+      "intake_duration": [
+        4.363323129985824
+      ],
+      "intake_lift": [
+        0.0095
+      ],
+      "intake_port": [
+        0.0272
+      ],
+      "intake_valves": [
+        2
+      ],
+      "junction_before_center": [
+        0
+      ],
+      "junction_volume": [
+        0.0007
+      ],
+      "link_length": [
+        0.85
+      ],
+      "mixture_spread": [
+        0.07
+      ],
+      "muffler_area": [
+        0.0021000000000000003
+      ],
+      "muffler_length": [
+        0.42
+      ],
+      "muffler_type": [
+        1
+      ],
+      "muffler_volume": [
+        0.01
+      ],
+      "outlet_radiation": [
+        1
+      ],
+      "pin": [
+        0,
+        3.141592653589793,
+        3.141592653589793,
+        0
+      ],
+      "plenum_volume": [
+        0.0025
+      ],
+      "position": [
+        0,
+        0.04,
+        0.113,
+        0.153
+      ],
+      "rev_limit": [
+        680.6784082777884
+      ],
+      "rev_limit_resume": [
+        670.2064327658225
+      ],
+      "rod": [
+        0.13
+      ],
+      "runner_diameter": [
+        0.04
+      ],
+      "runner_length": [
+        0.32
+      ],
+      "snorkel_diameter": [
+        0.07
+      ],
+      "snorkel_length": [
+        0.35
+      ],
+      "starter_free_speed": [
+        26.17993877991494
+      ],
+      "starter_torque": [
+        200
+      ],
+      "stroke": [
+        0.09
+      ],
+      "tailpipe_diameter": [
+        0.0426
+      ],
+      "tailpipe_length": [
+        0.22
+      ],
+      "throttle_cd": [
+        0.8
+      ],
+      "throttle_closed_angle": [
+        0.12217304763960307
+      ],
+      "throttle_diameter": [
+        0.06
+      ],
+      "throttle_leak_area": [
+        2e-06
+      ],
+      "throttle_shaft": [
+        0.008
+      ],
+      "wall_temperature": [
+        430
+      ],
+      "wiebe_a": [
+        5
+      ],
+      "wiebe_m": [
+        2
+      ]
+    },
+    "required_features": [],
+    "schema_version": 1,
+    "sources": [
+      {
+        "component_id": "boxer4/tailpipe-0",
+        "id": "boxer4/tailpipe-0/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "boxer4/tailpipe-0:1"
+      },
+      {
+        "component_id": "boxer4/tailpipe-1",
+        "id": "boxer4/tailpipe-1/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "boxer4/tailpipe-1:1"
+      },
+      {
+        "component_id": "boxer4/snorkel",
+        "id": "boxer4/snorkel/radiation",
+        "implemented": false,
+        "kind": "aperture",
+        "port_id": "boxer4/snorkel:0"
+      }
+    ],
+    "revision": "1"
+  }
+]

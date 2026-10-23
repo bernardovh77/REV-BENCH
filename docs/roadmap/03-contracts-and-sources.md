@@ -36,7 +36,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md), [GLOSSARY.md](../../GLOSSARY.md).
 
-**Execution record:** for new work, `docs/stage-037.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage 037](../stage-037.md), with the [versioned contract](../../contracts/README.md), complete native round trips and bounded protocol/consumer review evidence.
 
 <a id="stage-038"></a>
 ## Stage 038 — Complete numerical guard and flux observability

@@ -28,15 +28,14 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current instruction: hold after completed C07/C08 repairs.** The
-[completed-stage retrospective](docs/review-completed-stages-2026-10-23.md)
-covers 001–036. Its two newly reproduced gaps receive appended Stages 112/113
-so existing IDs stay stable. These bounded repairs are complete; do not resume 037
-without Bernardo's instruction. The six retained physics/integration risk
-groups keep their existing owners.
+**Current checkpoint: Stage 037 complete.** The [shared versioned contracts](contracts/README.md)
+and [native/structural proof](docs/stage-037.md) cover SI builds, stable identity,
+logical geometry, actual-event/time, observations and rebuild rules. Production
+bulk APIs, event producers, transport and 3D remain their later stages. Accepted
+sound and Claude setup are preserved; checkpoint before further development.
 
-**Next default execution: Stage 037 — shared build, geometry, event and snapshot
-contracts.** Stage 039 references can proceed independently after 036; acquire
+**Next default execution: Stage 038 — complete numerical guard and flux
+observability.** Stage 039 references can proceed independently after 036; acquire
 missing evidence early without blocking unrelated numerical fixtures.
 
 The physical native engine and five presets already exist. The browser still
@@ -53,7 +52,7 @@ Preserve the accepted audio, original references, `CLAUDE.md` and `.claude/`.
 
 ## How to use the stages
 
-- Say “do Stage 037” or “next stage.” Read this tracker, `CLAUDE.md`, `CODEX.md`
+- Say “do Stage 038” or “next stage.” Read this tracker, `CLAUDE.md`, `CODEX.md`
   and the linked stage specification/evidence first.
 - Follow explicit dependencies, not just the preceding row. The numbering is
   the planned order; independent reference work and conditional branches are
@@ -170,8 +169,8 @@ historical rows are not a claim that all current audio goals have passed.
 | Stage | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
 | [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol | Complete | 035 |
-| [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Ready | 036 |
-| [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Not started | 037 |
+| [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
+| [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Ready | 037 |
 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Ready | 036 |
 | [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Not started | 038 |
 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Not started | 040, 038 |

@@ -84,9 +84,10 @@ AUDIT_OBJ  := $(call obj,native/rb_audit.c)
 ACOUSTIC_OBJ := $(call obj,experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c)
 ACOUSTIC_PROBE_OBJ := $(call obj,tools/acoustic_candidate_probe.c)
 COUPLED_PROBE_OBJ := $(call obj,tools/coupled_duct_probe.c)
+BUILD_CONTRACT_OBJ := $(call obj,tools/build_contract_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -108,6 +109,13 @@ $(ACOUSTIC_PROBE): $(ACOUSTIC_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ) $(call obj,
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 acoustic-probe: $(ACOUSTIC_PROBE)
+
+$(BUILD)/build_contract_probe: $(BUILD_CONTRACT_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+.PHONY: build-contract-check
+build-contract-check: $(BUILD)/build_contract_probe
+	$(PYTHON) tools/check_build_contract.py --probe $(BUILD)/build_contract_probe
 
 $(BUILD)/coupled_duct_probe: $(COUPLED_PROBE_OBJ) $(call obj,experiments/acoustics/coupled_duct.c)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@

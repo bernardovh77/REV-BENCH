@@ -4,6 +4,45 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: Stage 037 complete — shared contracts checkpoint
+
+- Bernardo authorizes the next planned stage after112/113. Stage037 specifies
+  shared build/geometry/event/snapshot/rebuild contracts and proves a bounded
+  native/reference implementation. docs/stage-037.md, contracts/README.md,
+  contracts/runtime-v1.md and ADR0003 are the handoff. Stage038 numerical guard
+  and flux observability is next Ready; do not automatically start later stages.
+- One complete SI descriptor covers84active native fields, including missing
+  exhaust/Cd/thermal/friction/starter/ECU settings. tools/build_contract_probe.c
+  and its field map are native developer tools, not a production ABI. Existing
+  C and TS bindings stay intact. Makefile build-contract-check performs full
+  JSON/SI/native descriptor preparation and regenerated topology comparison.
+- All five accepted presets and all five runner-removed variants pass. Every
+  unrelated component/port/source identity and logical route stays identical;
+  recognized contradictory topology and impossible native engines reject.
+  contracts/examples/builds-v1.json and the unit catalog are committed examples.
+- Versioned builds separate revision from running-state generation. Explicit
+  actual events, per-cylinder target firing cycle, unwrapped phase, audio epoch,
+  static audible-arrival oracle and coherent observation requirements avoid
+  phase/counter loss and double-counted device/physical travel. Spatial placement
+  and centerlines remain null where unknown; 3D requests reject unresolved data.
+- Full compiler, actual event producer, native bulk/snapshot API, concurrent
+  buffer transport, hot swapping, worklet engine and 3D are NOT implemented or
+  claimed. Initial rebuild policy quiesces audio, prepares a stable-address
+  handle and acknowledges reset/dyno detach/history invalidation; don't memcpy
+  self-referential engines or transfer pointers between WASM instances.
+- Passed196native/7897checks;57Python(including12contract tests);17web. Native
+  five-preset matrix also passes ASan/UBSan. Five deliberate unit/identity/clock/
+  generation/history faults are caught in temporary copies. Full proof wall
+  time0.393s includes subprocesses; compact builds7102–12326B and minimal
+  protocol snapshot controls561–835B. No callback throughput/concurrency claim.
+- All158protected files and48audio payloads preserved; no sound render, core,
+  TS, WASM or Claude setup changes. Local logs/native/sanitizer/fault matrices,
+  costs/source hashes/preservation: renders/evidence/stage-037/. Graphify queried
+  and AST-refreshed:2597nodes/7007edges/145communities; knownrb.h:415 warning.
+  Preserve user-added .agents/ and skills-lock.json without staging them.
+- Save/sync then checkpoint. Parent S1/S1e/S2/S4/full13b and C01–C06 remain open;
+  037 completes its specified-contract proof, not future physics or product gates.
+
 ## 2026-10-23: C07/C08 repairs — checkpoint and HOLD
 
 - Bernardo authorizes the necessary review fixes, then a saved checkpoint and
