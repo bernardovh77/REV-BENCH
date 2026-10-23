@@ -16,6 +16,11 @@ A physical disturbance that produces sound, such as a combustion pulse,
 turbulent jet or mechanical impact.
 _Avoid_: exhaust tone when referring to the disturbance before propagation
 
+**Actual spark**:
+The physical discharge event, distinct from the engine controller's commanded
+spark timing and from subsequent flame development or heat release.
+_Avoid_: ignition when that would conflate the command, discharge and flame
+
 **Acoustic propagation**:
 The travel, reflection, interference and attenuation of sound through an engine
 system and its surroundings.
@@ -62,3 +67,33 @@ _Avoid_: realism acceptance
 Evidence that the engine's sound and response agree sufficiently with real
 examples, including Bernardo's listening judgment.
 _Avoid_: passing numerical tests
+
+**Engine build**:
+A chosen engine, intake, exhaust and tuning configuration, distinct from the
+engine's changing running state.
+_Avoid_: snapshot when configuration alone is intended
+
+**Validated operating envelope**:
+The engine configurations and operating conditions for which a model's stated
+accuracy and behavior have supporting evidence.
+_Avoid_: allowed slider range when physical credibility is intended
+
+**Fidelity tier**:
+A declared choice of physical and acoustic resolution with an identified
+supported range and processing demand.
+_Avoid_: quality when it implies an unmeasured realism ranking
+
+**Visual state**:
+A coherent observation of the engine and its actual events at an identified
+engine time, used to depict its running condition.
+_Avoid_: animation state when unrelated motion is intended
+
+**Diagnostic time**:
+Engine time deliberately presented more slowly or by controlled steps for
+inspection, distinct from normal live operation.
+_Avoid_: slow motion when only unrelated cosmetic movement is slowed
+
+**Illustrative visualization**:
+A labeled depiction that explains an engine process without claiming a
+spatially resolved physical result, such as a flame shape from lumped burn fraction.
+_Avoid_: CFD result or resolved flame front without that physical solution

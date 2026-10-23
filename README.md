@@ -12,15 +12,24 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** stages 0-13 of 26 done, with sound work through S2b, performance
-work in [13b](docs/stage-13b.md), and [researched exhaust configurations](docs/stage-13b-p.md)
-for all five presets. The exhaust work intentionally changes the sound; full
-13b performance/solver requirements remain open. Bernardo accepted the latest
-exhaust sound as a substantial improvement; the other S1/S2/S4 requirements
-remain open. `docs/user-sound-references.md` documents the local examples.
-The latest [selective sound rollback](docs/stage-13b-r-rollback.md) restores the
-earlier I6 twin exhaust while keeping 8500 rpm, and restores the earlier
-flat-V8 exhaust at 9000 rpm. Cross V8 keeps the sharper 7500-rpm rear-delete X.
+**Status:** [the canonical roadmap](PLAN.md) now uses Stages **001–111**,
+with a [crosswalk for every old ID](docs/roadmap/legacy-map.md). Native engine
+physics, five presets, rendering and bounded acoustic experiments exist. The
+latest [open-duct coupling proof](docs/stage-S2d-0b-B1a.md) passes its stated
+numerical fixtures; it is below real time and does not yet connect the full
+production engine to the acoustic graph. The browser is still the tone scaffold;
+product 3D, turbo, knock/damage and expanded layouts remain planned.
+
+**Next: Stage 037**, shared build/geometry/event/snapshot contracts, followed by
+causal source and propagation qualification before the playable browser and 3D.
+The [stage protocol](docs/roadmap/README.md) separates experiment results,
+production integration, runtime and Bernardo's realism acceptance. Full release
+includes the original feature scope; learned synthesis and extras are conditional.
+
+Current accepted sound remains the [selective rollback](docs/stage-13b-r-rollback.md):
+I6 earlier twin exhaust at 8500 rpm, flat V8 earlier exhaust at 9000 rpm, cross V8
+sharper rear-delete X at 7500 rpm. These limits are not durability certification.
+
 The C core plays in the browser through an
 AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe

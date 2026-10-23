@@ -4,6 +4,51 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: canonical whole-project roadmap — Stage 036
+
+- Bernardo requests a definitive renumbered plan covering prototypes, testing,
+  the complete browser product and all 3D/later features. The explicitly invoked
+  grill-with-docs interview settles first-release scope and order: full original
+  scope including turbo/knock/damage/catalog/save/share; contracts and sound
+  gates before browser/3D. Learned synthesis and nine extras stay conditional.
+- PLAN.md now owns the sole current status table, Stages001-111. Thirteen
+  docs/roadmap phase catalogs give every stage a deliverable, dependencies,
+  exit evidence and rejection rule. docs/roadmap/README.md defines the common
+  preflight/research/independent-proof/integration/runtime/user-acceptance
+  protocol. Future gates are requirements, not achieved evidence or zero-rework
+  promises. Next default is037 shared build/geometry/event/snapshot contracts;
+  039 matched-reference work can progress independently after036.
+- All62 former tracker entries are preserved in docs/roadmap/legacy-map.md,
+  including partial parent acceptance and aliases. All27 D/R findings have
+  primary and integration owners in docs/roadmap/audit-coverage.md. The former
+  root PLAN is archived in docs/roadmap/legacy-plan.md with relocated links;
+  original unchanged text is in commit99ba54e. Historical stage docs keep their
+  original names/claims. New execution reports use docs/stage-NNN.md, consistent
+  with Claude's stage-report convention. CLAUDE.md/.claude remain unchanged.
+- Legacy S1/S1e/S2/S4/full13b remain open through their explicit new owners.
+  The old4x-native/2x-WASM goals and rejected coupled implicit-valve convergence
+  case are retained, not silently retired. A completed rejected-arm experiment
+  supplies decision evidence; only surviving arms need qualified artifacts,
+  while common physics/component gates remain mandatory.
+- Browser is still tone; core/TS already contain engine/stereo bindings, so
+  reuse them rather than rebuilding that layer. No product3D/turbo/damage is
+  implemented. Current coupled duct remains a bounded separate below-real-time
+  proof, not the general B0/production engine adapter. Accepted sound stays
+  I6 earlier twin8500, flat earlier9000, cross sharper rear-delete X7500.
+- Review closes planning gaps: actual spark versus later kernel/heat; noise
+  source-work ownership; physical flight versus DSP/device delay; unwrapped
+  crank/time; no CFD flame/pathline or metal-temperature claim from0D/1D gas;
+  listener/scene/layer UI; all four camera presets; at least two generic
+  inspired-by catalog builds; no unnecessary repeat deployment approval.
+- Documentation validation/provenance and scope are recorded in
+  docs/stage-036.md. No simulation/test/audio-generation claim is inferred from
+  this documentation-only checkpoint. Source, audio/reference and Claude
+  preservation checks accompany the link/ID/dependency/coverage validation.
+  Graphify was queried and AST-refreshed:2478nodes/6655edges/140communities,
+  knownrb.h:415 warning retained; no semantic-document extraction claimed.
+  Preserve user-added .agents/ and
+  skills-lock.json without staging them.
+
 ## 2026-10-23: next checkpoint implemented — bounded open coupling proof
 
 - Bernardo authorizes completing the next step, split as needed. Three bounded

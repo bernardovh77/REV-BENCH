@@ -1,5 +1,11 @@
 # Sound robustness and realism programme
 
+**Scheduling authority (2026-10-23):** use the renumbered [PLAN.md](../PLAN.md)
+and [legacy crosswalk](roadmap/legacy-map.md). This document retains the technical
+programme and old IDs as design provenance; its table is not a second current
+status tracker. Current stage specifications and evidence gates are in
+[the roadmap catalogs](roadmap/README.md).
+
 Started 2026-10-22; updated 2026-10-23. Bernardo authorizes the source/transport experiment and asks for a
 method and plan for more robust, sophisticated sound generation. The current
 accepted I6/flat/cross exhaust selection remains the baseline. This document

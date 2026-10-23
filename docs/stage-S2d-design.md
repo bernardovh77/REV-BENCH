@@ -1,5 +1,11 @@
 # S2d design — coupled exhaust acoustics and learned-DSP benchmarks
 
+**Current scheduling:** [PLAN.md](../PLAN.md) owns the new stage sequence;
+[the crosswalk](roadmap/legacy-map.md) maps the legacy labels below. This
+technical specification is retained as design provenance, not an implementation
+or current-status claim. The later [bounded open-duct proof](stage-S2d-0b-B1a.md)
+is a prerequisite/control, not the general production-engine/B0 adapter.
+
 2026-10-23. **Implementation specification; not acceptance evidence.**
 The later [S2d checkpoint](stage-S2d.md) implements the initial native A1/B0
 fixtures; it does not complete engine coupling or architecture promotion.
