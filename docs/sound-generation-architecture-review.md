@@ -14,8 +14,14 @@ by this project's evidence.
 The [S2d implementation specification](stage-S2d-design.md) now defines the
 experimental arms, architecture sketches, conservative-variable and wave-port
 equations, reflected-load/mean-flow coupling, C module boundaries, learned-DSP
-deployment and staged validation/runtime gates. It is a design checkpoint;
-no alternative renderer or trained model has been implemented or promoted.
+deployment and staged validation/runtime gates. It is the design reference
+for the native experiments below.
+
+Subsequent [S2d native experiments](stage-S2d.md) implement the first isolated
+A1/B0 candidates. The initial conservative control is too dissipative; the
+homogeneous zero-flow graph passes its tested 200–4000-Hz numerical band.
+This supports continuing the coupling experiment. It does not promote a
+production renderer, establish engine realism or validate hot mean-flow behavior.
 
 ## Why changing the architecture may help
 

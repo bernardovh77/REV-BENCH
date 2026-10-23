@@ -65,7 +65,7 @@ ifeq ($(LTO),1)
 endif
 endif
 CFLAGS += -ffp-contract=off
-CPPFLAGS += -Icore/include -Icore/src -Inative -MMD -MP
+CPPFLAGS += -Icore/include -Icore/src -Inative -Iexperiments/acoustics -MMD -MP
 LDLIBS   += -lm
 
 CORE_SRC   := $(wildcard core/src/*.c)
@@ -81,24 +81,32 @@ CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
 BENCH_OBJ  := $(call obj,native/rb_bench.c)
 AUDIT_OBJ  := $(call obj,native/rb_audit.c)
+ACOUSTIC_OBJ := $(call obj,experiments/acoustics/wave.c experiments/acoustics/euler.c)
+ACOUSTIC_PROBE_OBJ := $(call obj,tools/acoustic_candidate_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
 BENCH := $(BUILD)/rb_bench
 AUDIT := $(BUILD)/rb_audit
+ACOUSTIC_PROBE := $(BUILD)/acoustic_candidate_probe
 
-.PHONY: all test test-wasm render render-standard results wasm bench bench-wasm audit fuzz clean help
+.PHONY: all test test-wasm render render-standard results wasm bench bench-wasm audit fuzz clean help acoustic-probe
 
 all: $(CLI)
 
 $(CLI): $(CLI_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(TESTS): $(TEST_OBJ) $(CORE_OBJ) $(NATIVE_OBJ)
+$(TESTS): $(TEST_OBJ) $(CORE_OBJ) $(NATIVE_OBJ) $(ACOUSTIC_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(ACOUSTIC_PROBE): $(ACOUSTIC_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ) $(call obj,native/wav.c)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+acoustic-probe: $(ACOUSTIC_PROBE)
 
 $(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@

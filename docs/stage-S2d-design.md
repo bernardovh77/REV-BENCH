@@ -1,7 +1,9 @@
 # S2d design — coupled exhaust acoustics and learned-DSP benchmarks
 
-2026-10-23. **Implementation specification; prototypes are not implemented or
-accepted by this document.** Bernardo requests architecture sketches, algorithms
+2026-10-23. **Implementation specification; not acceptance evidence.**
+The later [S2d checkpoint](stage-S2d.md) implements the initial native A1/B0
+fixtures; it does not complete engine coupling or architecture promotion.
+Bernardo requests architecture sketches, algorithms
 and a practical comparison plan following S2c. Baseline revision:
 `c1c8afaea3de7f750bbe67ab5b3e1fb0447acfee`. Keep the accepted exhausts and
 recordings as the control. S2d/S2e/S6, S1/S1e/S2/S4 and full 13b remain open;
@@ -551,9 +553,9 @@ each implementation step small, native-first, mutation-tested and separately
 reviewable. Refresh Graphify after source changes and retain the graph query
 as a navigation aid, not evidence of physical validity.
 
-For this design checkpoint, no candidate has been built, no neural model has
-been trained, no new audio has been rendered and no production behavior has
-changed. The immediate implementation entry point is **S2d-0**, followed by
+At the original design checkpoint, no candidate had been built, no neural model had
+been trained, no new audio had been rendered and no production behavior had
+changed. The implementation entry point was **S2d-0**, followed by
 the isolated A1/B0 fixtures. The [robustness plan](sound-robustness-plan.md),
 [architecture review](sound-generation-architecture-review.md) and
 [27-item audit](sound-physics-audit-2026-10-22.md) remain the parent decision and

@@ -4,6 +4,48 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: S2d initial native experiments and development
+
+- Bernardo authorizes starting development from the design. Actual modules,
+  limits/results/reproduction: docs/stage-S2d.md and
+  experiments/acoustics/README.md. Parent S2d remains open. Initial homogeneous
+  B0 fixtures are complete; S2d-0 and conservative A1 work remain partial.
+- New preallocated native research modules: wave.[ch] (bidirectional graph,
+  weighted junctions/cavity compliance, sources, radiation, loss/storage/work
+  books) and euler.[ch] (constant-gamma HLLC/HLLE, MC, SSP-RK2, tagged gas).
+  They link only into tests/probe, not production rb_cli/public API/WASM.
+- Matrix: 124 FV rows with18 explicit setup exclusions, 220 graph rows.
+  Initial A1 conserves total quantities to~1e-15 but is too dissipative for
+  upper-band sound: at300K/zero-flow/2kHz/9.375mm only56.2% perturbation energy
+  remains after2.5ms. Reject that configuration as an acoustic upgrade.
+- B0 all-pass meets the tested quiescent1m/200–4000Hz screen: magnitude error
+  below.001dB at reporting precision, worst phase4.189deg. One-second closed
+  loops show no growth; linear interpolation's loss is measured/booked.
+  Higher-band phase, transverse modes, mean flow, thermal fronts, real
+  components and nonlinear reflected-engine coupling remain unvalidated.
+- Five engine snapshots resolve all connections. Semantic component IDs survive
+  intake-runner removal; legacy pipe positions are not physical identities.
+  Historical A0 data match all41 current core C/header source hashes.
+  Snapshot is not a complete acoustic compiler/full production cap trace.
+- Production stereo baseline is still~.56x real time in this host. Separate
+  instrumented profile points to gas/property/pipe costs; its overhead/self
+  percentages are not a promised hybrid speedup. No engine audio is retuned.
+- Native189/4820, Python37 without skips, web17 and candidate ASan/UBSan14/348
+  pass. Nine deliberate physics/units faults are caught. Details and final
+  publication/preservation/graph checks are in the ignored checkpoint evidence.
+- RESULTS.html retains every accepted preview and long coast and adds two
+  prototype plots. No new engine render, learned model, reference processing,
+  core/WASM/preset or Claude setup changes. Do not close parent sound/full13b
+  acceptance or start stage14. Next: complete interface observability/contracts,
+  then common-clock nonlinear/load coupling and temperature/reversal controls.
+- Independent z-domain transfer checks and1025-point analytic sweeps/18 static
+  configurations agree with the native responses. This does not add mean-flow
+  validation. Offline browser check passes on retry: all46clips, exclusive play,
+  four original seek buttons and two new/four previous plots. All76 current
+  WAVs and46preview payloads remain byte-identical.
+- Graphify AST refreshed:2155nodes/5918edges/112communities; known rb.h:415
+  limit retained. No semantic-document extraction or external training run.
+
 ## 2026-10-23: S2d implementation specification
 
 - Bernardo requests a concrete technical design for improved conservative 1D

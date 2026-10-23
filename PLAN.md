@@ -5,7 +5,20 @@ displacement, compression, cams, headers and turbo size, and **hear and see** th
 time. Sound comes from a **physics simulation** (the realistic approach), not from samples or simple
 synths.
 
-**Current request — acoustic-renderer implementation design (2026-10-23):**
+**Current request — acoustic-renderer experiments and development (2026-10-23):**
+Bernardo authorizes starting development from the S2d design. The first native
+checkpoint implements isolated conservative A1 and quiescent acoustic B0
+candidates, semantic topology/identity controls and production profiling.
+[S2d measurements and handoff](docs/stage-S2d.md): 344 cases; the initial
+HLLC/MC candidate conserves totals but fails upper-band accuracy; the fixed
+zero-flow graph meets the tested 1-m/200–4000-Hz magnitude/phase screen.
+No engine or mean-flow coupling is claimed. Complete the geometry/flux/cap
+contracts, then develop reflected-load and hot/reversing-flow coupling before
+publishing changed engine sound. The single RESULTS.html adds measured plots
+while retaining all accepted examples and long coasts. Parent sound/13b
+acceptance remains open; stage 14 remains unstarted.
+
+**Previous request — acoustic-renderer implementation design (2026-10-23):**
 Bernardo asks for a technical plan, architecture sketches and algorithms for
 the conservative-1D versus coupled gas/acoustic comparison, plus engine-specific
 learned synthesis deployed as conventional DSP. The
@@ -169,7 +182,10 @@ gets a one-line summary of anything that changed from the plan.
 | S2 | Sound: air (finer exhaust, beaming) 🎧            | Sound realism    | 🔄     | Intake/baffle sources, ultra grid, stereo directivity and limited momentum transport; spectral/listening acceptance pending (docs/stage-S2b.md) |
 | S2b | Loaded exhaust detail and lift-off feedback | Sound realism | ✅ | Validated momentum reconstruction, brighter open-exhaust cross V8, lower transition contrast, render-helper repair; Bernardo's sound acceptance remains open (docs/stage-S2b.md) |
 | S2c | Independent source and acoustic transport experiment | Sound realism | ✅ | 241 guarded pipe cases/71 exclusions, 30 engine trajectories, 3 actual ECU coasts; source/phase/cost findings and architecture decision method in docs/stage-S2c.md. Production sound unchanged; listening acceptance separate |
-| S2d | Acoustic-preserving transport decision | Sound realism | ⬜ | Implementation specification in docs/stage-S2d-design.md: A1 conservative transport vs B0/B1 reflected-load graph, flux/energy ownership and staged fixtures; design complete, candidates not implemented/selected |
+| S2d | Acoustic-preserving transport decision | Sound realism | 🔄 | Initial A1/B0 native candidates and 344 cases in docs/stage-S2d.md; A1 acoustic rejection, B0 passes stated quiescent band. Mean-flow/reflected-engine coupling and architecture promotion remain open |
+| S2d-0 | Geometry, port contracts and baseline profiling | Sound realism | 🔄 | Five semantic topology snapshots, intake-only identity control, source hashes and stereo/profile controls implemented. Full acoustic compiler, conservative gas interface and complete production cap trace remain open |
+| S2d-A | Conservative nonlinear transport comparison | Sound realism | 🔄 | Constant-gamma HLLC/MC/SSP-RK2 control, shock/contact/rarefaction and conservation checks implemented. Upper-band accuracy fails; mixture EOS and engine/valve adapters remain open |
+| S2d-B0 | Initial quiescent acoustic graph fixtures | Sound realism | ✅ | Preallocated bidirectional graph: delays, weighted branches, cavity/source/radiation/loss books; 220 cases and one-second loops. Acceptance is limited to homogeneous zero-flow fixtures, not real engine/exhaust realism |
 | S2e | Unified geometry-aware source/exhaust transfer | Sound realism | ⬜ | Consistent pulse/noise routes, throat states, X/Y, temperature/flow, packing/perforates and load/radiation validation |
 | S3 | Sound: the engine's own sound 🎧                  | Sound realism    | ✅     | Done in stage 12b (the cam drive's whine moves to S5) |
 | S3b | Engine-specific turbulence and structure | Sound realism | ⬜ | State-conditioned unresolved sources, pressure-force/body transfer, modes, mounts and accessory timing; no arbitrary random detail |

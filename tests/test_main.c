@@ -63,6 +63,21 @@ void test_exhaust_coherent_x_modes(void);
 void test_exhaust_high_rpm_fired_books(void);
 void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
+/* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
+void test_candidate_wave_guards(void);
+void test_candidate_wave_delay_and_return(void);
+void test_candidate_wave_four_port(void);
+void test_candidate_wave_unequal_and_cancel(void);
+void test_candidate_wave_fractional_passivity(void);
+void test_candidate_wave_cavity_and_source_work(void);
+void test_candidate_wave_radiation(void);
+void test_candidate_wave_cavity_transfer(void);
+void test_candidate_wave_loss_budget(void);
+void test_candidate_fv_uniform_and_guards(void);
+void test_candidate_fv_stationary_contact(void);
+void test_candidate_fv_sod(void);
+void test_candidate_fv_packet_conservation(void);
+void test_candidate_fv_rarefaction(void);
 /* ---- audio (tests/test_audio.c) ---- */
 void test_audio_decimator_filter(void);
 void test_audio_decimator_tones(void);
@@ -255,6 +270,20 @@ static const struct {
     T(test_exhaust_high_rpm_fired_books),
     T(test_radiation_causal_impedance),
     T(test_radiation_pipe_work),
+    T(test_candidate_wave_guards),
+    T(test_candidate_wave_delay_and_return),
+    T(test_candidate_wave_four_port),
+    T(test_candidate_wave_unequal_and_cancel),
+    T(test_candidate_wave_fractional_passivity),
+    T(test_candidate_wave_cavity_and_source_work),
+    T(test_candidate_wave_radiation),
+    T(test_candidate_wave_cavity_transfer),
+    T(test_candidate_wave_loss_budget),
+    T(test_candidate_fv_uniform_and_guards),
+    T(test_candidate_fv_stationary_contact),
+    T(test_candidate_fv_sod),
+    T(test_candidate_fv_packet_conservation),
+    T(test_candidate_fv_rarefaction),
     T(test_audio_decimator_filter),
     T(test_audio_decimator_tones),
     T(test_audio_dc_blocker),

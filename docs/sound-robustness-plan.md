@@ -14,6 +14,12 @@ standalone engine-specific learned-DSP controls and conditional source-only
 integration. This is a completed design checkpoint, not completed S2d/S2e/S6
 implementation or listening acceptance.
 
+The first [native S2d checkpoint](stage-S2d.md) is now implemented: 344 candidate
+rows, a conservative A1 control that fails upper-band acoustic accuracy, and
+a B0 graph that passes the stated quiescent plane-mode fixture band. These
+are isolated numerical candidates. Mean-flow/engine feedback, component
+calibration, full runtime and listening gates remain open.
+
 ## Engineering direction
 
 Use the gas simulation as the causal source of firing timing, pressure/flow,
