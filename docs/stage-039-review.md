@@ -1,5 +1,11 @@
 # Stage039 closeout review and Stage041 readiness
 
+**Superseded completion decision:** Bernardo clarified that the full039 matched
+reference acquisition is still required. The [subsequent source-search review](stage-039-reference-search.md)
+reopens039 and records the remaining gaps. This document preserves the valid
+protocol checks and the earlier bounded decision; it no longer closes the whole
+stage. PLAN owns current status. No041 work starts from this historical closeout.
+
 Reviewed2026-10-24 at Bernardo's request, against baseline769cacf and the
 [original039 specification](roadmap/03-contracts-and-sources.md#stage-039).
 No engine, renderer, reference-lock assignment or audio is changed here.

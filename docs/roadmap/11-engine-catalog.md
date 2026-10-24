@@ -83,7 +83,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Stop/reject rule:** One successful V8 or one parameter sweep cannot qualify the catalog. Missing reference hardware remains an explicit gap and may require Bernardo's recordings.
 
-**Reference entry gate:** Reopen acquisition where the [039 coverage matrix](../stage-039-review.md) is insufficient. A related FA24 cabin recording does not qualify FB20 exhaust response; partial hardware descriptions do not qualify a complete exhaust model. Preserve the locked development/validation history.
+**Reference entry gate:** Continue acquisition where the [039 source-search/coverage review](../stage-039-reference-search.md) is insufficient. A related FA24 cabin recording does not qualify FB20 exhaust response; partial hardware descriptions do not qualify a complete exhaust model. Preserve the locked development/validation history.
 
 **Legacy coverage:** 23; 13b-p; S5 (catalog).
 

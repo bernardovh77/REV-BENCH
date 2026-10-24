@@ -4,6 +4,13 @@ Execution begins2026-10-23 after review of038; baseline1f964f4.
 Authorized scope continues through040, reviewing each predecessor before the
 next completion. Claude setup and accepted engine examples remain protected.
 
+**Current handoff after Bernardo's clarification:** The full039 matched-reference
+acquisition remains open. The [public-source search](stage-039-reference-search.md)
+and [candidate catalogv2](../tools/reference_candidates_v2.json) supersede the
+bounded closure below; the existing stereo/split/audition protocol remains
+implemented. Missing recording conditions have not been moved out of039. Hold
+after this research;041 stays unstarted.
+
 **2026-10-24 closeout:** Bernardo requests completion/review of039 and readiness
 for041. The acquisition, annotation and comparison-protocol deliverable is
 complete within the available recordings' declared claim limits; see the
@@ -221,7 +228,7 @@ remain unknown. At the intake checkpoint039 was still awaiting matched
 calibration, with better usable references now available. No additional recording request is pending;
 no engine sound or later numerical stage is changed by this intake.
 
-## Closeout and final review — 2026-10-24
+## Initial bounded protocol closeout — 2026-10-24, superseded
 
 The [review](stage-039-review.md) checks every required protocol exit item and
 records the negative calibration result explicitly. The original stop rule
@@ -237,3 +244,17 @@ Remaining real-engine, listener-transfer, training-rights and listening claims
 stay at their explicitly owned gates in the review and roadmap; this closeout
 does not waive them. The040 handoff is reviewed without starting041. Hold for
 Bernardo's next instruction after saving/syncing this checkpoint.
+
+## Extended manufacturer/public-source research — 2026-10-24
+
+Bernardo requests broad online research before041 and an honest attempt to close
+039. The [research record](stage-039-reference-search.md) covers58 selected
+source records across23 exhaust brands,76 targeted queries, primary documents,
+measurement methods, public videos and owner reports. Catalog/measurement
+evidence is retained separately from the eleven actual source sessions. No
+current audio, protocol lock or engine setting is changed.
+
+Useful FB20 scalar measurements and system-specific variants improve coverage,
+but no complete matched recording set was recovered. The unclosed acquisition
+therefore stays in039. The user may supply further references later; do not
+repeat a premature completion decision or start041 at this checkpoint.

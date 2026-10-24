@@ -1,0 +1,1240 @@
+{
+  "schema_version": 2,
+  "checked_date": "2026-10-24",
+  "baseline_revision": "81c456b550d8923028e6d38fa34bdd6464d1d746",
+  "scope": "Expanded primary manufacturer, owner and measurement references; candidate research only. This catalog does not change the frozen recording sessions or confer calibration/training rights. Earlier v1 leads remain active; this file adds research records and does not replace their history.",
+  "parent_catalog": {
+    "path": "tools/reference_candidates_v1.json",
+    "sha256": "a31badfa00404419afd86c942f11d81df0ccd5257995055dc576355f521b0e8b"
+  },
+  "search_batches": 20,
+  "targeted_queries": 76,
+  "classification": "Catalogs, reported scalar measurements, methods and media leads are separate from acquired/qualified audio. Indexed sources and failed retrievals are labeled.",
+  "current_audio_lock": "tools/reference_sessions_v2.json",
+  "engine_targets": {
+    "i4": "Generic1AZ-FE/RAV4-inspired NA2L; not turbo Golf or later RAV4",
+    "i6": "GenericM54B30/E46 330i-inspired NA3L at research8500rpm; not S54/M3",
+    "v8-cross": "Coyote/MustangGT-inspired5L,7500rpm,modified rear-delete X; not a stock Borla kit",
+    "v8-flat": "458Italia-inspired4.5L,9000rpm,Tubi-inspired unvalved rear; Speciale is a distinct variant",
+    "boxer4": "FB20/GP7-inspired NA2L/HKS32018-AF012; not GR86 FA24,FA20,EJ turbo or hybridGPE"
+  },
+  "references": [
+    {
+      "id": "toyota-1az-oem",
+      "preset": "i4",
+      "brand": "Toyota",
+      "kind": "oem-spec",
+      "url": "https://media.toyota.co.uk/new-toyota-rav4-replaces-style-icon/",
+      "title": "RAV4 launch specification",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock"
+      ],
+      "established_or_reported": "Identifies1AZ-FE 2L NA engine and86x86mm geometry.",
+      "missing_or_limits": "Vehicle identity/specification context, not audio or proof that the generic simulator duplicates the engine.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "brexhaust-rav4",
+      "preset": "i4",
+      "brand": "BRExhaust/MagnaFlow",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.magnaflow.com/products/106-0135-brexhaust-2001-2003-toyota-rav4-2-0l-direct-fit-exhaust-system-kit-106-0135",
+      "title": "BRExhaust106-0135",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "oem-replacement"
+      ],
+      "established_or_reported": "2001–03 RAV4 2L OEM-replacement system; mandrel-bent routing.",
+      "missing_or_limits": "No synchronized engine sound, RPM/load or microphone calibration provided by inspected product description.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "walker-rav4-joints",
+      "preset": "i4",
+      "brand": "Walker",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.walkerexhaust.com/find-my-part/part-details.html?brand_code=BDCN&part_number=31374",
+      "title": "RAV4 converter/pipe/resonator joint",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock",
+        "oem-replacement"
+      ],
+      "established_or_reported": "Lists2001–03 RAV4 2L pipe-to-resonator application.",
+      "missing_or_limits": "Joint/fitment evidence only. A gasket dimension is not a surveyed full pipe bore or acoustic transfer.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "rav4-1az-service-video",
+      "preset": "i4",
+      "brand": "Peter Finn",
+      "kind": "owner-or-service-demo",
+      "url": "https://www.youtube.com/watch?v=PdywiGcGvkU",
+      "title": "1AZ-FE exhaust manifold replacement",
+      "checked_date": "2026-10-24",
+      "access": "indexed-uploader",
+      "exhaust_variants": [
+        "stock",
+        "manifold-service"
+      ],
+      "established_or_reported": "Uploader identifies RAV4 1AZ-FE exhaust manifold service.",
+      "missing_or_limits": "Mechanical-layout lead; not a clean acoustic measurement or verified whole-system recording.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "hks-rav4-mismatch",
+      "preset": "i4",
+      "brand": "HKS",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.hks-power.co.jp/search/vehicle/2",
+      "title": "RAV4 application exclusions",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "different-engine-exclude"
+      ],
+      "established_or_reported": "Current exhaust listing is MXAA54/M20A-FKS; older ACA entries identify1AZ-FSE intake/electronics.",
+      "missing_or_limits": "RAV4 name alone does not establish1AZ-FE exhaust. Exclude M20A-FKS/2AZ-FE/1AZ-FSE from exact1AZ-FE matching.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "bmw-m54-oem",
+      "preset": "i6",
+      "brand": "BMW",
+      "kind": "oem-spec",
+      "url": "https://www.bmwgroup-classic.com/en/models/bmw-classics/product-description-page.ad-867-1.bmw-330i-e46.content.html",
+      "title": "E46 330i identity",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock"
+      ],
+      "established_or_reported": "BMW identifies3L M54 for330i, distinct from E46 M3/S54.",
+      "missing_or_limits": "Current generic preset is inspired by M54 and modified to8500rpm; stock documentation does not validate that limit.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "bmw-m54-dimensions",
+      "preset": "i6",
+      "brand": "BMW",
+      "kind": "oem-spec",
+      "url": "https://www.press.bmwgroup.com/canada/article/detail/T0032440EN/new-bmw-highlights-in-the-year-2001?language=en",
+      "title": "M54 family launch",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock"
+      ],
+      "established_or_reported": "OEM lists2979cc and89.6x84mm stroke/bore for3L M54.",
+      "missing_or_limits": "Preset uses84x90mm and generic cams/compression. Same family does not imply exact replica.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "supersprint-m54-program",
+      "preset": "i6",
+      "brand": "Supersprint",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.supersprint.com/en-gb/supersprint-performance-sport-exhaust-for-bmw-e46-330i.aspx",
+      "title": "M54 twin54mm program",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-direct-unavailable",
+      "exhaust_variants": [
+        "full-system",
+        "cat-back",
+        "header",
+        "sport-catalyst",
+        "rear-silencer"
+      ],
+      "established_or_reported": "Manufacturer index identifies oversize twin54mm, full-kit, cat-back and rear-system choices;787401 replaces original header/catalyst assembly.",
+      "missing_or_limits": "Direct GB returned404; US/WW returned empty200 responses. Indexed fitment is not a recovered audio/dyno experiment.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "supersprint-m54-resonator",
+      "preset": "i6",
+      "brand": "Supersprint",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.supersprint.com/en-us/bmw-e46/supersprint-performance-sport-exhaust-for-bmw-e46-330i/787802-front-exhaust.aspx?ID=22296",
+      "title": "Resonated front option787802",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "resonated"
+      ],
+      "established_or_reported": "Indexed primary page names a resonated front section for330i.",
+      "missing_or_limits": "No measured component impedance, controlled recording or full installed configuration established.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "supersprint-m54-packages",
+      "preset": "i6",
+      "brand": "Supersprint",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.supersprint.com/en-me/bmw-e46/supersprint-performance-sport-exhaust-for-bmw-e46-330i/787440-sport-sound-package.aspx?id=22298",
+      "title": "Sport/Race package distinction",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "sport",
+        "race"
+      ],
+      "established_or_reported": "Indexed program distinguishes787440 Sport and787450 Race.",
+      "missing_or_limits": "Package names do not specify a common-gain acoustic difference or full test conditions.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "eisenmann-m54-center",
+      "preset": "i6",
+      "brand": "Eisenmann",
+      "kind": "manufacturer-catalog",
+      "url": "https://eisenmann-exhaust-systems.de/en/detail/index/sArticle/2398",
+      "title": "M54 non-resonated center pipe",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read",
+      "exhaust_variants": [
+        "non-resonated",
+        "rear-silencer",
+        "race"
+      ],
+      "established_or_reported": "B5304.20000_330I_LIMO replaces front/middle silencers; paired rear makes a system from the downpipe flange.",
+      "missing_or_limits": "Catalog model field mentions330xi while description excludes AWD. Keep that fitment conflict; no audio/RPM/mic metrology.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "eisenmann-sport-race",
+      "preset": "i6",
+      "brand": "Eisenmann",
+      "kind": "manufacturer-method",
+      "url": "https://eisenmann-exhaust-systems.de/faq",
+      "title": "Sport/Race variants",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "sport",
+        "race"
+      ],
+      "established_or_reported": "Manufacturer distinguishes SPORT and RACE sound versions.",
+      "missing_or_limits": "Label difference is not a measured dB or spectral delta for one installed M54.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "uuc-m54-tse3",
+      "preset": "i6",
+      "brand": "UUC",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.uucmotorwerks.com/catalog/uuc-twin-silencer-exhaust-tse3brfor-01-05-e46-330--325.htm",
+      "title": "TSE3 full twin cat-back",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "dual-cat-back",
+        "reflection-cancellation"
+      ],
+      "established_or_reported": "M54-compatible twin2.25in cat-back; reflective cancellation without conventional packing. Claims stationary95dB-limit certification and offers330i cabin-driving/neutral-rev downloads.",
+      "missing_or_limits": "95dB is a claimed limit, not an exact reading. Mic gain, actual test RPM and a synchronized recording remain missing. Both330i MOV downloads returned404.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "certification_claim": {
+        "method": "SAE J1169 (manufacturer claim)",
+        "limit_db": 95,
+        "is_measured_value": false
+      },
+      "media_urls": [
+        "https://www.uucmotorwerks.com/TSE3/UUCTSE3_330IA_Driving_Medium.mov",
+        "https://www.uucmotorwerks.com/TSE3/UUCTSE3_330iA_Inside_Rev.mov"
+      ],
+      "media_access": "Both author-offered downloads404; no audio acquired",
+      "audio_acquired": false
+    },
+    {
+      "id": "scorpion-m54",
+      "preset": "i6",
+      "brand": "Scorpion",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.scorpion-exhausts.com/bmw-3-series-e46-320325330-cabriolet-coupe-saloon-estate-exhaust-systems",
+      "title": "Resonated cat-back SBM093D",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read",
+      "exhaust_variants": [
+        "resonated-cat-back",
+        "rear-silencer"
+      ],
+      "established_or_reported": "50.8mm majority pipework; resonated cat-back and a separate rear-only choice for RWD petrol2000–06.",
+      "missing_or_limits": "Rear-only fits OEM center and cannot be upgraded using the Scorpion center. Full dimensions/acoustic recording conditions missing.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "dinan-m54",
+      "preset": "i6",
+      "brand": "Dinan",
+      "kind": "manufacturer-document",
+      "url": "https://documents.dinancars.com/d660-4602.pdf",
+      "title": "D660-4602 rear exhaust installation",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-pdf",
+      "exhaust_variants": [
+        "axle-back",
+        "stock-upstream"
+      ],
+      "established_or_reported": "Manufacturer instructions identify2001 325/330 variants and slip-over retained stock pipes.",
+      "missing_or_limits": "Installation evidence only; no audio or calibrated sound test.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "remus-m54",
+      "preset": "i6",
+      "brand": "Remus",
+      "kind": "manufacturer-document",
+      "url": "https://www.remus.eu/media/pdf/20161115-REMUS-product-range-car.pdf",
+      "title": "E46 330i axle-back catalog",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-pdf",
+      "exhaust_variants": [
+        "axle-back"
+      ],
+      "established_or_reported": "Catalog identifies0890000500 rear system with separate tip options.",
+      "missing_or_limits": "2016 catalog is historical fitment context; no full-system geometry or matched audio.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-m54-supersprint",
+      "preset": "i6",
+      "brand": "BMW owner",
+      "kind": "owner-demo",
+      "url": "https://www.bmw-syndikat.de/bmwsyndikatforum/topic197811_330Ci_brutaler_sound__Youtube_Video__wie_geht_das_BMW-Talk.html",
+      "title": "Owner-described full Supersprint example",
+      "checked_date": "2026-10-24",
+      "access": "indexed-owner",
+      "exhaust_variants": [
+        "full-system",
+        "header",
+        "sport-catalyst",
+        "resonated"
+      ],
+      "established_or_reported": "Post lists header, metal sport cats, middle and rear silencers with a linked video.",
+      "missing_or_limits": "Owner description is unverified; RPM/load/mic gain/distance and present media availability unknown.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=9G9vv23Xwxw"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-m54-ta-technix",
+      "preset": "i6",
+      "brand": "BMW owner",
+      "kind": "owner-demo",
+      "url": "https://www.bmw-syndikat.de/bmwsyndikatforum/topic320907_Endschalldaempfer_Sound_E46_innenraum_3er_BMW_-_E46.html",
+      "title": "Header/underfloor-cat/no-middle/rear example",
+      "checked_date": "2026-10-24",
+      "access": "indexed-owner",
+      "exhaust_variants": [
+        "header",
+        "middle-delete",
+        "rear-silencer"
+      ],
+      "established_or_reported": "Owner describes header, underfloor catalyst, deleted middle silencer and TA Technix rear; links a cabin clip.",
+      "missing_or_limits": "Anecdotal2000–3000rpm drone report; no recorded calibrated transfer, gain or load trace.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=4Hi0dAiGSWc"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-m54-comparison",
+      "preset": "i6",
+      "brand": "Pyrenees BMW",
+      "kind": "owner-demo",
+      "url": "https://www.youtube.com/watch?v=gUf-FNlyuqM",
+      "title": "330i E46 sound comparison",
+      "checked_date": "2026-10-24",
+      "access": "indexed-uploader",
+      "exhaust_variants": [
+        "comparison-unspecified"
+      ],
+      "established_or_reported": "Uploader title labels330i/M54 comparison.",
+      "missing_or_limits": "No description or source microphone/state/hardware chain. Title alone is insufficient.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "ford-s650-oem",
+      "preset": "v8-cross",
+      "brand": "Ford",
+      "kind": "oem-spec",
+      "url": "https://media.ford.com/content/dam/fordmedia/North%20America/US/2022/09/14/2024-mustang-technical-specifications.pdf",
+      "title": "2024 Mustang technical specification",
+      "checked_date": "2026-10-24",
+      "access": "previous-primary-reviewed",
+      "exhaust_variants": [
+        "stock",
+        "active-valves"
+      ],
+      "established_or_reported": "OEM configuration baseline for5L Coyote GT and distinct variants.",
+      "missing_or_limits": "Does not certify the simulator's rear-delete X system, listener or modeled durability.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "borla-s650-range",
+      "preset": "v8-cross",
+      "brand": "Borla",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.borla.com/2024-2026-ford-mustang-gt-exhaust-systems",
+      "title": "S650 GT system range",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-direct-blocked",
+      "exhaust_variants": [
+        "cat-back",
+        "axle-back",
+        "x-pipe",
+        "resonator-delete",
+        "valved"
+      ],
+      "established_or_reported": "Active/non-active, cat-back/axle-back, S-Type/ATAK; dual3in cat-back and merge/SwitchFire X options.",
+      "missing_or_limits": "Generation/body/valves must be matched. Our current rear-delete is not catalog ATAK. Direct snapshot403; indexed primary readable.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "borla-s650-drawing",
+      "preset": "v8-cross",
+      "brand": "Borla",
+      "kind": "manufacturer-document",
+      "url": "https://www.borla.com/media/installation_instructions/A-36106.pdf",
+      "title": "Cat-back installation A-36106",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-pdf",
+      "exhaust_variants": [
+        "cat-back",
+        "x-pipe"
+      ],
+      "established_or_reported": "Primary installation drawing covers140960/140961 families.",
+      "missing_or_limits": "Drawing is routing evidence, not proprietary internals or an acoustic measurement.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "borla-active-demo",
+      "preset": "v8-cross",
+      "brand": "Borla",
+      "kind": "manufacturer-demo",
+      "url": "https://www.youtube.com/watch?v=I0XICRzb0HI",
+      "title": "Active GT stock/S-Type/ATAK comparison",
+      "checked_date": "2026-10-24",
+      "access": "indexed-manufacturer-uploader",
+      "exhaust_variants": [
+        "stock",
+        "s-type",
+        "atak",
+        "valved"
+      ],
+      "established_or_reported": "Manufacturer uploader identifies a three-system comparison for active-exhaust S650 GT.",
+      "missing_or_limits": "Indexed description available; direct page exposes footer only. Audio not acquired or auditioned; RPM/load/valve schedule/mic transfer unverified.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "borla-nonactive-demo",
+      "preset": "v8-cross",
+      "brand": "Borla",
+      "kind": "manufacturer-demo",
+      "url": "https://www.youtube.com/watch?v=1bG-u9mFycY",
+      "title": "Non-active GT stock/S-Type/ATAK comparison",
+      "checked_date": "2026-10-24",
+      "access": "indexed-manufacturer-uploader",
+      "exhaust_variants": [
+        "stock",
+        "s-type",
+        "atak",
+        "non-active"
+      ],
+      "established_or_reported": "Manufacturer uploader identifies a comparison for non-active S650 GT.",
+      "missing_or_limits": "Direct media access failed. No acquired audio, calibrated gain, mic geometry or time-aligned operating trace.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "corsa-s650",
+      "preset": "v8-cross",
+      "brand": "Corsa",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.corsaperformance.com/products/xtreme-sport-catback-mustang-gt-coupe-21250-21254",
+      "title": "S650 Xtreme/Sport",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "cat-back",
+        "straight-through",
+        "sport",
+        "xtreme"
+      ],
+      "established_or_reported": "Manufacturer lists3in non-valved GT cat-backs21250/21254 with claimed+16/+8dB versus stock.",
+      "missing_or_limits": "RPM, microphone setup, weighting and operating window are absent from inspected claim. Do not apply these increments to all bands/states.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "reported_noise": {
+        "xtreme_delta_db": 16,
+        "sport_delta_db": 8,
+        "method_qualified": false
+      },
+      "audio_acquired": false
+    },
+    {
+      "id": "corsa-double-x",
+      "preset": "v8-cross",
+      "brand": "Corsa",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.corsaperformance.com/collections/2024-ford-mustang-gt-fastback-no-valves-5-0l-v8",
+      "title": "Double-X14327 and double-H caveat",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "double-x",
+        "resonator-delete",
+        "older-h-pipe"
+      ],
+      "established_or_reported": "S650 collection lists3in double-X14327; double-H14502 is labeled2015–23.",
+      "missing_or_limits": "Do not silently treat the older double-H as an S650 fitment or a measured X/H sound comparison.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "magnaflow-s650-xmod",
+      "preset": "v8-cross",
+      "brand": "BRExhaust/MagnaFlow",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.magnaflow.com/blogs/magnaflow/magnaflow-unleashes-new-performance-exhaust-systems-for-the-2024-ford-mustang",
+      "title": "S650 xMOD19646",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "h-pipe",
+        "chambered",
+        "valved",
+        "muffler-delete",
+        "modular"
+      ],
+      "established_or_reported": "Manufacturer identifies modular chambered mufflers/internal H resonator, extreme-delete modules and retained OEM valve functionality.",
+      "missing_or_limits": "Different modules and modes are distinct configurations; no synchronized calibrated audio conditions established.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "awe-s650-gt",
+      "preset": "v8-cross",
+      "brand": "AWE",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.awe-tuning.com/products/awe-exhaust-suite-for-s650-mustang-dual-tip-gt",
+      "title": "GT Touring/Track",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "h-pipe",
+        "touring",
+        "track",
+        "rear-delete",
+        "reflection-cancellation"
+      ],
+      "established_or_reported": "3in,.065in-wall T304L, H crossover; Touring includes180 cancellation, Track has reduced rear filtering.",
+      "missing_or_limits": "Manufacturer wall specification is product-specific; it does not validate our assumed wall or an H-versus-X waveform effect.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "awe-s650-valved",
+      "preset": "v8-cross",
+      "brand": "AWE",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.awe-tuning.com/products/awe-exhaust-suite-for-s650-mustang-quad-tip-gt",
+      "title": "GT SwitchPath/Track",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "h-pipe",
+        "valved",
+        "track"
+      ],
+      "established_or_reported": "Quad-tip GT choices retain factory valve control or use straight rear Track paths.",
+      "missing_or_limits": "Quad-tip/active/different variants cannot be merged with non-active examples; no raw calibration data.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "arh-s650-headers",
+      "preset": "v8-cross",
+      "brand": "American Racing Headers",
+      "kind": "manufacturer-catalog",
+      "url": "https://americanracingheaders.com/collections/2024-ford/products/mustang-5-0l-coyote-2024-2026-direct-connection",
+      "title": "Coyote direct-connect header system",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "long-tube-header",
+        "stock-cat-back",
+        "modified-upstream"
+      ],
+      "established_or_reported": "Primary catalog lists1-3/4 or1-7/8in headers and3in connection to stock cat-back.",
+      "missing_or_limits": "Header/catalyst/ECU state must be recorded for any clip; no claim that stock or rear-only recordings represent this full route.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "ferrari-458-oem",
+      "preset": "v8-flat",
+      "brand": "Ferrari",
+      "kind": "oem-spec",
+      "url": "https://www.ferrari.com/en-PA/history/garage/2009/458-italia",
+      "title": "458 Italia factory context",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock"
+      ],
+      "established_or_reported": "Factory history identifies4.5L V8 family and high-RPM power point.",
+      "missing_or_limits": "Nominal engine context only; source variants/displacement values and simulator estimates should not become exact identity proof.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "tubi-458-catalog",
+      "preset": "v8-flat",
+      "brand": "Tubi Style",
+      "kind": "manufacturer-catalog",
+      "url": "https://catalogue.tubistyle.it/ferrari/458-italia-spider-2009-2015/mufflers.html",
+      "title": "458 rear-system catalog",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-direct-unavailable",
+      "exhaust_variants": [
+        "rear-pipe",
+        "valved",
+        "unvalved"
+      ],
+      "established_or_reported": "Manufacturer index shows458 rear-system/valve-control choices; prior pipe research selected unvalved TSFE458C09.003.ANT.",
+      "missing_or_limits": "Direct catalog returned404 in this search. Indexed variants do not recover proprietary bore/route geometry or actual recording state.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "capristo-458",
+      "preset": "v8-flat",
+      "brand": "Capristo",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.capristoitalia.com/prodotto/ferrari-458-italia-e-spider/",
+      "title": "458 system options",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read",
+      "exhaust_variants": [
+        "valved-cat-back",
+        "header",
+        "100-cell-cat",
+        "250-cell-cat",
+        "cat-bypass"
+      ],
+      "established_or_reported": "Manufacturer lists valved rear02FE00403006, headers02FE00405006,100/250-cell cats and catalyst bypass option; links full-system demo.",
+      "missing_or_limits": "Exact installed demo combination, valve schedule, RPM/load, mic/gain unknown. No open training/redistribution license.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=Iywp1pWMBFA",
+        "https://www.capristoitalia.com/wp-content/uploads/2020/08/Ferrari-458-a-Monza.mp4"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "akrapovic-458",
+      "preset": "v8-flat",
+      "brand": "Akrapovic",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.akrapovic.com/de/car/product/86/Ferrari/458-Italia-458-Spider/2013?brandId=20&modelId=70&yearId=264",
+      "title": "MTP-FE458H titanium Slip-On",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read",
+      "exhaust_variants": [
+        "valved",
+        "slip-on",
+        "sport-catalyst",
+        "optional-link"
+      ],
+      "established_or_reported": "Dualmode valves/triple exit and optional link/catalyst changes; primary page provides a dyno plot and component documents.",
+      "missing_or_limits": "Slip-On alone and optional links are different tests. No raw pressure/audio calibration or synchronized RPM/load for the demo.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "akrapovic-458-approval",
+      "preset": "v8-flat",
+      "brand": "Akrapovic",
+      "kind": "manufacturer-document",
+      "url": "https://d1sfhav1wboke3.azureedge.net/ImageServer/Apim2Media/Documents/86/ce54ec60fd824ca881cb54dfa8fce913.pdf",
+      "title": "458 component approval sheet",
+      "checked_date": "2026-10-24",
+      "access": "primary-pdf-downloaded-visually-reviewed",
+      "exhaust_variants": [
+        "stock-manifolds-cats",
+        "valved-rear"
+      ],
+      "established_or_reported": "Manufacturer-linked document identifiesF136FB, stock manifolds/cats, dual reflection-absorption silencers and70/45mm labeled pipes.",
+      "missing_or_limits": "Visually reviewed. No raw acoustic measurements or measured dB results in this one-page sheet. Labeled diameter is not a surveyed Tubi bore.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false,
+      "document_acquired": true,
+      "document_sha256": "7f6b80e2ab662bc4cc267ea441c426017de354e4192881f5f5f6f79ef96ffe08"
+    },
+    {
+      "id": "akrapovic-458-dyno",
+      "preset": "v8-flat",
+      "brand": "Akrapovic",
+      "kind": "manufacturer-document",
+      "url": "https://d1sfhav1wboke3.azureedge.net/ImageServer/Apim2Media/Documents/86/486311fefbfb44cd835037e1f2ed62e4.pdf",
+      "title": "458 stock/Slip-On dyno plot",
+      "checked_date": "2026-10-24",
+      "access": "primary-pdf-downloaded-visually-reviewed",
+      "exhaust_variants": [
+        "stock",
+        "slip-on"
+      ],
+      "established_or_reported": "Manufacturer-linked plot compares stock/Slip-On over roughly2000–9000rpm.",
+      "missing_or_limits": "Visually reviewed; no curve digitization, uncertainty reconstruction or time-aligned acoustic stream. Dyno evidence is not audio calibration.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false,
+      "document_acquired": true,
+      "document_sha256": "89d8cbe24c3cb62dead21808327988427d3a5bd7887811e69d1a0543f7f0c07e"
+    },
+    {
+      "id": "akrapovic-458-demo",
+      "preset": "v8-flat",
+      "brand": "Akrapovic",
+      "kind": "manufacturer-demo",
+      "url": "https://www.youtube.com/watch?v=8CDhZeJuR2Y",
+      "title": "Official458 Slip-On demo",
+      "checked_date": "2026-10-24",
+      "access": "indexed-manufacturer-uploader",
+      "exhaust_variants": [
+        "slip-on"
+      ],
+      "established_or_reported": "Official manufacturer's2010 uploader identifies458 aftermarket exhaust.",
+      "missing_or_limits": "No microphone/load/recording-gain trace from indexed description; media not acquired or auditioned.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "kline-458",
+      "preset": "v8-flat",
+      "brand": "Kline",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.kline-innovation.com/exhaust-collection/ferrari/458-3/ferrari-458-exhaust/",
+      "title": "458 X/valve/catalyst options",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "x-pipe",
+        "valved",
+        "100-cell-cat",
+        "cat-bypass",
+        "stainless",
+        "inconel"
+      ],
+      "established_or_reported": "Primary description specifies dual63.5mm OD high-flow/open path, single50mm closed route, X section,100-cell/decat choices and stainless/Inconel versions.",
+      "missing_or_limits": "Laminar/sonic/power language is manufacturer description, not proven model physics. Primary lengths unreleased; measured spectral transfer and mic conditions absent.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=Jf2sBgpHoHY"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "novitec-458",
+      "preset": "v8-flat",
+      "brand": "Novitec",
+      "kind": "manufacturer-catalog",
+      "url": "https://www.novitecgroup.com/en/brands/ferrari/458/458-italia/",
+      "title": "458 Italia conversion",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read",
+      "exhaust_variants": [
+        "inconel",
+        "ecu-modification"
+      ],
+      "established_or_reported": "Manufacturer presents Inconel exhaust alongside engine tuning in a combined conversion.",
+      "missing_or_limits": "609hp belongs to a combined tuning package, not an isolated exhaust gain or proof of material-driven pitch.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "ipe-458-speciale",
+      "preset": "v8-flat",
+      "brand": "iPE",
+      "kind": "manufacturer-demo",
+      "url": "https://www.youtube.com/watch?v=pdqBBRC_9Bw",
+      "title": "Official458 Speciale demo",
+      "checked_date": "2026-10-24",
+      "access": "indexed-manufacturer-uploader",
+      "exhaust_variants": [
+        "different-variant",
+        "valved"
+      ],
+      "established_or_reported": "Manufacturer uploader identifies458 Speciale exhaust.",
+      "missing_or_limits": "Speciale is a different variant from Italia; sparse configuration/mic/state metadata. No acquired audio.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "ipe-458-italia-installer",
+      "preset": "v8-flat",
+      "brand": "Euro Haus/iPE",
+      "kind": "installer-demo",
+      "url": "https://www.youtube.com/watch?v=yX3aYV6xvuE",
+      "title": "Italia iPE headers/system",
+      "checked_date": "2026-10-24",
+      "access": "indexed-installer",
+      "exhaust_variants": [
+        "header",
+        "valved",
+        "modified-full-system"
+      ],
+      "established_or_reported": "Installer identifies headers, valved muffler and dual-exit F1-style system.",
+      "missing_or_limits": "Installer claim is unverified; exact catalysts/tune, RPM/load and mic chain unknown.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "fabspeed-458-install",
+      "preset": "v8-flat",
+      "brand": "Fabspeed",
+      "kind": "manufacturer-document",
+      "url": "https://www.fabspeed.com/templates/__custom/images/InstallInstructions/INSTALL%20GUIDE%20-%20Ferrari%20458%20Sport%20Headers.pdf",
+      "title": "458 Sport Headers guide",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-pdf",
+      "exhaust_variants": [
+        "header"
+      ],
+      "established_or_reported": "Primary installation guide identifies458 header upgrade.",
+      "missing_or_limits": "Installation/layout evidence only. A related X-pipe product URL was inaccessible; no sound measurement recovered.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "subaru-fb-context",
+      "preset": "boxer4",
+      "brand": "Subaru",
+      "kind": "oem-spec",
+      "url": "https://www.subaru.co.jp/news/archives/11_07_09/11_09_13_2.html",
+      "title": "XV new-generation boxer context",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "stock"
+      ],
+      "established_or_reported": "OEM XV launch describes new-generation NA boxer choices.",
+      "missing_or_limits": "Do not transfer FA20/FA24/EJ turbo or later direct-injection FB20 variants without explicit matching.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "hks-fb20-gp7",
+      "preset": "boxer4",
+      "brand": "HKS",
+      "kind": "manufacturer-reported-data",
+      "url": "https://www.hks-power.co.jp/en/product_db/muffler/db/15602",
+      "title": "LEGAMAX Premium32018-AF012",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-read-direct-snapshot503",
+      "exhaust_variants": [
+        "stock",
+        "rear-silencer",
+        "dual-outlet"
+      ],
+      "established_or_reported": "Exact GP7/FB20 kit context,50.8→45x2 nominal pipe labels; reported proximity stock75/HKS83dB.",
+      "missing_or_limits": "Product RPM and specific mic/gain trace missing. Global FAQ is not evidence that an embedded video used its method. Direct HTML503; readable primary text.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "reported_noise": {
+        "stock_db": 75,
+        "modified_db": 83,
+        "delta_db": 8,
+        "method_qualified": false
+      },
+      "audio_acquired": false
+    },
+    {
+      "id": "hks-fb20-install",
+      "preset": "boxer4",
+      "brand": "HKS",
+      "kind": "manufacturer-document",
+      "url": "https://www.hks-power.co.jp/product_search/product/download/3047/ja/32018-AF012.pdf",
+      "title": "GP7/GPE kit installation",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-pdf",
+      "exhaust_variants": [
+        "rear-only",
+        "stock-upstream"
+      ],
+      "established_or_reported": "Primary instructions identify FB20/FB20-MA1, rear kit and retained OEM middle/front sections.",
+      "missing_or_limits": "Hybrid versus non-hybrid and source date remain explicit. Installation document is not synchronized sound data.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "hks-usa-fb20",
+      "preset": "boxer4",
+      "brand": "HKS",
+      "kind": "manufacturer-catalog",
+      "url": "https://hksusa.com/product/32018-AF012",
+      "title": "GP7 fitment and shipping fields",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "rear-only",
+        "hybrid-distinct"
+      ],
+      "established_or_reported": "Primary US page lists FB20 GP7 and separate hybridGPE applications.",
+      "missing_or_limits": "Box/weight/L-W-H fields cannot supply physical acoustic route length or internal volume. No calibrated source audio.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "fujitsubo-fb20",
+      "preset": "boxer4",
+      "brand": "Fujitsubo",
+      "kind": "manufacturer-reported-data",
+      "url": "https://www.fujitsubo.co.jp/products/detail/2486",
+      "title": "A-S350-63093",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "stock",
+        "rear-silencer"
+      ],
+      "established_or_reported": "Exact GP7/FB20,50.8mm pipe; reported stock/modified idle55/59,2000rpm65/76,4000rpm75/78dB.",
+      "missing_or_limits": "Proximity header says4650rpm but remarks say measured4000rpm. Retain conflict. Linked demo unavailable to web fetch; gain/mic/trace not known.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "reported_noise": {
+        "idle_pair_db": [
+          55,
+          59
+        ],
+        "at2000_pair_db": [
+          65,
+          76
+        ],
+        "at4000_pair_db": [
+          75,
+          78
+        ],
+        "proximity_pair_db": [
+          77,
+          84
+        ],
+        "proximity_rpm_conflict": [
+          4650,
+          4000
+        ],
+        "method_qualified": false
+      },
+      "media_urls": [
+        "https://www.youtube.com/watch?v=gArJCdQG5l8"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "fujitsubo-method",
+      "preset": "boxer4",
+      "brand": "Fujitsubo",
+      "kind": "measurement-method",
+      "url": "https://www.fujitsubo.co.jp/about-exhaust-systems/regulation/",
+      "title": "Stationary proximity test explanation",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "stationary-neutral",
+        "lift-off-peak"
+      ],
+      "established_or_reported": "Manufacturer's dated explanation uses warm stationary neutral operation, held speed then lift, mic0.5m at45degrees at outlet height, A weighting and FAST maximum.",
+      "missing_or_limits": "General2018 method description is not a measured protocol for every table/video and is not current legal guidance. Not broadband dBFS/mean RMS.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "ganador-fb20",
+      "preset": "boxer4",
+      "brand": "Ganador",
+      "kind": "manufacturer-reported-data",
+      "url": "https://ganador.co.jp/product/pae-050st/",
+      "title": "PAE-050ST GP7/FB20",
+      "checked_date": "2026-10-24",
+      "access": "primary-page-snapshot",
+      "exhaust_variants": [
+        "stock",
+        "rear-only",
+        "woolless"
+      ],
+      "established_or_reported": "Reports stock80 versus modified81dB at4000rpm proximity; idle58/64dB. Describes rear-only woolless design; stock intake/exhaust base and same-condition internal chassis-dyno comparisons.",
+      "missing_or_limits": "RPM is stated for the scalar proximity result, not time-aligned audio. Exact mic/gain/calibrator details not provided in product data.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "reported_noise": {
+        "rpm": 4000,
+        "proximity_pair_db": [
+          80,
+          81
+        ],
+        "idle_pair_db": [
+          58,
+          64
+        ],
+        "method_qualified": false
+      },
+      "audio_acquired": false
+    },
+    {
+      "id": "syms-fb20",
+      "preset": "boxer4",
+      "brand": "Syms",
+      "kind": "manufacturer-reported-data",
+      "url": "https://syms.jp/product/rearmuffler-xv/",
+      "title": "Y0800GP001 GP7/GPE",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "rear-only",
+        "hybrid-distinct"
+      ],
+      "established_or_reported": "Manufacturer lists50.8mm main, GP7 proximity76/acceleration70dB; hybrid82/71dB is separate.",
+      "missing_or_limits": "No per-recording RPM/mic/trace or isolated audio. Hybrid measurements are not GP7 targets.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "reported_noise": {
+        "gp7_proximity_db": 76,
+        "gp7_acceleration_db": 70,
+        "gpe_proximity_db": 82,
+        "gpe_acceleration_db": 71,
+        "method_qualified": false
+      },
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-fb20-stock",
+      "preset": "boxer4",
+      "brand": "Subaru owner",
+      "kind": "owner-demo",
+      "url": "https://minkara.carview.co.jp/userid/669348/blog/23031628/",
+      "title": "StockFB20 Forester cabin/exhaust",
+      "checked_date": "2026-10-24",
+      "access": "indexed-owner",
+      "exhaust_variants": [
+        "stock",
+        "cabin-windows-open",
+        "different-chassis"
+      ],
+      "established_or_reported": "Owner identifies SHC FB20, stock hardware, windows-open cabin and separate tailpipe clips; explicitly notes camera-mic bass coloration.",
+      "missing_or_limits": "Forester exhaust differs from GP7; tach visibility is not a calibrated synchronized RPM channel. Mic distance/gain and load unknown.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=x5yK8V_dnHk",
+        "https://www.youtube.com/watch?v=y_m2U_VahRs"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-hks-gpe",
+      "preset": "boxer4",
+      "brand": "Subaru owner",
+      "kind": "owner-demo",
+      "url": "https://minkara.carview.co.jp/userid/2013480/car/1519030/8016600/parts.aspx",
+      "title": "Owner LEGAMAX installation",
+      "checked_date": "2026-10-24",
+      "access": "indexed-owner",
+      "exhaust_variants": [
+        "rear-only",
+        "hybrid-distinct"
+      ],
+      "established_or_reported": "Owner identifies32018-AF012 and links a video.",
+      "missing_or_limits": "HybridGPE, not the non-hybrid GP7 default; hardware/operating/microphone chain not independently verified.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "media_urls": [
+        "https://www.youtube.com/watch?v=5oOfzSmHGok"
+      ],
+      "audio_acquired": false
+    },
+    {
+      "id": "owner-gp7-hks",
+      "preset": "boxer4",
+      "brand": "Subaru owner",
+      "kind": "owner-demo",
+      "url": "https://cartune.co.jp/notes/qMbLjxigLI",
+      "title": "GP7 HKS center-exit owner post",
+      "checked_date": "2026-10-24",
+      "access": "indexed-owner",
+      "exhaust_variants": [
+        "rear-only",
+        "center-exit"
+      ],
+      "established_or_reported": "Owner identifies GP7 and a used HKS center-exit rear assembly.",
+      "missing_or_limits": "Exact kit completeness/RPM/load/mic metadata unknown; no audio acquired.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "procedural-dataset",
+      "preset": "all",
+      "brand": "Doerfler",
+      "kind": "dataset-scope",
+      "url": "https://rdoerfler.github.io/procedural-engine-sounds-page/",
+      "title": "Procedural Engine Sounds Dataset",
+      "checked_date": "2026-10-24",
+      "access": "primary-description-read",
+      "exhaust_variants": [
+        "synthetic-exclude"
+      ],
+      "established_or_reported": "Sample-accurate RPM/torque annotations are for procedurally generated audio informed by recorded timbres.",
+      "missing_or_limits": "Synthetic audio cannot close real-recording calibration gaps; listed source engines are turbo configurations.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "anir-cabin",
+      "preset": "all",
+      "brand": "Kiel University",
+      "kind": "dataset-scope",
+      "url": "https://dss-kiel.de/index.php/media-center/data-bases/anir-corpus",
+      "title": "ANIR calibrated cabin recordings/IRs",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary",
+      "exhaust_variants": [
+        "cabin-transfer-research"
+      ],
+      "established_or_reported": "Corpus describes calibrated synchronized channels, cabin background noise and speaker-to-mic impulse responses in Daimler V-class.",
+      "missing_or_limits": "Different vehicle/task, HVAC/road mixture and speaker IRs; not a GP7/M54 tailpipe calibration. Availability/license needs checking before acquisition.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "idmt-electric",
+      "preset": "all",
+      "brand": "Fraunhofer IDMT",
+      "kind": "dataset-scope",
+      "url": "https://zenodo.org/records/7551261",
+      "title": "IDMT electric-engine dataset",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-record",
+      "exhaust_variants": [
+        "electric-exclude"
+      ],
+      "established_or_reported": "Dataset specifies brushless electric motors and provoked load/fault conditions.",
+      "missing_or_limits": "Wrong source physics for combustion engine exhaust; excluded from matching.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "dcase-traffic",
+      "preset": "all",
+      "brand": "Bosch/KU Leuven",
+      "kind": "dataset-scope",
+      "url": "https://zenodo.org/records/10700792",
+      "title": "DCASE2024 acoustic traffic dataset",
+      "checked_date": "2026-10-24",
+      "access": "indexed-primary-record",
+      "exhaust_variants": [
+        "traffic-exclude"
+      ],
+      "established_or_reported": "Public record provides car/commercial-vehicle sound and traffic/location metadata.",
+      "missing_or_limits": "No inspected matching engine/full exhaust/time-aligned RPM/load set. Traffic class labels cannot qualify our presets.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    },
+    {
+      "id": "pole-ferrari-files",
+      "preset": "v8-flat",
+      "brand": "Pole Position",
+      "kind": "commercial-audio-lead",
+      "url": "https://pole.se/wp-content/uploads/2023/03/Ferrari-458-Spotting-Sound-File-List.pdf",
+      "title": "Ferrari458 spotting file list",
+      "checked_date": "2026-10-24",
+      "access": "indexed-recorder-document",
+      "exhaust_variants": [
+        "onboard",
+        "exterior",
+        "commercial"
+      ],
+      "established_or_reported": "Recorder's file list labels real458 F136 V8 driving variants and96kHz/24-bit files.",
+      "missing_or_limits": "Commercial lead only; no purchase/download, no verified synchronized RPM/load/calibrated microphone channel or training rights.",
+      "qualified_for_matched_waveform": false,
+      "qualified_for_calibrated_audio_spl": false,
+      "audio_acquired": false
+    }
+  ],
+  "rights_policy": "Research metadata/links only; no redistribution or model-training rights inferred. Manufacturer-offered UUC media downloads were unavailable."
+}

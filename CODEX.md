@@ -4,6 +4,51 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Extended039 source research; matched acquisition open — HOLD
+
+- Bernardo clarified that RPM/load/microphone acquisition belongs to039; prior
+ 81c456b bounded closure was too broad. He requests extensive public research
+  before041 and says he may look for references later if necessary. PLAN now
+  restores039 to Awaiting matched references. Protocol work stays implemented;
+  no missing acquisition is moved out of039 and no041 work is authorized here.
+- docs/stage-039-reference-search.md is the current outcome/review. Twenty
+  search batches/76queries produce58selected source records across23exhaust
+  brands, all five engines plus OEM/method/owner/dataset leads. Structured
+  tools/reference_candidates_v2.json retains the earlier v1 catalog by hash;
+  this is a candidate/source ledger, not58acquired audio recordings. Existing
+  tools/reference_sessions_v1/v2.json,11sessions/34raw excerpts stay unchanged.
+- Correct engine matching: I6 is generic M54B30/E46 330i-inspired, not S54/M3.
+  Existing S54 audio is useful related-family evidence only. FB20/GP7 differs
+  from FA24/FA20/EJ turbo/hybridGPE;1AZ-FE differs from1AZ-FSE/2AZ/M20A; GT,
+  Dark Horse, active/non-active and chassis generations stay distinct. Current
+  raised rev limits and accepted exhaust selections are unchanged research builds.
+- Portfolio covers rear-only/full systems, catalysts/bypass, header sizes,
+  resonated/deleted middle sections, X/H, active valves, reflective/packed/
+  chambered concepts and material variants. Manufacturer dimensions are not
+  proprietary impedance measurements; shipping dimensions/tip trim are not bores.
+- Strong scalar leads: HKS GP7 stock75/HKS83dB; Fujitsubo fixed-speed comparisons
+  but proximity4650rpm header conflicts with4000rpm remark; Ganador stock80/
+  modified81dB at4000rpm; Syms GP7/hybrid separated. UUC95dB is a claimed test
+  limit, Corsa+16/+8dB lacks full conditions. Do not convert these into waveform
+  gains, pool different makers' stock baselines or infer source mic gain.
+- General Fujitsubo warm-neutral/hold/lift,0.5m45°,A/FAST method is a future
+  fixture lead, not proof that any demo followed it. Manufacturer-specific raw
+  audio/RPM/load/mic metadata still missing. Absolute SPL needs calibrated chain;
+  useful relative/timbre claims can be narrower. No source currently closes039.
+- UUC explicitly offers two330i cabin/neutral-rev MOV downloads; both404. New
+  candidate audio acquired/auditioned/fitted=0. Some pages are index-only or
+  blocked/empty. No cookie/access-control workaround, purchase or external contact.
+  Two official Akrapovic-linked458 PDFs acquired/fingerprinted/visually reviewed
+  using existing bundled pypdfium2; no package/Claude setup changes. Approval
+  sheet supplies topology/dimensions, not an acoustic test; dyno curve is not audio.
+- Fresh nine reference behavior tests pass without skips. Candidate schema,
+  source/claim/coverage counts, all existing protected files/raw/page, links/
+  roadmap checked; no new native/WASM/render runs claimed. RESULTS remains the
+  same55-player page; original files/hardlinks and held-out partitions preserved.
+  Evidence: renders/evidence/stage-039-source-search-2026-10-24/. Graphify queried/
+  AST-refreshed; save/sync notes/catalog and HOLD. User .agents/ and skills-lock
+  remain unstaged.041 stays ready by038/040 and unstarted.
+
 ## 2026-10-24: Stage039 closeout reviewed; ready for041 — HOLD
 
 - Bernardo authorizes completion/review of039 and readiness for041, not041

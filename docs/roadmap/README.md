@@ -11,10 +11,11 @@ planning and documentation, not engine sound, production physics or deployment.
 Stages 001–035 preserve historical implementation/experiment evidence;
 036 establishes this roadmap. Appended review repairs 112/113 precede the
 completed contracts stage037 and numerical observation stage038. The039
-reference/protocol closeout and040 causal checkpoint are recorded in their
-execution notes; see PLAN for the current frontier. Additional recordings may
-be acquired alongside independent numerical work. A completed acquisition
-protocol does not qualify an unmatched recording for calibration. Future stage
+implemented protocol, unresolved matched-recording acquisition and040 causal
+checkpoint are recorded in their execution notes; see PLAN for the current
+frontier. Additional recordings may be acquired alongside independent numerical
+work. A completed processing protocol does not finish039's missing matched
+reference acquisition or qualify an unmatched recording for calibration. Future stage
 numbers are not evidence that their work has started.
 
 ## What a stage means

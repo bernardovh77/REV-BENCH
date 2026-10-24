@@ -70,7 +70,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/user-sound-references.md](../../docs/user-sound-references.md), [docs/sound-robustness-plan.md](../../docs/sound-robustness-plan.md).
 
-**Execution record:** [Stage039](../stage-039.md) and its [closeout review](../stage-039-review.md): reference/session lock, raw stereo powers, audition controls, coverage/claim limits and calibration-gap ownership. Completion establishes the acquisition/annotation/protocol deliverable and records each source's qualification result; it does not certify missing engine/RPM/load/microphone data. The existing056/059/063/064/094/098 qualification gates still require claim-appropriate evidence. Status lives in PLAN.
+**Execution record:** [Stage039](../stage-039.md), the [protocol review](../stage-039-review.md) and the superseding [public-source search](../stage-039-reference-search.md). The protocol is implemented; full039 still includes acquiring claim-appropriate matched recordings. The earlier bounded closure did not complete that acquisition and is superseded. Manufacturer scalar measurements and catalog/video leads do not certify missing recording metadata. Later056/059/063/064/094/098 gates remain separate. Status lives in PLAN.
 
 <a id="stage-040"></a>
 ## Stage 040 — Spark, ignition and flame-development causality

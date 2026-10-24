@@ -66,7 +66,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Stop/reject rule:** Final listening cannot waive a failed physical, safety-envelope or runtime gate; late tuning requires rerunning affected tests.
 
-**Reference entry gate:** Check current claim-specific coverage against the [039 review](../stage-039-review.md) and later qualification records. Closing the reference/protocol stage did not close real-engine calibration, recording rights, or the per-preset listening gates.
+**Reference entry gate:** Check current claim-specific coverage against the [039 source-search review](../stage-039-reference-search.md) and later qualification records. An implemented reference protocol does not close matched-recording acquisition, real-engine calibration, recording rights, or the per-preset listening gates.
 
 **Legacy coverage:** S5; S1/S1e/S2/S4 (final).
 

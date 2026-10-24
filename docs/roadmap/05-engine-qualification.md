@@ -117,7 +117,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Stop/reject rule:** Raised rev limits are not validated durability. Unknown reference hardware cannot certify an exact engine model; passing one trajectory is insufficient.
 
-**Reference entry gate:** Stage039 closes acquisition/annotation/protocol, with zero matched-engine or calibrated-SPL sources currently qualified. Recheck the [coverage and claim limits](../stage-039-review.md) at execution. Acquire missing engine/exhaust/state evidence and lock claim-appropriate validation before fitting; a completed039 row is not proof of matched measurements.
+**Reference entry gate:** Stage039's processing protocol is implemented; matched-recording acquisition remains part of039 and is open. Recheck the [source-search/qualification review](../stage-039-reference-search.md) at execution. Lock claim-appropriate engine/exhaust/state references before fitting; manufacturer scalar data and video metadata alone are not matched audio measurements.
 
 **Legacy coverage:** S1; S2; R02-R05; R14.
 

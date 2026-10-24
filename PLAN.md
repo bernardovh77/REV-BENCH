@@ -28,22 +28,30 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Checkpoint: Stage039 reference/protocol closeout and review complete.**
-Stages001–040 now have completed deliverables within their documented scopes.
-The [039 closeout review](docs/stage-039-review.md) verifies eleven locked
-sessions/34 raw stereo excerpts, provenance and uncertainty, preserved session
-partitions, per-channel powers and audition controls. The supplied GR86/E46
-videos provide useful related-boxer/cabin and NA I6 examples. The GR86 FA24
-is not our FB20, and camera position does not establish microphone position.
+**Checkpoint: Stage039 public-source research; full039 remains open.**
+Bernardo clarified that matched-reference acquisition belongs to039; the
+earlier bounded protocol closeout did not finish the whole stage. The
+[new source-search review](docs/stage-039-reference-search.md) supersedes that
+completion decision. The existing protocol and eleven sessions/34 raw stereo
+excerpts remain valid. Stages001–038 and040 retain their documented completions.
 
-**Reference qualification result: no calibrated SPL or matched-engine response
-target is qualified.** Completion covers acquisition, annotation, processing,
-comparison protocol and the explicit limits on each recording's claims. It
-does not turn unknown RPM/load/exhaust/microphone metadata into measurements.
-The [coverage and gate ownership](docs/stage-039-review.md) retain these gaps
-for056/058/059/063/064/094/098. No calibration or release gate is waived, and
-no additional recording request is pending. Seek better sources or ask Bernardo
-when a later claim requires them.
+The expanded [candidate catalog](tools/reference_candidates_v2.json) records
+58 references across23 exhaust manufacturers/brands, five engine configurations,
+OEM identity sources, owner examples and measurement/dataset leads. This adds
+manufacturer-reported FB20 stationary noise comparisons and more documented
+exhaust variants. It does not add58 acquired recordings or qualify the public
+videos as calibrated audio. Original sources,34 excerpts and session splits
+remain unchanged; no new candidate audio was acquired or used for tuning.
+
+**039 still needs claim-appropriate recordings with known engine/exhaust,
+independent RPM/operating state and microphone geometry/transfer.** Absolute
+SPL additionally needs a calibrated recording chain. Product scalar levels,
+dyno curves, general test methods and video titles cannot supply missing
+time-aligned recording metadata. Our I6 is M54B30/330i-inspired; E46 M3/S54 is
+a related engine, not the exact preset. GR86 FA24 remains distinct from FB20.
+Missing acquisition stays in039; its later qualification consumers still retain
+their own gates. Bernardo may look for additional references later; no new
+recording request is pending now.
 
 [Stage040](docs/stage-040.md) separates commanded/permitted discharge,
 nonnegative kernel development and bulk heat. Independent controls show zero
@@ -53,11 +61,11 @@ fix does not establish a calibrated kernel law or solve propagation realism.
 The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
 one-page examples are a new listening checkpoint, not pre-accepted sound.
 
-**Hold at the reviewed039/040 checkpoint; Stage041 is ready, not started.**
-The closeout also reviews040's unchanged causal fix and its041 handoff:
+**Hold after039 research; Stage041 is ready by dependencies, not started.**
+The previous review of040's unchanged causal fix and its041 handoff still applies:
 continuous mean-model behavior as variation approaches zero, state-conditioned
 kernel/residual validity, multiple-seed statistics and accounting. No041
-implementation or sound tuning is authorized by this closeout.042/043/044
+implementation or sound tuning is part of this source-search request.042/043/044
 remain Ready by dependencies, not authorization to skip the agreed order.
 
 The physical native engine and five presets already exist. The browser still
@@ -195,7 +203,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol | Complete | 035 |
 | [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
 | [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
-| [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Complete (bounded) | 036 |
+| [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
 | [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Complete (bounded) | 038 |
 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Ready | 040, 038 |
 | [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Ready | 040, 038 |
