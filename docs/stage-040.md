@@ -212,7 +212,7 @@ unchanged full suite was run twice. ASan/UBSan19tests/655542checks pass, plus
 the final strengthened4/655335; no sanitizer finding. Final SIMD WASM13tests/
 655645checks pass. Python64 and cached web17 pass; the copied source tree and
 169326byte WASM/fingerprint agree. Public browser engine operation is still the
-existing tone scaffold; rebuilt WASM does not imply Stage068 product integration.
+existing tone scaffold; rebuilt WASM does not imply Stage066 product integration.
 
 Local evidence under `renders/evidence/stage-040/`: independent before/after
 causality JSONL,25scenario rows with sampled events, six fault results and exact

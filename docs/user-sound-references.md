@@ -336,5 +336,6 @@ Unfiltered stereo float measurements live in `renders/reference-protocol-v2/`;
 three source compilations and viewpoint images join the same RESULTS page.
 The GR86 ASC setting, exact RPM/load and calibrated microphone data remain
 unknown. These references are useful now for texture/dynamics/cabin observations;
-Stage039's matched calibration remains open. No simulator tuning or041 work
+Stage039's [reference/protocol closeout](stage-039-review.md) retains the
+unqualified matched-calibration claims at their later qualification gates. No simulator tuning or041 work
 is part of this intake.

@@ -4,6 +4,43 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage039 closeout reviewed; ready for041 — HOLD
+
+- Bernardo authorizes completion/review of039 and readiness for041, not041
+  implementation.039 was the sole unfinished numbered stage001–040. PLAN now
+  records its bounded acquisition/annotation/comparison-protocol completion;
+  docs/stage-039-review.md is the exit checklist, coverage and handoff review.
+- All11 source fingerprints/34 raw stereo excerpts (488.205646s), exact sample
+  intervals, powers and claim limits checked. Nine development sessions/32clips,
+  one reserved validation session/clip, one quarantine session/clip. Parentv1's
+ 8sessions/20clips and17legacy development IDs remain unchanged. Four existing
+  development-only gain controls reproduce their gains/preview hashes. No
+  held-out audio is used for fitting or listening-based tuning.
+- Calibration outcome stays negative: zero calibrated-SPL or matched-engine
+  targets. NA E46 and related FA24 cabin references are useful qualitative data;
+  RPM/load/mic gain/transfer/complete hardware remain unknown. FA24 is not FB20;
+  cabin ASC and camera/mic distinction stay explicit. Rights remain local
+  reference permission, not redistribution/training permission.
+- Closing039 does not waive later056/058/059/063/064/094/098 gates. The review
+  maps missing evidence to these existing owners;059/063/094/098 cards explicitly
+  prevent a completed reference row from certifying calibrated data. Fix stale
+  protocol text that still named039 as next; correct040's browser integration
+  reference from068 to066. No new recording request pending.
+- Nine focused reference behavior tests pass with no skips. Fresh checks cover
+  source/lock/raw/metric/preview preservation and roadmap/link consistency.
+  Earlier global native/Python/web/WASM tests are not claimed as new runs. Audit
+  in renders/evidence/stage-039-close-2026-10-24/ retains coverage, commands and
+  hashes. No production/tool/core code, audio, source lock or Claude setup change.
+- Review040's unchanged source/fault evidence and explicit limits before041:
+  continuous mean model at variation→0, state-conditioned kernel/residual
+  validity, gross/net IMEP/COV/idle statistics, mean-CA50/ECU coupling. Preserve
+  causal discharge/heat and books. I4 coast-rise remains058; injection042;
+  public event transport061; broad S1/S1e/S2/S4/full13b acceptance stays open.
+- Preserve the one55-player RESULTS page, all accepted engine/exhaust choices,
+  original recordings and .claude/. User .agents/ and skills-lock.json remain
+  unstaged. Graphify queried/refreshed for these notes. Commit/sync, then HOLD.
+ 041 is ready by038/040; no041 work or new engine sound starts in this closeout.
+
 ## 2026-10-24: GR86/E46 supplied-video references — HOLD
 
 - Bernardo supplied3WebM videos and requests reference intake with visual

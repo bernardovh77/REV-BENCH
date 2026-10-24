@@ -117,6 +117,8 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Stop/reject rule:** Raised rev limits are not validated durability. Unknown reference hardware cannot certify an exact engine model; passing one trajectory is insufficient.
 
+**Reference entry gate:** Stage039 closes acquisition/annotation/protocol, with zero matched-engine or calibrated-SPL sources currently qualified. Recheck the [coverage and claim limits](../stage-039-review.md) at execution. Acquire missing engine/exhaust/state evidence and lock claim-appropriate validation before fitting; a completed039 row is not proof of matched measurements.
+
 **Legacy coverage:** S1; S2; R02-R05; R14.
 
 **Starting evidence/specification:** [docs/sound-robustness-plan.md](../../docs/sound-robustness-plan.md), [docs/stage-13b-r-rollback.md](../../docs/stage-13b-r-rollback.md).
@@ -184,6 +186,8 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 **Required exit evidence:** Numerical findings resolved or explicitly scoped; repeated hidden controls, common-gain causal and separately level-matched timbre auditions. Record Bernardo's acceptance per preset/scenario and any follow-up stage.
 
 **Stop/reject rule:** Do not mark legacy S1/S1e/S2/S4 or full13b closed merely because renders exist. Listening cannot waive a failed conservation or runtime requirement.
+
+**Reference entry gate:** Apply the [039 claim limits](../stage-039-review.md). Qualitative cabin/pass-by auditions cannot certify absolute SPL, a matched FB20, or a known-load response. Missing decisive evidence keeps the corresponding qualification/acceptance claim open.
 
 **Legacy coverage:** S1; S1e; S2; S4 (base acceptance).
 

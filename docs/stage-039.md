@@ -4,6 +4,15 @@ Execution begins2026-10-23 after review of038; baseline1f964f4.
 Authorized scope continues through040, reviewing each predecessor before the
 next completion. Claude setup and accepted engine examples remain protected.
 
+**2026-10-24 closeout:** Bernardo requests completion/review of039 and readiness
+for041. The acquisition, annotation and comparison-protocol deliverable is
+complete within the available recordings' declared claim limits; see the
+[closeout review](stage-039-review.md) for the exit-evidence checklist, coverage,
+fresh checks and remaining calibration ownership. Zero sources are qualified
+for calibrated SPL or matched-engine response. Earlier awaiting-data decisions
+below are historical checkpoints, not a claim that missing data was obtained.
+PLAN owns the final bounded status. No041 work starts at this checkpoint.
+
 ## Review038
 
 Reviewed the optional tap lifetime, capacity preflight, signed transfers,
@@ -145,7 +154,7 @@ source pages/download fingerprints, reports, faults, preservation and logs.
 All202 native tests/38814checks pass. Python64 and web17 pass; full offline
 playback/rebuild and preservation are checked before the checkpoint commit.
 
-## Outcome and review handoff
+## Initial outcome and review handoff — 2026-10-23
 
 The reference acquisition/uncertainty ledger, locked session partition and
 measurement/audition protocol are implemented. **Matched calibration remains
@@ -208,6 +217,23 @@ This supplies useful NA I6/exhaust-valve and related NA boxer/cabin references.
 The GR86's FA24 differs from the FB20 preset, and cabin ASC state is unknown.
 The E46 footage distinguishes source-reported open/closed valves and camera
 views, while RPM/load, complete exhaust geometry and microphone calibration
-remain unknown. Stage039 is still awaiting matched calibration, with better
-usable references now available. No additional recording request is pending;
+remain unknown. At the intake checkpoint039 was still awaiting matched
+calibration, with better usable references now available. No additional recording request is pending;
 no engine sound or later numerical stage is changed by this intake.
+
+## Closeout and final review — 2026-10-24
+
+The [review](stage-039-review.md) checks every required protocol exit item and
+records the negative calibration result explicitly. The original stop rule
+blocks unsupported calibration claims; it does not require unknown metadata
+to be invented before independent numerical work can proceed. All eleven
+source fingerprints,34 float-stereo excerpts and their measured powers are
+checked again. Earlier eight sessions/20 excerpts, development-only auditions,
+the held-out/quarantine assignments, original videos, engine/WASM/Claude files
+and the existing55-player results page remain intact. Nine focused reference
+behavior tests pass with no skips. No audio or engine parameter is changed.
+
+Remaining real-engine, listener-transfer, training-rights and listening claims
+stay at their explicitly owned gates in the review and roadmap; this closeout
+does not waive them. The040 handoff is reviewed without starting041. Hold for
+Bernardo's next instruction after saving/syncing this checkpoint.

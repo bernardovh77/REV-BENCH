@@ -4,7 +4,8 @@ Bernardo supplied three local WebM videos for reference and asked that their
 images guide perspective annotation. He reports that most/all GR86 driving
 sound is inside the cabin and warns that the E46 has substantial non-car content.
 This work curates the recordings; it changes no engine, exhaust or sound model
-and does not start Stage041. Stage039 calibration remains open.
+and does not start Stage041. The later [039 closeout review](stage-039-review.md)
+completes acquisition/protocol; real-engine calibration claims remain unqualified.
 
 ## Source identity and usefulness
 
