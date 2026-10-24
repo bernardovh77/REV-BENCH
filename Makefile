@@ -28,6 +28,7 @@
 #   make bench-wasm   the same as WebAssembly, run by Node (needs zig and node)
 #   make test-wasm    run gas/batched-cell/pipe checks in the SIMD WASM build
 #   make audit        five-preset S1 physics baseline to renders/s1-audit/physics.csv
+#   make diagnostics-check   five-preset guard/flux/trajectory/cost proof
 #   make clean        delete build output
 #   make help         show this text
 #
@@ -81,13 +82,15 @@ CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
 BENCH_OBJ  := $(call obj,native/rb_bench.c)
 AUDIT_OBJ  := $(call obj,native/rb_audit.c)
-ACOUSTIC_OBJ := $(call obj,experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c)
+ACOUSTIC_SRC := experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c
+ACOUSTIC_OBJ := $(call obj,$(ACOUSTIC_SRC))
 ACOUSTIC_PROBE_OBJ := $(call obj,tools/acoustic_candidate_probe.c)
 COUPLED_PROBE_OBJ := $(call obj,tools/coupled_duct_probe.c)
 BUILD_CONTRACT_OBJ := $(call obj,tools/build_contract_probe.c)
+DIAGNOSTICS_OBJ := $(call obj,tools/numerical_diagnostics_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -112,6 +115,14 @@ acoustic-probe: $(ACOUSTIC_PROBE)
 
 $(BUILD)/build_contract_probe: $(BUILD_CONTRACT_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(BUILD)/numerical_diagnostics_probe: $(DIAGNOSTICS_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+.PHONY: diagnostics-check
+diagnostics-check: $(BUILD)/numerical_diagnostics_probe
+	$(PYTHON) tools/check_numerical_diagnostics.py --probe $< \
+	  --output renders/evidence/stage-038/measurements.json
 
 .PHONY: build-contract-check
 build-contract-check: $(BUILD)/build_contract_probe
@@ -234,10 +245,11 @@ WASM_TEST_FILTER ?= chamber_batch gas pipe_acoustic_transport pipe_conserves_eve
 test-wasm: $(BUILD)/rb_tests.wasm
 	node tools/bench_wasm.mjs $< $(WASM_TEST_FILTER)
 
-$(BUILD)/rb_tests.wasm: $(TEST_SRC) $(CORE_SRC) $(CORE_HDR) $(NATIVE_SRC) tests/rb_test.h Makefile
+$(BUILD)/rb_tests.wasm: $(TEST_SRC) $(CORE_SRC) $(CORE_HDR) $(NATIVE_SRC) $(ACOUSTIC_SRC) tests/rb_test.h Makefile
 	@mkdir -p $(@D)
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
-	  -Wall -Wextra -Icore/include -Icore/src -Inative $(TEST_SRC) $(CORE_SRC) $(NATIVE_SRC) -o $@
+	  -Wall -Wextra -Icore/include -Icore/src -Inative -Iexperiments/acoustics \
+	  $(TEST_SRC) $(CORE_SRC) $(NATIVE_SRC) $(ACOUSTIC_SRC) -o $@
 
 clean:
 	rm -rf build build-san

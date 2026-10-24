@@ -1,4 +1,5 @@
 #include "radiation.h"
+#include "diagnostics.h"
 #include <math.h>
 #include <string.h>
 
@@ -36,7 +37,10 @@ void rb_radiation_linear(rb_radiation *r, double dt, double *direct, double *his
 double rb_radiation_step(rb_radiation *r, double velocity)
 {
     if (!r->enabled || !(r->dt > 0.0)) return 0.0;
-    if (!isfinite(velocity) || fabs(velocity) > 1e6) velocity = 0.0;
+    if (!isfinite(velocity) || fabs(velocity) > 1e6) {
+        if(r->diag) rb_diag_note(r->diag,RB_D_BIT(RB_D_RADIATION_RESET));
+        velocity = 0.0;
+    }
     const double z = r->b0*velocity + r->b1*r->v1 + r->b2*r->v2 - r->a1*r->z1 - r->a2*r->z2;
     r->v2 = r->v1; r->v1 = velocity;
     r->z2 = r->z1; r->z1 = z;

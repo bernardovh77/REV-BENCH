@@ -265,6 +265,7 @@ typedef struct rb_burn {
 /* The orifices point at chambers inside the same struct, so an rb_engine must
  * stay where rb_engine_init put it: don't copy it (init another one instead). */
 typedef struct rb_engine {
+    struct rb_diagnostics *diag;
     rb_engine_desc desc;
     double dt;              /* s, physics step                                         */
     int    hold_speed;      /* 1: a motor or dyno holds the crank at rpm (the default);

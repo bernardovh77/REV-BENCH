@@ -69,15 +69,19 @@ def from_native(raw, generation='1'):
     namespace = raw['preset']
     components, nodes, sources = [], {}, []
     for p in raw['pipes']:
-        kind = KINDS[int(p['kind'])]
-        suffix = 'snorkel' if kind == 'snorkel' else f'{kind}-{int(p["number"])}'
+        for name in ('number', 'from_number', 'to_number'):
+            require(type(p[name]) is int and p[name] >= 0, 'Nonnegative native identity index required')
+        require(type(p['kind']) is int and 0 <= p['kind'] < len(KINDS), 'Unsupported native pipe kind')
+        kind = KINDS[p['kind']]
+        suffix = 'snorkel' if kind == 'snorkel' else f'{kind}-{p["number"]}'
         cid = f'{namespace}/{suffix}'
         ports = []
         for end, direction in ((0, 'from'), (1, 'to')):
-            place = PLACES[int(p[direction])]
+            require(type(p[direction]) is int and 0 <= p[direction] < len(PLACES), 'Unsupported native place')
+            place = PLACES[p[direction]]
             if place == 'ambient':
                 place = 'ambient-intake' if kind == 'snorkel' else 'ambient-exhaust'
-            nid = f'{namespace}/{place}-{int(p[direction + "_number"])}'
+            nid = f'{namespace}/{place}-{p[direction + "_number"]}'
             nodes[nid] = dict(id=nid, kind=place)
             ports.append(dict(id=f'{cid}:{end}', node_id=nid, axis_sign=1 if end == 0 else -1))
         components.append(dict(id=cid, kind=kind, length_m=p['length'],

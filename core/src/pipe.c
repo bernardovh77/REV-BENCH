@@ -2,6 +2,7 @@
  * pipe.c - the 1D pipe (see pipe.h).
  */
 #include "pipe.h"
+#include "diagnostics.h"
 
 #include <math.h>
 #include <string.h>
@@ -241,6 +242,7 @@ static double velocity(const rb_pipe *p, int k, double in, double out)
 static double kinetic_energy(const rb_pipe *p, int k)
 {
     const double v = velocity(p, k, side_flow(p, k, 0), side_flow(p, k, 1));
+    if(p->diag && v!=v) rb_diag_note(p->diag,RB_D_BIT(RB_D_BAD_FLOW));
     return (v == v) ? 0.5 * v * v : 0.0;
 }
 
@@ -285,12 +287,15 @@ static void move_gas(rb_face *f, double dt, int direct, double ke_a, double ke_b
     const int direct_up = direct && (forward ? f->direct_a : f->direct_b);
     const int direct_down = direct && (forward ? f->direct_b : f->direct_a);
     double m = fabs(f->mdot);
-    if (!(m < INFINITY)) m = 0.0;                          /* NaN or inf: none */
-    if (!(up->mass > 0.0)) m = 0.0;
-    else if (m * dt > 0.5 * up->mass) m = 0.5 * up->mass / dt;
+    const double requested = f->mdot*dt;
+    uint64_t reasons=0;
+    if (!(m < INFINITY)) {m = 0.0;reasons|=RB_D_BIT(RB_D_BAD_FLOW);} /* NaN or inf: none */
+    if (!(up->mass > 0.0)) {m = 0.0;reasons|=RB_D_BIT(RB_D_EMPTY);}
+    else if (m * dt > 0.5 * up->mass) {m = 0.5 * up->mass / dt;reasons|=RB_D_BIT(RB_D_MASS_CAP);}
     f->moved = forward ? m : -m;
     f->moved_h = up->h + (forward ? ke_a : ke_b);
     for (int s = 0; s < RB_NSPECIES; s++) f->moved_y[s] = up->y[s];
+    if(f->diag) rb_diag_transfer(f->diag,reasons,requested,f->moved*dt,f->moved_y,f->moved_h);
     if (m == 0.0) return;
     if (direct_down) rb_chamber_add_mass(down, m * dt, f->moved_y, f->moved_h);
     else rb_chamber_add_flow(down, m, f->moved_y, f->moved_h);
@@ -315,7 +320,10 @@ static void cell_heat(rb_pipe *p, int k, double ke, double in, double out, doubl
     const double flow = 0.5 * (fabs(in) + fabs(out));
     const double q = p->stanton * (c->cv + c->gas.R) * flow * p->wall_ratio
                    * (p->wall_temperature - c->T);
-    if (!(q == q) || q == 0.0) return;
+    if (!(q == q) || q == 0.0) {
+        if(p->diag && q!=q) rb_diag_note(p->diag,RB_D_BIT(RB_D_HEAT_RESET));
+        return;
+    }
     rb_chamber_add_heat(c, q);
     p->heat += q * dt;
 }
@@ -426,6 +434,10 @@ void rb_pipe_integrate(rb_pipe *p, int fast, double dt)
 static void push(rb_face *f, double heads, double rho, double flux_a, double flux_b,
                  double shortest, double since, double dt)
 {
+    const double old=f->mdot;
+    uint64_t reasons=0;
+    if(f->diag && !(rho>1e-6)) reasons|=RB_D_BIT(RB_D_DENSITY_FLOOR);
+    if(f->diag && f->length<shortest) reasons|=RB_D_BIT(RB_D_LENGTH_FLOOR);
     /* a slow side of a fast face (pipe.h, two rates): the pressure it has by now */
     const double dp = (f->direct_a ? rb_chamber_pressure_now(f->a, since) : f->a->p)
                     - (f->direct_b ? rb_chamber_pressure_now(f->b, since) : f->b->p);
@@ -442,12 +454,19 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
     double mdot = f->mdot + dt * force * per_length;
     const double drag = f->laminar + packing;   /* Pa per m/s, taken at the new flow */
     if (drag > 0.0) mdot /= 1.0 + dt * drag * per_r * per_length;
+    const double requested=mdot;
     /* never past RB_PIPE_MOST_SONIC times the sonic flow of the gas it takes */
     const rb_chamber *from = (mdot >= 0.0) ? f->a : f->b;
     const double most2 = RB_PIPE_MOST_SONIC * RB_PIPE_MOST_SONIC * 1.4 * from->rho * from->p
                        * f->area * f->area;
-    if (mdot * mdot > most2) mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);
+    if (mdot * mdot > most2) {
+        mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);
+        reasons|=RB_D_BIT(RB_D_SONIC_CAP);
+    }
+    if(f->diag && !(mdot==mdot && fabs(mdot)<1e6)) reasons|=RB_D_BIT(RB_D_BAD_FLOW);
     f->mdot = (mdot == mdot && fabs(mdot) < 1e6) ? mdot : 0.0;   /* NaN: start from rest */
+    if(f->diag) rb_diag_impulse(f->diag,reasons,(requested-old)/per_length,
+                              (f->mdot-old)/per_length,1/per_length,r);
     f->settled += lag * (f->mdot - f->settled);
 }
 
@@ -474,6 +493,9 @@ static double momentum_flux(const rb_pipe *p, int k, double in, double out)
         if ((left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0)) {
             const double slope = copysign(fmin(fabs(left), fabs(right)), left);
             transported += ((mdot >= 0.0) ? 0.5 : -0.5) * slope;
+            if(p->diag) rb_diag_note(p->diag,RB_D_BIT(RB_D_RECONSTRUCT));
+        } else {
+            if(p->diag) rb_diag_note(p->diag,RB_D_BIT(RB_D_DONOR));
         }
     }
     return mdot * transported * p->cell[k].per_rho * p->per_area;
@@ -496,11 +518,18 @@ static void push_end(rb_pipe *p, int end, double shortest, double dt)
         rb_radiation_linear(r, dt, &direct, &history);
         const double per_length = 1.0 / fmax(f->length, shortest);
         const double density = fmax(cell->rho, 1e-6);
+        const double previous=f->mdot;
         f->mdot = (f->mdot - dt * per_length * f->area * history)
                 / (1.0 + dt * per_length * direct / density);
+        const double requested=f->mdot;
         const rb_chamber *from = f->mdot >= 0.0 ? f->a : f->b;
         const double cap = RB_PIPE_MOST_SONIC * f->area * sqrt(1.4 * from->rho * from->p);
         f->mdot = fmax(-cap, fmin(cap, f->mdot));
+        if(f->diag)
+            rb_diag_impulse(f->diag,requested!=f->mdot ?
+                            RB_D_BIT(isfinite(requested) ? RB_D_SONIC_CAP:RB_D_BAD_FLOW):0,
+                            (requested-previous)/per_length,(f->mdot-previous)/per_length,
+                            1/per_length,density);
         rb_radiation_step(r, f->mdot / (density * f->area));
     }
 }
@@ -530,6 +559,13 @@ static void push_onward(rb_pipe *p, double shortest, double dt)
 void rb_pipe_accelerate(rb_pipe *p, int fast, double dt)
 {
     const int n = p->cells;
+    if(p->diag) for(int k=0;k<n;k++) {
+        if(cell_is_fast(p,k)!=!!fast) continue;
+        const double cfl=(rb_chamber_sound_speed(&p->cell[k])+fabs(rb_pipe_cell_velocity(p,k)))*dt/p->dx;
+        if(!isfinite(cfl)) p->diag->invalid++;
+        else if(cfl>p->diag->max_cfl) p->diag->max_cfl=cfl;
+        if(cfl>1) rb_diag_note(p->diag,RB_D_BIT(RB_D_CFL));
+    }
     /* A column of length L between a cell of length dx and a big volume rings
      * at c / sqrt(L dx), which a step dt follows only below 2 / dt: so L must
      * be over (c dt)^2 / (4 dx). Twice that, at the fastest waves. Only a pipe

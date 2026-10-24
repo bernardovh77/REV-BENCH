@@ -24,6 +24,7 @@
 #include "gas.h"
 
 #include <math.h>
+struct rb_diag_slot;
 
 typedef struct rb_chamber {
     /* ---- state, advanced by the integrator ---- */
@@ -50,6 +51,7 @@ typedef struct rb_chamber {
     /* ---- rates collected during the current step ---- */
     double dm[RB_NSPECIES];  /* kg/s */
     double dU;               /* W    */
+    struct rb_diag_slot *diag; /* optional caller-owned observation */
 } rb_chamber;
 
 /* A volume V (m^3) filled with gas of composition y at pressure p and temperature T. */

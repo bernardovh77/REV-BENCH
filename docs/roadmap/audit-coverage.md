@@ -46,3 +46,10 @@ also reproduced C07/C08. Their bounded repairs are [113](../stage-113.md)
 These do not close any broader D/R physics, realism or runtime obligation.
 
 Every realism-changing stage also checks whether it reopens a previously accepted finding. Turbo, knock/damage, new layouts, learned integration and final tuning repeat affected physics, listening and runtime checks; base-engine acceptance is not inherited outside its envelope.
+
+Stage038 supplies the [bounded native D08/R06 observation evidence](../stage-038.md):
+junction inspection/repair counts, requested/accepted transfers and staggered
+impulses, component geometry/CFL and explicitly costly optional monitoring.
+Later integrated/browser/realism cross-checks in the table remain required;
+observing an equalisation cap or property extrapolation does not remove its
+physical limitation. C07/C08 bounded repairs remain112/113.

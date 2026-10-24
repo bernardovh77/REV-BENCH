@@ -73,6 +73,7 @@ typedef struct contents {
 static int repairs(void)
 {
     int n = e.airbox.repairs + e.plenum.repairs;
+    if(e.desc.junction_volume>0) n+=e.junction.repairs;
     for (int i = 0; i < e.desc.cylinders; i++) n += e.cyl[i].gas.repairs;
     for (int c = 0; c < e.collectors; c++) n += e.collector[c].repairs;
     for (int k = 0; k < rb_engine_pipe_count(&e); k++) {

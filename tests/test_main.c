@@ -65,6 +65,12 @@ void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
+void test_diagnostic_pressure_impulse_and_capacity(void);
+void test_diagnostic_orifice_thermal_and_radiation(void);
+void test_diagnostic_caps_and_reversal(void);
+void test_diagnostic_vacuum_geometry_and_sonic(void);
+void test_diagnostic_junction_repair_and_fuzz(void);
+void test_diagnostic_taps_preserve_native_state(void);
 void test_candidate_wave_derived_domain(void);
 void test_candidate_wave_overflow_requires_prepare(void);
 void test_candidate_wave_storage_and_radiation_limits(void);
@@ -278,6 +284,12 @@ static const struct {
     T(test_radiation_causal_impedance),
     T(test_radiation_pipe_work),
     T(test_candidate_wave_guards),
+    T(test_diagnostic_pressure_impulse_and_capacity),
+    T(test_diagnostic_orifice_thermal_and_radiation),
+    T(test_diagnostic_caps_and_reversal),
+    T(test_diagnostic_vacuum_geometry_and_sonic),
+    T(test_diagnostic_junction_repair_and_fuzz),
+    T(test_diagnostic_taps_preserve_native_state),
     T(test_candidate_wave_derived_domain),
     T(test_candidate_wave_overflow_requires_prepare),
     T(test_candidate_wave_storage_and_radiation_limits),

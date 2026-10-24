@@ -22,6 +22,14 @@ def snapshot(build):
 
 
 class SharedContracts(unittest.TestCase):
+    def test_native_adapter_rejects_fractional_and_negative_codes(self):
+        for key in ('kind', 'from', 'to', 'number', 'from_number', 'to_number'):
+            for value in (-1, .5, True):
+                raw = dict(preset='i4', parameters=examples()[0]['parameters'], pipes=[
+                    dict(kind=0, number=0, length=.3, diameter=.05, **{'from':1,'from_number':0,'to':2,'to_number':0})])
+                raw['pipes'][0][key] = value
+                with self.assertRaises(ValueError): contract.from_native(raw)
+
     def test_five_native_descriptions_round_trip_without_losing_annotations(self):
         for build in examples():
             with self.subTest(engine=build['build_id']):

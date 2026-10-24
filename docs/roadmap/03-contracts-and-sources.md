@@ -53,7 +53,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/sound-physics-audit-2026-10-22.md](../../docs/sound-physics-audit-2026-10-22.md).
 
-**Execution record:** for new work, `docs/stage-038.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage038](../stage-038.md), with the predecessor review, native/WASM guard/flux proof, cost/trace limits and complete float checkpoint comparison.
 
 <a id="stage-039"></a>
 ## Stage 039 — Matched references and calibration protocol

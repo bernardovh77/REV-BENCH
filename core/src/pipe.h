@@ -111,6 +111,7 @@
 /* A face: a column of gas between two chambers, moving as one. Positive flow
  * goes from a to b, which along a pipe is from its end 0 to its end 1. */
 typedef struct rb_face {
+    struct rb_diag_slot *diag;
     rb_chamber *a, *b;
     double area;        /* m^2                                                 */
     double length;      /* m: the moving column's                              */
@@ -161,8 +162,10 @@ typedef struct rb_pipe_end {
  * (the engine keeps them all in one pool); the faces point at the cells, so
  * neither may move once the pipe is set up. */
 typedef struct rb_pipe {
+    struct rb_diag_slot *diag;
     int momentum_order; /* 1: donor cell; 2: limited linear momentum reconstruction */
     int    cells;                       /* 1..RB_PIPE_MAX_CELLS                    */
+    int    requested_cells;             /* pre-pool preparation request; diagnostics only */
     double length, diameter;            /* m                                       */
     double area, dx;                    /* m^2; m: each cell's length              */
     double per_area;                    /* 1 / area                                */

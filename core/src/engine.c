@@ -7,6 +7,7 @@
 #include "combustion.h"
 #include "heat.h"
 #include "rand.h"
+#include "diagnostics.h"
 #include "rb.h"   /* RB_MUFFLER_* */
 
 #include <math.h>
@@ -379,6 +380,7 @@ static void new_pipe(rb_engine *e, rb_pipe *p, int *used, double length, double 
     const int n = 1 + (rb_pipe_cells_for(length, cell, e->pipe_dt) - 1) * room / over;
     rb_pipe_init(p, &e->cell_pool[*used], &e->face_pool[*used], n, length, diameter,
                  e->desc.p_ambient, e->desc.T_ambient, AIR, wall, friction);
+    p->requested_cells=rb_pipe_cells_for(length,cell,e->pipe_dt);
     *used += n;
 }
 
@@ -1313,6 +1315,7 @@ static void slow_step(rb_engine *e, step_share *share)
 
 void rb_engine_step(rb_engine *e)
 {
+    if(e->diag) e->diag->tick++;
     const rb_engine_desc *d = &e->desc;
     const int n = d->cylinders;
     const double dt = e->dt;

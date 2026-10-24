@@ -39,6 +39,7 @@ typedef struct rb_orifice {
     double cd;      /* discharge coefficient, 0..1                    */
     double mdot;    /* kg/s, signed result of the last step           */
     int    limited; /* 1 if the equalisation limit was active then    */
+    struct rb_diag_slot *diag;
 } rb_orifice;
 
 void rb_orifice_init(rb_orifice *o, rb_chamber *a, rb_chamber *b, double area, double cd);

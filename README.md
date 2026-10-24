@@ -29,7 +29,11 @@ The [shared versioned contracts](contracts/README.md) now have a
 explicit event/clock/snapshot/rebuild rules. Their production APIs and runtime
 delivery remain later work.
 
-**Next: Stage 038**, numerical guard and flux observability, followed by causal
+[Stage038](docs/stage-038.md) adds optional numerical guard/flux monitoring and
+fixes the two bounded Stage037 contract issues. All34 regenerated recordings
+match the accepted audio exactly; no sound tuning is part of this checkpoint.
+
+**Next: Stage 039**, matched references/calibration, followed by causal
 source and propagation qualification before the playable browser and 3D.
 The [stage protocol](docs/roadmap/README.md) separates experiment results,
 production integration, runtime and Bernardo's realism acceptance. Full release

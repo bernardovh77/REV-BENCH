@@ -7,6 +7,7 @@
  * v is the signed mean velocity at the aperture (m/s), output pressure Pa.
  * The caller must book pressure * volume flow as work to the surroundings. */
 typedef struct rb_radiation {
+    struct rb_diag_slot *diag;
     int enabled;
     double tau, impedance, dt;
     double b0, b1, b2, a1, a2;

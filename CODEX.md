@@ -4,6 +4,53 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-23: Stage038 complete — numerical observation checkpoint
+
+- User authorizes review037, then038. docs/stage-038.md is the execution record.
+  Fixed fractional/negative/boolean native enum/identity-index coercion and
+  preservation of annotations/transforms/centerlines during build preparation.
+  Stage039 matched references/calibration is next default;040/043/044 are Ready
+  by dependency only. Do not automatically execute later stages.
+- New internal core/src/diagnostics.[ch]: optional caller-owned per-component
+  requested/accepted mass, species and transported enthalpy+kinetic J; foregone
+  transfer and repaired quantities; staggered-column impulses N·s; semantic
+  role/number/cell/face identity; junction inventories, caps/floors/fallbacks,
+  requested/actual cells, effective lengths/densities and runtime CFL. No callback
+  allocation/I/O. Public rb.h/TS exports stay unchanged; WASM rebuilt167241B.
+- Bind only after engine preparation, quiescent; unbindNULL. Reset/reinitializing
+  objects clears taps: rebind and manage generation. Insufficient slot capacity
+  preserves old binding. Max2048slots,256trace records; full trace drops new
+  records with counted loss, aggregates continue. Tick is binding-relative;
+  caller supplies offset for existing engines. Not a production event-clock API.
+- Do NOT claim globally conserved junction/vector momentum:0D volumes do not
+  own that state. Impulses expose current face updates/caps. Invalid repair
+  deltas have invalid counters, not invented finite J. R06 physical consequences
+  and integrated/browser qualification remain later cross-checks.
+- Five-preset .25s held3000rpm .7→.01 throttle: closed mass/species/energy and
+  boundary tap books, exact observed/unobserved physical state. Mass residual
+  <=2.54e-16kg, energy<=8.94e-10J; CFLmax0.510; no repairs/invalid values in these
+  ordinary cases. Frequent equalisation caps, scalar fallbacks and property
+  extrapolations are now visible; they remain physical investigation targets.
+- Native full200tests/38789checks plus two added cases/25checks:202distinct and
+  38814checks combined. ASan/UBSan9/31051; WASM15/31227; Python58; web17. Six
+  compiled faulty copies caught, including skipped junction inspection. Fixed
+  stale test-wasm recipe to include experiment sources/headers. Native first;
+  no expanded warm-engine operating-envelope or real-time claim.
+- Intel i7-1355U/GCC15.2/O3/noLTO CPU medians: aggregate engine taps1.50–1.60x,
+  bounded trace1.40–1.62x; disabled renderer vs baseline1.030–1.076x. Diagnostic
+  storage128–257KiB for these presets+26KiB trace. Optional developer monitoring
+  is costly; do not enable by default in a callback. Timings share the machine
+  with development loads and are not worst-case deadline guarantees.
+- Full34float renders337.248s (long coasts/control included) are byte-identical;
+  15additional paired baseline/current held clips identical. RESULTS rebuilt;
+  all48 clips play offline, four jump buttons/eight plots and exclusive play
+  pass. All116 protected audio/reference/Claude files and48payloads preserved.
+  Comparison duplicates cleaned after hash/log/CSV evidence; current originals
+  stay. Local evidence: renders/evidence/stage-038/. Source/command hashes saved.
+- Graphify queried/refreshed2657nodes/7206edges/153communities; knownrb.h:415
+  parse warning. Preserve user .agents/ and skills-lock.json without staging.
+  Claude setup unchanged. Save/sync and checkpoint; S1/S1e/S2/S4/full13b stay open.
+
 ## 2026-10-23: Stage 037 complete — shared contracts checkpoint
 
 - Bernardo authorizes the next planned stage after112/113. Stage037 specifies

@@ -2,6 +2,7 @@
  * flow.c - isentropic nozzle flow and orifices between chambers (see flow.h).
  */
 #include "flow.h"
+#include "diagnostics.h"
 
 #include <math.h>
 
@@ -45,6 +46,7 @@ void rb_orifice_init(rb_orifice *o, rb_chamber *a, rb_chamber *b, double area, d
     o->cd = cd;
     o->mdot = 0.0;
     o->limited = 0;
+    o->diag = NULL;
 }
 
 /*
@@ -71,6 +73,8 @@ double rb_orifice_flow(rb_orifice *o, double dt)
 {
     rb_chamber *up = o->a, *down = o->b;
     double sign = 1.0, mdot = 0.0;
+    double requested = 0.0;
+    uint64_t reasons = 0;
 
     if (!(o->cd * o->area > 0.0)) {   /* shut, like most valves most of the time */
         o->mdot = 0.0;
@@ -87,6 +91,9 @@ double rb_orifice_flow(rb_orifice *o, double dt)
 
     if (up->mass > 0.0 && up->p > down->p) {
         mdot = rb_nozzle_mdot(o->cd * o->area, up->p, up->T, up->gas.R, rb_chamber_gamma(up), down->p);
+        requested = mdot;
+        if(o->diag && down->p/up->p <= rb_nozzle_critical_ratio(rb_chamber_gamma(up)))
+            reasons |= RB_D_BIT(RB_D_CHOKED);
 
         /* Explicit time steps overshoot when a big opening joins small volumes:
          * the pressures would cross and oscillate. Never move more than a
@@ -97,6 +104,7 @@ double rb_orifice_flow(rb_orifice *o, double dt)
             if (mdot > cap) {
                 mdot = cap;
                 o->limited = 1;
+                reasons |= RB_D_BIT(RB_D_EQUALISE);
             }
         }
     }
@@ -105,6 +113,7 @@ double rb_orifice_flow(rb_orifice *o, double dt)
     rb_chamber_add_flow(up, -mdot, up->y, up->h);
     rb_chamber_add_flow(down, mdot, up->y, up->h);
     o->mdot = sign * mdot;
+    if(o->diag) rb_diag_transfer(o->diag,reasons,sign*requested*dt,sign*mdot*dt,up->y,up->h);
     return o->mdot;
 }
 

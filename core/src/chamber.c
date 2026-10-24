@@ -2,6 +2,7 @@
  * chamber.c - the 0D control volume (see chamber.h).
  */
 #include "chamber.h"
+#include "diagnostics.h"
 
 #include <math.h>
 #include <string.h>
@@ -76,6 +77,7 @@ static void derive(rb_chamber *ch, double per_kg)
     ch->per_rho = ch->V * per_kg;
     ch->p       = ch->rho * ch->gas.R * ch->T;   /* ideal gas: p = m R T / V */
     ch->h       = ch->u + ch->gas.R * ch->T;
+    if(ch->diag) rb_diag_inventory(ch->diag,ch->m,ch->U,ch->p,ch->T);
 }
 
 void rb_chamber_update(rb_chamber *ch)
@@ -86,6 +88,7 @@ void rb_chamber_update(rb_chamber *ch)
     /* NaN/inf guard: a corrupted mass is dropped rather than spreading. */
     for (int s = 0; s < RB_NSPECIES; s++) {
         if (!(ch->m[s] >= 0.0 && ch->m[s] < INFINITY)) {
+            if(ch->diag) rb_diag_repair(ch->diag,s+1,ch->m[s],0);
             ch->m[s] = 0.0;
             repaired = 1;
         }
@@ -98,7 +101,9 @@ void rb_chamber_update(rb_chamber *ch)
         for (int s = 0; s < RB_NSPECIES; s++) ch->y[s] = ch->m[s] * per_kg;
         remix(ch);
         if (!isfinite(ch->U)) {                  /* rebuild from the last temperature */
+            const double before=ch->U;
             ch->U = mass * rb_gas_u(&ch->gas, ch->T);
+            if(ch->diag) rb_diag_repair(ch->diag,RB_D_QUANTITIES-1,before,ch->U);
             repaired = 1;
         }
         const double u = ch->U * per_kg;
@@ -108,11 +113,14 @@ void rb_chamber_update(rb_chamber *ch)
         double guess = ch->T;
         if (ch->cv > 0.0) guess += (u - ch->u) / ch->cv;
         ch->u = u;
-        ch->T = rb_gas_T_cv_from_u(&ch->gas, u, guess, &ch->cv);
+        ch->T = rb_gas_T_cv_from_u_diag(&ch->gas, u, guess, &ch->cv,ch->diag);
     } else {
         /* Empty: keep the last composition and temperature. */
         remix(ch);
-        if (!(ch->T > 0.0)) ch->T = RB_T_REF;
+        if (!(ch->T > 0.0)) {
+            if(ch->diag) rb_diag_note(ch->diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+            ch->T = RB_T_REF;
+        }
         ch->u = rb_gas_u_cv(&ch->gas, ch->T, &ch->cv);
     }
     derive(ch, per_kg);
@@ -125,6 +133,7 @@ void rb_chamber_integrate(rb_chamber *ch, double dt)
     for (int s = 0; s < RB_NSPECIES; s++) {
         ch->m[s] += ch->dm[s] * dt;
         if (ch->m[s] < 0.0) {   /* more went out than was there: should never happen */
+            if(ch->diag) rb_diag_repair(ch->diag,s+1,ch->m[s],0);
             ch->m[s] = 0.0;
             ch->repairs++;
         }
@@ -158,6 +167,7 @@ void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt)
             }
             normal &= mass > RB_MASS_EPS && mass < INFINITY;
             if (!normal) {
+                if(g->diag) rb_diag_note(g->diag,RB_D_BIT(RB_D_NEWTON_FALLBACK));
                 rb_chamber_integrate(g, dt);
                 /* Dummy air lanes avoid undefined uninitialised arithmetic. */
                 for (int k = 0; k < 5; k++) c[k][j] = a[k][j] = 0.0;
@@ -203,14 +213,18 @@ void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt)
             if (!active[j]) continue;
             rb_chamber *g = &ch[base + j];
             g->u = target[j];
-            if (T[j] < 1.0) T[j] = 1.0;
+            if (T[j] < 1.0) {
+                if(g->diag) rb_diag_note(g->diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+                T[j] = 1.0;
+            }
             if (isfinite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]) {
                 g->T = T[j];
                 g->cv = cv[j];
             } else {
                 /* Restart from the original guess, so even the iteration cap
                  * and the last-iteration cv match the scalar solver. */
-                g->T = rb_gas_T_cv_from_u(&g->gas, target[j], guess[j], &g->cv);
+                if(g->diag) rb_diag_note(g->diag,RB_D_BIT(RB_D_NEWTON_FALLBACK));
+                g->T = rb_gas_T_cv_from_u_diag(&g->gas, target[j], guess[j], &g->cv,g->diag);
             }
             derive(g, per_kg[j]);
         }
@@ -238,11 +252,19 @@ static void volume_step(rb_chamber *ch, double V_new)
         const double f = m * (u + k * T) - rhs;
         const double dT = f / (m * (cv + k));
         T -= dT;
-        if (T < 1.0) T = 1.0;
+        if (T < 1.0) {
+            if(ch->diag) rb_diag_note(ch->diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+            T = 1.0;
+        }
         u = rb_gas_u_cv(&ch->gas, T, &cv);
         if (fabs(dT) <= 1e-12 * T) break;
+        if(ch->diag && i==49) rb_diag_note(ch->diag,RB_D_BIT(RB_D_NEWTON_LIMIT));
     }
     if (!(T < INFINITY)) {   /* NaN or inf: only possible from a corrupted state */
+        if(ch->diag) {
+            ch->diag->invalid++; /* Corrupted energy cannot have a finite repair delta. */
+            rb_diag_note(ch->diag,RB_D_BIT(RB_D_ENERGY_REPAIR));
+        }
         T = ch->T;
         u = rb_gas_u_cv(&ch->gas, T, &cv);
         ch->repairs++;

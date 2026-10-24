@@ -36,7 +36,8 @@ def prepare_build(probe, build):
     for name, values in build['parameters'].items():
         for before, after in zip(values, raw['parameters'][name]):
             require(math.isclose(before, after, rel_tol=1e-14, abs_tol=1e-15), 'Descriptor round-trip differs')
-    return derived
+    # Preparation validates the derived graph without discarding user metadata.
+    return loads(dumps(build))
 
 
 def check(probe):
@@ -47,6 +48,12 @@ def check(probe):
         require(raw['catalog'] == catalog(), 'Native field catalog differs')
         require(from_native(raw) == build, 'Committed example differs from current native preset')
         restored = prepare_build(probe, loads(dumps(build)))
+        annotated = copy.deepcopy(build)
+        annotated['extensions']['x-provenance'] = {'perspective': 'unknown'}
+        annotated['geometry']['engine_to_vehicle'] = dict(translation_m=[0,0,0], rotation_xyzw=[0,0,0,1])
+        for c in annotated['geometry']['components']:
+            c['centerline_m'] = [[0,0,0],[0,c['length_m'],0]]
+        require(prepare_build(probe, annotated) == annotated, 'Preparation discarded annotations')
         no_runners = from_native(native(probe, 'export', build['build_id'], no_runners=True))
         prepare_build(probe, no_runners)
         before = {c['id']: c for c in restored['geometry']['components'] if c['kind'] != 'runner'}

@@ -173,3 +173,11 @@ production integration, concurrency and device/visual acceptance. S1/S1e/S2/S4/
 full13b and C01–C06 remain open with their mapped owners. Commit/sync this
 checkpoint, then await the next instruction; **038 numerical guard and flux
 observability** is the next default stage, not started by this checkpoint.
+
+## Stage038 predecessor review
+
+[The bounded review](stage-038.md#predecessor-review) corrected malformed native
+enum/identity-index coercion and metadata loss during native preparation.
+Boolean, fractional and negative indices/codes reject; accepted provenance,
+placement and centerlines survive preparation unchanged. These corrections
+preserve the stated037 scope and do not promote the production compiler.

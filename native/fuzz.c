@@ -47,13 +47,14 @@ static int fail(rb_fuzz_result *r, const char *fmt, ...)
 /* Checks one chamber and notes its extremes; 0 if it has gone wrong. */
 static int check_chamber(rb_fuzz_result *r, const rb_chamber *ch, const char *name, int k, double t)
 {
+    if(ch->repairs) return fail(r,"%s %d at %.3f s: %d state repairs",name,k,t,ch->repairs);
     if (ch->p > r->max_p) r->max_p = ch->p;
     if (ch->T > r->max_T) r->max_T = ch->T;
     if (ch->p > 0.0 && ch->p <= RB_FUZZ_MAX_P && ch->T > 0.0 && ch->T <= RB_FUZZ_MAX_T) return 1;
     return fail(r, "%s %d at %.3f s: p = %g Pa, T = %g K", name, k, t, ch->p, ch->T);
 }
 
-static int check_engine(rb_fuzz_result *r, const rb_engine *e, double t)
+int rb_fuzz_inspect_engine(rb_fuzz_result *r, const rb_engine *e, double t)
 {
     if (fabs(e->rpm) > r->max_rpm) r->max_rpm = fabs(e->rpm);
     if (!(fabs(e->rpm) <= RB_FUZZ_MAX_RPM)) return fail(r, "the speed at %.3f s: %g rpm", t, e->rpm);
@@ -63,6 +64,7 @@ static int check_engine(rb_fuzz_result *r, const rb_engine *e, double t)
         return 0;
     for (int c = 0; c < e->collectors; c++)
         if (!check_chamber(r, &e->collector[c], "collector", c, t)) return 0;
+    if(e->desc.junction_volume>0 && !check_chamber(r,&e->junction,"junction",0,t)) return 0;
     for (int k = 0; k < rb_engine_pipe_count(e); k++) {
         const rb_pipe *p = rb_engine_pipe(e, k);
         for (int j = 0; j < p->cells; j++)
@@ -74,6 +76,7 @@ static int check_engine(rb_fuzz_result *r, const rb_engine *e, double t)
 static long repairs(const rb_engine *e)
 {
     long n = e->plenum.repairs + e->airbox.repairs;
+    if(e->desc.junction_volume>0) n+=e->junction.repairs;
     for (int i = 0; i < e->desc.cylinders; i++) n += e->cyl[i].gas.repairs;
     for (int c = 0; c < e->collectors; c++) n += e->collector[c].repairs;
     for (int k = 0; k < rb_engine_pipe_count(e); k++) {
@@ -161,7 +164,7 @@ int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int qua
         if (r->ok && rb_get_telemetry(sim, RB_TLM_NONFINITE) > 0.0)
             fail(r, "the sound had %g samples that weren't numbers by %.3f s",
                  rb_get_telemetry(sim, RB_TLM_NONFINITE), t);
-        if (r->ok) check_engine(r, e, t);
+        if (r->ok) rb_fuzz_inspect_engine(r, e, t);
     }
     r->seconds = t;
     r->repairs = repairs(e);

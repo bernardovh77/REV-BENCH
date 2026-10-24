@@ -28,15 +28,16 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stage 037 complete.** The [shared versioned contracts](contracts/README.md)
-and [native/structural proof](docs/stage-037.md) cover SI builds, stable identity,
-logical geometry, actual-event/time, observations and rebuild rules. Production
-bulk APIs, event producers, transport and 3D remain their later stages. Accepted
-sound and Claude setup are preserved; checkpoint before further development.
+**Current checkpoint: Stage 038 complete.** The [Stage037 review and numerical
+observation proof](docs/stage-038.md) fix native contract coercion/metadata loss
+and add optional native flux/guard, junction, momentum-impulse, effective geometry/
+CFL and bounded-trace diagnostics. Native/WASM/adverse/fault/cost checks pass;
+all34 float renders (337.248s) match the accepted audio byte for byte. Numerical
+observability does not close later physical accuracy or real-time requirements.
 
-**Next default execution: Stage 038 — complete numerical guard and flux
-observability.** Stage 039 references can proceed independently after 036; acquire
-missing evidence early without blocking unrelated numerical fixtures.
+**Next default execution: Stage 039 — matched references and calibration
+protocol.** Stage040 causal source work and043/044 propagation/geometry are
+ready by dependency; this saved checkpoint does not start them automatically.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -52,7 +53,7 @@ Preserve the accepted audio, original references, `CLAUDE.md` and `.claude/`.
 
 ## How to use the stages
 
-- Say “do Stage 038” or “next stage.” Read this tracker, `CLAUDE.md`, `CODEX.md`
+- Say “do Stage 039” or “next stage.” Read this tracker, `CLAUDE.md`, `CODEX.md`
   and the linked stage specification/evidence first.
 - Follow explicit dependencies, not just the preceding row. The numbering is
   the planned order; independent reference work and conditional branches are
@@ -170,9 +171,9 @@ historical rows are not a claim that all current audio goals have passed.
 | --- | --- | --- | --- |
 | [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol | Complete | 035 |
 | [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
-| [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Ready | 037 |
+| [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Ready | 036 |
-| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Not started | 038 |
+| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Ready | 038 |
 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Not started | 040, 038 |
 | [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Not started | 040, 038 |
 
@@ -180,8 +181,8 @@ historical rows are not a claim that all current audio goals have passed.
 
 | Stage | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
-| [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Not started | 035, 038 |
-| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Not started | 037, 038 |
+| [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Ready | 035, 038 |
+| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Ready | 037, 038 |
 | [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Not started | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |

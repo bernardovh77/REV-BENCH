@@ -28,6 +28,10 @@
  */
 #ifndef RB_GAS_H
 #define RB_GAS_H
+struct rb_diag_slot;
+struct rb_gas;
+double rb_gas_T_cv_from_u_diag(const struct rb_gas *g, double u, double T_guess,
+                              double *cv, struct rb_diag_slot *diag);
 
 enum { RB_AIR = 0, RB_FUEL, RB_BURNED, RB_NSPECIES };
 

@@ -112,3 +112,17 @@ _Avoid_: pipe index or native pointer as a persistent identity
 Component interfaces and their semantic connections, distinct from a solver's
 cells/faces and from the spatial centerline used to depict the physical route.
 _Avoid_: mesh when referring to logical component connectivity
+
+## Numerical observation (Stage038)
+
+- **Requested/accepted transfer:** signed kg, species kg and transported total
+  enthalpy J before/after an existing transport limit. Foregone transfer is
+  distinct from energy removed from a control volume.
+- **Staggered-column impulse:** Δmdot times effective momentum length, in N·s;
+  requested/accepted values expose sonic/reset intervention. It does not give
+  a 0D junction a vector-momentum state.
+- **Diagnostic slot:** caller-owned aggregate identified by semantic component
+  role/number and cell/face part; binding is quiescent and must be repeated
+  after rebuild/reset. A bounded trace can drop records while aggregates persist.
+
+See [Stage038](docs/stage-038.md) for coverage, cost and limitations.

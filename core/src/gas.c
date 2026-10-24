@@ -3,6 +3,7 @@
  * The model is described in gas.h; the fits in docs/stage-03.md.
  */
 #include "gas.h"
+#include "diagnostics.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -163,7 +164,7 @@ double rb_gas_T_from_u(const rb_gas *g, double u, double T_guess)
     return rb_gas_T_cv_from_u(g, u, T_guess, &cv);
 }
 
-double rb_gas_T_cv_from_u(const rb_gas *g, double u, double T_guess, double *cv)
+double rb_gas_T_cv_from_u_diag(const rb_gas *g, double u, double T_guess, double *cv, rb_diag_slot *diag)
 {
     /* Newton's method on f(T) = u(T) - u, whose slope is cv(T) > 0. It
      * converges quadratically: a correction dT leaves an error of about
@@ -172,6 +173,7 @@ double rb_gas_T_cv_from_u(const rb_gas *g, double u, double T_guess, double *cv)
      * engine temperatures. From a good guess (a chamber's update makes one,
      * chamber.c) that's usually a single step. */
     double T = (T_guess > 0.0 && T_guess < INFINITY) ? T_guess : RB_T_REF;
+    if(diag && T!=T_guess) rb_diag_note(diag,RB_D_BIT(RB_D_TEMP_FLOOR));
     if (!isfinite(u)) {
         *cv = rb_gas_cv(g, T);
         return NAN;
@@ -179,8 +181,17 @@ double rb_gas_T_cv_from_u(const rb_gas *g, double u, double T_guess, double *cv)
     for (int i = 0; i < 50; i++) {
         const double dT = (u_and_cv(g, T, cv) - u) / *cv;
         T -= dT;
-        if (T < 1.0) T = 1.0;                   /* stay physical while iterating */
+        if (T < 1.0) {
+            if(diag) rb_diag_note(diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+            T = 1.0;
+        }
         if (fabs(dT) <= 1e-6 * T) break;
+        if(diag && i==49) rb_diag_note(diag,RB_D_BIT(RB_D_NEWTON_LIMIT));
     }
     return T;
+}
+
+double rb_gas_T_cv_from_u(const rb_gas *g,double u,double guess,double *cv)
+{
+    return rb_gas_T_cv_from_u_diag(g,u,guess,cv,NULL);
 }

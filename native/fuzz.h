@@ -49,5 +49,7 @@ typedef struct rb_fuzz_result {
  * default rate). Returns 1 if it passed, 0 if not (r->what says why). */
 int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int quality,
                 rb_fuzz_result *r);
+struct rb_engine;
+int rb_fuzz_inspect_engine(rb_fuzz_result *r,const struct rb_engine *e,double time);
 
 #endif /* RB_FUZZ_H */
