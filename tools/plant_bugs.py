@@ -44,7 +44,8 @@ def run(bugs, work, name):
         shutil.rmtree(work)
     shutil.copytree(SRC, work, ignore=shutil.ignore_patterns(
         "web", "build*", "renders", ".git", "docs", ".venv*", "venv*",
-        "__pycache__", "graphify-out"))
+        "__pycache__", "graphify-out", ".agents", "skills-lock.json",
+        "*.mkv", "*.webm", "*.mp3", "*.mp4", "*.mov", "*.wav"))
     target = os.path.join(work, path)
     with open(target) as f:
         text = f.read()

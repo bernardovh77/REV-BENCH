@@ -133,6 +133,12 @@ void test_wiebe_burn(void);
 void test_burnable_fuel(void);
 void test_constant_volume_burn(void);
 void test_woschni(void);
+void test_combustion_fit_range_and_fallback(void);
+void test_combustion_conditional_means(void);
+void test_combustion_zero_variation_continuity(void);
+void test_combustion_seed_and_policy_controls(void);
+void test_combustion_actual_heat_ca50(void);
+void test_combustion_gross_net_cycle_books(void);
 void test_motored_loss_angle(void);
 /* ---- engine (tests/test_engine.c) ---- */
 void test_engine_description(void);
@@ -352,6 +358,12 @@ static const struct {
     T(test_burnable_fuel),
     T(test_constant_volume_burn),
     T(test_woschni),
+    T(test_combustion_fit_range_and_fallback),
+    T(test_combustion_conditional_means),
+    T(test_combustion_zero_variation_continuity),
+    T(test_combustion_seed_and_policy_controls),
+    T(test_combustion_actual_heat_ca50),
+    T(test_combustion_gross_net_cycle_books),
     T(test_motored_loss_angle),
     T(test_engine_description),
     T(test_engine_pistons_follow_the_crank),

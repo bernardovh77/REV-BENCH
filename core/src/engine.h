@@ -246,6 +246,10 @@ typedef struct rb_burn {
     double residual;              /* its burned-gas mass fraction                        */
     double phi_ivc;               /* trapped fuel/air equivalence ratio, after injection;
                                      0 without both reactants or for an invalid ratio   */
+    int combustion_model;         /* frozen internal mean policy for this charge */
+    unsigned flame_flags;         /* range/floor/fallback observations, combustion.h */
+    double flame_speed_m_s, raw_demand_duration;
+    double mean_duration, mean_kernel_delay, expected_ca50; /* conditional mean, deg */
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
     double start_angle;           /* planned kernel completion, at/after actual spark */
     double demand_duration;       /* uncapped charge model, bounded to one cycle (S1b)   */
@@ -263,6 +267,8 @@ typedef struct rb_burn {
     double work, last_work;       /* J the gas did on the piston since overlap TDC, and
                                      over the last complete cycle (stage 12c: per
                                      cylinder, its IMEP times its swept volume)          */
+    double pumping_work, last_pumping_work; /* J consumed on exhaust/intake strokes */
+    double last_gross_work;       /* last_work + last_pumping_work, same cycle/window */
 } rb_burn;
 
 /* The orifices point at chambers inside the same struct, so an rb_engine must
@@ -295,6 +301,9 @@ typedef struct rb_engine {
                              * sets it): each burn's start and length vary, the
                              * cylinders differ a little, the exhaust valves' jets
                              * flicker                                                 */
+    int combustion_model;   /* internal research policy, RB_BURN_CHARGE by default;
+                             * independent of variation, frozen at IVC */
+    uint64_t variation_seed; /* initial engine variation seed; noise has its own stream */
 
     /* the gas */
     rb_cylinder cyl[RB_MAX_CYLINDERS];
@@ -433,6 +442,12 @@ int    rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt);
  * physics steps, and every step when the physics is slower. The public API
  * keeps it within RB_PIPE_RATE_MIN..RB_PIPE_RATE_MAX (rb_config). */
 int    rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double pipe_rate);
+
+/* Native research controls before the first physics step only. These are not
+ * persisted build fields or new public/WASM parameter IDs. Reject invalid
+ * policy, zero seed and reseeding/reselection after stepping; leave e unchanged. */
+int    rb_engine_combustion_model(rb_engine *e, int model);
+int    rb_engine_seed(rb_engine *e, uint64_t seed);
 
 /* One physics step with the current settings: rpm (held), starter and load
  * (free), throttle, ignition, afr and spark. */

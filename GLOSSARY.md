@@ -27,6 +27,24 @@ The current Stage040 engine gives it a nonnegative development clock; its delay
 surrogate is not an experimentally fitted extinction or misfire law.
 _Avoid_: spark jitter when referring to post-discharge flame development
 
+**Conditional mean burn**:
+The expected modeled duration and development delay for the current trapped
+charge, distinct from this cycle's random draw. Variation amplitude changes
+the spread continuously; it does not select a different mean-model policy.
+_Avoid_: deterministic when that incorrectly implies every physical cycle repeats
+
+**Burned-product mass fraction**:
+The mass share labeled burned gas in the current species model. Retained
+unburned fuel and air still affect mixture and energy, but there is no tracer
+identifying the total mass carried from an earlier engine cycle.
+_Avoid_: measured total residual-gas fraction
+
+**Gross and net IMEP**:
+Cylinder work per swept volume over a stated complete cycle. Gross covers
+compression/expansion; net also includes gas exchange. Their variation must
+use matching cylinder windows; a small net mean can magnify percentage COV.
+_Avoid_: combustion instability when inferred only from net-work COV
+
 **Acoustic propagation**:
 The travel, reflection, interference and attenuation of sound through an engine
 system and its surroundings.

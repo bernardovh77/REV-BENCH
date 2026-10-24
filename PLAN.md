@@ -28,14 +28,25 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Checkpoint: Six supplied039 video candidates reviewed; full039 remains open.**
+**Current checkpoint: Stage 041 complete within its numerical scope — HOLD.**
+After reviewing 040, [041](docs/stage-041.md) separates mean charge physics
+from variation amplitude, exposes flame-fit validity, corrects expected
+heat-release phasing and aligns gross/net work. The 120 seeded maps, 15 stereo
+repetition runs, deliberate faults, native/WASM/web checks and rebuilt complete
+sound checkpoint pass their declared numerical gates. Real-engine calibration
+and listening acceptance remain open; see the explicit V8 idle, I4/boxer
+repetition and I4 coast-rise findings. Stage 039 remains open for matched
+references. Stage 042 is next after review; no later implementation is started.
+
+**Previous checkpoint: Six supplied039 video candidates reviewed.**
 The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
 useful stock/modified comparisons, approximate RPM captions and better named
 hardware for the M54/FB20-family gaps. No continuous RPM-visible loaded
 pull/long-coast trace or measured microphone transfer is established. These
 are inspected candidates, not six newly qualified calibration sessions; existing
 eleven locked sessions/34 excerpts and the55-player RESULTS page are unchanged.
-No engine tuning,039 completion or041 implementation is claimed.
+That assessment did not include engine tuning or close 039; the later 041
+implementation is documented separately above.
 
 Bernardo clarified that matched-reference acquisition belongs to039; the
 earlier bounded protocol closeout did not finish the whole stage. The
@@ -70,12 +81,11 @@ fix does not establish a calibrated kernel law or solve propagation realism.
 The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
 one-page examples are a new listening checkpoint, not pre-accepted sound.
 
-**Hold after039 research; Stage041 is ready by dependencies, not started.**
-The previous review of040's unchanged causal fix and its041 handoff still applies:
-continuous mean-model behavior as variation approaches zero, state-conditioned
-kernel/residual validity, multiple-seed statistics and accounting. No041
-implementation or sound tuning is part of this source-search request.042/043/044
-remain Ready by dependencies, not authorization to skip the agreed order.
+**041 retains 040's causal ignition/heat fix and completes its numerical handoff.**
+Its results do not validate a new kernel-failure or late-chemistry law, high
+dilution extrapolation, real-engine COV, acoustic transport or real-time delivery.
+042/043/044 remain Ready by dependencies, not authorization to skip the agreed
+order. Hold at the new listening checkpoint for feedback/instructions.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -214,7 +224,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
 | [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Complete (bounded) | 038 |
-| [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Ready | 040, 038 |
+| [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Complete (bounded): numerical consistency/characterization; calibration open | 040, 038 |
 | [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Ready | 040, 038 |
 
 ### 4. Propagation prototypes and physical components

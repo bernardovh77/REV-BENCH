@@ -10,6 +10,7 @@
  * at light load, and the engine computer puts the spark where the torque is
  * best, holding some back at idle.
  */
+#include "combustion.h"
 #include "dyno.h"
 #include "engine.h"
 #include "presets.h"
@@ -40,7 +41,10 @@ static void run_held(rb_engine *x, const rb_engine_desc *d, double rpm, double t
 static double best_spark(const rb_engine *x)
 {
     const rb_engine_desc *d = &x->desc;
-    return x->result.burn_duration * pow(log(2.0) / d->wiebe_a, 1.0 / (d->wiebe_m + 1.0)) - 8.0;
+    /* Independent inverse of the normalized finite Wiebe law, not the
+     * unnormalized log(2)/a approximation. This fixture has variation0. */
+    return x->result.burn_duration * pow(-log((1+exp(-d->wiebe_a))/2)/d->wiebe_a,
+                                        1.0/(d->wiebe_m+1.0))-8.0;
 }
 
 /* ---- the pipes' rate (stage 13's quality setting) ---- */
@@ -350,13 +354,14 @@ void test_calibration_burn_and_spark(void)
         CHECK(e.result.brake_torque < 0.997 * held.result.brake_torque);
     }
 
-    /* With a wild cam (320 degrees) and the throttle shut, more than half the
-     * charge is burned gas and the flame would crawl (a real engine would
-     * misfire): the burn is held at twice the reference. */
+    /* An intentionally unqualified high-residual charge keeps its finite
+     * demand even at zero stochastic amplitude. No real ignition limit is
+     * inferred from this extrapolated duration surrogate. */
     d.intake.duration = d.exhaust.duration = 320.0;
     run_held(&e, &d, 3000.0, 0.0);
     CHECK(e.result.residual > 0.5);
-    CHECK_NEAR(e.result.burn_duration, 2.0 * d.burn_duration, 1e-9);
+    CHECK(e.result.burn_duration>2.0*d.burn_duration && e.result.burn_duration<=720);
+    CHECK((e.burn[0].flame_flags&RB_FLAME_DILUTION_RANGE)!=0);
 }
 
 void test_calibration_idle_spark(void)

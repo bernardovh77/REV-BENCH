@@ -4,6 +4,64 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage 041 numerical checkpoint — HOLD
+
+- Bernardo authorizes 041 after the six-video assessment. Review 040 first;
+  preserve actual discharge/kernel/heat causality. Read docs/stage-041.md for
+  frozen gates, primary research, measurements, failures and reproduction.
+- Default combustion now uses actual trapped charge at every variation value.
+  A separate internal capped diagnostic policy replaces amplitude selecting a
+  different mean model. Independent continuity fixtures cover all five presets
+  and both policies. Flame-fit envelope/floors/caps are explicit flags, not
+  empirical extinction thresholds or calibrated spark-state measurements.
+- ECU phasing uses the bounded distribution's conditional mean duration,
+  nonnegative mean kernel delay and normalized Wiebe heat50. Independent actual
+  heat50 means move from 9.595–9.961 to 8.023–8.369 deg ATDC in the declared
+  held comparison; 8 degrees remains the old scheduling target, not measured
+  MBT. Gross/net/pumping work shares complete cylinder-cycle windows.
+- Internal initial-only seed/policy controls and native sound options support
+  research; public API, parameter IDs, 84-field contract and persisted engine
+  descriptor are unchanged. Accepted exhausts/research rev limits are preserved.
+- 120 maps pass: 15 thirty-second idles, 90 low/mid/high-speed low/high-throttle
+  cases and 15 zero-amplitude controls, seeds 17/29/61. No warm stalls, early
+  heat, invalid events or numerical repairs; 15 torque controls differ by less
+  than 1%. Choking/equalisation/reconstruction/property/inversion interventions
+  remain reported, not assumed acoustically neutral.
+- High V8 idle dilution/COV remains unqualified: flat V8 mean burned-product
+  fraction 0.465–0.474, net COV 17.59–26.70%, gross COV 11.07–15.60%, 447
+  partial-at-EVO events. All idle burned-product fractions exceed the fit's
+  tested 0.2 dilution. This fraction is not total old-gas origin; no new tracer,
+  kernel-failure, film or exhaust chemistry model is claimed.
+- Fifteen additional stereo idles measure channels independently over 6–30 s.
+  I4 low-band repetition 21.71–22.78 dB and boxer 18.05–19.93 miss the legacy
+  screen; I6/cross/flat satisfy that descriptive screen. Several loaded/idle
+  IMEP COV values miss historical targets. No arbitrary noise is added to meet
+  them; real-engine calibration remains with 039/059 and listening 063/098.
+- Fresh native 212 tests/695818 checks, focused 23/2100, WASM 19/657309,
+  Python 72 and web 17 pass; production web build and five-preset contract pass.
+  All seven compiled faults are caught. ASan/UBSan 14/657137 pass with leak
+  detection off because host ptrace breaks LeakSanitizer; no leak-pass claim.
+  Retain initial failed obsolete expectations/environment/harness attempts.
+- Rebuilt WASM 172343 bytes, source fingerprint
+  337b54262e61e4ba6748056a8ab148741a9633491c92f81d0c4ed2bf153028ac.
+  Native core timing differences −2.34% to +3.10% are noisy shared-host evidence,
+  not speedup proof. Whole stereo idle render runs 0.39–0.98x real time;
+  browser worklet integration and runtime qualification remain future work.
+- Complete single RESULTS page rebuilt: 34 raw clips/336.883 s, five eight-second
+  loaded coasts, 55 players including retained research/reference sections.
+  Raw peak <0.538, limiter/nonfinite counts zero; offline playback, exclusive
+  audio, four seeks, eight research plots and three view panels pass. I4 coast
+  rise grows from +4.547 to +5.337 dB and remains a 058 investigation. Sound
+  acceptance and S1/S1e/S2/S4 remain open; this is a numerical checkpoint.
+- Evidence: renders/evidence/stage-041/. All 93 protected files outside
+  intentional changes, six original video hashes, reference locks/raws and
+  retained experimental audio match. Only verified duplicate before WAVs are
+  cleaned after recording measurements. Original media and user skill files
+  stay untracked/unstaged. Claude setup and packages are preserved.
+- Graphify queried then AST-refreshed: 2845 nodes/7772 edges/160 communities;
+  known rb.h:415 warning remains. Save/sync 041 and HOLD. Stage 039 acquisition
+  stays open, six new candidates are not admitted, and no 042 work starts here.
+
 ## 2026-10-24: Six supplied039 candidates assessed — HOLD
 
 - Bernardo asks whether six supplied BMW/Subaru videos fill039's gap. Read

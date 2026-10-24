@@ -71,4 +71,45 @@ double rb_wiebe(double phi, double duration, double a, double m);
  * the local equivalence ratio and the given combustion efficiency. */
 double rb_burnable_fuel(double fuel, double air, double spread, double efficiency);
 
+/* Internal research policies, independent of stochastic amplitude. CHARGE is
+ * the production default; CAPPED is an explicit historical-duration control.
+ * Neither changes fuel/species or supplies a spark-extinction criterion. */
+enum { RB_BURN_CHARGE, RB_BURN_CAPPED };
+enum {
+    RB_FLAME_PHI_RANGE = 1u << 0,
+    RB_FLAME_T_RANGE = 1u << 1,
+    RB_FLAME_P_RANGE = 1u << 2,
+    RB_FLAME_DILUTION_RANGE = 1u << 3,
+    RB_FLAME_SPEED_FLOOR = 1u << 4,
+    RB_FLAME_DILUTION_FLOOR = 1u << 5,
+    RB_FLAME_DEMAND_LIMIT = 1u << 6,
+    RB_FLAME_INVALID = 1u << 7,
+    RB_FLAME_NO_REACTANTS = 1u << 8,
+    RB_FLAME_CAPPED_MODEL = 1u << 9,
+    RB_FLAME_SPARK_LIMIT = 1u << 10
+};
+typedef struct rb_charge_burn {
+    double speed_m_s;      /* bounded indolene/dilution surrogate at supplied state */
+    double raw_demand_deg, demand_deg, capped_deg;
+    unsigned flags;       /* range/extrapolation/fallback, never a misfire verdict */
+} rb_charge_burn;
+
+/* Existing entrainment/burn-up duration evaluated at an IVC-state proxy.
+ * Numeric range screen: phi .8..1.4, T350..700K, p .4..50atm, burned mass
+ * fraction0..0.2. Dilution data are stoichiometric isooctane, not a validation
+ * of this surrogate/IVC proxy. Missing phi denotes no reactants. All floors,
+ * demand ceilings and invalid-input fallbacks are reported. */
+rb_charge_burn rb_charge_burn_evaluate(double T, double p, double residual,
+                                     double phi, double rpm, double reference_deg);
+
+/* Exact normalized Wiebe quantile, including the finite-duration normalization. */
+double rb_wiebe_quantile(double fraction, double a, double m);
+
+/* E[clamp(base*trim*exp(sigma*clamp(Z,-3,3)), .25*base, ceiling)],
+ * Z standard normal. This is the actual duration draw's conditional mean,
+ * including winsorized tails and duration bounds, not one random cycle. */
+double rb_burn_mean_duration(double base, double sigma, double trim, double ceiling);
+/* Mean positive arm of clamp(Z,-3,3), used by the causal kernel surrogate. */
+double rb_kernel_positive_mean(void);
+
 #endif /* RB_COMBUSTION_H */

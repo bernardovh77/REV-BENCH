@@ -104,7 +104,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/stage-S1c.md](../../docs/stage-S1c.md), [docs/audio-robustness-research.md](../../docs/audio-robustness-research.md).
 
-**Execution record:** for new work, `docs/stage-041.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage 041](../stage-041.md): continuous charge physics, explicit fit validity, conditional-mean phasing and aligned gross/net work; 120 seeded maps, 15 stereo repetition runs, independent/fault checks, native/WASM and full sound checkpoint. Real-engine COV/repetition/kernel/chemistry calibration and listening acceptance remain open, with high V8 idle dilution/COV and I4/boxer repetition retained as findings.
 
 <a id="stage-042"></a>
 ## Stage 042 — Actual fuel-injection events and acoustic triggers

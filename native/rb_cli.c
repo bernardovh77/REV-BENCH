@@ -207,8 +207,9 @@ static void usage(FILE *f)
         "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
         "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
         "                        mechanical sound)\n"
-        "      --variation V     how much no two cycles are alike: 0 every one the same (stage\n"
-        "                        12b's sound), 1 a real engine's (the default), up to 4\n"
+        "      --variation V     stochastic amplitude0..4;0 retains the same charge model\n"
+        "      --seed K          engine variation seed1..4294967295 (default core seed)\n"
+        "      --burn-model M    charge (default) or capped diagnostic duration control\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
@@ -1942,6 +1943,8 @@ static int cmd_sound(int argc, char **argv)
     const char *out_path = "renders/sound.wav", *csv_path = NULL;
     double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
     double gain = 1.0, os = 4.0, variation = 1.0, idle_load = 0.0;
+    double seed_value=0;
+    int seed_given=0,burn_model=RB_BURN_CHARGE;
     double overrun_transition = 0.15;
     double coast_seconds = SWEEP_LIFT, pull_seconds = 0.0;
     rb_dyno dyno;
@@ -2001,6 +2004,14 @@ static int cmd_sound(int argc, char **argv)
             ok = (layers = layers_from(take_value(argc, argv, &i))) > 0;
         else if (!strcmp(a, "--variation"))
             ok = !to_double(take_value(argc, argv, &i), &variation);
+        else if (!strcmp(a, "--seed")) {
+            seed_given=1;ok=!to_double(take_value(argc,argv,&i),&seed_value);
+        }
+        else if (!strcmp(a, "--burn-model")) {
+            const char *value=take_value(argc,argv,&i);
+            ok=value && (!strcmp(value,"charge") || !strcmp(value,"capped"));
+            if(ok)burn_model=!strcmp(value,"capped") ? RB_BURN_CAPPED:RB_BURN_CHARGE;
+        }
         else if (!strcmp(a, "--load"))
             ok = !to_double(take_value(argc, argv, &i), &idle_load);
         else if (!strcmp(a, "--overrun-transition"))
@@ -2077,6 +2088,10 @@ static int cmd_sound(int argc, char **argv)
         fprintf(stderr, "rb_cli sound: --variation must be in [0, 4]\n");
         return 2;
     }
+    if(seed_given && !(seed_value>=1 && seed_value<=4294967295.0 && floor(seed_value)==seed_value)) {
+        fprintf(stderr,"rb_cli sound: --seed must be an integer1..4294967295\n");
+        return 2;
+    }
     if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
         fprintf(stderr, "rb_cli sound: --oversample must be an integer in [1, %d]\n", RB_MAX_OVERSAMPLE);
         return 2;
@@ -2107,6 +2122,9 @@ static int cmd_sound(int argc, char **argv)
     }
     rb_engine *e = &sim->engine;
     rb_engine_init_at(e, &d, sim->dt, sim->cfg.pipe_rate);   /* at the sim's quality */
+    if(rb_engine_combustion_model(e,burn_model) || (seed_given && rb_engine_seed(e,(uint64_t)seed_value))) {
+        rb_destroy(sim);return 2;
+    }
     for (int k = 0; k < rb_engine_pipe_count(e); k++)
         ((rb_pipe *)rb_engine_pipe(e, k))->momentum_order = momentum_order;
     sim->source = RB_SOURCE_ENGINE;
@@ -2166,6 +2184,8 @@ static int cmd_sound(int argc, char **argv)
         printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
     printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
     printf("  physics at %.0f kHz, the pipes at %.0f kHz", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
+    printf("; burn model %s, variation seed %llu",burn_model==RB_BURN_CHARGE?"charge":"capped",
+           (unsigned long long)e->variation_seed);
     if (layers != RB_LAYER_ALL) {
         printf("; only");
         for (int k = 0, first = 1; k < 3; k++)

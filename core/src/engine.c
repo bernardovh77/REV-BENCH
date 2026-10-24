@@ -442,12 +442,14 @@ static double vary_normal(uint64_t *state)
 /* The generators, and each cylinder's own mixture and burn: drawn whatever
  * `variation` is, so turning it on later finds them there. Their mean over
  * the cylinders is 0 (a single cylinder has none). */
-static void vary_init(rb_engine *e)
+static void vary_init(rb_engine *e, uint64_t seed)
 {
     const int n = e->desc.cylinders;
     double fuel = 0.0, burn = 0.0;
-    e->rand_cycles = RB_ENGINE_SEED;
-    e->rand_flicker = RB_ENGINE_SEED ^ 0xF11C4E5ULL;
+    e->variation_seed=seed;
+    e->rand_cycles = seed;
+    e->rand_flicker = seed ^ 0xF11C4E5ULL;
+    if(!e->rand_flicker) e->rand_flicker=RB_ENGINE_SEED;
     for (int i = 0; i < n; i++) {
         e->trim_fuel[i] = vary_normal(&e->rand_cycles);
         e->trim_burn[i] = vary_normal(&e->rand_cycles);
@@ -460,6 +462,19 @@ static void vary_init(rb_engine *e)
     }
     e->flicker_a = 1.0 - exp(-2.0 * PI * FLICKER_HZ * e->dt);
     e->flicker_norm = sqrt((2.0 - e->flicker_a) / e->flicker_a);   /* a one-pole's RMS */
+}
+
+int rb_engine_seed(rb_engine *e,uint64_t seed)
+{
+    if(!e || e->physics_tick || !seed || !(e->dt>0)) return -1;
+    vary_init(e,seed);return 0;
+}
+
+int rb_engine_combustion_model(rb_engine *e,int model)
+{
+    if(!e || e->physics_tick || !(e->dt>0)
+       || (model!=RB_BURN_CHARGE && model!=RB_BURN_CAPPED)) return -1;
+    e->combustion_model=model;return 0;
 }
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
@@ -649,7 +664,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         if (d->outlet_radiation)
             rb_pipe_radiate(t, 1, e->exhaust_air.rho, rb_chamber_sound_speed(&e->exhaust_air));
     }
-    vary_init(e);
+    vary_init(e,RB_ENGINE_SEED);
     start_cycle(e);
     return 0;
 }
@@ -871,65 +886,33 @@ static double spark_advance(double s)
  * S_L is gasoline's, slowed by burned gas (Metghalchi and Keck's fit, Turns
  * eq. 8.33); nu = mu / rho with mu ~ T^0.7. The charge is taken at intake
  * valve closing: compressed to the spark, its ratios to the reference stay
- * about the same. The deterministic calibration keeps the burn between half
- * and twice the reference. With life enabled (S1b), keep the raw demand:
- * EVO truncates a burn that cannot finish. This is a finite-time partial
- * burn model; it does not model spark-kernel failure. */
-#define BURN_REF_RPM    3000.0
-#define BURN_REF_T      360.0     /* K, at IVC: the default four at 3000 rpm, wide open */
-#define BURN_REF_P      1.22e5    /* Pa                                                */
-#define BURN_REF_X      0.04      /* burned-gas share                                  */
-#define BURN_EDDY_SHARE 0.4       /* the burn-up part at the reference                 */
+ * about the same. Stage041 keeps the charge model at every variation level;
+ * the capped policy is an explicit native diagnostic control. EVO truncates
+ * a burn that cannot finish. See combustion.c for the fit and range flags.
+ * This does not supply a calibrated spark-kernel failure law. */
 #define MBT_CA50        8.0       /* deg after TDC: where the computer puts the middle
                                      of the burn (best torque, SAE 852090: 7-8)        */
 
-/* Gasoline-air laminar flame speed (cm/s) at T (K), p (Pa), burned-gas mass
- * share x and equivalence ratio phi. */
-static double flame_speed(double T, double p, double x, double phi)
-{
-    double s0 = 27.58 - 78.34 * (phi - 1.13) * (phi - 1.13);
-    if (s0 < 2.0) s0 = 2.0;                        /* far outside the fit's range */
-    double dilution = 1.0 - 2.1 * x;
-    if (dilution < 0.1) dilution = 0.1;
-    else if (dilution > 1.0) dilution = 1.0;
-    return s0 * pow(T / 298.0, 2.18 - 0.8 * (phi - 1.0))
-              * pow(p / 101325.0, -0.16 + 0.22 * (phi - 1.0)) * dilution;
-}
-
-/* This cycle's burn, crank degrees from the spark to the end, for cylinder
- * i's trapped charge at `rpm`. */
+/* Snapshot the charge model independently of random amplitude. Return the
+ * historical capped duration only as the kernel surrogate's scale. */
 static double burn_duration(const rb_engine *e, rb_burn *b, double rpm)
 {
-    const double target_phi = (e->afr > 0.0) ? RB_AFR_STOICH / e->afr : 1.0;
-    /* Life follows the mixture actually trapped, including cylinder trims
-     * and fuel left by earlier weak burns. Keep life-off's calibrated path.
-     * Without both reactants no flame can release heat; use its old finite
-     * reference duration rather than interpreting a missing ratio as a
-     * measured flammability limit. */
-    const double phi = (variation(e) > 0.0 && b->phi_ivc > 0.0) ? b->phi_ivc : target_phi;
-    const double s_l = flame_speed(b->T_ivc, b->p_ivc, b->residual, phi)
-                     / flame_speed(BURN_REF_T, BURN_REF_P, BURN_REF_X, 1.0);
-    const double nu = pow(b->T_ivc / BURN_REF_T, 1.7) * (BURN_REF_P / b->p_ivc);
-    const double n = ((rpm > RB_GAS_PACE_RPM) ? rpm : RB_GAS_PACE_RPM) / BURN_REF_RPM;
-    double f = (1.0 - BURN_EDDY_SHARE) + BURN_EDDY_SHARE * sqrt(n * nu) / s_l;
-    if (!(f >= 0.5)) f = (f < 0.5) ? 0.5 : 1.0;     /* NaN: the reference */
-    /* Keep the charge model's demand before the old calibration limits.
-     * With life enabled a dilute/lean charge can take longer than the time
-     * until EVO: the existing valve event then leaves the rest unburned.
-     * One cycle is a numerical ceiling, not a claimed misfire threshold. */
-    const double demand = e->desc.burn_duration * f;
-    b->demand_duration = (demand < 720.0) ? demand : 720.0;
-    if (f > 2.0) f = 2.0;
-    const double duration = e->desc.burn_duration * f;
-    return (duration < 180.0) ? duration : 180.0;
+    const rb_charge_burn q=rb_charge_burn_evaluate(b->T_ivc,b->p_ivc,b->residual,
+                                                 b->phi_ivc,rpm,e->desc.burn_duration);
+    b->combustion_model=e->combustion_model;
+    b->flame_flags=q.flags;
+    if(b->combustion_model==RB_BURN_CAPPED) b->flame_flags|=RB_FLAME_CAPPED_MODEL;
+    b->flame_speed_m_s=q.speed_m_s;b->raw_demand_duration=q.raw_demand_deg;
+    b->demand_duration=q.demand_deg;
+    return q.capped_deg;
 }
 
 /* The spark advance for the best torque: the middle of the burn (where the
  * Wiebe curve reaches 1/2) at MBT_CA50 after TDC. */
-static double mbt_advance(const rb_engine *e, double duration)
+static double mbt_advance(const rb_engine *e, double duration, double kernel_delay)
 {
     const rb_engine_desc *d = &e->desc;
-    return duration * pow(log(2.0) / d->wiebe_a, 1.0 / (d->wiebe_m + 1.0)) - MBT_CA50;
+    return kernel_delay+duration*rb_wiebe_quantile(.5,d->wiebe_a,d->wiebe_m)-MBT_CA50;
 }
 
 /* At idle the engine computer acts on the speed the engine is heading for:
@@ -961,12 +944,12 @@ static double idle_heading(const rb_engine *e)
 #define IDLE_SPARK_BAND 400.0     /* rpm above the idle speed where idling ends  */
 
 /* The spark advance the engine computer chooses for a cycle. */
-static double computer_spark(const rb_engine *e, double duration, double rpm)
+static double computer_spark(const rb_engine *e, double duration, double kernel_delay, double rpm)
 {
     const rb_engine_desc *d = &e->desc;
     if (!e->hold_speed && rpm < d->cranking_rpm) return d->cranking_spark;
     if (!e->spark_map) return e->spark;
-    const double best = mbt_advance(e, duration);
+    const double best = mbt_advance(e, duration, kernel_delay);
     if (!e->hold_speed && d->idle_rpm > 0.0 && e->throttle_pos < 0.01
         && e->rpm_smooth < d->idle_rpm + IDLE_SPARK_BAND) {
         const double s = IDLE_SPARK + IDLE_SPARK_GAIN * (d->idle_rpm - idle_heading(e));
@@ -1015,18 +998,31 @@ static void close_intake(rb_engine *e, int i)
     b->phi_ivc = isfinite(phi) ? phi : 0.0;
     const double rpm = e->hold_speed ? e->rpm : e->omega * 30.0 / PI;
     const double expected = burn_duration(e, b, rpm);
-    const double advance = spark_advance(computer_spark(e, expected, rpm));
+    const int capped=b->combustion_model==RB_BURN_CAPPED;
+    const double base=capped ? expected:b->demand_duration;
+    const double ceiling=capped ? 180.0:720.0;
+    const double trim=1.0+v*CYL_BURN*e->trim_burn[i];
+    b->mean_duration=rb_burn_mean_duration(base,v*VARY_LENGTH,trim,ceiling);
+    b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_positive_mean();
+    const double requested=computer_spark(e,b->mean_duration,b->mean_kernel_delay,rpm);
+    const double advance = spark_advance(requested);
+    if(advance!=requested) b->flame_flags|=RB_FLAME_SPARK_LIMIT;
+    b->expected_ca50=b->mean_kernel_delay+b->mean_duration*
+        rb_wiebe_quantile(.5,e->desc.wiebe_a,e->desc.wiebe_m)-advance;
     b->spark_angle = cycle_angle(720.0 - advance);
 
     /* This cycle's own burn (stage 12c): its start and length, and the
      * cylinder's own length. */
-    const double start = vary_normal(&e->rand_cycles);
-    const double length = VARY_ALIKE * start
-                        + sqrt(1.0 - VARY_ALIKE * VARY_ALIKE) * vary_normal(&e->rand_cycles);
-    const double base = (v > 0.0) ? b->demand_duration : expected;
-    double duration = base * exp(v * VARY_LENGTH * length) * (1.0 + v * CYL_BURN * e->trim_burn[i]);
+    /* Correlate the underlying normal draws, then bound each marginal.
+     * Clipping before mixing changes the length distribution and makes the
+     * ECU's conditional-mean calculation a different stochastic model. */
+    const double start_raw=rb_rand_normal(&e->rand_cycles);
+    const double length_raw=VARY_ALIKE*start_raw
+        +sqrt(1.0-VARY_ALIKE*VARY_ALIKE)*rb_rand_normal(&e->rand_cycles);
+    const double start=fmax(-VARY_MOST,fmin(VARY_MOST,start_raw));
+    const double length=fmax(-VARY_MOST,fmin(VARY_MOST,length_raw));
+    double duration = base * exp(v * VARY_LENGTH * length) * trim;
     if (!(duration >= 0.25 * base)) duration = 0.25 * base;
-    const double ceiling = (v > 0.0) ? 720.0 : 180.0;
     b->duration = (duration < ceiling) ? duration : ceiling;
     /* Keep the pre-existing positive development-delay arm. Its negative
      * arm was unphysical pre-spark ignition. This causal projection is not
@@ -1405,7 +1401,10 @@ void rb_engine_step(rb_engine *e)
             b->last_angle_p_max = b->angle_p_max;
             b->p_max = 0.0;
             b->last_work = b->work;
+            b->last_pumping_work=b->pumping_work;
+            b->last_gross_work=b->last_work+b->last_pumping_work;
             b->work = 0.0;
+            b->pumping_work=0.0;
         }
         if (passes(angle, step_deg, ivc)) {
             close_intake(e, i);
@@ -1526,6 +1525,7 @@ void rb_engine_step(rb_engine *e)
         if (angle >= 180.0 && angle < 540.0) share.pump += w;
         rb_burn *b = &e->burn[i];
         b->work -= w;
+        if(angle>=180.0 && angle<540.0) b->pumping_work+=w;
         if (e->cyl[i].gas.p > b->p_max) {
             b->p_max = e->cyl[i].gas.p;
             b->angle_p_max = after_firing_tdc(cycle_angle(angle + step_deg));
