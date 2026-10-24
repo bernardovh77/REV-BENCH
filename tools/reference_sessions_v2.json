@@ -1,0 +1,739 @@
+{
+  "schema_version": 1,
+  "frozen_at_utc": "2026-10-24",
+  "policy": "Existing/seen sessions development; novel GM session validation; metadata-uncertain Subaru quarantine. No model tuning against validation; promote only with a new version and evidence. SuppliedGR86/E46 videos are development-only, visually reviewed and speech-screened; preserve all earlier assignments. GR86 FA24 cabin recordings are related to, not exact matches for, the FB20 preset.",
+  "legacy_catalog": {
+    "path": "tools/real_engines.csv",
+    "sha256": "fed4857e4f47ed86a64c05f993f102fddb6d398d065cbb21ccb4d3fafa963e21",
+    "partition": "development",
+    "source_ids": [
+      "157144",
+      "18772",
+      "18774",
+      "19338",
+      "238847",
+      "240671",
+      "273334",
+      "332387",
+      "465453",
+      "610774",
+      "628547",
+      "644881",
+      "754778",
+      "754779",
+      "768643",
+      "857147",
+      "873856"
+    ],
+    "note": "Already used historically; neither fresh validation nor newly acquired artifacts"
+  },
+  "sessions": [
+    {
+      "id": "user-ferrari458",
+      "family": "user-ferrari458",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "efafd01d8d871cb59a89f41c80344782fd0442526da0d8fff4d86e6b1826ed2e",
+      "source": {
+        "filename_contains": "AimvjNzNCwk"
+      },
+      "source_page": "https://www.youtube.com/watch?v=AimvjNzNCwk",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-flat",
+      "metadata": {
+        "engine": "Naturally aspirated 4.5 L flat-plane V8",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-ferrari458-10176000",
+          "start_frame": 10176000,
+          "end_frame": 10752000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-14496000",
+          "start_frame": 14496000,
+          "end_frame": 15072000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-2112000",
+          "start_frame": 2112000,
+          "end_frame": 2688000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-6000000",
+          "start_frame": 6000000,
+          "end_frame": 6576000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-bmw-m4",
+      "family": "user-bmw-m4",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "d1eaeff3b0ee085a26c7d577399bce27849a122f67413374b3557681de0ae00e",
+      "source": {
+        "filename_contains": "udiPG_FwG0E"
+      },
+      "source_page": "https://www.youtube.com/watch?v=udiPG_FwG0E",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "i6",
+      "metadata": {
+        "engine": "Turbocharged inline-six; exact generation unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "The source title says POV, suggesting onboard recording; selected-window camera position is unverified, and brightness does not establish cabin versus exterior.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "turbo"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-bmw-m4-7296000",
+          "start_frame": 7296000,
+          "end_frame": 7872000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-11616000",
+          "start_frame": 11616000,
+          "end_frame": 12192000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-9456000",
+          "start_frame": 9456000,
+          "end_frame": 10032000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-31632000",
+          "start_frame": 31632000,
+          "end_frame": 32208000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-golf-gti",
+      "family": "user-golf-gti",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "51de118925fd70511bcc833d01e86408894df4fbe2d2e4e79206302b2efe5361",
+      "source": {
+        "filename_contains": "Ws0IlDinQes"
+      },
+      "source_page": "https://www.youtube.com/watch?v=Ws0IlDinQes",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "i4",
+      "metadata": {
+        "engine": "EA888 2.0 L turbocharged inline-four",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "turbo"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-golf-gti-2544000",
+          "start_frame": 2544000,
+          "end_frame": 3120000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-3984000",
+          "start_frame": 3984000,
+          "end_frame": 4560000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-8304000",
+          "start_frame": 8304000,
+          "end_frame": 8880000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-11472000",
+          "start_frame": 11472000,
+          "end_frame": 12048000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-mustang-gt",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "9c70bfb6b18db281c519cced24193dce816dbb1ccd2428df7e4f7074d6d77e57",
+      "source": {
+        "filename_contains": "oz7Kbh7kZbE"
+      },
+      "source_page": "https://www.youtube.com/watch?v=oz7Kbh7kZbE",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Naturally aspirated 5.0 L cross-plane V8",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-mustang-gt-240000",
+          "start_frame": 240000,
+          "end_frame": 816000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-9456000",
+          "start_frame": 9456000,
+          "end_frame": 10032000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-3552000",
+          "start_frame": 3552000,
+          "end_frame": 4128000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-12336000",
+          "start_frame": 12336000,
+          "end_frame": 12912000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-rcf-lorax",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "6642ad1478b745f26de499ce2f4f5777377d89b19a30dede81322fcc7e099e2e",
+      "source": {
+        "filename_contains": "DeztBYHSkCj"
+      },
+      "source_page": null,
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": 3,
+        "perspective": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-rcf-lorax-0",
+          "start_frame": 0,
+          "end_frame": 2496610,
+          "acoustic_group": "rear-3m",
+          "perspective_transition": "not annotated; retain any recorded motion"
+        }
+      ]
+    },
+    {
+      "id": "user-viper-ws9",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "c0890755e88d75da92643b4cfccf3277ffbad5f857784656d4646c6b3705de15",
+      "source": {
+        "filename_contains": "DewsrGHTcOZ"
+      },
+      "source_page": null,
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": 3,
+        "perspective": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-viper-ws9-0",
+          "start_frame": 0,
+          "end_frame": 728921,
+          "acoustic_group": "rear-3m",
+          "perspective_transition": "not annotated; retain any recorded motion"
+        }
+      ]
+    },
+    {
+      "id": "fs-185151",
+      "family": "ears68-hillclimb-2013",
+      "partition": "validation",
+      "used_before_lock": false,
+      "source_sha256": "519a57d5654f3ad6724b41b45e9b28a8b3143003ff582c57b5940cf943ff0521",
+      "source": {
+        "path": "renders/reference-protocol/sources/gm-i6.mp3"
+      },
+      "download_url": "https://cdn.freesound.org/previews/185/185151_2214631-hq.mp3",
+      "source_page": "https://freesound.org/people/Ears68/sounds/185151/",
+      "rights": "CC0 1.0; uploader Ears68",
+      "preset": "i6",
+      "metadata": {
+        "engine": "Uploader: race-prepared GM/Holden inline-six; triple Weber carburettors",
+        "exhaust": "Uploader: straight open rear headers",
+        "rpm": null,
+        "load": "Moving hillclimb approach, burnout, start; no measured load trace",
+        "distance_m": null,
+        "perspective": "Uploader: Tascam DR-05 built-in microphones at hillclimb; motion retained",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "Carburettor description suggests naturally aspirated; not independently verified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "fs-185151-full",
+          "start_frame": 0,
+          "end_frame": null,
+          "acoustic_group": "unassigned",
+          "perspective_transition": "Full clip; no verified state/position transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "fs-181233",
+      "family": "mario1298-subaru-unverified",
+      "partition": "quarantine",
+      "used_before_lock": false,
+      "source_sha256": "9a6e747e1dd89f8dce18a1b3235d7d08075779a9d20aeec9d23e86165f476cc0",
+      "source": {
+        "path": "renders/reference-protocol/sources/subaru.mp3"
+      },
+      "download_url": "https://cdn.freesound.org/previews/181/181233_499617-hq.mp3",
+      "source_page": "https://freesound.org/people/mario1298/sounds/181233/",
+      "rights": "CC0 1.0; uploader mario1298",
+      "preset": "boxer4-candidate",
+      "metadata": {
+        "engine": "Uploader title: Subaru Forester 1989; exact vehicle/year/induction unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": null,
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": null
+      },
+      "claims": {
+        "qualitative_texture": false,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "fs-181233-full",
+          "start_frame": 0,
+          "end_frame": null,
+          "acoustic_group": "unassigned",
+          "perspective_transition": "Full clip; no verified state/position transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-gr86-mountain",
+      "family": "gr86-cabin-user-supplied",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "fcdf739a7bc3cf3b716840df2e0b6883a2456e0678b0b284f26e8fce0f25fe79",
+      "source": {
+        "path": "renders/video-references/sources/gr86-mountain.webm"
+      },
+      "source_page": "https://www.youtube.com/watch?v=ve9CSQ0d1xw",
+      "rights": "User supplied for local reference; no redistribution or model-training license asserted",
+      "preset": "boxer4",
+      "title": "GR86 mountain run — cabin",
+      "metadata": {
+        "load": null,
+        "rpm": null,
+        "distance_m": null,
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA by claimed base vehicle; individual modifications unverified",
+        "audio_video_alignment": "Times are exact48kHz decoded-audio frames from start; video-frame seconds are observational, not sample-synchronized telemetry. ContainerOpus starts−7ms; decoder priming retained as metadata, no invented correction.",
+        "engine": "FA24 2.4L naturally aspirated boxer4 by GR86 identity; not FB20",
+        "exhaust": null,
+        "perspective": "User reports cabin sound; inspected selected frames show cabin POV. Cuts and camera angle changes occur; microphone attachment/response unknown.",
+        "preset_relationship": "related-fa24-not-fb20",
+        "active_sound_control": "Unknown; GR86 factory ASC can contribute to cabin sound",
+        "manufacturer_context": [
+          "https://www.toyota.com/content/dam/toyota/brochures/pdf/2024/gr86_ebrochure.pdf",
+          "https://assets.sia.toyota.com/publications/en/om-s/OM18155U/pdf/OM18155U.pdf"
+        ],
+        "music": "Uploader credits Sappheiros–Dawn; car-wash/cinematic intro excluded; absence of music in selected passages is not independently certified."
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-gr86-mountain-6240000",
+          "start_frame": 6240000,
+          "end_frame": 6816000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            130,
+            136.0,
+            142
+          ]
+        },
+        {
+          "id": "user-gr86-mountain-8256000",
+          "start_frame": 8256000,
+          "end_frame": 8832000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            172,
+            178.0,
+            184
+          ]
+        },
+        {
+          "id": "user-gr86-mountain-11136000",
+          "start_frame": 11136000,
+          "end_frame": 11712000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            232,
+            238.0,
+            244
+          ]
+        },
+        {
+          "id": "user-gr86-mountain-14208000",
+          "start_frame": 14208000,
+          "end_frame": 14784000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            296,
+            302.0,
+            308
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user-gr86-awe",
+      "family": "gr86-cabin-user-supplied",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "7fb171e003e3dadd6c46c3a0d81f75f0143ff99a5fca5cab0d7a84052e3fbc00",
+      "source": {
+        "path": "renders/video-references/sources/gr86-awe.webm"
+      },
+      "source_page": "https://www.youtube.com/watch?v=AWZnjjcWIbk",
+      "rights": "User supplied for local reference; no redistribution or model-training license asserted",
+      "preset": "boxer4",
+      "title": "GR86 AWE Touring — cabin",
+      "metadata": {
+        "load": null,
+        "rpm": null,
+        "distance_m": null,
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA by claimed base vehicle; individual modifications unverified",
+        "audio_video_alignment": "Times are exact48kHz decoded-audio frames from start; video-frame seconds are observational, not sample-synchronized telemetry. ContainerOpus starts−7ms; decoder priming retained as metadata, no invented correction.",
+        "engine": "2025 GR86 Premium FA24 2.4L naturally aspirated boxer4 by uploader; not FB20",
+        "exhaust": "AWE Touring cat-back, Diamond Black tips — uploader; upstream hardware and tune unverified",
+        "perspective": "User reports cabin sound; selected frames confirm driver cabin POV. Initial rear-garage/crossfade sequence excluded. Microphone attachment/window/ASC state unknown.",
+        "preset_relationship": "related-fa24-not-fb20",
+        "active_sound_control": "Unknown; GR86 factory ASC can contribute to cabin sound",
+        "manufacturer_context": [
+          "https://www.toyota.com/content/dam/toyota/brochures/pdf/2024/gr86_ebrochure.pdf",
+          "https://assets.sia.toyota.com/publications/en/om-s/OM18155U/pdf/OM18155U.pdf"
+        ],
+        "pops": "Pops/bangs in title are observations, not proof of fuel-cut/afterfire mechanism or stock ECU calibration."
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-gr86-awe-3936000",
+          "start_frame": 3936000,
+          "end_frame": 4512000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            82,
+            88.0,
+            94
+          ]
+        },
+        {
+          "id": "user-gr86-awe-8352000",
+          "start_frame": 8352000,
+          "end_frame": 8928000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            174,
+            180.0,
+            186
+          ]
+        },
+        {
+          "id": "user-gr86-awe-14688000",
+          "start_frame": 14688000,
+          "end_frame": 15264000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            306,
+            312.0,
+            318
+          ]
+        },
+        {
+          "id": "user-gr86-awe-25440000",
+          "start_frame": 25440000,
+          "end_frame": 26016000,
+          "acoustic_group": "cabin-driving",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            530,
+            536.0,
+            542
+          ]
+        }
+      ]
+    },
+    {
+      "id": "user-e46-valvetronic",
+      "family": "e46-valvetronic-user-supplied",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "e2dba24cb359e18ee071c618c7a815fa3da2064cc64ca6f07806732bfa731578",
+      "source": {
+        "path": "renders/video-references/sources/e46-valvetronic.webm"
+      },
+      "source_page": "https://www.youtube.com/watch?v=0vfvIaQLIS0",
+      "rights": "User supplied for local reference; no redistribution or model-training license asserted",
+      "preset": "i6",
+      "title": "E46 M3 Valvetronic — exterior",
+      "metadata": {
+        "load": null,
+        "rpm": null,
+        "distance_m": null,
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA by claimed base vehicle; individual modifications unverified",
+        "audio_video_alignment": "Times are exact48kHz decoded-audio frames from start; video-frame seconds are observational, not sample-synchronized telemetry. ContainerOpus starts−7ms; decoder priming retained as metadata, no invented correction.",
+        "engine": "E46 M3 S54 naturally aspirated3.2L inline6 by base model/uploader; hardware/tune not fully verified",
+        "exhaust": "Valvetronic Designs Section3+headers — manufacturer video/title; header identity/sections1–2/tune unknown",
+        "perspective": "Selected frames show stationary rear-quarter, fixed roadside pass-bys, and exterior view beside tailpipes. Camera viewpoint is observed; microphone position/distance is unverified.",
+        "preset_relationship": "naturally-aspirated-i6-qualitative",
+        "active_sound_control": "Not assessed"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-e46-valvetronic-8832000",
+          "start_frame": 8832000,
+          "end_frame": 9216000,
+          "acoustic_group": "stationary-rear-quarter",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": "uploader-labelled-open",
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            184,
+            188.0,
+            192
+          ]
+        },
+        {
+          "id": "user-e46-valvetronic-9504000",
+          "start_frame": 9504000,
+          "end_frame": 9600000,
+          "acoustic_group": "stationary-rear-quarter",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": "uploader-labelled-closed",
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            198,
+            199,
+            200
+          ],
+          "contamination_note": "Shortened before the truck visible at203s; ambient traffic may still be present. No pure engine stem claim."
+        },
+        {
+          "id": "user-e46-valvetronic-11136000",
+          "start_frame": 11136000,
+          "end_frame": 11712000,
+          "acoustic_group": "roadside-passby",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": "uploader-labelled-closed",
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            232,
+            238.0,
+            244
+          ]
+        },
+        {
+          "id": "user-e46-valvetronic-12096000",
+          "start_frame": 12096000,
+          "end_frame": 12672000,
+          "acoustic_group": "roadside-passby",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": "uploader-labelled-open",
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            252,
+            258.0,
+            264
+          ]
+        },
+        {
+          "id": "user-e46-valvetronic-23040000",
+          "start_frame": 23040000,
+          "end_frame": 23616000,
+          "acoustic_group": "exterior-near-tailpipe-camera",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            480,
+            486.0,
+            492
+          ]
+        },
+        {
+          "id": "user-e46-valvetronic-24960000",
+          "start_frame": 24960000,
+          "end_frame": 25536000,
+          "acoustic_group": "exterior-near-tailpipe-camera",
+          "perspective_transition": "No exterior/cabin transition selected; source edits and mic continuity unverified",
+          "exhaust_valves": null,
+          "qa": "Per-channelSilero screen<0.35 with0.55s padding; not isolated stems or proof of no music/background",
+          "visual_review_seconds": [
+            520,
+            526.0,
+            532
+          ]
+        }
+      ]
+    }
+  ],
+  "lock_revision": 2,
+  "parent_lock": {
+    "path": "tools/reference_sessions_v1.json",
+    "sha256": "df0cd809df7138c9d051a0cc06618813e4ee62f9866962b0f8c60325d2ddcfa4"
+  }
+}

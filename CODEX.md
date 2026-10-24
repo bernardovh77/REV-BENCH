@@ -4,6 +4,57 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: GR86/E46 supplied-video references — HOLD
+
+- Bernardo supplied3WebM videos and requests reference intake with visual
+  viewpoint review; most/all GR86 driving audio is cabin, E46 has substantial
+  presenter/non-car content. This authorizes reference curation, not041 or
+  simulator tuning. Stage040 remains the current engine checkpoint.
+- docs/video-sound-references-2026-10-24.md is the intake record. Two related
+  FA24 GR86 cabin sources (one uploader-reported AWE Touring) and an NA S54
+  E46 M3 source (manufacturer-reported Valvetronic Section3+headers) are added.
+  GR86 is NOT the FB20 preset. ASC state, mic position/response/gain and exact
+  RPM/load remain unknown; camera position is observed separately from audio.
+-110sampled/coarse/closer frames cover all sources and selected windows.
+ 14raw stereo excerpts:8cabin GR86,6E46 stationary rear-quarter/open/closed,
+  roadside pass-bys and mounted view beside tailpipes. Exclude car washing,
+  intro/cinematic and presenter sections.198–203s closed candidate shortened
+  to198–200s before a truck visible at203s; exact raw prefix equality verified.
+  Music/wind/traffic and speech-detector false negatives remain possible.
+- tools/reference_sessions_v2.json keeps all8v1sessions/20intervals/partitions
+  unchanged and adds3development sessions/14intervals. Both GR86s share one
+  conservative family. No new held-out claim; GM validation/Subaru quarantine
+  not used for tuning. Stage039 calibration stays open with useful new refs.
+- tools/reference_protocol.py now defaults tov2 and explicitly maps audio0
+  from video containers. tools/prepare_video_references.py validates ancestry,
+  source-bound per-channel VAD checks, float excerpts, preview headroom and
+  appends3compilations/images to the registered user-references section.
+  Measurements use original48kHz float L/R powers; no fold/gain/EQ/denoise.
+  Previews:10ms endpoint fades,0.7s gaps, one static gain/source,192kbpsMP3.
+- Official pinned Silero ONNX model and temporary CPU runtime are analysis-only;
+ 16kHz QA keeps separate L/R states,512sample frames+64context, threshold.35,
+ .55s padding. All14pass (max probability~.001903), known E46 speech control
+  detected. No pure-stem or no-music claim; GR86 mountain uploader credits music.
+- Original3root video paths/bytes preserved; same-volume hardlinks in ignored
+  renders/video-references/sources avoid duplicating4.4GB. Exact root filenames
+  also ignored. No media or model files staged. Do not write either link name.
+  Preserve user .agents/ and skills-lock.json; Claude setup remains unchanged.
+- New3behavior tests cover lock ancestry/model mismatch, either-channel padded
+  speech risk and a multi-audio video where default-track selection is wrong.
+  Four temporary mutants caught: altered parent, FA24-as-FB20, ignored right
+  speech and wrong audio program. Native206/694149,Python67,web17 pass.
+  Core/WASM/engine renders unchanged; no new physical sound acceptance claimed.
+- Newauthoritative raw/report: renders/reference-protocol-v2/. Three previews
+  total161.7s and viewpoint panels join the one55player RESULTS page. All52old
+  payloads and old20raw references preserved; current engine/Claude files stay.
+  Evidence under renders/evidence/video-references-2026-10-24/: probes, hashes,
+ 110frames, model/runtime/speech QA, corrected interval proof, commands, faults,
+  validation/browser/test logs. Graphify queried and AST-refreshed2753nodes/
+ 7515edges/161communities; known rb.h parser warning retained.
+- Save/sync intake and HOLD. No additional recording request is pending.
+  Stage039 matched calibration and S1/S1e/S2/S4/full13b listening/realism/runtime
+  gates remain open. Next numerical stage041 requires new instruction.
+
 ## 2026-10-24: Stage040 causal ignition checkpoint — HOLD
 
 - Authorized through040 only, reviewing each predecessor.038 reviewed before039;

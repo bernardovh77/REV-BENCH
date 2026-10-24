@@ -110,7 +110,7 @@ def prepare(lock,source_dir,out,ffmpeg,publish=False):
     for s in lock['sessions']:
         with tempfile.TemporaryDirectory(dir=out) as scratch:
             decoded=Path(scratch)/'decoded.wav'
-            command=[str(ffmpeg),'-hide_banner','-nostdin','-v','error','-i',str(sources[s['id']]),'-ar',str(RATE),'-c:a','pcm_f32le',str(decoded)]
+            command=[str(ffmpeg),'-hide_banner','-nostdin','-v','error','-i',str(sources[s['id']]),'-map','0:a:0','-vn','-ar',str(RATE),'-c:a','pcm_f32le',str(decoded)]
             subprocess.run(command,check=True)
             x,rate=read_wav(decoded)
             if rate!=RATE:raise ValueError('Wrong decoded rate')
@@ -144,6 +144,6 @@ def prepare(lock,source_dir,out,ffmpeg,publish=False):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--lock',type=Path,default=ROOT/'tools/reference_sessions_v1.json');p.add_argument('--source-dir',type=Path,required=True);p.add_argument('--out',type=Path,default=ROOT/'renders/reference-protocol');p.add_argument('--ffmpeg',type=Path,required=True);p.add_argument('--publish',action='store_true');args=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--lock',type=Path,default=ROOT/'tools/reference_sessions_v2.json');p.add_argument('--source-dir',type=Path,required=True);p.add_argument('--out',type=Path,default=ROOT/'renders/reference-protocol');p.add_argument('--ffmpeg',type=Path,required=True);p.add_argument('--publish',action='store_true');args=p.parse_args()
     result=prepare(json.loads(args.lock.read_text()),args.source_dir,args.out,args.ffmpeg,args.publish)
     print(len(result['clips']),'raw float references prepared; calibration remains unqualified')

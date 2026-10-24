@@ -191,3 +191,23 @@ open for source metadata and rights. Continue039 on public sources when new
 leads provide the missing information; ask Bernardo later only if it becomes
 necessary. Independent040 never fits against these candidates or the untouched
 new validation/quarantine excerpts.
+
+
+## 2026-10-24 user-supplied video intake
+
+Bernardo supplied two GR86 videos and a Valvetronic Designs E46 M3 video,
+with explicit cabin-audio and non-car-content guidance. The
+[intake record](video-sound-references-2026-10-24.md) documents visual scene
+review, per-channel speech screening,14selected raw stereo excerpts and three
+local listening compilations. [Lockv2](../tools/reference_sessions_v2.json)
+preserves all eight v1 sessions unchanged and adds three development sources;
+none becomes unseen validation. The default protocol now usesv2 and explicitly
+selects the first audio track from video containers.
+
+This supplies useful NA I6/exhaust-valve and related NA boxer/cabin references.
+The GR86's FA24 differs from the FB20 preset, and cabin ASC state is unknown.
+The E46 footage distinguishes source-reported open/closed valves and camera
+views, while RPM/load, complete exhaust geometry and microphone calibration
+remain unknown. Stage039 is still awaiting matched calibration, with better
+usable references now available. No additional recording request is pending;
+no engine sound or later numerical stage is changed by this intake.

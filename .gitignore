@@ -34,3 +34,8 @@ graphify-out/.cloud-cta-shown
 # new groups by itself (only names someone set go in .graphify_labels.json)
 graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
 graphify-out/.graphify_labels.pending.json
+
+# User-supplied source videos: preserved locally; library links live in renders/.
+/BEST SOUNDING E46？! E46 M3 with Valvetronic Designs Section 3 + Headers [[]0vfvIaQLIS0].webm
+/GR86 POV Drive ｜ Spirited Driving(No Talking) ｜ AWE Touring Catback Exhaust(Pops and bangs) [[]AWZnjjcWIbk].webm
+/Toyota GR86 Mountain Run POV - Full exhuast sounds and cinematic [[]ve9CSQ0d1xw].webm

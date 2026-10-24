@@ -6,6 +6,11 @@ retain full clips and unannotated operating states. They supplement the Freesoun
 collection; the simulator still generates its own audio from the physics.
 Source audio is kept local in ignored renders/.
 
+**2026-10-24 update:** [Three supplied videos](video-sound-references-2026-10-24.md)
+add14selected stereo entries. There are now nine user-supplied recordings and
+32user reference entries; the v2 protocol additionally includes the two separate
+public preview sources. The original MP3 processing history below is preserved.
+
 ## What the references represent
 
 | Recording | Preset relationship | Use and limits |
@@ -15,7 +20,10 @@ Source audio is kept local in ignored renders/.
 | BMW M4 Akrapovic, 620 HP | i6 | Turbo inline-six texture; current I6 is naturally aspirated, so do not match its muffling or boost behavior yet |
 | Golf 7 GTI, straight-piped | i4 | Turbo inline-four texture; current I4 is naturally aspirated |
 
-There is no supplied boxer reference. The exact M4 generation, turbo setup,
+The 2026-10-24 [video intake](video-sound-references-2026-10-24.md) adds two
+GR86 FA24 boxer cabin sources and a naturally aspirated E46 M3 I6 source.
+They supplement the six MP3s described here; the GR86 is not the FB20 preset.
+For the original four recordings, the exact M4 generation, turbo setup,
 microphone placement and recording processing are unverified. Titles establish
 neither a calibrated RPM trace nor the microphone position. Manufacturer context:
 [Ferrari 458](https://www.ferrari.com/en-PA/history/garage/2009/458-italia),
@@ -311,3 +319,22 @@ recordings and all17 previously used Freesound sources are development data.
 The new GM-I6 session is reserved validation; the sparse Subaru candidate stays
 quarantined. Neither provides calibrated SPL or a measured RPM/load trace.
 Four common-gain/equal-RMS development controls are in the same RESULTS page.
+
+
+## 2026-10-24 supplied-video update
+
+[Three reviewed videos](video-sound-references-2026-10-24.md) add14selected
+stereo excerpts:8GR86 cabin passages and6E46 exterior passages. Workshop
+presentation, car washing and intro/cinematic material are excluded from the
+selected excerpts. E46 stationary open/closed captions, roadside pass-bys and
+near-tailpipe camera views are separate source classes. Microphone placement
+is not inferred from the camera. Dialogue screening is not a pure engine stem.
+
+The authoritative [v2 source lock](../tools/reference_sessions_v2.json) retains
+all prior assignments and reserves the new videos for development reference.
+Unfiltered stereo float measurements live in `renders/reference-protocol-v2/`;
+three source compilations and viewpoint images join the same RESULTS page.
+The GR86 ASC setting, exact RPM/load and calibrated microphone data remain
+unknown. These references are useful now for texture/dynamics/cabin observations;
+Stage039's matched calibration remains open. No simulator tuning or041 work
+is part of this intake.

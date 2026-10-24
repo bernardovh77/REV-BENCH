@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-23. **One sequence: Stages 001–113.** This file is the only
+Updated 2026-10-24. **One sequence: Stages 001–113.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -33,8 +33,12 @@ Stage038 was reviewed before039; [039's protocol](docs/stage-039.md) was
 reviewed before040 completion. **039 still awaits matched reference data**:
 source/session partitions, stereo measurements and gain controls are implemented,
 but RPM/load/exhaust/microphone calibration is not invented. Bernardo requests
-public YouTube/Instagram/owner/manufacturer research first; the candidate ledger
-records the present leads and missing details.
+public-source research and has now supplied three GR86/E46 videos. The
+[video reference intake](docs/video-sound-references-2026-10-24.md) adds reviewed
+cabin/exterior excerpts with explicit hardware/ASC/microphone uncertainty.
+The GR86 FA24 is related to our FB20; the E46 provides a closer NA I6 source.
+These are development references; exact RPM/load and microphone calibration
+remain missing. The candidate ledger and source locks retain those limits.
 
 [Stage040](docs/stage-040.md) separates commanded/permitted discharge,
 nonnegative kernel development and bulk heat. Independent controls show zero
@@ -44,8 +48,8 @@ fix does not establish a calibrated kernel law or solve propagation realism.
 The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
 one-page examples are a new listening checkpoint, not pre-accepted sound.
 
-**HOLD for Bernardo after saving/syncing this040 checkpoint.** No041 work has
-started. Next default numerical stage is041 after review040;039 public reference
+**Stage040 remains the engine checkpoint; reference intake is authorized.**
+Hold after saving/syncing the three-video intake. No041 work has started. Next default numerical stage is041 after review040;039 public reference
 acquisition remains independent and open.042/043/044 are Ready by dependencies,
 not authorization to skip the agreed order or begin them now.
 
