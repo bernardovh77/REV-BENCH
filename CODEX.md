@@ -4,12 +4,63 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage040 causal ignition checkpoint — HOLD
+
+- Authorized through040 only, reviewing each predecessor.038 reviewed before039;
+  qualified039 protocol reviewed before040 completion.040 is complete within its
+  declared causal/accounting scope;039 matched calibration remains awaiting
+  data. User has no new recordings currently and requests public online research
+  first. No reference question remains pending; do not fabricate missing metadata.
+- core/src/ignition.[ch] and engine.c/h separate permitted command/discharge,
+  nonnegative kernel delay/age and bulk heat. Native optional256record tap uses
+  engine-owned tick+fraction and cylinder-local IVC charge ID; raw/accepted delay,
+  suppression/no-reactants/EVO pending/partial outcomes are explicit. No callback
+  allocation/I/O. Public event/build-generation/concurrent transport stays061.
+- Independent held3000rpm/.6/variation1/.5s oracle: all5engines0J pre-command
+  heat versus154–356J before.25short startup/idle/cut-resume/overrun/retained-fuel
+  scenarios close mass/species/fuel/energy/crank-work books. No early heat,
+  invalid event or dropped record. Six compiled faults caught, including genuine
+  IVC chemical heat without discharge; repeatable tools/bugs/stage040.py.
+- Delay is the nonnegative projection of the old onset surrogate, NOT a fitted
+  kernel law. No empirical extinction/late chemistry/afterfire model is claimed.
+  State-conditioned kernel statistics, residual validity, continuous variation→0
+  mean model and mean CA50/ECU calibration remain041/059; injector clicks042.
+  fuel_kg semantics vary by event kind; see docs/stage-040.md. Reset/rebind/epoch
+  management remains caller-owned. No full warm map or real-time guarantee.
+- Native206/694027pass; strengthened4/655335rerun =>206distinct/694149checks.
+  ASan/UBSan19/655542plusfinal4/655335; final WASM13/655645,Python64,web17pass.
+  WASM169326bytes rebuilt. Final comment cleanup preserves exact native CLI
+  code section and WASM bytes; refreshed source fingerprint/web tests agree.
+- Full34raw float clips337.112s vs337.248s before;33engine clips change, tone
+  identical, all finite/headroom/limiter0. Held3000 RMS−.021…+.086dB; upper
+  band share−.051…+.160dB. Modest spectral effect, not crispness acceptance.
+  I4 early-coast rise2.99→4.55dB stays explicit for058; I6/cross/flat changes
+  are small. No gain compensation hides it; new listening acceptance pending.
+- One renders/RESULTS.html contains all current examples/long coasts plus
+  registered research/reference controls.52offline players, four jump controls,
+  eight plots and exclusive playback pass.104protected audio/reference/Claude
+  files and18non-current-engine embedded payloads preserved. Remove only
+  verified comparison duplicates after evidence; keep current raw originals.
+- docs/stage-040.md, source/build fingerprints, fault/scenario/raw-sound reports,
+  final browser/preservation/test logs: renders/evidence/stage-040/. Graphify
+  queried/refreshed2731nodes/7428edges/158communities (AST; known rb.h
+  parse warning). No subagents used.
+- Public candidate ledger tools/reference_candidates_v1.json includes FB20
+  factory-muffler YouTube, E46 Instagram, multichannel owner S54 and maker/installer
+  leads. Media not acquired/auditioned/fitted; RPM/mic/gain/rights gaps explicit.
+  Existing8session lock/20raw stereo excerpts remain unchanged, including new
+  validation/quarantine groups that are not tuning auditions.
+- Preserve untracked user .agents/ and skills-lock.json; Claude setup unchanged.
+  Commit/sync this checkpoint, then HOLD.041 is next default after review040;
+  no later stage started. S1/S1e/S2/S4/full13b realism/listening/runtime stay open.
+
 ## 2026-10-24:039 protocol checkpoint; authorized continuation through040
 
 - User: continue through040; review each predecessor before next completion.
   Reviewed038 optional taps/books/limits; no blocking regression.039 protocol
   implemented/qualified, but matched calibration remains unqualified and039
-  awaits targeted known NA I6/boxer data. Asked user asynchronously; do not
+  awaits targeted known NA I6/boxer data. User requests public online research
+  first, has no recordings currently; no question remains pending. Do not
   fabricate geometry/RPM/load or count historically used clips as held out.
 - docs/stage-039.md; tools/reference_sessions_v1.json freezes8sessions:
   6development,1new GM race-I6 validation,1uncertain Subaru quarantine. All17

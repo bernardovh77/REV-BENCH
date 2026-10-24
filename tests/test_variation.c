@@ -90,13 +90,14 @@ void test_variation_off_is_exact(void)
         CHECK(same);
     }
     e.variation = 1e9;                  /* and with a long burn, so its start */
-    e.desc.burn_duration = 170.0;       /* would move far: it stays within 90 */
-    int sane = 1;                       /* degrees of TDC, as the spark does  */
+    e.desc.burn_duration = 170.0;       /* large positive kernel delays allowed */
+    int sane = 1;                      /* electrical spark stays within90deg */
     for (int k = 0; k < 8; k++) {
         CHECK(cycles(&e, 1));
         for (int i = 0; i < 4; i++) {
-            const double a = fmod(720.0 - e.burn[i].start_angle + 360.0, 720.0) - 360.0;   /* before TDC */
-            sane &= isfinite(e.cyl[i].gas.p) && e.burn[i].duration <= 720.0 && fabs(a) <= 90.0;
+            const double a = fmod(720.0 - e.burn[i].spark_angle + 360.0, 720.0) - 360.0;
+            sane &= isfinite(e.cyl[i].gas.p) && e.burn[i].duration <= 720.0 && fabs(a) <= 90.0
+                && e.burn[i].kernel_delay_deg>=0 && e.burn[i].kernel_delay_deg<=151.2+1e-12;
         }
     }
     CHECK(sane);
@@ -600,6 +601,7 @@ void test_variation_partial_burn_residual(void)
          * already-generated start to the fixed spark to isolate residence
          * time as well as charge p/T/AFR and crank speed. */
         e.burn[0].start_angle = e.burn[0].spark_angle;
+        e.burn[0].kernel_delay_deg=0;
         start[case_no] = e.burn[0].start_angle;
         const double evo = rb_valve_opens(&e.desc.exhaust);
         int seen = 0;

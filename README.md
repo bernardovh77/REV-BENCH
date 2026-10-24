@@ -21,8 +21,8 @@ production engine to the acoustic graph. The browser is still the tone scaffold;
 product 3D, turbo, knock/damage and expanded layouts remain planned.
 
 The [review repairs](docs/roadmap/14-review-fixes.md) harden checkpoint
-publication and acoustic numerical failure handling. Accepted engine audio
-stays unchanged; broader sound-physics/integration gates remain open.
+publication and acoustic numerical failure handling. Those repairs preserved
+their accepted audio; broader sound-physics/integration gates remain open.
 
 The [shared versioned contracts](contracts/README.md) now have a
 [five-preset native proof](docs/stage-037.md), including stable identities and
@@ -35,8 +35,12 @@ match the accepted audio exactly; no sound tuning is part of this checkpoint.
 
 [Stage039](docs/stage-039.md) provides a locked reference ledger and stereo-safe
 comparison controls; matched calibration awaits better recording metadata.
-**Current: Stage040**, spark/heat causality, followed by causal
-source and propagation qualification before the playable browser and 3D.
+[Stage040](docs/stage-040.md) is complete within its causal/accounting scope.
+Development is held at this checkpoint. It separates actual spark discharge, nonnegative
+kernel development and bulk heat. Its independent controls remove pre-command
+heat in all five presets; complete sound and runtime checks qualify this checkpoint.
+The accepted exhausts/rev limits remain. Causal source/propagation qualification
+still precedes the playable browser and3D.
 The [stage protocol](docs/roadmap/README.md) separates experiment results,
 production integration, runtime and Bernardo's realism acceptance. Full release
 includes the original feature scope; learned synthesis and extras are conditional.

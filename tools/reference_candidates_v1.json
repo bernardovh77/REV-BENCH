@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "checked_date": "2026-10-24",
+  "scope": "Public online candidates; no automatic calibration or download/training rights inferred. No audio acquired from these videos.",
+  "candidates": [
+    {
+      "engine": "FB20 NA boxer4, stock muffler (owner claim)",
+      "video_url": "https://www.youtube.com/watch?v=CEjUwubjXPQ",
+      "context_url": "https://minkara.carview.co.jp/userid/956048/car/1531576/6544040/parts.aspx",
+      "known": "Owner explicitly identifies FB20 and factory muffler; descriptive1500–2500rpm discussion",
+      "unknown": [
+        "synchronized RPM/load trace",
+        "microphone distance/directivity/gain",
+        "recording processing",
+        "permission to redistribute"
+      ],
+      "status": "qualitative-candidate"
+    },
+    {
+      "engine": "E46 M3 NA I6, aftermarket replica rear exhaust (owner claim)",
+      "video_url": "https://www.instagram.com/p/CJ4AAgUJ4ez/",
+      "context_url": "https://forums.m3cutters.co.uk/threads/rep-supersprint-exhaust-ltw-race.232254/page-4",
+      "known": "Owner links their Instagram test and states revs to5000rpm",
+      "unknown": [
+        "synchronized RPM/load",
+        "full exhaust geometry",
+        "microphone position/distance",
+        "redistribution rights"
+      ],
+      "status": "qualitative-candidate"
+    },
+    {
+      "engine": "FA20 NA boxer4, not FB20",
+      "video_url": null,
+      "context_url": "https://www.supersprint.com/en-ww/toyota-gt86--subaru-brz-20i-200-hp-2012--dyno-testing-stock-vs-full-exhaust-system.aspx",
+      "known": "Exhaust maker publishes stock/full-system dyno comparison",
+      "unknown": [
+        "original audio access",
+        "microphone geometry",
+        "time-aligned load/RPM/audio",
+        "exact relationship to FB20 preset"
+      ],
+      "status": "manufacturer-lead",
+      "access_note": "Exact video URL returned404 on repeat direct check but remains search-indexed; manufacturer catalog lists full-system and overpipe-back video comparisons/components. Video and microphone metadata still unverified.",
+      "alternate_context_url": "https://www.supersprint.com/en-gb/supersprint-performance-sport-exhaust-for-toyota-gt86.aspx"
+    },
+    {
+      "engine": "BMW E46 323Ci NA I6, different from S54",
+      "video_url": "https://vimeo.com/217965748",
+      "context_url": "https://vimeo.com/217965748",
+      "known": "Installer identifies323Ci, Schmiedmann headers and Supersprint silencer",
+      "unknown": [
+        "RPM/load trace",
+        "mic geometry/gain",
+        "complete system dimensions",
+        "redistribution rights"
+      ],
+      "status": "installer-primary-lead"
+    },
+    {
+      "engine": "E46 M3 S54 NA I6 (owner claim)",
+      "video_url": "https://soundcloud.com/han-sooloo/e46-m3-s54-engine-sound",
+      "context_url": "https://nam3forum.com/forums/forum/main-forum/e46-2001-2006/161428-s54-engine-sound-recording-with-video",
+      "known": "Owner describes three-mic Zoom F6 recording: SM11 at dipstick toward airbox, SM57 toward engine, another SM11 at exhaust. Says levels were changed and not remembered; later video includes dashboard camera.",
+      "unknown": [
+        "exhaust configuration at the exact recording date (current forum signature is not proof)",
+        "mic distance and channel gains/weights, which owner explicitly did not retain",
+        "time-aligned original audio/RPM/load and dashboard-video access",
+        "redistribution/training rights"
+      ],
+      "status": "owner-primary-lead-needs-channel-gains"
+    }
+  ],
+  "access_notes": "Checked descriptions/owner posts; embedded media not acquired or auditioned. Some direct pages returned403/cache miss; search-indexed primary owner posts supplied descriptions. Public availability is not permission to redistribute/train."
+}

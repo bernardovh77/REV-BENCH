@@ -28,17 +28,26 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current execution: through Stage040, explicitly authorized by Bernardo.**
-Stage038 was reviewed with no blocking regression in its declared scope.
-[Stage039's protocol](docs/stage-039.md) now locks source/session partitions,
-provides stereo-safe measurements and two audition gain policies, and records
-new I6/uncertain-boxer references. **039 awaits matched reference data** for
-calibration; unknown RPM/load/exhaust/microphone data is not waived.
+**Checkpoint: Stage040 complete within its declared causal/accounting scope.**
+Stage038 was reviewed before039; [039's protocol](docs/stage-039.md) was
+reviewed before040 completion. **039 still awaits matched reference data**:
+source/session partitions, stereo measurements and gain controls are implemented,
+but RPM/load/exhaust/microphone calibration is not invented. Bernardo requests
+public YouTube/Instagram/owner/manufacturer research first; the candidate ledger
+records the present leads and missing details.
 
-[Stage040](docs/stage-040.md) proceeds independently after review of039's
-qualified protocol: commanded spark, actual discharge, kernel development and
-heat causality. Its prerequisite038 is complete; missing039 data blocks matching
-claims rather than unrelated numerical fixtures. Stop at the040 checkpoint.
+[Stage040](docs/stage-040.md) separates commanded/permitted discharge,
+nonnegative kernel development and bulk heat. Independent controls show zero
+pre-command heat across all five engines; mass/species/energy/work, deliberate
+faults, native/WASM, complete34clip sound and offline page checks pass. This
+fix does not establish a calibrated kernel law or solve propagation realism.
+The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
+one-page examples are a new listening checkpoint, not pre-accepted sound.
+
+**HOLD for Bernardo after saving/syncing this040 checkpoint.** No041 work has
+started. Next default numerical stage is041 after review040;039 public reference
+acquisition remains independent and open.042/043/044 are Ready by dependencies,
+not authorization to skip the agreed order or begin them now.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -50,7 +59,9 @@ a production-engine-to-B0 adapter. No trained runtime sound model exists.
 Accepted sound selection stays: **I6 8500 rpm with its earlier twin exhaust;
 flat V8 9000 rpm with its earlier exhaust; cross V8 7500 rpm with the sharper
 rear-delete X.** These research limits are not durability certifications.
-Preserve the accepted audio, original references, `CLAUDE.md` and `.claude/`.
+Preserve the accepted engine/exhaust selections, original references, `CLAUDE.md`
+and `.claude/`. Physical fixes regenerate the complete checkpoint with comparison
+evidence; each new sound checkpoint still needs listening acceptance.
 
 ## How to use the stages
 
@@ -174,9 +185,9 @@ historical rows are not a claim that all current audio goals have passed.
 | [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
 | [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
-| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | In progress | 038 |
-| [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Not started | 040, 038 |
-| [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Not started | 040, 038 |
+| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Complete (bounded) | 038 |
+| [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Ready | 040, 038 |
+| [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Ready | 040, 038 |
 
 ### 4. Propagation prototypes and physical components
 

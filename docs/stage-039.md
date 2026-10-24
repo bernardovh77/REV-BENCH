@@ -151,10 +151,43 @@ The reference acquisition/uncertainty ledger, locked session partition and
 measurement/audition protocol are implemented. **Matched calibration remains
 unqualified:** no known exhaust/RPM/load/microphone calibration set was supplied
 or acquired. Stage039 stays awaiting matched references; its missing data is not
-silently waived. Bernardo has been asked for the targeted NA I6/boxer examples.
+silently waived. Bernardo authorizes public-source research first and has no additional recordings
+currently. The [public candidate ledger](../tools/reference_candidates_v1.json)
+records YouTube/Instagram/owner/manufacturer leads, not qualified calibration data.
+No request to supply recordings remains pending.
 
 Review this protocol before040 completion. In particular: no retroactive held-out
 claims, no Subaru-model inference from its title, no comparison using filtered
 or waveform-averaged targets, and no use of the new validation session to retune
 the engine. The roadmap explicitly allows independent numerical fixtures to
 continue while decisive calibration data is missing;040 depends on038, not039.
+
+## Public-source follow-up and review before040
+
+The owner’s [FB20/factory-muffler post](https://minkara.carview.co.jp/userid/956048/car/1531576/6544040/parts.aspx)
+links [YouTube](https://www.youtube.com/watch?v=CEjUwubjXPQ), but has descriptive
+RPM observations rather than synchronized telemetry or microphone dimensions.
+An E46 owner’s [replica-exhaust thread](https://forums.m3cutters.co.uk/threads/rep-supersprint-exhaust-ltw-race.232254/page-4)
+links [Instagram](https://www.instagram.com/p/CJ4AAgUJ4ez/); a stated maximum rev
+does not resolve load or microphone transfer. These remain qualitative leads.
+
+The [S54 recorder’s primary post](https://nam3forum.com/forums/forum/main-forum/e46-2001-2006/161428-s54-engine-sound-recording-with-video)
+provides a stronger acquisition lead: two SM11s and an SM57 into a Zoom F6,
+with intake/engine/exhaust placements described. The author says channel levels
+were changed and not remembered. A later dashboard-video announcement and a
+current exhaust signature do not establish time-aligned RPM, original channel
+gains or the exhaust fitted at recording time. The linked SoundCloud mix cannot
+be treated as an isolated calibrated tailpipe. No media from these candidates
+was downloaded, auditioned, redistributed or used for tuning/training. Rights
+remain unknown. A manufacturer video link returned404 on direct repeat verification; its
+[catalog](https://www.supersprint.com/en-gb/supersprint-performance-sport-exhaust-for-toyota-gt86.aspx)
+still lists component-specific stock/full-system comparisons. These FA20
+examples are a separate boxer architecture, not verified FB20 calibration.
+
+Pre040 review: six protocol tests and five behavior faults support the locked
+partition, stereo-power and safe-gain rules. Full preparation/rebuild preserves
+all earlier recordings. No blocking protocol defect found; calibration remains
+open for source metadata and rights. Continue039 on public sources when new
+leads provide the missing information; ask Bernardo later only if it becomes
+necessary. Independent040 never fits against these candidates or the untouched
+new validation/quarantine excerpts.

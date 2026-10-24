@@ -152,7 +152,7 @@ typedef struct rb_engine_desc {
     int outlet_radiation;                 /* 1: causal unflanged radiation load */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
-    double burn_duration;                 /* crank degrees from the spark to the end,
+    double burn_duration;                 /* bulk-release crank degrees after kernel development,
                                            * at 3000 rpm with a wide-open charge; it
                                            * changes with speed and the charge (stage 9,
                                            * see burn_duration() in engine.c)          */
@@ -227,7 +227,7 @@ typedef struct rb_engine_cycle {
     double angle_p_max;               /* degrees after firing TDC where it happens (mean)     */
     double residual;                  /* burned-gas share of the trapped charge (mean)        */
     double spark;                     /* spark advance, degrees before TDC (mean)             */
-    double burn_duration;             /* crank degrees from spark to end of burn (mean)       */
+    double burn_duration;             /* planned bulk-release duration, mean crank degrees    */
     double rpm;                       /* mean crank speed over the cycle                      */
     double fmep;                      /* Pa: friction mean effective pressure                 */
     double bmep;                      /* Pa: brake mean effective pressure, imep_net - fmep   */
@@ -237,22 +237,25 @@ typedef struct rb_engine_cycle {
 
 /* One cylinder's combustion bookkeeping. */
 typedef struct rb_burn {
+    uint64_t charge_sequence;
+    double kernel_raw_delay_deg, kernel_delay_deg, kernel_clock;
+    double discharge_fraction;   /* fraction of the current step before discharge */
+    int discharged, discharged_this_step, kernel_pending, kernel_started;
     double p_ivc, V_ivc, T_ivc;   /* trapped charge at intake valve closing, fuel and all
                                      (Woschni's reference)                               */
     double residual;              /* its burned-gas mass fraction                        */
     double phi_ivc;               /* trapped fuel/air equivalence ratio, after injection;
                                      0 without both reactants or for an invalid ratio   */
     double spark_angle;           /* cycle angle of this cycle's spark (set at IVC)      */
-    double start_angle;           /* ... and of its burn's start: the spark, give or take
-                                     this cycle's flame (stage 12c; set at IVC)          */
+    double start_angle;           /* planned kernel completion, at/after actual spark */
     double demand_duration;       /* uncapped charge model, bounded to one cycle (S1b)   */
     double duration;              /* this cycle's burn: crank degrees from its start to
                                      the end (set at IVC)                                */
-    int    spark_due;             /* 1 from intake valve closing until the burn starts   */
+    int    spark_due;             /* 1 from IVC until the electrical attempt or EVO       */
     double burnable;              /* kg of fuel set to burn at the spark                 */
     double fraction;              /* burned fraction so far, 0..1                        */
-    double burn_angle;            /* the burn's clock: crank degrees since the spark     */
-    int    burning;               /* 1 from the spark until the burn ends                */
+    double burn_angle;            /* effective burn degrees since kernel completion      */
+    int    burning;               /* 1 from kernel completion until the bulk burn ends   */
     int    after_spark;           /* 1 from the spark to exhaust valve opening           */
     double heat, wall_heat;       /* J released by burning / added by the walls, last step */
     double p_max, angle_p_max;    /* highest pressure since overlap TDC, and where       */
@@ -266,6 +269,8 @@ typedef struct rb_burn {
  * stay where rb_engine_init put it: don't copy it (init another one instead). */
 typedef struct rb_engine {
     struct rb_diagnostics *diag;
+    struct rb_ignition_trace *ignition_trace;
+    uint64_t physics_tick;        /* engine-owned [tick,tick+1) step interval */
     rb_engine_desc desc;
     double dt;              /* s, physics step                                         */
     int    hold_speed;      /* 1: a motor or dyno holds the crank at rpm (the default);

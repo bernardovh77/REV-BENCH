@@ -8,7 +8,11 @@ The later [completed-stage review](../review-completed-stages-2026-10-23.md)
 also records C07 (prototype derived-state/energy guards; owners 037/038/045)
 and C08 (interrupted results-fragment write; bounded publication follow-up
 needed before the next affected checkpoint). Those are additional findings,
-not replacements for D01–D09/R01–R18. Development is held for instruction.
+not replacements for D01–D09/R01–R18. The bounded repairs are recorded in
+[112](../stage-112.md)/[113](../stage-113.md). [040](../stage-040.md) supplies the
+native spark/kernel/heat correction and independent D01 controls;057/059 still
+own affected integration and operating-envelope cross-checks. R03's uncalibrated
+kernel/extinction and late-chemistry limits remain explicit and open through041.
 
 | Finding | Issue | Primary owner | Required cross-checks | Evidence needed for closure |
 | --- | --- | --- | --- | --- |

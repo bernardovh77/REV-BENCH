@@ -8,6 +8,7 @@
 #include "heat.h"
 #include "rand.h"
 #include "diagnostics.h"
+#include "ignition.h"
 #include "rb.h"   /* RB_MUFFLER_* */
 
 #include <math.h>
@@ -399,9 +400,11 @@ static int system_of(const rb_engine *e, int c)
  * by: the cylinders' work varies by 1-3 % of the mean (the COV of IMEP) wide
  * open, and 4-8 % idling, where the spark is held back from its best and the
  * work changes faster with the burn's timing. So each cycle, at intake valve
- * closing, the burn's start moves from the spark by VARY_START of the burn's
- * length, and its length changes by VARY_LENGTH, both times `variation`, from
- * two normal numbers VARY_ALIKE alike. The engine computer times the spark
+ * closing, the kernel delay uses the nonnegative arm of VARY_START times the
+ * expected burn length; bulk duration varies by VARY_LENGTH. Both scale with
+ * `variation`; the two normal numbers are VARY_ALIKE alike. This
+ * causal surrogate is not a fitted physical delay law (Stage040/041).
+ * The engine computer times the spark
  * for the burn it expects, not this one.
  * The cylinders also differ a little, for good: the injectors and the ports'
  * air give each its own mixture (CYL_FUEL) and swirl, so its own burn length
@@ -735,6 +738,20 @@ static double cycle_angle(double a)   /* any angle into 0..720 */
     return a < 0.0 ? a + 720.0 : a;
 }
 
+static double event_fraction(double angle,double step,double event)
+{
+    return cycle_angle(event-angle)/step;
+}
+
+static void ignition_event(rb_engine *e,int i,int kind,double fraction,double angle,double fuel)
+{
+    if(!e->ignition_trace) return;
+    const rb_burn *b=&e->burn[i];
+    const rb_ignition_event event={e->physics_tick,b->charge_sequence,i,kind,
+        fraction,angle,b->kernel_raw_delay_deg,b->kernel_delay_deg,fuel};
+    rb_ignition_emit(e->ignition_trace,&event);
+}
+
 /* Degrees after firing TDC, -360..360 (negative = before). */
 static double after_firing_tdc(double angle)
 {
@@ -974,6 +991,9 @@ static void close_intake(rb_engine *e, int i)
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     const double v = variation(e);
+    b->charge_sequence++;
+    b->discharged=b->discharged_this_step=b->kernel_pending=b->kernel_started=0;
+    b->kernel_clock=0;
     const double fuel = (e->ignition && e->afr > 0.0 && !e->fuel_cut)
                       ? g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i]) - g->m[RB_FUEL]
                       : 0.0;
@@ -1008,7 +1028,13 @@ static void close_intake(rb_engine *e, int i)
     if (!(duration >= 0.25 * base)) duration = 0.25 * base;
     const double ceiling = (v > 0.0) ? 720.0 : 180.0;
     b->duration = (duration < ceiling) ? duration : ceiling;
-    b->start_angle = cycle_angle(720.0 - spark_advance(advance - v * VARY_START * expected * start));
+    /* Keep the pre-existing positive development-delay arm. Its negative
+     * arm was unphysical pre-spark ignition. This causal projection is not
+     * a calibrated kernel-delay distribution (Stage041). */
+    const double delay=v * VARY_START * expected * start;
+    b->kernel_raw_delay_deg=delay;
+    b->kernel_delay_deg=delay>0 ? delay:0;
+    b->start_angle=cycle_angle(b->spark_angle+b->kernel_delay_deg);
     b->spark_due = 1;
 }
 
@@ -1033,21 +1059,30 @@ static int soft_cut(rb_engine *e)
 
 /* The spark: what can burn is the fuel, or as much of it as the air can burn,
  * times the combustion efficiency. */
-static void spark(rb_engine *e, int i)
+static void spark(rb_engine *e, int i,double fraction,double angle)
 {
     const rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     b->burning = 0;
-    if (!e->ignition) return;
-    if (e->spark_cut || soft_cut(e)) {   /* the rev limiter cuts the spark */
+    b->kernel_pending=b->kernel_started=b->discharged=b->after_spark=0;
+    if (!e->ignition) {
+        ignition_event(e,i,RB_IGN_OFF,fraction,angle,g->m[RB_FUEL]);return;
+    }
+    const int cut=e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT:-1);
+    if (cut>=0) {   /* suppression is not an actual discharge */
         e->limiter_cuts++;
+        ignition_event(e,i,cut,fraction,angle,g->m[RB_FUEL]);
         return;
     }
+    ignition_event(e,i,RB_IGN_COMMAND,fraction,angle,g->m[RB_FUEL]);
+    ignition_event(e,i,RB_IGN_DISCHARGE,fraction,angle,g->m[RB_FUEL]);
+    b->discharged=b->discharged_this_step=b->after_spark=1;
+    b->discharge_fraction=fraction;b->kernel_clock=0;
     b->burnable = rb_burnable_fuel(g->m[RB_FUEL], g->m[RB_AIR], e->desc.mixture_spread,
                                    e->desc.combustion_efficiency);
     b->fraction = 0.0;
-    b->burning = (b->burnable > 0.0);
-    b->after_spark = b->burning;
+    b->kernel_pending = (b->burnable > 0.0);
+    if(!b->kernel_pending) ignition_event(e,i,RB_IGN_NO_REACTANTS,fraction,angle,0);
     b->burn_angle = 0.0;
 }
 
@@ -1059,9 +1094,19 @@ static void burn_step(rb_engine *e, int i, double angle, double step, double q_f
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     const rb_engine_desc *d = &e->desc;
+    if(!b->discharged) return; /* chemical heat requires an actual discharge */
     const double pace = 6.0 * RB_GAS_PACE_RPM * e->dt;   /* degrees per step */
-    if (b->burn_angle == 0.0) b->burn_angle = cycle_angle(angle + step - b->start_angle);
-    else b->burn_angle += (step > pace) ? step : pace;
+    const double advance=(step>pace)?step:pace;
+    const double first=b->discharged_this_step ? b->discharge_fraction:0;
+    const double previous=b->kernel_clock;
+    b->kernel_clock+=advance*(1-first);
+    if(b->kernel_pending) {
+        if(b->kernel_clock<b->kernel_delay_deg) return;
+        const double fraction=first+(b->kernel_delay_deg-previous)/advance;
+        ignition_event(e,i,RB_IGN_KERNEL,fraction,cycle_angle(angle+step*fraction),b->burnable);
+        b->kernel_pending=0;b->kernel_started=b->burning=1;
+    }
+    b->burn_angle=b->kernel_clock-b->kernel_delay_deg;
     const double x = rb_wiebe(b->burn_angle, b->duration, d->wiebe_a, d->wiebe_m);
     double fuel = (x - b->fraction) * b->burnable;
     b->fraction = x;
@@ -1354,6 +1399,7 @@ void rb_engine_step(rb_engine *e)
         const double angle = rb_engine_cylinder_angle(e, i);
         rb_burn *b = &e->burn[i];
         b->heat = b->wall_heat = 0.0;
+        b->discharged_this_step=0;
         if (passes(angle, step_deg, 360.0)) {   /* overlap TDC: the last cycle's peak is known */
             b->last_p_max = b->p_max;
             b->last_angle_p_max = b->angle_p_max;
@@ -1361,15 +1407,23 @@ void rb_engine_step(rb_engine *e)
             b->last_work = b->work;
             b->work = 0.0;
         }
-        if (passes(angle, step_deg, ivc)) close_intake(e, i);
-        if (b->spark_due && passes(angle, step_deg, b->start_angle)) {
+        if (passes(angle, step_deg, ivc)) {
+            close_intake(e, i);
+            ignition_event(e,i,RB_IGN_SCHEDULED,event_fraction(angle,step_deg,ivc),ivc,0);
+        }
+        if (b->spark_due && passes(angle, step_deg, b->spark_angle)) {
             b->spark_due = 0;
-            spark(e, i);
+            const double fraction=event_fraction(angle,step_deg,b->spark_angle);
+            spark(e,i,fraction,cycle_angle(angle+step_deg*fraction));
         }
         if (passes(angle, step_deg, evo)) {
+            if(b->kernel_pending || b->burning)
+                ignition_event(e,i,b->kernel_pending ? RB_IGN_EVO_PENDING:RB_IGN_EVO_PARTIAL,
+                    event_fraction(angle,step_deg,evo),evo,b->burnable*(1-b->fraction));
             b->spark_due = 0;
             b->after_spark = 0;
             b->burning = 0;        /* whatever hasn't burned by now leaves unburned */
+            b->kernel_pending=0;
         }
     }
 
@@ -1426,7 +1480,7 @@ void rb_engine_step(rb_engine *e)
         }
 
         if (d->heat_transfer && g->mass > 0.0) {
-            const double w = rb_woschni_w(piston_speed, (int)open[i], b->after_spark,
+            const double w = rb_woschni_w(piston_speed, (int)open[i], b->after_spark && b->kernel_started,
                                           e->cyl[i].geom.v_disp, g->p, b->p_ivc, b->V_ivc,
                                           b->T_ivc, g->V);
             const double h = rb_woschni_h(d->bore, g->p, g->T, w);
@@ -1437,7 +1491,7 @@ void rb_engine_step(rb_engine *e)
             e->wall_heat += b->wall_heat;
             share.wall += b->wall_heat;
         }
-        if (b->burning) {
+        if (b->burning || b->kernel_pending) {
             burn_step(e, i, rb_engine_cylinder_angle(e, i), step_deg, q_fuel);
             share.heat += b->heat;
         }
@@ -1530,6 +1584,7 @@ void rb_engine_step(rb_engine *e)
         add_share(e, &share, 1.0 - f, n);
         e->theta = theta - 720.0;
     }
+    e->physics_tick++;
 }
 
 int rb_engine_settle(rb_engine *e, int max_cycles, double tol)

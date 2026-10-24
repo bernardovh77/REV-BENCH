@@ -67,6 +67,10 @@ void test_radiation_pipe_work(void);
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
 void test_diagnostic_orifice_thermal_and_radiation(void);
+void test_ignition_causal_clock_and_heat(void);
+void test_ignition_suppression_and_resume(void);
+void test_ignition_pending_kernel_expires_at_evo(void);
+void test_ignition_tap_capacity_and_transparency(void);
 void test_diagnostic_caps_and_reversal(void);
 void test_diagnostic_vacuum_geometry_and_sonic(void);
 void test_diagnostic_junction_repair_and_fuzz(void);
@@ -286,6 +290,10 @@ static const struct {
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),
+    T(test_ignition_causal_clock_and_heat),
+    T(test_ignition_suppression_and_resume),
+    T(test_ignition_pending_kernel_expires_at_evo),
+    T(test_ignition_tap_capacity_and_transparency),
     T(test_diagnostic_caps_and_reversal),
     T(test_diagnostic_vacuum_geometry_and_sonic),
     T(test_diagnostic_junction_repair_and_fuzz),

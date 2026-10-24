@@ -21,6 +21,12 @@ The physical discharge event, distinct from the engine controller's commanded
 spark timing and from subsequent flame development or heat release.
 _Avoid_: ignition when that would conflate the command, discharge and flame
 
+**Kernel development**:
+The interval after actual spark discharge before the modeled bulk flame release.
+The current Stage040 engine gives it a nonnegative development clock; its delay
+surrogate is not an experimentally fitted extinction or misfire law.
+_Avoid_: spark jitter when referring to post-discharge flame development
+
 **Acoustic propagation**:
 The travel, reflection, interference and attenuation of sound through an engine
 system and its surroundings.
