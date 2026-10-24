@@ -124,6 +124,8 @@ typedef struct rb_noise {
     double   recip_mass;                     /* kg: a piston, pin and rod's top  */
     double   mount_hp_a, mount_lp_a;         /* the mounts' filters ...          */
     double   mount_hp, mount_lp;             /* ... and their states             */
+    uint64_t injection_tick;                 /* last completed engine step consumed */
+    double injected_fuel_kg;                 /* positive source doses heard, diagnostic */
 
     /* this physics step: Pa at 1 m from each placed source, and the mounts' */
     double   out[RB_NOISE_OUTPUTS];
@@ -141,7 +143,9 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed);
 
 /* One physics step, after rb_engine_step: the flow's noise and/or the
  * engine's (RB_NOISE_FLOW | RB_NOISE_ENGINE) into n->out; what isn't asked
- * for is 0. */
+ * for is 0. Consume the newest completed step once; disabled engine noise
+ * drops its injector excitation. Call every engine step: skipped steps are
+ * not queued. Reinitialize noise after rebuilding/resetting the engine. */
 void rb_noise_step(rb_noise *n, const rb_engine *e, int what);
 
 #endif /* RB_NOISE_H */

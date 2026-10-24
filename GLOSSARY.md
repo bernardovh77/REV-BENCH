@@ -150,3 +150,18 @@ _Avoid_: mesh when referring to logical component connectivity
   after rebuild/reset. A bounded trace can drop records while aggregates persist.
 
 See [Stage038](docs/stage-038.md) for coverage, cost and limitations.
+
+## Delivered-fuel event
+
+The engine-owned record of an actual positive fuel mass and its sensible-energy
+addition, with cylinder, charge, tick and substep time. The current IVC charge
+fueling is a collapsed surrogate, not a resolved PFI/GDI needle schedule.
+Only its delivered events excite the modeled injector source. Skipped fueling
+(retained fuel sufficient, disabled request or DFCO) creates no new excitation;
+existing acoustic ringing may continue.
+
+## Fueling attempt
+
+One decision at intake closing, recording actual delivery or an explicit skip
+reason. It distinguishes fuel already in the cylinder from new injected fuel.
+A spark suppression event is a separate decision and can occur after a real dose.

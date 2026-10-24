@@ -121,4 +121,4 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/sound-physics-audit-2026-10-22.md](../../docs/sound-physics-audit-2026-10-22.md).
 
-**Execution record:** for new work, `docs/stage-042.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage 042](../stage-042.md): actual delivered-dose authority, explicit skip reasons, bounded source/trace separation and once-per-step mechanical consumption. Independent clocks/books, 105 seeded scenarios, retained/disabled/replay controls, eight compiled faults, native/WASM and full sound/page checks pass. Instantaneous IVC fueling and generic needle/modal amplitude remain uncalibrated; this is not a resolved real PFI/GDI schedule.

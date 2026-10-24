@@ -151,6 +151,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     n->detail_state = n->state ^ 0x52324149524ULL;
     if (!n->detail_state) n->detail_state = 1;
     n->dt = e->dt;
+    n->injection_tick=e->physics_tick; /* no replay when attached after delivery */
 
     /* The flow. The tailpipes' jets; the exhaust valves' noise, each
      * cylinder's on its way to its system's tailpipe; the throttle's. */
@@ -346,7 +347,16 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
     const double evo = rb_valve_opens(&d->exhaust), evc = rb_valve_closes(&d->exhaust);
     const double seat_in = K_VALVE * rpm / 1000.0 * sqrt((double)d->intake.count);
     const double seat_ex = K_VALVE * rpm / 1000.0 * sqrt((double)d->exhaust.count);
-    const int injecting = e->ignition && !e->fuel_cut;
+    /* Consume actual doses, independently of the optional trace's capacity.
+     * Existing modal sampling places onset at the interval's end, never early. */
+    if (n->injection_tick!=e->physics_tick) for (int j=0;j<e->injection_count;j++) {
+        const rb_injection_event *event=&e->injection[j];
+        if (event->tick+1==e->physics_tick && event->kind==RB_INJ_DELIVERED
+            && event->fuel_kg>0.0 && isfinite(event->fuel_kg)) {
+            impact(n,in,BY_INJECTOR,RB_IMPACT_INJECTOR,K_INJECTOR);
+            n->injected_fuel_kg+=event->fuel_kg;
+        }
+    }
     for (int i = 0; i < d->cylinders; i++) {
         const double from = n->angle[i], angle = rb_engine_cylinder_angle(e, i);
         double step = angle - from;
@@ -361,14 +371,12 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
             impact(n, in, BY_SLAP, RB_IMPACT_SLAP, K_SLAP * fabs(gas - inertia * (1.0 + lambda)));
         if (passes(from, step, 180.0) || passes(from, step, 540.0))
             impact(n, in, BY_SLAP, RB_IMPACT_SLAP, K_SLAP * fabs(gas + inertia * (1.0 - lambda)));
-        /* The valves: seating, and lifting off at a third of that; an
-         * injection as the intake valves open. */
+        /* The valves: seating, and lifting off at a third of that. */
         if (passes(from, step, ivc)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_in);
         if (passes(from, step, evc)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_ex);
         if (passes(from, step, evo)) impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_ex / 3.0);
         if (passes(from, step, ivo)) {
             impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_in / 3.0);
-            if (injecting) impact(n, in, BY_INJECTOR, RB_IMPACT_INJECTOR, K_INJECTOR);
         }
     }
 
@@ -398,6 +406,7 @@ void rb_noise_step(rb_noise *n, const rb_engine *e, int what)
     for (int k = 0; k < RB_NOISE_OUTPUTS; k++) n->out[k] = 0.0;
     if (what & RB_NOISE_FLOW) flow_noise(n, e);
     if (what & RB_NOISE_ENGINE) engine_noise(n, e);
+    n->injection_tick=e->physics_tick; /* discard disabled/stale source intervals */
 
     /* A broken state upstream mustn't stay in the filters: anything that
      * isn't a number now starts the noise over, quiet. */

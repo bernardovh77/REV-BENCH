@@ -969,7 +969,7 @@ static double computer_spark(const rb_engine *e, double duration, double kernel_
  * This cycle's burn length and spark timing are fixed here too, as an engine
  * computer would: a change of setting can't move a burn already under way,
  * or fire a cylinder twice. */
-static void close_intake(rb_engine *e, int i)
+static void close_intake(rb_engine *e, int i, double fraction)
 {
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
@@ -977,10 +977,19 @@ static void close_intake(rb_engine *e, int i)
     b->charge_sequence++;
     b->discharged=b->discharged_this_step=b->kernel_pending=b->kernel_started=0;
     b->kernel_clock=0;
-    const double fuel = (e->ignition && e->afr > 0.0 && !e->fuel_cut)
-                      ? g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i]) - g->m[RB_FUEL]
-                      : 0.0;
-    if (fuel > 0.0) {
+    const double retained=g->m[RB_FUEL];
+    const double target=(e->afr>0.0 && isfinite(e->afr))
+        ? g->m[RB_AIR]/e->afr*(1.0+v*CYL_FUEL*e->trim_fuel[i]) : 0.0;
+    int kind=RB_INJ_DELIVERED;
+    if (!e->ignition) kind=RB_INJ_OFF;
+    else if (!(e->afr>0.0 && isfinite(e->afr))) kind=RB_INJ_AFR_DISABLED;
+    else if (e->fuel_cut) kind=RB_INJ_DFCO;
+    else if (!(g->m[RB_AIR]>0.0)) kind=RB_INJ_NO_AIR;
+    if (!isfinite(target) || !isfinite(retained) || retained<0.0
+        || !isfinite(g->T) || !(g->T>0.0)) kind=RB_INJ_INVALID;
+    double fuel=kind==RB_INJ_DELIVERED ? target-retained : 0.0, energy=0.0;
+    if (kind==RB_INJ_DELIVERED && !(fuel>0.0)) kind=RB_INJ_RETAINED;
+    if (kind==RB_INJ_DELIVERED) {
         const double u_fuel = rb_gas_u(&e->fuel_gas, g->T);
         g->m[RB_FUEL] += fuel;
         g->U += fuel * u_fuel;
@@ -988,7 +997,15 @@ static void close_intake(rb_engine *e, int i)
         e->fuel_in += fuel;
         e->fuel_energy_in += fuel * u_fuel;
         e->acc_fuel += fuel;
+        energy=fuel*u_fuel;
     }
+    /* This transfer owns its source event. Skips carry zero delivery even
+     * when combustible fuel remains in the cylinder. */
+    const rb_injection_event event={e->physics_tick,b->charge_sequence,i,kind,
+        fraction,rb_valve_closes(&e->desc.intake),retained,target,
+        kind==RB_INJ_DELIVERED ? fuel:0.0,energy};
+    e->injection[e->injection_count++]=event;
+    rb_injection_emit(e->injection_trace,&event);
     b->p_ivc = g->p;
     b->V_ivc = g->V;
     b->T_ivc = g->T;
@@ -1356,6 +1373,7 @@ static void slow_step(rb_engine *e, step_share *share)
 
 void rb_engine_step(rb_engine *e)
 {
+    e->injection_count=0;
     if(e->diag) e->diag->tick++;
     const rb_engine_desc *d = &e->desc;
     const int n = d->cylinders;
@@ -1407,7 +1425,7 @@ void rb_engine_step(rb_engine *e)
             b->pumping_work=0.0;
         }
         if (passes(angle, step_deg, ivc)) {
-            close_intake(e, i);
+            close_intake(e, i, event_fraction(angle,step_deg,ivc));
             ignition_event(e,i,RB_IGN_SCHEDULED,event_fraction(angle,step_deg,ivc),ivc,0);
         }
         if (b->spark_due && passes(angle, step_deg, b->spark_angle)) {

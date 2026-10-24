@@ -71,6 +71,11 @@ void test_ignition_causal_clock_and_heat(void);
 void test_ignition_suppression_and_resume(void);
 void test_ignition_pending_kernel_expires_at_evo(void);
 void test_ignition_tap_capacity_and_transparency(void);
+void test_injection_clock_mass_and_sound(void);
+void test_injection_retained_disabled_and_boundaries(void);
+void test_injection_consumption_and_no_replay(void);
+void test_injection_trace_capacity_and_transparency(void);
+void test_injection_actual_render_path(void);
 void test_diagnostic_caps_and_reversal(void);
 void test_diagnostic_vacuum_geometry_and_sonic(void);
 void test_diagnostic_junction_repair_and_fuzz(void);
@@ -300,6 +305,11 @@ static const struct {
     T(test_ignition_suppression_and_resume),
     T(test_ignition_pending_kernel_expires_at_evo),
     T(test_ignition_tap_capacity_and_transparency),
+    T(test_injection_clock_mass_and_sound),
+    T(test_injection_retained_disabled_and_boundaries),
+    T(test_injection_consumption_and_no_replay),
+    T(test_injection_trace_capacity_and_transparency),
+    T(test_injection_actual_render_path),
     T(test_diagnostic_caps_and_reversal),
     T(test_diagnostic_vacuum_geometry_and_sonic),
     T(test_diagnostic_junction_repair_and_fuzz),

@@ -28,7 +28,16 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stage 041 complete within its numerical scope — HOLD.**
+**Current checkpoint: Stage 042 complete within its source-event scope — HOLD.**
+After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
+delivered fuel, records skipped fueling and proves one-to-one mass/event/sound
+behavior through startup, cut/resume, restart and retained fuel. Native, WASM,
+fault, 105 seeded scenario and complete listening-page checks pass. Recorded
+engine trajectories are unchanged. The current instantaneous fueling/modal
+surrogate is not calibrated real PFI/GDI hardware. Stage 043 is next after
+review; no later work is started or authorized here. Stage 039 stays open.
+
+**Previous checkpoint: Stage 041 complete within its numerical scope.**
 After reviewing 040, [041](docs/stage-041.md) separates mean charge physics
 from variation amplitude, exposes flame-fit validity, corrects expected
 heat-release phasing and aligns gross/net work. The 120 seeded maps, 15 stereo
@@ -36,7 +45,7 @@ repetition runs, deliberate faults, native/WASM/web checks and rebuilt complete
 sound checkpoint pass their declared numerical gates. Real-engine calibration
 and listening acceptance remain open; see the explicit V8 idle, I4/boxer
 repetition and I4 coast-rise findings. Stage 039 remains open for matched
-references. Stage 042 is next after review; no later implementation is started.
+references. Stage 042's later source correction is documented above.
 
 **Previous checkpoint: Six supplied039 video candidates reviewed.**
 The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
@@ -84,8 +93,8 @@ one-page examples are a new listening checkpoint, not pre-accepted sound.
 **041 retains 040's causal ignition/heat fix and completes its numerical handoff.**
 Its results do not validate a new kernel-failure or late-chemistry law, high
 dilution extrapolation, real-engine COV, acoustic transport or real-time delivery.
-042/043/044 remain Ready by dependencies, not authorization to skip the agreed
-order. Hold at the new listening checkpoint for feedback/instructions.
+043/044 remain Ready by dependencies, not authorization to skip the agreed
+order. Preserve 041's unqualified findings in later work.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -225,7 +234,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
 | [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Complete (bounded) | 038 |
 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Complete (bounded): numerical consistency/characterization; calibration open | 040, 038 |
-| [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Ready | 040, 038 |
+| [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Complete (bounded): actual dose/event/sound coupling; real injector calibration open | 040, 038 |
 
 ### 4. Propagation prototypes and physical components
 

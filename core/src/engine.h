@@ -72,6 +72,7 @@
 #include "pipe.h"
 #include "throttle.h"
 #include "valve.h"
+#include "injection.h"
 
 #include <stdint.h>
 
@@ -276,6 +277,9 @@ typedef struct rb_burn {
 typedef struct rb_engine {
     struct rb_diagnostics *diag;
     struct rb_ignition_trace *ignition_trace;
+    struct rb_injection_trace *injection_trace;
+    int injection_count;     /* attempts in the most recently completed step */
+    rb_injection_event injection[RB_MAX_CYLINDERS]; /* independent of trace capacity */
     uint64_t physics_tick;        /* engine-owned [tick,tick+1) step interval */
     rb_engine_desc desc;
     double dt;              /* s, physics step                                         */

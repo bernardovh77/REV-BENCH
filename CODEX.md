@@ -4,6 +4,60 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage 042 injection source checkpoint — HOLD
+
+- Bernardo authorizes 042 only. Read docs/stage-042.md for the 041 review,
+  primary Bosch/SAE research, frozen gates, implementation and measured limits.
+  039 matched acquisition, 041 calibration findings and overall S1 remain open.
+- Injection is still an instantaneous charge-fueling surrogate at IVC, not
+  resolved PFI/GDI needle/film/rail physics. An engine-owned attempt/dose record
+  now owns cylinder/charge/tick/fraction, delivered kilograms and sensible
+  joules. Skip reasons distinguish off/AFR/DFCO/no-air/retained/invalid. No new
+  engine/exhaust settings, acoustic constant, random draw or public field ID.
+- Mechanical noise consumes only positive actual doses from the latest fixed
+  source list, once per completed step. Muting drops that interval; late attach
+  and repeated calls cannot replay it. Optional trace capacity cannot alter
+  physics or sound. Source fractions are retained; modal onset snaps causally
+  to the step end (at most 5.21 microseconds at 192 kHz).
+- 105 native scenarios pass across five engines and seeds 17/29/61: 9,426
+  attempts, 7,488 doses/excitations, 633,615 cut steps with zero new injector
+  clicks, 15 resumptions; zero missing/phantom/invalid/dropped events or early
+  heat. Forced retained/no-air/invalid/tiny-dose/boundary/consumer fixtures and
+  positive dosing during a hard spark cut also pass. Retained fuel can burn
+  with zero new injection. No measured real needle schedule is claimed.
+- Before/after held-engine observers give exactly equal fuel/heat/gas mass/U/
+  crank/random outcomes. Old aggregate timing has 165 false and 165 missing
+  intervals; new totals zero. Flat-V8 aggregate coincidence is a blind spot,
+  covered separately by independent cylinder/charge/IVC tests.
+- Full native 217 tests/4842144 checks pass; final test-only consumer extensions
+  are rerun in focused native/WASM/ASan/UBSan checks. Eight compiled deliberate
+  faults caught, Python 76 and current web 17 tests/build pass, same five-preset
+  84-field contract. Leak detection is disabled because of host ptrace; no leak
+  pass. Initial harness/config/return-contract/copy-path failures are retained.
+- Production WASM 173274 bytes, source fingerprint
+  cca7ec993b7588bb39de15bb2fb2861d1d8bc0130d3083068b68ceefd3617f24.
+  Native engine/noise/sim storage grows by 1168/16/1184 bytes. Initial short
+  cost runs are noisy; no performance or real-time qualification is claimed.
+- Complete 34-clip/five-coast page passes offline: 55 players, four seeks,
+  eight research plots and three reference views; raw peak <0.538 and no audio
+  limiter/nonfinite samples. All 71,872 engine/control rows across 15 CSVs are
+  exact; only audio metrics differ. Max raw RMS change 0.00104 dB; tone/four
+  flat-V8 clips identical. This is event correctness, not a timbre improvement.
+  I4 coast rise remains +5.337 dB. Listening and full realism remain open.
+- Noisy short costs are retained. Longer post-render five-second I4/boxer
+  controls both show 0% median difference, with residual paired host scatter
+  −6.82%…+9.76%; no zero-overhead/real-time claim. Optional trace paired outputs
+  match exactly, with timing differences −2.81%…+4.54% on this host.
+- All 97 protected files, six original video hashes and 21 retained embedded
+  audio payloads preserved. Current raw/page/source fingerprints checked;
+  duplicate before/timing WAVs cleaned only after saved hashes/measurements.
+  User media/skills remain unstaged; Claude setup and packages are preserved.
+- Graphify queried/refreshed after source/tests: 2904 nodes/7945 edges/161
+  communities, known rb.h:415 parser warning. Save/sync 042 and HOLD. 039 stays
+  open; no source intake, fitting, 043 work or new browser engine/3D is claimed.
+  Review 042 before 043. Resolve actual PFI/GDI/film/stream-energy/needle/modal
+  assumptions before relevant 055/059/063 promotion; 061 owns public transport.
+
 ## 2026-10-24: Stage 041 numerical checkpoint — HOLD
 
 - Bernardo authorizes 041 after the six-video assessment. Review 040 first;

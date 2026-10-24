@@ -272,8 +272,9 @@ void test_noise_strikes(void)
      * inertia I adds to one and takes from the other, so the energy goes
      * from (1 + lambda)^2 + (1 - lambda)^2 to lambda^2 + (2 - lambda)^2
      * (in I^2). Cylinder 1 crossing each of its valve events makes one
-     * impact: a lift at IVO (and the injector's click) and EVO, a seat at
-     * IVC and EVC. */
+     * impact: a lift at IVO and EVO, a seat at
+     * IVC and EVC. Injector excitation requires an actual delivered-dose
+     * event; posing the crank alone cannot produce one. */
     pose(300.0, 0.0, 0.0);
     CHECK_EQ_INT(n.impacts[RB_IMPACT_SLAP], 4);
     const double slow = n.impact_energy[RB_IMPACT_SLAP];
@@ -294,7 +295,7 @@ void test_noise_strikes(void)
     for (int k = 0; k < 4; k++) {
         pose(300.0, 0.0, events[k]);
         for (int j = 0; j < RB_IMPACT_KINDS; j++)
-            CHECK_EQ_INT(n.impacts[j], (j == kinds[k]) || (j == RB_IMPACT_INJECTOR && k == 0));
+            CHECK_EQ_INT(n.impacts[j], j == kinds[k]);
     }
 
     /* Combustion: a step in the pistons' force strikes the modes once, as
