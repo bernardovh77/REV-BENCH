@@ -70,7 +70,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/user-sound-references.md](../../docs/user-sound-references.md), [docs/sound-robustness-plan.md](../../docs/sound-robustness-plan.md).
 
-**Execution record:** for new work, `docs/stage-039.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage039](../stage-039.md): reference/session lock, raw stereo powers, audition controls and explicit missing calibration data. See PLAN for its awaiting-reference status.
 
 <a id="stage-040"></a>
 ## Stage 040 — Spark, ignition and flame-development causality
@@ -87,7 +87,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/audio-robustness-research.md](../../docs/audio-robustness-research.md).
 
-**Execution record:** for new work, `docs/stage-040.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [Stage040](../stage-040.md), with the predecessor review, baseline, frozen causal/energy gates and execution evidence.
 
 <a id="stage-041"></a>
 ## Stage 041 — Continuous combustion variation and residual validity

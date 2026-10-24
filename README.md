@@ -33,7 +33,9 @@ delivery remain later work.
 fixes the two bounded Stage037 contract issues. All34 regenerated recordings
 match the accepted audio exactly; no sound tuning is part of this checkpoint.
 
-**Next: Stage 039**, matched references/calibration, followed by causal
+[Stage039](docs/stage-039.md) provides a locked reference ledger and stereo-safe
+comparison controls; matched calibration awaits better recording metadata.
+**Current: Stage040**, spark/heat causality, followed by causal
 source and propagation qualification before the playable browser and 3D.
 The [stage protocol](docs/roadmap/README.md) separates experiment results,
 production integration, runtime and Bernardo's realism acceptance. Full release

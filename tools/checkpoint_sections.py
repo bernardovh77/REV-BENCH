@@ -14,6 +14,7 @@ SECTIONS = {
     "transport-candidates": ("ACOUSTIC CANDIDATES", "Renderer prototypes"),
     "user-references": ("USER REFERENCES", "New references"),
     "coupling-proof": ("COUPLING PROOF", "Coupling proof"),
+    "reference-protocol": ("REFERENCE PROTOCOL", "Reference controls"),
 }
 
 

@@ -1,0 +1,422 @@
+{
+  "schema_version": 1,
+  "frozen_at_utc": "2026-10-24",
+  "policy": "Existing/seen sessions development; novel GM session validation; metadata-uncertain Subaru quarantine. No model tuning against validation; promote only with a new version and evidence.",
+  "legacy_catalog": {
+    "path": "tools/real_engines.csv",
+    "sha256": "fed4857e4f47ed86a64c05f993f102fddb6d398d065cbb21ccb4d3fafa963e21",
+    "partition": "development",
+    "source_ids": [
+      "157144",
+      "18772",
+      "18774",
+      "19338",
+      "238847",
+      "240671",
+      "273334",
+      "332387",
+      "465453",
+      "610774",
+      "628547",
+      "644881",
+      "754778",
+      "754779",
+      "768643",
+      "857147",
+      "873856"
+    ],
+    "note": "Already used historically; neither fresh validation nor newly acquired artifacts"
+  },
+  "sessions": [
+    {
+      "id": "user-ferrari458",
+      "family": "user-ferrari458",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "efafd01d8d871cb59a89f41c80344782fd0442526da0d8fff4d86e6b1826ed2e",
+      "source": {
+        "filename_contains": "AimvjNzNCwk"
+      },
+      "source_page": "https://www.youtube.com/watch?v=AimvjNzNCwk",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-flat",
+      "metadata": {
+        "engine": "Naturally aspirated 4.5 L flat-plane V8",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-ferrari458-10176000",
+          "start_frame": 10176000,
+          "end_frame": 10752000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-14496000",
+          "start_frame": 14496000,
+          "end_frame": 15072000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-2112000",
+          "start_frame": 2112000,
+          "end_frame": 2688000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-ferrari458-6000000",
+          "start_frame": 6000000,
+          "end_frame": 6576000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-bmw-m4",
+      "family": "user-bmw-m4",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "d1eaeff3b0ee085a26c7d577399bce27849a122f67413374b3557681de0ae00e",
+      "source": {
+        "filename_contains": "udiPG_FwG0E"
+      },
+      "source_page": "https://www.youtube.com/watch?v=udiPG_FwG0E",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "i6",
+      "metadata": {
+        "engine": "Turbocharged inline-six; exact generation unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "The source title says POV, suggesting onboard recording; selected-window camera position is unverified, and brightness does not establish cabin versus exterior.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "turbo"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-bmw-m4-7296000",
+          "start_frame": 7296000,
+          "end_frame": 7872000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-11616000",
+          "start_frame": 11616000,
+          "end_frame": 12192000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-9456000",
+          "start_frame": 9456000,
+          "end_frame": 10032000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-bmw-m4-31632000",
+          "start_frame": 31632000,
+          "end_frame": 32208000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-golf-gti",
+      "family": "user-golf-gti",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "51de118925fd70511bcc833d01e86408894df4fbe2d2e4e79206302b2efe5361",
+      "source": {
+        "filename_contains": "Ws0IlDinQes"
+      },
+      "source_page": "https://www.youtube.com/watch?v=Ws0IlDinQes",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "i4",
+      "metadata": {
+        "engine": "EA888 2.0 L turbocharged inline-four",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "turbo"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-golf-gti-2544000",
+          "start_frame": 2544000,
+          "end_frame": 3120000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-3984000",
+          "start_frame": 3984000,
+          "end_frame": 4560000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-8304000",
+          "start_frame": 8304000,
+          "end_frame": 8880000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-golf-gti-11472000",
+          "start_frame": 11472000,
+          "end_frame": 12048000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-mustang-gt",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "9c70bfb6b18db281c519cced24193dce816dbb1ccd2428df7e4f7074d6d77e57",
+      "source": {
+        "filename_contains": "oz7Kbh7kZbE"
+      },
+      "source_page": "https://www.youtube.com/watch?v=oz7Kbh7kZbE",
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Naturally aspirated 5.0 L cross-plane V8",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": "Selected-window camera position and vehicle motion are unverified; brighter/darker are acoustic groups only.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-mustang-gt-240000",
+          "start_frame": 240000,
+          "end_frame": 816000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-9456000",
+          "start_frame": 9456000,
+          "end_frame": 10032000,
+          "acoustic_group": "brighter",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-3552000",
+          "start_frame": 3552000,
+          "end_frame": 4128000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        },
+        {
+          "id": "user-mustang-gt-12336000",
+          "start_frame": 12336000,
+          "end_frame": 12912000,
+          "acoustic_group": "darker",
+          "perspective_transition": "possible within excerpt; no verified transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "user-rcf-lorax",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "6642ad1478b745f26de499ce2f4f5777377d89b19a30dede81322fcc7e099e2e",
+      "source": {
+        "filename_contains": "DeztBYHSkCj"
+      },
+      "source_page": null,
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": 3,
+        "perspective": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-rcf-lorax-0",
+          "start_frame": 0,
+          "end_frame": 2496610,
+          "acoustic_group": "rear-3m",
+          "perspective_transition": "not annotated; retain any recorded motion"
+        }
+      ]
+    },
+    {
+      "id": "user-viper-ws9",
+      "family": "user-cross-v8-uncertain",
+      "partition": "development",
+      "used_before_lock": true,
+      "source_sha256": "c0890755e88d75da92643b4cfccf3277ffbad5f857784656d4646c6b3705de15",
+      "source": {
+        "filename_contains": "DewsrGHTcOZ"
+      },
+      "source_page": null,
+      "rights": "User supplied; redistribution/training rights not granted",
+      "preset": "v8-cross",
+      "metadata": {
+        "engine": "Cross-plane V8 classification supplied by Bernardo; car, displacement and exhaust unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": 3,
+        "perspective": "Exterior behind the car, approximately 3 m from the tailpipes (Bernardo). Exact geometry and motion unverified.",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "NA or unspecified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "user-viper-ws9-0",
+          "start_frame": 0,
+          "end_frame": 728921,
+          "acoustic_group": "rear-3m",
+          "perspective_transition": "not annotated; retain any recorded motion"
+        }
+      ]
+    },
+    {
+      "id": "fs-185151",
+      "family": "ears68-hillclimb-2013",
+      "partition": "validation",
+      "used_before_lock": false,
+      "source_sha256": "519a57d5654f3ad6724b41b45e9b28a8b3143003ff582c57b5940cf943ff0521",
+      "source": {
+        "path": "renders/reference-protocol/sources/gm-i6.mp3"
+      },
+      "download_url": "https://cdn.freesound.org/previews/185/185151_2214631-hq.mp3",
+      "source_page": "https://freesound.org/people/Ears68/sounds/185151/",
+      "rights": "CC0 1.0; uploader Ears68",
+      "preset": "i6",
+      "metadata": {
+        "engine": "Uploader: race-prepared GM/Holden inline-six; triple Weber carburettors",
+        "exhaust": "Uploader: straight open rear headers",
+        "rpm": null,
+        "load": "Moving hillclimb approach, burnout, start; no measured load trace",
+        "distance_m": null,
+        "perspective": "Uploader: Tascam DR-05 built-in microphones at hillclimb; motion retained",
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": "Carburettor description suggests naturally aspirated; not independently verified"
+      },
+      "claims": {
+        "qualitative_texture": true,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "fs-185151-full",
+          "start_frame": 0,
+          "end_frame": null,
+          "acoustic_group": "unassigned",
+          "perspective_transition": "Full clip; no verified state/position transition timestamps"
+        }
+      ]
+    },
+    {
+      "id": "fs-181233",
+      "family": "mario1298-subaru-unverified",
+      "partition": "quarantine",
+      "used_before_lock": false,
+      "source_sha256": "9a6e747e1dd89f8dce18a1b3235d7d08075779a9d20aeec9d23e86165f476cc0",
+      "source": {
+        "path": "renders/reference-protocol/sources/subaru.mp3"
+      },
+      "download_url": "https://cdn.freesound.org/previews/181/181233_499617-hq.mp3",
+      "source_page": "https://freesound.org/people/mario1298/sounds/181233/",
+      "rights": "CC0 1.0; uploader mario1298",
+      "preset": "boxer4-candidate",
+      "metadata": {
+        "engine": "Uploader title: Subaru Forester 1989; exact vehicle/year/induction unverified",
+        "exhaust": null,
+        "rpm": null,
+        "load": null,
+        "distance_m": null,
+        "perspective": null,
+        "mic_calibration": null,
+        "recording_gain": null,
+        "induction": null
+      },
+      "claims": {
+        "qualitative_texture": false,
+        "calibrated_spl": false,
+        "matched_engine_response": false
+      },
+      "intervals": [
+        {
+          "id": "fs-181233-full",
+          "start_frame": 0,
+          "end_frame": null,
+          "acoustic_group": "unassigned",
+          "perspective_transition": "Full clip; no verified state/position transition timestamps"
+        }
+      ]
+    }
+  ]
+}

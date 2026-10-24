@@ -1,17 +1,17 @@
 # Graph Report - rev-bench  (2026-10-23)
 
 ## Corpus Check
-- 262 files · ~670,177 words
+- 267 files · ~673,038 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 10 file(s) not represented in the graph (top: (none) 5, .csv 2, .css 1)
 
 ## Summary
-- 2657 nodes · 7206 edges · 153 communities (123 shown, 30 thin omitted)
-- Extraction: 76% EXTRACTED · 24% INFERRED · 0% AMBIGUOUS · INFERRED: 1705 edges (avg confidence: 0.87)
+- 2683 nodes · 7291 edges · 147 communities (124 shown, 23 thin omitted)
+- Extraction: 77% EXTRACTED · 23% INFERRED · 0% AMBIGUOUS · INFERRED: 1710 edges (avg confidence: 0.87)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `e608b36b`
+- Built from commit: `1f964f4a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -25,28 +25,28 @@
 - rb-core.ts
 - Stages
 - main.ts
-- presets.c
+- Stage 12 — Mufflers, the intake and the listener 🎧
 - package.json
-- wav.c
+- Stage 11 — The sound: a microphone and the first WAV renders 🎧
 - RbExports
 - test_pipe.c
 - RbSim
 - style
 - label
-- test_audio.c
-- rb_engine_pipe
+- audio.c
+- rb_preset_desc
 - Model limitations and validation still requiring attention
 - coupled_duct.c
-- build_contract_probe.c
+- Core (C)
 - compilerOptions
-- analyze_acoustic_candidates.py
+- math
 - RevBenchNode
 - gas.c
 - Stage 10 — 1D pipes: runners, headers, collectors, tailpipes
 - AudioWorkletProcessor
 - test_engine.c
-- Stage 9 — Dyno + validation against real engines
-- argparse
+- test_diagnostics.c
+- json
 - rb_network_step
 - Stage 12b — The flow's noise, the engine's own sound, and the cabin 🎧
 - review-completed-stages-2026-10-23.md
@@ -56,13 +56,13 @@
 - engine.h
 - REV-BENCH — Research notes (stage 0)
 - S2d design — coupled exhaust acoustics and learned-DSP benchmarks
-- RbCore
+- test_audio.c
 - Stage 3 — Gas & flow primitives
-- test_scene.c
+- noise.c
 - REV-BENCH — notes for Claude
 - numpy
 - Test-Driven Development
-- Selective sound rollback — 2026-10-22
+- reference_protocol.py
 - Stage 13b-p — researched exhaust configurations
 - Should REV-BENCH change its sound-generation architecture?
 - render_results.py
@@ -76,7 +76,7 @@
 - REV-BENCH - Codex handoff
 - Stage 7 — Crankshaft dynamics, multi-cylinder, self-running
 - string
-- rb_cd_prepare
+- test_audio_analysis.py
 - read_wav
 - Canonical stage tracker
 - csv
@@ -87,7 +87,7 @@
 - AGENTS.md
 - Stage 13b-r — high-RPM exhaust character
 - Stage 8 — Engine layouts & presets
-- Current sound results
+- wav.c
 - rb_create
 - audio_source_probe.c
 - cmd_info
@@ -95,11 +95,11 @@
 - REV-BENCH — Feedback checkpoint before stage 13b
 - README.md
 - acoustic_transport_probe.c
-- S2b — Loaded exhaust detail and the lift-off contrast
+- presets.c
 - Historical foundations and engine core
 - REV-BENCH
 - build_contract.py
-- math
+- string
 - test_acoustic_candidates.c
 - Initial audio bottleneck diagnosis — 2026-10-22
 - Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet
@@ -111,18 +111,18 @@
 - engine-node.ts
 - hashlib
 - setup
-- throttle.c
+- test_wav.c
 - diagnostics.c
 - Engine integration, architecture selection and base acceptance
 - Propagation prototypes and physical components
-- read_wav
+- compare_real.py
 - Stage 13 — Performance & stability pass
 - matplotlib_pyplot
 - Roadmap execution and evidence protocol
-- Stage 1 — Native C scaffold, WAV writer, test runner
+- csv
 - Stage S1c — Reproducible sound and combustion baselines
 - fuzz.c
-- rb_engine_init
+- rb_preset_find
 - Optional expansions
 - Complete 3D engine experience
 - Persistence, final acceptance and release
@@ -133,36 +133,30 @@
 - Expanded engine and exhaust catalog
 - Stage S1a — Reliable sound analysis before further tuning
 - titles
-- Bounded completed-stage review repairs
+- The mufflers
 - Playable browser bench
-- Native acoustic candidates — S2d
+- test_engine_pipes_two_rates
 - pathlib
 - Conditional learned-synthesis research
-- rb_pipe_end_cell
+- Stage039 — Matched references and calibration protocol
 - rb_cylinder_move
-- Confirmed implementation and numerical issues
+- S1e — Research and controlled overrun transitions
 - rb_audit.c
-- test_main.c
 - plot_run.py
-- rb_dc_blocker_init
-- Sound and engine-physics audit — 2026-10-22
 - Where the time goes
 - test_overrun.c
-- bench_wasm.mjs
-- test_fuzz_random_engines
-- The engine's own sound
 
 ## God Nodes (most connected - your core abstractions)
-1. `rb_engine_step()` - 105 edges
+1. `rb_engine_step()` - 106 edges
 2. `rb_engine_init()` - 57 edges
 3. `RbExports` - 53 edges
-4. `rb_engine_init_at()` - 47 edges
+4. `rb_engine_init_at()` - 48 edges
 5. `Core (C)` - 41 edges
-6. `style()` - 38 edges
-7. `rb_chamber_init()` - 37 edges
-8. `rb_preset_desc()` - 37 edges
+6. `rb_preset_desc()` - 38 edges
+7. `style()` - 38 edges
+8. `rb_chamber_init()` - 37 edges
 9. `rb_engine_settle()` - 36 edges
-10. `read_wav()` - 34 edges
+10. `read_wav()` - 36 edges
 
 ## Surprising Connections (you probably didn't know these)
 - `What was built` --references--> `rb_chamber_integrate_many()`  [INFERRED]
@@ -173,137 +167,145 @@
   docs/stage-04.md → core/src/chamber.c
 - `Unequal headers (`core/src/presets.c`)` --references--> `rb_engine_desc_default()`  [INFERRED]
   docs/stage-12c.md → core/src/engine.c
-- `Stage 8 — Engine layouts & presets` --references--> `rb_engine_layout()`  [INFERRED]
-  docs/roadmap/legacy-plan.md → core/src/engine.c
+- `Versioning, identity and limits` --references--> `rb_engine_desc_check()`  [INFERRED]
+  contracts/README.md → core/src/engine.c
 
 ## Import Cycles
 - None detected.
 
-## Communities (153 total, 30 thin omitted)
+## Communities (147 total, 23 thin omitted)
 
 ### Community 0 - "test_variation.c"
 Cohesion: 0.15
-Nodes (33): rb_engine_cylinder_angle(), rb_engine_step(), rb_cycle_offset(), rb_valve_area(), rb_valve_check(), rb_valve_closes(), rb_valve_lift(), rb_valve_opens() (+25 more)
+Nodes (32): rb_engine_cylinder_angle(), rb_engine_step(), rb_cycle_offset(), rb_valve_area(), rb_valve_check(), rb_valve_closes(), rb_valve_lift(), rb_valve_opens() (+24 more)
 
 ### Community 1 - "PLAN.md"
-Cohesion: 0.25
-Nodes (4): One canonical roadmap with evidence-gated promotion, Audit finding ownership and closure evidence, Legacy stage crosswalk, Required use
+Cohesion: 0.24
+Nodes (5): One canonical roadmap with evidence-gated promotion, Audit finding ownership and closure evidence, Legacy stage crosswalk, Required use, REV-BENCH
 
 ### Community 2 - "rb_engine_step"
-Cohesion: 0.08
-Nodes (23): rb_burnable_fuel(), soft_cut(), spark(), Calibration, Cost, No two cycles alike (`core/src/engine.c`, `core/src/rand.h`), Notes for later stages, Sources (+15 more)
+Cohesion: 0.11
+Nodes (18): Calibration, Cost, No two cycles alike (`core/src/engine.c`, `core/src/rand.h`), Notes for later stages, Sources, Stage 12c — Rough, not a piano note: variation, the limiter, the deceleration 🎧, Tests that changed, The accessories (`accessory_power`, an engine field) (+10 more)
 
 ### Community 3 - "rb_engine_step"
 Cohesion: 0.10
-Nodes (41): rb_wiebe(), accessory_torque(), add_share(), after_firing_tdc(), burn_duration(), burn_step(), close_intake(), computer_spark() (+33 more)
+Nodes (34): rb_burnable_fuel(), rb_wiebe(), accessory_torque(), add_share(), after_firing_tdc(), burn_duration(), burn_step(), close_intake() (+26 more)
 
 ### Community 4 - "rb_engine_api.c"
-Cohesion: 0.14
-Nodes (35): describe_pipe(), field_ok(), rb_cylinder_field_count(), rb_cylinder_field_name(), rb_cylinder_field_unit(), rb_engine_field_count(), rb_engine_field_find(), rb_engine_field_flags() (+27 more)
+Cohesion: 0.13
+Nodes (37): rb_preset_count(), describe_pipe(), field_ok(), rb_cylinder_field_count(), rb_cylinder_field_name(), rb_cylinder_field_unit(), rb_engine_field_count(), rb_engine_field_find() (+29 more)
 
 ### Community 5 - "rb_cli.c"
-Cohesion: 0.12
-Nodes (43): mark(), rb_dyno_init(), rb_dyno_step(), rb_dyno_sweep(), rb_preset_name(), csv_close(), csv_open(), csv_row() (+35 more)
+Cohesion: 0.07
+Nodes (67): muffler_width(), rb_engine_desc_check(), rb_engine_displacement(), rb_engine_layout(), rb_engine_layout_inline(), tdc_angle(), rb_preset_key(), rb_preset_name() (+59 more)
 
 ### Community 6 - "rb-core.ts"
-Cohesion: 0.07
-Nodes (45): PipeDescription, PresetInfo, RB_CLAMPED, RB_EF_ARRAY, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE, RB_EF_PER_BANK (+37 more)
+Cohesion: 0.06
+Nodes (46): wasi, PipeDescription, PresetInfo, RB_CLAMPED, RB_EF_ARRAY, RB_EF_IN_ORDER, RB_EF_INTEGER, RB_EF_LIVE (+38 more)
 
 ### Community 7 - "Stages"
 Cohesion: 0.05
-Nodes (41): Architecture (decided up front), Latest listening feedback — 2026-10-22, Phase 0 — Foundations, Phase 2 — Sound (the realistic part), Phase 2b — Sound realism (top priority) 🎧, Phase 3 — Browser, Phase 4 — 3D engine view, Phase 5 — Forced induction & realism (+33 more)
+Nodes (39): Architecture (decided up front), Latest listening feedback — 2026-10-22, Phase 2 — Sound (the realistic part), Phase 2b — Sound realism (top priority) 🎧, Phase 3 — Browser, Phase 4 — 3D engine view, Phase 5 — Forced induction & realism, Phase 6 — Polish & ship (+31 more)
 
 ### Community 8 - "main.ts"
 Cohesion: 0.13
 Nodes (24): CoreInfo, ParamInfo, boot(), clearReadouts(), drawScope(), errorText(), findParam(), findTelemetry() (+16 more)
 
-### Community 9 - "presets.c"
-Cohesion: 0.08
-Nodes (42): airbox(), boxer4(), exhaust(), inline4(), inline6(), intake(), layout(), muffler() (+34 more)
+### Community 9 - "Stage 12 — Mufflers, the intake and the listener 🎧"
+Cohesion: 0.10
+Nodes (20): Calibration, Cost, Every source at its own distance, Notes for later stages, Review of stage 11, Snorkel, air box, filter, Sources, Stage 12 — Mufflers, the intake and the listener 🎧 (+12 more)
 
 ### Community 10 - "package.json"
 Cohesion: 0.05
 Nodes (26): @playwright/test, @types/node, typescript, vite, vitest, description, devDependencies, @playwright/test (+18 more)
 
-### Community 11 - "wav.c"
-Cohesion: 0.08
-Nodes (47): A pipe end is a monopole, Cost, DC blocker and soft limiter, Dither, Down to the audio rate, Notes for later stages, Review of stage 10, Sources (+39 more)
+### Community 11 - "Stage 11 — The sound: a microphone and the first WAV renders 🎧"
+Cohesion: 0.09
+Nodes (21): A pipe end is a monopole, Cost, DC blocker and soft limiter, Dither, Down to the audio rate, Notes for later stages, Review of stage 10, Sources (+13 more)
+
+### Community 12 - "RbExports"
+Cohesion: 0.07
+Nodes (3): What was built, RbCore, RbExports
 
 ### Community 13 - "test_pipe.c"
 Cohesion: 0.19
-Nodes (28): rb_chamber_init_reservoir(), rb_pipe_init(), rb_pipe_join(), rb_pipe_pack(), Tests that can fail, count(), extreme(), packed_ring() (+20 more)
+Nodes (29): rb_chamber_init_reservoir(), rb_pipe_contents(), rb_pipe_init(), rb_pipe_join(), Tests that can fail, count(), extreme(), packed_ring() (+21 more)
+
+### Community 14 - "RbSim"
+Cohesion: 0.08
+Nodes (4): Consumer review before implementation, What was built, EngineDescription, RbSim
 
 ### Community 15 - "style"
 Cohesion: 0.19
 Nodes (15): a_weighting(), bands(), check(), highpass(), levels(), levels_chart(), main(), orders() (+7 more)
 
 ### Community 16 - "label"
-Cohesion: 0.14
-Nodes (15): chart(), comparison(), describe(), log_axis(), main(), plot_cycle(), plot_map(), pumping_mep() (+7 more)
+Cohesion: 0.13
+Nodes (13): describe(), log_axis(), main(), plot_cycle(), plot_map(), pumping_mep(), main(), textbook_line() (+5 more)
 
-### Community 17 - "test_audio.c"
-Cohesion: 0.10
-Nodes (44): arriving(), bessel_i0(), cabin_design(), distance(), noise_arriving(), rb_cabin_process(), rb_decimator_init(), rb_decimator_out() (+36 more)
+### Community 17 - "audio.c"
+Cohesion: 0.23
+Nodes (20): arriving(), cabin_design(), distance(), noise_arriving(), rb_cabin_process(), rb_listener_distance(), rb_listener_hear(), rb_listener_place() (+12 more)
 
-### Community 18 - "rb_engine_pipe"
-Cohesion: 0.16
-Nodes (23): rb_engine_contents(), rb_engine_pipe(), rb_engine_pipe_count(), rb_engine_pipe_heat(), slow_flows(), slow_step(), Proposed C integration boundaries, engine_cost() (+15 more)
+### Community 18 - "rb_preset_desc"
+Cohesion: 0.28
+Nodes (16): rb_engine_contents(), rb_engine_pipe(), rb_engine_pipe_count(), rb_engine_pipe_heat(), rb_preset_desc(), repairs(), test_engine_description(), test_engine_vacuum() (+8 more)
 
 ### Community 19 - "Model limitations and validation still requiring attention"
-Cohesion: 0.11
-Nodes (19): Model limitations and validation still requiring attention, R01 — P1: robotic deceleration and lift-off boom are not diagnosed fully, R02 — P1: V8 idle combustion and its flame-speed extrapolation need review, R03 — P1: ignition failure, late burning and exhaust chemistry are absent, R04 — P1: low-frequency repetition acceptance is still open, R05 — P1: acoustic spatial/rate convergence is not established, R06 — P1: protective flow changes are not fully observable, R07 — P1: complete exhaust paths are still estimated research models (+11 more)
+Cohesion: 0.06
+Nodes (31): Confirmed implementation and numerical issues, D02 — P1: the internal-jet noise model misidentifies choking, D03 — P1: added exhaust noise does not follow shared X/Y routing, D04 — P2: added-noise travel times omit center and link pipes, D05 — P1: synthetic noise retains hidden catalyst and obsolete losses, D06 — P1: turning variation off also switches combustion physics, D07 — P2: injector clicks are detached from injection events, D09 — P2: propagation interpolation itself darkens the sound (+23 more)
 
 ### Community 20 - "coupled_duct.c"
-Cohesion: 0.34
-Nodes (18): add(), admissible(), book(), chars(), end_state(), linear_flux(), linear_rhs(), linear_tick() (+10 more)
+Cohesion: 0.18
+Nodes (29): add(), admissible(), book(), chars(), end_state(), linear_flux(), linear_rhs(), linear_tick() (+21 more)
 
-### Community 21 - "build_contract_probe.c"
-Cohesion: 0.60
-Nodes (3): count(), import(), value()
+### Community 21 - "Core (C)"
+Cohesion: 0.21
+Nodes (22): Core (C), rb_chamber_add_flow(), rb_chamber_add_heat(), rb_chamber_add_mass(), rb_chamber_clear_rates(), rb_chamber_gamma(), rb_chamber_pressure_now(), rb_chamber_sound_speed() (+14 more)
 
 ### Community 22 - "compilerOptions"
 Cohesion: 0.12
 Nodes (15): compilerOptions, isolatedModules, lib, module, moduleResolution, noEmit, noFallthroughCasesInSwitch, noUnusedLocals (+7 more)
 
-### Community 23 - "analyze_acoustic_candidates.py"
-Cohesion: 0.18
-Nodes (11): accuracy(), analytic_line(), magnitude_db(), main(), plots(), publish(), read(), summarize() (+3 more)
+### Community 23 - "math"
+Cohesion: 0.07
+Nodes (35): Engine build, Geometry, connections and frames, Shared contracts — version 1, Versioning, identity and limits, geometry(), paths(), rb_scene_flight_time(), rb_scene_init() (+27 more)
 
 ### Community 25 - "gas.c"
-Cohesion: 0.09
-Nodes (42): rb_fuel_heat(), poly(), rb_gas_cp(), rb_gas_cv(), rb_gas_gamma(), rb_gas_h(), rb_gas_init(), rb_gas_T_cv_from_u() (+34 more)
+Cohesion: 0.08
+Nodes (45): rb_fuel_heat(), poly(), rb_gas_cp(), rb_gas_cv(), rb_gas_gamma(), rb_gas_h(), rb_gas_init(), rb_gas_T_cv_from_u() (+37 more)
 
 ### Community 26 - "Stage 10 — 1D pipes: runners, headers, collectors, tailpipes"
-Cohesion: 0.07
-Nodes (27): rb_chamber_pressure_now(), Against the real engines, At 96 kHz, Checks, Light load, Notes for later stages, Results, Review of stage 9 (+19 more)
+Cohesion: 0.10
+Nodes (19): Against the real engines, At 96 kHz, Light load, Results, Review of stage 9, Sources, Stage 10 — 1D pipes: runners, headers, collectors, tailpipes, The engine computer looks ahead (+11 more)
 
 ### Community 28 - "test_engine.c"
-Cohesion: 0.13
-Nodes (44): Core (C), rb_engine_settle(), Results, Tests that changed, Tests that changed, ambient_density(), crank_books(), energy_books() (+36 more)
+Cohesion: 0.12
+Nodes (42): rb_engine_settle(), Results, Notes for later stages, ambient_density(), crank_books(), energy_books(), inside(), repairs() (+34 more)
 
-### Community 29 - "Stage 9 — Dyno + validation against real engines"
-Cohesion: 0.10
-Nodes (21): Against the real engines, Calibration, Changes go the right way, Friction, Notes for later stages, Results, Review of stage 8, Sources (+13 more)
+### Community 29 - "test_diagnostics.c"
+Cohesion: 0.15
+Nodes (13): pipe_role(), rb_diag_bind_engine(), rb_radiation_init(), rb_radiation_linear(), rb_radiation_step(), start(), test_diagnostic_caps_and_reversal(), test_diagnostic_junction_repair_and_fuzz() (+5 more)
 
-### Community 30 - "argparse"
-Cohesion: 0.09
-Nodes (23): digest(), main(), check(), analyze(), long_coast(), main(), record(), render() (+15 more)
+### Community 30 - "json"
+Cohesion: 0.20
+Nodes (11): check(), analyze(), long_coast(), main(), record(), render(), sha(), bench() (+3 more)
 
 ### Community 31 - "rb_network_step"
-Cohesion: 0.15
-Nodes (22): rb_chamber_add_flow(), rb_chamber_add_mass(), rb_chamber_gamma(), rb_chamber_sound_speed(), equalising_mass(), rb_network_step(), rb_nozzle_critical_ratio(), rb_nozzle_mdot() (+14 more)
+Cohesion: 0.20
+Nodes (15): equalising_mass(), rb_network_step(), rb_nozzle_critical_ratio(), rb_nozzle_mdot(), rb_orifice_flow(), rb_orifice_init(), blowdown_time_to_2bar(), setup_blowdown() (+7 more)
 
 ### Community 32 - "Stage 12b — The flow's noise, the engine's own sound, and the cabin 🎧"
-Cohesion: 0.12
-Nodes (17): Calibration, Cost, Notes for later stages, Review of stage 13, Sources, Stage 12b — The flow's noise, the engine's own sound, and the cabin 🎧, The cabin, The flow's noise (+9 more)
+Cohesion: 0.10
+Nodes (21): Calibration, Cost, Modal synthesis, Notes for later stages, Review of stage 13, Sources, Stage 12b — The flow's noise, the engine's own sound, and the cabin 🎧, The cabin (+13 more)
 
 ### Community 33 - "review-completed-stages-2026-10-23.md"
-Cohesion: 0.14
-Nodes (11): Brief review of completed Stages 001–036, Checks, evidence and hold, Coverage of every completed stage, Exact new reproduction results, Findings, Frozen checks and execution, Stage 112 — Recoverable checkpoint section publication, Frozen checks and execution (+3 more)
+Cohesion: 0.12
+Nodes (14): Brief review of completed Stages 001–036, Checks, evidence and hold, Coverage of every completed stage, Exact new reproduction results, Findings, Bounded completed-stage review repairs, Stage 112 — Recoverable checkpoint section publication, Stage 113 — Acoustic derived-state and numerical failure guards (+6 more)
 
 ### Community 34 - "rb_destroy"
-Cohesion: 0.31
-Nodes (16): rb_destroy(), rb_set_param(), rb_get_telemetry(), rb_render_block(), Tests that changed, make_tone(), render(), rnd01() (+8 more)
+Cohesion: 0.19
+Nodes (26): rb_destroy(), rb_set_param(), rb_get_telemetry(), rb_render_block(), Tests that can fail, Tests that changed, amplitude(), engine_sim() (+18 more)
 
 ### Community 35 - "checkpoint_sections.py"
 Cohesion: 0.18
@@ -313,6 +315,10 @@ Nodes (14): Scope, contract and method, adopt_current(), carry_diagnostics(), ch
 Cohesion: 0.14
 Nodes (14): 1. Same-tick return pressure needs an API boundary, 2. Port signs, pressure reference and work ownership must be explicit, 3. The background gas cannot be removed with its acoustic grid, 4. Shared geometry is currently a snapshot, not an executable compiler, 5. Stable output can conceal modified gas transport, 6. Native stereo and the browser host are different validation targets, 7. The single results file is not reproducibly rebuildable today, 8. Provenance and reference conditions still limit attribution (+6 more)
 
+### Community 37 - "engine.h"
+Cohesion: 0.14
+Nodes (9): rb_diag_reason_name(), rb_diag_role_name(), rb_exhaust_model(), main(), wrap(), array(), energy(), main() (+1 more)
+
 ### Community 38 - "REV-BENCH — Research notes (stage 0)"
 Cohesion: 0.10
 Nodes (20): 2026-10-21 — Deceleration and spatial sound continuation, 2026-10-21 — Lift-off contrast and loaded pipe transport (S2b), 2026-10-22 — model-specific exhausts and outlet loading, 2026-10-22 — Preserve realism while batching pipe thermodynamics (13b), 2026-10-22 — selective exhaust rollback requested, 2026-10-22 — sound/physics audit, no tuning changes, 3D in the browser (for stages 17–19), After stage 12b: a piano note (stage 12c) (+12 more)
@@ -321,17 +327,17 @@ Nodes (20): 2026-10-21 — Deceleration and spatial sound continuation, 2026-10-
 Cohesion: 0.12
 Nodes (16): A1 — conservative 1D comparison, Architecture and ownership, B0 — fixed-background acoustic graph, B1 — gas coupling, mean flow and lift-off, Comparison framework and rejection gates, Components, radiation and usable band, Decision and experimental arms, Learned synthesis: experiments and deployment (+8 more)
 
-### Community 41 - "RbCore"
+### Community 41 - "test_audio.c"
 Cohesion: 0.17
-Nodes (3): Consumer review before implementation, EngineDescription, RbCore
+Nodes (19): bessel_i0(), rb_decimator_init(), rb_decimator_out(), rb_decimator_push(), rb_decimator_reset(), rb_soft_limit(), Equal and unequal headers, Tests that can fail (+11 more)
 
 ### Community 42 - "Stage 3 — Gas & flow primitives"
 Cohesion: 0.25
 Nodes (7): Equations used, Notes for later stages, Results, Sources, Stage 3 — Gas & flow primitives, The gases, What was built
 
-### Community 43 - "test_scene.c"
-Cohesion: 0.22
-Nodes (15): Engine build, Geometry, connections and frames, Shared contracts — version 1, Versioning, identity and limits, geometry(), paths(), rb_scene_flight_time(), rb_scene_init() (+7 more)
+### Community 43 - "noise.c"
+Cohesion: 0.20
+Nodes (14): band_init(), band_step(), engine_noise(), flow_noise(), impact(), inner_jet(), one_pole(), passes() (+6 more)
 
 ### Community 44 - "REV-BENCH — notes for Claude"
 Cohesion: 0.11
@@ -345,20 +351,20 @@ Nodes (23): analyze(), db(), main(), powers(), signal_metrics(), coast_features_
 Cohesion: 0.15
 Nodes (10): Designing for Mockability, When to Mock, Anti-patterns, Rules of the loop, Seams: where tests go, Test-Driven Development, What a good test is, Bad Tests (+2 more)
 
-### Community 47 - "Selective sound rollback — 2026-10-22"
-Cohesion: 0.50
-Nodes (4): Configuration, Handoff, Listening result and verification, Selective sound rollback — 2026-10-22
+### Community 47 - "reference_protocol.py"
+Cohesion: 0.24
+Nodes (8): audition_gains(), digest(), measurements(), prepare(), validate(), wav_payload(), fixture(), ReferenceProtocolTests
 
 ### Community 48 - "Stage 13b-p — researched exhaust configurations"
-Cohesion: 0.25
-Nodes (8): Final numerical and listening checks, Geometry and uncertainty ledger, Idle-control calibration, Physics review, Reproduce the checkpoint, Selected real systems, Stage 13b-p — researched exhaust configurations, Validation and feedback
+Cohesion: 0.10
+Nodes (17): Current sound results, Local layout and retention, One file to open, Produce the next checkpoint, Validation of the file-management change, Final numerical and listening checks, Geometry and uncertainty ledger, Idle-control calibration (+9 more)
 
 ### Community 50 - "Should REV-BENCH change its sound-generation architecture?"
 Cohesion: 0.40
 Nodes (5): Engine-specific neural research changes the comparison, Finer grids do not add missing acoustic modes, Should REV-BENCH change its sound-generation architecture?, The prototype and comparison method, Why changing the architecture may help
 
 ### Community 51 - "render_results.py"
-Cohesion: 0.11
+Cohesion: 0.12
 Nodes (13): read_wav_bytes(), coast_markers(), expected_clips(), listening_wav(), main(), render_checkpoint(), replace_current(), sha() (+5 more)
 
 ### Community 52 - "Process"
@@ -373,29 +379,33 @@ Nodes (8): 2026-10-22 continuation: coupled port experiment and researched exhau
 Cohesion: 0.20
 Nodes (10): Additional rear cross V8 recordings — 2026-10-23, Bernardo's engine sound examples — 2026-10-21, How these examples guide the next sound work, Processing and distance, Processing and reproduction, R1b: optional filtered listening copies — 2026-10-21, Reproduction and checkpoint, Selection and perspective (+2 more)
 
+### Community 60 - "02-existing-sound.md"
+Cohesion: 0.25
+Nodes (4): Legacy roadmap — archived 2026-10-23, Native acoustic candidates — S2d, Open-port coupling checkpoint, Reproduce
+
 ### Community 61 - "The workspace"
 Cohesion: 0.33
 Nodes (5): Bernardo's machine (Windows + WSL), Claude's cloud sessions, .claude/settings.json, Moving it out of Personal-Projects (once), The workspace
 
 ### Community 62 - "REV-BENCH - Codex handoff"
 Cohesion: 0.07
-Nodes (26): 2026-10-21: consolidated feedback checkpoint before 13b, 2026-10-21 continuation: S1c and filtered references, 2026-10-21 continuation: S1d complete; S1 open, 2026-10-21 listening feedback and resumed development, 2026-10-21: S1a, S1b and local references, 2026-10-21: S2b — lift-off contrast and cross-plane redline, 2026-10-22: complete sound/physics review — hold for instructions, 2026-10-22: full 13b and model-specific exhaust work resumed (+18 more)
+Nodes (27): 2026-10-21: consolidated feedback checkpoint before 13b, 2026-10-21 continuation: S1c and filtered references, 2026-10-21 continuation: S1d complete; S1 open, 2026-10-21 listening feedback and resumed development, 2026-10-21: S1a, S1b and local references, 2026-10-21: S2b — lift-off contrast and cross-plane redline, 2026-10-22: complete sound/physics review — hold for instructions, 2026-10-22: full 13b and model-specific exhaust work resumed (+19 more)
 
 ### Community 64 - "Stage 7 — Crankshaft dynamics, multi-cylinder, self-running"
 Cohesion: 0.20
 Nodes (9): Equations used, Notes for later stages, Results, Review of stage 6, Sources, Stage 7 — Crankshaft dynamics, multi-cylinder, self-running, Three things that surprised me, Try it (+1 more)
 
 ### Community 66 - "string"
-Cohesion: 0.11
-Nodes (39): band_init(), band_step(), engine_noise(), flow_noise(), impact(), inner_jet(), one_pole(), passes() (+31 more)
+Cohesion: 0.24
+Nodes (25): rb_engine_init(), rb_noise_init(), rb_noise_step(), Tests that can fail, cabin_expected(), db(), flow_rms(), impact_energy() (+17 more)
 
-### Community 67 - "rb_cd_prepare"
-Cohesion: 0.29
-Nodes (11): rb_cd_prepare(), rb_cd_pressure(), rb_cd_step(), rb_cd_workspace(), test_coupled_duct_conservative_open_port(), test_coupled_duct_entropy_and_guards(), test_coupled_duct_moving_tagged_contact(), main() (+3 more)
+### Community 67 - "test_audio_analysis.py"
+Cohesion: 0.21
+Nodes (4): AudioAnalysisTests, chunk(), wav_bytes(), failing_write()
 
 ### Community 68 - "read_wav"
-Cohesion: 0.16
-Nodes (10): write_float(), main(), report(), window_metrics(), excerpt(), main(), spectral_metrics(), telemetry() (+2 more)
+Cohesion: 0.13
+Nodes (16): read_wav(), write_float(), deceleration_report(), main(), record(), sha(), comparison(), main() (+8 more)
 
 ### Community 69 - "Canonical stage tracker"
 Cohesion: 0.09
@@ -403,11 +413,11 @@ Nodes (22): 10. Knock, mechanical limits and damage, 11. Expanded engine and exh
 
 ### Community 70 - "csv"
 Cohesion: 0.14
-Nodes (15): analyze(), brief(), plot_summary(), read(), select(), self_test(), main(), encode_listening() (+7 more)
+Nodes (10): main(), encode_listening(), main(), prepare(), prepare_filtered(), publish_filtered(), run(), sha256() (+2 more)
 
 ### Community 71 - "pipe.c"
-Cohesion: 0.20
-Nodes (33): rb_chamber_add_heat(), rb_chamber_clear_rates(), cell_heat(), cell_is_fast(), end_flow(), fast_cells(), fast_flows(), kinetic_energy() (+25 more)
+Cohesion: 0.15
+Nodes (34): new_pipe(), rb_engine_init_at(), slow_step(), cell_heat(), cell_is_fast(), end_flow(), face_init(), fast_cells() (+26 more)
 
 ### Community 72 - "Existing sound, measurements and bounded prototypes"
 Cohesion: 0.10
@@ -418,8 +428,8 @@ Cohesion: 0.40
 Nodes (5): Deliverables, Review findings incorporated, Scope decisions, Stage 036 — complete project roadmap and evidence protocol, Validation and limits
 
 ### Community 74 - "rb_engine_desc_default"
-Cohesion: 0.32
-Nodes (10): rb_engine_desc_default(), best_spark(), run_held(), test_calibration_burn_and_spark(), test_calibration_cams(), test_calibration_compression(), test_calibration_idle_spark(), test_calibration_matches_real_engines() (+2 more)
+Cohesion: 0.17
+Nodes (20): mark(), rb_dyno_init(), rb_dyno_step(), rb_dyno_sweep(), rb_engine_desc_default(), Tests that changed, Tests that can fail, Tests that changed (+12 more)
 
 ### Community 76 - "Stage 13b-r — high-RPM exhaust character"
 Cohesion: 0.29
@@ -427,18 +437,18 @@ Nodes (7): Deliverable and reproduction, Implemented geometry and limits, Measur
 
 ### Community 77 - "Stage 8 — Engine layouts & presets"
 Cohesion: 0.14
-Nodes (10): Idle tuning, Notes for later stages, Review of stage 7, Sources, Stage 8 — Engine layouts & presets, The layout, The presets, Three things that surprised me (+2 more)
+Nodes (10): Idle tuning, Notes for later stages, Results, Review of stage 7, Sources, Stage 8 — Engine layouts & presets, The layout, The presets (+2 more)
 
-### Community 78 - "Current sound results"
-Cohesion: 0.40
-Nodes (5): Current sound results, Local layout and retention, One file to open, Produce the next checkpoint, Validation of the file-management change
+### Community 78 - "wav.c"
+Cohesion: 0.24
+Nodes (13): What was built, build_header(), bytes_per_sample(), get_u16(), get_u32(), parse_wav(), put_u16(), put_u32() (+5 more)
 
 ### Community 79 - "rb_create"
-Cohesion: 0.14
-Nodes (30): rb_alloc_floats(), rb_create(), rb_create_with(), rb_create_with_quality(), rb_free_floats(), config_is_valid(), rb_config_default(), rb_config_quality() (+22 more)
+Cohesion: 0.09
+Nodes (43): rb_dc_blocker_init(), rb_dc_blocker_reset(), rb_dc_blocker_step(), rb_alloc_floats(), rb_create(), rb_create_with(), rb_create_with_quality(), rb_free_floats() (+35 more)
 
 ### Community 80 - "audio_source_probe.c"
-Cohesion: 0.29
+Cohesion: 0.32
 Nodes (14): coast_road_load(), main(), capture(), fail(), init_fixture(), main(), output_frame(), path_name() (+6 more)
 
 ### Community 81 - "cmd_info"
@@ -446,24 +456,24 @@ Cohesion: 0.32
 Nodes (15): param_ok(), rb_get_param(), rb_param_count(), rb_param_default(), rb_param_find(), rb_param_flags(), rb_param_max(), rb_param_min() (+7 more)
 
 ### Community 83 - "string"
-Cohesion: 0.40
+Cohesion: 0.36
 Nodes (12): derive(), normalise(), rb_chamber_init(), rb_chamber_integrate(), rb_chamber_integrate_many(), rb_chamber_set_volume(), rb_chamber_update(), remix() (+4 more)
 
 ### Community 84 - "REV-BENCH — Feedback checkpoint before stage 13b"
-Cohesion: 0.11
-Nodes (15): Acceptance that is still outstanding, Real references and other scenarios, Reproduction and feedback, REV-BENCH — Feedback checkpoint before stage 13b, Start with the longer deceleration, Validation and processing cost, What has progressed, Model (+7 more)
+Cohesion: 0.09
+Nodes (18): Acceptance that is still outstanding, Real references and other scenarios, Reproduction and feedback, REV-BENCH — Feedback checkpoint before stage 13b, Start with the longer deceleration, Validation and processing cost, What has progressed, Optional ultra quality (+10 more)
 
 ### Community 85 - "README.md"
 Cohesion: 0.17
-Nodes (10): Shared exhaust geometry with bidirectional physical loading, One complete SI build and generation-tagged observations, Cost, preservation and reproducibility, Design, research and consumer review, Implementation and proof boundaries, Results and failure controls, Scope and frozen evidence gates, Stage038 predecessor review (+2 more)
+Nodes (9): Shared exhaust geometry with bidirectional physical loading, One complete SI build and generation-tagged observations, Cost, preservation and reproducibility, Design, research and consumer review, Implementation and proof boundaries, Results and failure controls, Scope and frozen evidence gates, Stage038 predecessor review (+1 more)
 
 ### Community 91 - "acoustic_transport_probe.c"
 Cohesion: 0.35
 Nodes (9): excite(), init(), main(), measure(), packet(), release(), run(), seconds() (+1 more)
 
-### Community 92 - "S2b — Loaded exhaust detail and the lift-off contrast"
-Cohesion: 0.29
-Nodes (7): Cross-plane V8, Evidence and research, Measurement and listening, Model, Rejected controls, Render-helper error and validation, S2b — Loaded exhaust detail and the lift-off contrast
+### Community 92 - "presets.c"
+Cohesion: 0.46
+Nodes (13): airbox(), boxer4(), exhaust(), inline4(), inline6(), intake(), layout(), muffler() (+5 more)
 
 ### Community 93 - "Historical foundations and engine core"
 Cohesion: 0.12
@@ -477,21 +487,21 @@ Nodes (3): Language, Numerical observation (Stage038), REV-BENCH
 Cohesion: 0.10
 Nodes (31): Cost and memory, Gates and reproduction, Lifetime and bounded cost contract, Measured numerical results, Model, ownership and limits, Predecessor review, Qualification and handoff, Stage 038 — Numerical guard and flux observability (+23 more)
 
-### Community 98 - "math"
-Cohesion: 0.15
-Nodes (4): mixture_ns(), now(), nozzle_ns(), array()
+### Community 98 - "string"
+Cohesion: 0.13
+Nodes (6): main(), selected(), now(), count(), import(), value()
 
 ### Community 99 - "test_acoustic_candidates.c"
 Cohesion: 0.07
-Nodes (74): rb_radiation_init(), rb_radiation_linear(), rb_radiation_step(), Experiment and acceptance, Implemented scope, Measured outcome, Method and physical ownership, Reproduce (+66 more)
+Nodes (75): Experiment and acceptance, Implemented scope, Measured outcome, Method and physical ownership, Reproduce, S2d-R, S2d-0b and S2d-B1a — first open coupling checkpoint, Geometry and approximations, Pass-by and room decay (+67 more)
 
 ### Community 101 - "Initial audio bottleneck diagnosis — 2026-10-22"
 Cohesion: 0.20
 Nodes (10): 1. Numerical acoustic transport limits coherent detail, 2. Procedural highs are only partly coupled to the modeled exhaust, 3. Excitation and state transitions may be too approximate, 4. Current evidence does not implicate final compression, Architecture actually present, First proposed experiment, before choosing a remedy, How the suggested neural remedies apply, Initial audio bottleneck diagnosis — 2026-10-22 (+2 more)
 
 ### Community 102 - "Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet"
-Cohesion: 0.15
-Nodes (9): Equations used, How the sound gets out, Notes for later stages, Results, Sources, Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet, What was built, makeImports() (+1 more)
+Cohesion: 0.22
+Nodes (8): Equations used, How the sound gets out, Notes for later stages, Results, Sources, Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet, What was built, makeImports()
 
 ### Community 103 - "Audio robustness: research and candidate roadmap — 2026-10-22"
 Cohesion: 0.22
@@ -514,24 +524,24 @@ Cohesion: 0.29
 Nodes (7): Architecture decision after S2d, Engineering direction, One method for every change, Reference and listening method, Research and audit coverage, Small stages and decision gates, Sound robustness and realism programme
 
 ### Community 109 - "engine-node.ts"
-Cohesion: 0.25
-Nodes (6): EngineOptions, FromWorklet, PROCESSOR_NAME, ProcessorOptions, ToWorklet, RevBenchProcessor
+Cohesion: 0.18
+Nodes (7): EngineOptions, FromWorklet, PROCESSOR_NAME, ProcessorOptions, ToWorklet, RevBenchProcessor, setup()
 
 ### Community 110 - "hashlib"
-Cohesion: 0.16
-Nodes (11): core_fingerprint(), diagnostics(), main(), measurements(), record(), sha256(), validate_audio(), build() (+3 more)
+Cohesion: 0.14
+Nodes (10): digest(), main(), core_fingerprint(), diagnostics(), main(), measurements(), record(), sha256() (+2 more)
 
 ### Community 111 - "setup"
 Cohesion: 0.22
 Nodes (10): curve_panel(), end_labels(), main(), peak(), plot_changes(), plot_curves(), plot_spark(), preset_of() (+2 more)
 
-### Community 112 - "throttle.c"
-Cohesion: 0.31
-Nodes (9): rb_throttle_angle(), rb_throttle_area(), rb_throttle_check(), rb_throttle_open_area(), strip_in_ellipse(), body(), sliced_area(), test_throttle_geometry() (+1 more)
+### Community 112 - "test_wav.c"
+Cohesion: 0.40
+Nodes (13): wav_close(), wav_open(), rbt_tmp_path(), harmonic(), le16(), le32(), slurp(), test_wav_float32_stereo_roundtrip() (+5 more)
 
 ### Community 113 - "diagnostics.c"
-Cohesion: 0.16
-Nodes (20): add(), pipe_role(), rb_diag_bind_engine(), rb_diag_impulse(), rb_diag_init(), rb_diag_inventory(), rb_diag_note(), rb_diag_reason_name() (+12 more)
+Cohesion: 0.36
+Nodes (10): add(), rb_diag_impulse(), rb_diag_init(), rb_diag_inventory(), rb_diag_note(), rb_diag_repair(), rb_diag_transfer(), reasons_add() (+2 more)
 
 ### Community 114 - "Engine integration, architecture selection and base acceptance"
 Cohesion: 0.17
@@ -541,37 +551,37 @@ Nodes (12): Engine integration, architecture selection and base acceptance, Stag
 Cohesion: 0.18
 Nodes (11): Propagation prototypes and physical components, Stage 043 — Improved conservative solver and production-mixture control, Stage 044 — Executable shared exhaust geometry compiler, Stage 045 — General zero-flow open gas-to-graph coupling, Stage 046 — Uniform mean-flow coupling, Stage 047 — Gas-property and wall-thermal model characterization, Stage 048 — Thermal fronts, coefficient updates and reverse entrainment, Stage 049 — Branches, finite junctions and all-port transfer (+3 more)
 
-### Community 116 - "read_wav"
-Cohesion: 0.08
-Nodes (22): read_wav(), a_weighting(), as_db(), band(), compare(), fetch(), main(), measure() (+14 more)
+### Community 116 - "compare_real.py"
+Cohesion: 0.10
+Nodes (17): a_weighting(), as_db(), band(), chart(), compare(), fetch(), main(), measure() (+9 more)
 
 ### Community 117 - "Stage 13 — Performance & stability pass"
-Cohesion: 0.17
-Nodes (11): Cost, Measuring, Notes for later stages, Review of stage 12, Sources, Stage 13 — Performance & stability pass, The quality setting, The sound check (+3 more)
+Cohesion: 0.12
+Nodes (15): D08 — P1: randomized stability checks omit the new junction chamber, Tests that changed, Cost, Measuring, Notes for later stages, Sources, Stage 13 — Performance & stability pass, The fuzzer (+7 more)
 
 ### Community 118 - "matplotlib_pyplot"
-Cohesion: 0.26
-Nodes (9): between(), firing_panel(), gaps(), main(), plot_firing(), plot_idle(), plot_runs(), preset_of() (+1 more)
+Cohesion: 0.23
+Nodes (10): between(), firing_panel(), gaps(), main(), plot_firing(), plot_idle(), plot_runs(), preset_of() (+2 more)
 
 ### Community 119 - "Roadmap execution and evidence protocol"
 Cohesion: 0.17
 Nodes (12): Change control and evidence preservation, Dependency and milestone sketch, Integrated release scenario, Minimum execution record, Preserved sound and scenario obligations, Quantitative validation policy, Required validation commands for code stages, Roadmap execution and evidence protocol (+4 more)
 
-### Community 120 - "Stage 1 — Native C scaffold, WAV writer, test runner"
-Cohesion: 0.33
-Nodes (5): Equations used, Results, Sources, Stage 1 — Native C scaffold, WAV writer, test runner, What was built
+### Community 120 - "csv"
+Cohesion: 0.36
+Nodes (6): analyze(), brief(), plot_summary(), read(), select(), self_test()
 
 ### Community 121 - "Stage S1c — Reproducible sound and combustion baselines"
 Cohesion: 0.33
 Nodes (5): Float sound audit, Native cycle audit, Reference continuation and next S1 step, Results and validation, Stage S1c — Reproducible sound and combustion baselines
 
 ### Community 122 - "fuzz.c"
-Cohesion: 0.29
-Nodes (6): check_chamber(), fail(), rb_fuzz_inspect_engine(), repairs(), seed_state(), uniform()
+Cohesion: 0.31
+Nodes (5): check_chamber(), fail(), rb_fuzz_inspect_engine(), seed_state(), uniform()
 
-### Community 123 - "rb_engine_init"
-Cohesion: 0.16
-Nodes (30): rb_engine_init(), rb_preset_count(), rb_preset_desc(), rb_preset_find(), rb_preset_key(), Results, Tests that can fail, main() (+22 more)
+### Community 123 - "rb_preset_find"
+Cohesion: 0.27
+Nodes (13): rb_preset_find(), Tests that can fail, Tests that can fail, all_gaps(), count_sparks(), firing_gaps(), gaps_are(), refused() (+5 more)
 
 ### Community 124 - "Optional expansions"
 Cohesion: 0.20
@@ -594,8 +604,8 @@ Cohesion: 0.25
 Nodes (8): Stage 078 — Turbo compressor and turbine map components, Stage 079 — Turbo shaft and engine gas-system integration, Stage 080 — Boost, wastegate, intercooler and blow-off control, Stage 081 — Turbo acoustic sources and turbine propagation, Stage 082 — Turbo controls, instrumentation and build integration, Stage 083 — Turbo geometry, shaft motion and valve visualization, Stage 084 — Turbo engine, audio, visual and runtime qualification, Turbocharged engine development
 
 ### Community 130 - "plot_fire.py"
-Cohesion: 0.16
-Nodes (10): at_volume(), degrees(), half_cycle_axis(), imep(), log_axis(), main(), plot_cycle(), plot_power() (+2 more)
+Cohesion: 0.17
+Nodes (9): at_volume(), degrees(), half_cycle_axis(), imep(), log_axis(), main(), plot_cycle(), spark_text() (+1 more)
 
 ### Community 131 - "Knock, mechanical limits and damage"
 Cohesion: 0.33
@@ -613,49 +623,45 @@ Nodes (4): Changes, Next S1 work, Stage S1a — Reliable sound analysis before f
 Cohesion: 0.24
 Nodes (9): colorbar(), compare(), engine(), grid(), main(), pulse(), runs(), save() (+1 more)
 
-### Community 135 - "Bounded completed-stage review repairs"
-Cohesion: 0.67
-Nodes (3): Bounded completed-stage review repairs, Stage 112 — Recoverable checkpoint section publication, Stage 113 — Acoustic derived-state and numerical failure guards
+### Community 135 - "The mufflers"
+Cohesion: 0.25
+Nodes (8): A muffler is a pipe, Going straight on, Packing, The boom, The chambered can, The mufflers, The rasp, What they do
 
 ### Community 136 - "Playable browser bench"
 Cohesion: 0.40
 Nodes (5): Playable browser bench, Stage 066 — Playable browser engine and audio lifecycle, Stage 067 — Engine, intake and exhaust control panel, Stage 068 — Live instruments, engine telemetry and native-owned dyno, Stage 069 — First playable browser qualification
 
-### Community 137 - "Native acoustic candidates — S2d"
-Cohesion: 0.67
-Nodes (3): Native acoustic candidates — S2d, Open-port coupling checkpoint, Reproduce
+### Community 137 - "test_engine_pipes_two_rates"
+Cohesion: 0.29
+Nodes (7): Checks, The ends, The pipe, The scheme, The walls, Two rates, test_engine_pipes_two_rates()
+
+### Community 138 - "pathlib"
+Cohesion: 0.15
+Nodes (10): cases(), check_topology_identity(), digest(), main(), read_row(), run(), write_csv(), build() (+2 more)
 
 ### Community 139 - "Conditional learned-synthesis research"
 Cohesion: 0.67
 Nodes (3): Conditional learned-synthesis research, Stage 064 — Standalone learned pulse and DSP-parameter benchmark, Stage 065 — Conditional learned unresolved-source integration
 
-### Community 140 - "rb_pipe_end_cell"
-Cohesion: 0.33
-Nodes (6): face_init(), rb_pipe_attach(), rb_pipe_end_cell(), rb_pipe_onward(), sort_face(), sort_faces()
+### Community 140 - "Stage039 — Matched references and calibration protocol"
+Cohesion: 0.40
+Nodes (4): Frozen reference rules, Gates, Review038, Stage039 — Matched references and calibration protocol
 
 ### Community 141 - "rb_cylinder_move"
 Cohesion: 0.06
-Nodes (46): rb_cyl_dvolume(), rb_cyl_geom_init(), rb_cyl_piston_dx(), rb_cyl_piston_x(), rb_cyl_volume(), rb_cylinder_init(), rb_cylinder_move(), rb_wall_area() (+38 more)
+Nodes (45): rb_cyl_dvolume(), rb_cyl_geom_init(), rb_cyl_piston_dx(), rb_cyl_piston_x(), rb_cyl_volume(), rb_cylinder_init(), rb_cylinder_move(), rb_wall_area() (+37 more)
 
-### Community 142 - "Confirmed implementation and numerical issues"
-Cohesion: 0.22
-Nodes (9): Confirmed implementation and numerical issues, D01 — P1: modeled burning can precede its recorded spark, D02 — P1: the internal-jet noise model misidentifies choking, D03 — P1: added exhaust noise does not follow shared X/Y routing, D04 — P2: added-noise travel times omit center and link pipes, D05 — P1: synthetic noise retains hidden catalyst and obsolete losses, D06 — P1: turning variation off also switches combustion physics, D07 — P2: injector clicks are detached from injection events (+1 more)
+### Community 142 - "S1e — Research and controlled overrun transitions"
+Cohesion: 0.50
+Nodes (4): Model, Real references, S1e — Research and controlled overrun transitions, Validation and remaining work
 
 ### Community 143 - "rb_audit.c"
-Cohesion: 0.38
-Nodes (4): add(), main(), number(), usage()
+Cohesion: 0.33
+Nodes (5): add(), audit(), main(), number(), usage()
 
 ### Community 145 - "plot_run.py"
-Cohesion: 0.33
+Cohesion: 0.31
 Nodes (5): first(), main(), plot(), spans(), window()
-
-### Community 146 - "rb_dc_blocker_init"
-Cohesion: 0.70
-Nodes (4): rb_dc_blocker_init(), rb_dc_blocker_reset(), rb_dc_blocker_step(), test_audio_dc_blocker()
-
-### Community 147 - "Sound and engine-physics audit — 2026-10-22"
-Cohesion: 0.40
-Nodes (5): Reproduce the diagnostic, Scope and evidence, Sound and engine-physics audit — 2026-10-22, Sources consulted for physical claims, Stage coverage and recommended dependency order
 
 ### Community 148 - "Where the time goes"
 Cohesion: 0.40
@@ -665,33 +671,25 @@ Nodes (5): The chamber and the gas, The nozzle and the walls, The pipes, What di
 Cohesion: 0.73
 Nodes (5): at_rpm(), running(), test_overrun_reset_and_legacy(), test_overrun_retards_combustion(), test_overrun_transition()
 
-### Community 151 - "test_fuzz_random_engines"
-Cohesion: 0.50
-Nodes (4): D08 — P1: randomized stability checks omit the new junction chamber, Tests that changed, The fuzzer, test_fuzz_random_engines()
-
-### Community 152 - "The engine's own sound"
-Cohesion: 0.50
-Nodes (4): Modal synthesis, The engine's own sound, The mounts, What strikes them
-
 ## Knowledge Gaps
 - **3 isolated node(s):** `@types/node`, `typescript`, `vite`
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 880 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **30 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 886 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `Core (C)` connect `test_engine.c` to `rb_engine_step`, `rb_engine_step`, `string`, `pipe.c`, `rb_engine_desc_default`, `rb_pipe_end_cell`, `rb_cylinder_move`, `RbExports`, `rb_create`, `REV-BENCH — notes for Claude`, `test_audio.c`, `rb_engine_pipe`, `string`, `test_fuzz_random_engines`, `gas.c`, `Stage 10 — 1D pipes: runners, headers, collectors, tailpipes`, `rb_engine_init`, `rb_network_step`?**
-  _High betweenness centrality (0.128) - this node is a cross-community bridge._
-- **Are the 85 inferred relationships involving `rb_engine_step()` (e.g. with `rb_chamber_add_heat()` and `rb_chamber_clear_rates()`) actually correct?**
-  _`rb_engine_step()` has 85 INFERRED edges - model-reasoned connections that need verification._
+- **Why does `Core (C)` connect `Core (C)` to `string`, `rb_engine_step`, `rb_cli.c`, `pipe.c`, `test_engine_pipes_two_rates`, `rb_engine_desc_default`, `RbExports`, `rb_cylinder_move`, `REV-BENCH — notes for Claude`, `rb_create`, `audio.c`, `rb_preset_desc`, `string`, `Stage 13 — Performance & stability pass`, `gas.c`, `test_engine.c`, `rb_network_step`?**
+  _High betweenness centrality (0.116) - this node is a cross-community bridge._
+- **Are the 86 inferred relationships involving `rb_engine_step()` (e.g. with `rb_chamber_add_heat()` and `rb_chamber_clear_rates()`) actually correct?**
+  _`rb_engine_step()` has 86 INFERRED edges - model-reasoned connections that need verification._
 - **What connects `@types/node`, `typescript`, `vite` to the rest of the system?**
   _3 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `test_variation.c` be split into smaller, more focused modules?**
-  _Cohesion score 0.14634146341463414 - nodes in this community are weakly interconnected._
-- **Why does `RbExports` connect `RbExports` to `rb-core.ts`, `Stage 2 — Web scaffold: C → WebAssembly → AudioWorklet`, `RbCore`, `REV-BENCH — notes for Claude`, `Stage 8 — Engine layouts & presets`, `RbSim`, `engine-node.ts`, `test_engine.c`?**
-  _High betweenness centrality (0.110) - this node is a cross-community bridge._
+- **Should `rb_engine_step` be split into smaller, more focused modules?**
+  _Cohesion score 0.10526315789473684 - nodes in this community are weakly interconnected._
+- **Why does `RbExports` connect `RbExports` to `rb-core.ts`, `REV-BENCH — notes for Claude`, `Stage 8 — Engine layouts & presets`, `RbSim`, `engine-node.ts`, `Core (C)`?**
+  _High betweenness centrality (0.101) - this node is a cross-community bridge._
 - **Are the 53 inferred relationships involving `rb_engine_init()` (e.g. with `Try it` and `Three things that surprised me`) actually correct?**
   _`rb_engine_init()` has 53 INFERRED edges - model-reasoned connections that need verification._
 - **Should `rb_engine_step` be split into smaller, more focused modules?**
-  _Cohesion score 0.08333333333333333 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.10256410256410256 - nodes in this community are weakly interconnected._

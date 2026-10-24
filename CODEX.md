@@ -4,6 +4,33 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24:039 protocol checkpoint; authorized continuation through040
+
+- User: continue through040; review each predecessor before next completion.
+  Reviewed038 optional taps/books/limits; no blocking regression.039 protocol
+  implemented/qualified, but matched calibration remains unqualified and039
+  awaits targeted known NA I6/boxer data. Asked user asynchronously; do not
+  fabricate geometry/RPM/load or count historically used clips as held out.
+- docs/stage-039.md; tools/reference_sessions_v1.json freezes8sessions:
+  6development,1new GM race-I6 validation,1uncertain Subaru quarantine. All17
+  old Freesound source IDs are historical development.20raw source-level stereo
+  float excerpts in renders/reference-protocol/raw. Hashes/rights/intervals/
+  uncertainties in lock; use per-channel powers before averaging. Never feed
+  filtered copies or legacy mono averages into stereo calibration.
+- Six behavioral tests and five valid Python mutants prove channel power,
+  gain modes, split/fingerprint/seen-data rejection and unclipped float storage.
+  Native202/38814,Python64,web17 pass. Four development-only gain controls in
+  one RESULTS.html;52offline players pass. Existing48payloads/116protected
+  files preserved. Raw validation clips are not tuning auditions.
+-040 independent causality work is authorized (depends038). Baseline command-
+  angle oracle detects154–356J pre-command heat per0.5s across5presets. See
+  docs/stage-040.md frozen gates/design. Saved baseline CLI/WASM/probe under
+  /tmp/rev-bench-040-*; evidence renders/evidence/stage-040/. Core unchanged
+  at039checkpoint. Do not use new validation/quarantine audio for tuning040.
+- Keep user .agents/ and skills-lock.json untracked; Claude setup intact.
+  Commit this checkpoint, then complete040 and stop. Parent S1/S1e/S2/S4/full13b
+  listening/physical/runtime requirements remain open.
+
 ## 2026-10-23: Stage038 complete — numerical observation checkpoint
 
 - User authorizes review037, then038. docs/stage-038.md is the execution record.

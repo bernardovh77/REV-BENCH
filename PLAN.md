@@ -28,16 +28,17 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stage 038 complete.** The [Stage037 review and numerical
-observation proof](docs/stage-038.md) fix native contract coercion/metadata loss
-and add optional native flux/guard, junction, momentum-impulse, effective geometry/
-CFL and bounded-trace diagnostics. Native/WASM/adverse/fault/cost checks pass;
-all34 float renders (337.248s) match the accepted audio byte for byte. Numerical
-observability does not close later physical accuracy or real-time requirements.
+**Current execution: through Stage040, explicitly authorized by Bernardo.**
+Stage038 was reviewed with no blocking regression in its declared scope.
+[Stage039's protocol](docs/stage-039.md) now locks source/session partitions,
+provides stereo-safe measurements and two audition gain policies, and records
+new I6/uncertain-boxer references. **039 awaits matched reference data** for
+calibration; unknown RPM/load/exhaust/microphone data is not waived.
 
-**Next default execution: Stage 039 — matched references and calibration
-protocol.** Stage040 causal source work and043/044 propagation/geometry are
-ready by dependency; this saved checkpoint does not start them automatically.
+[Stage040](docs/stage-040.md) proceeds independently after review of039's
+qualified protocol: commanded spark, actual discharge, kernel development and
+heat causality. Its prerequisite038 is complete; missing039 data blocks matching
+claims rather than unrelated numerical fixtures. Stop at the040 checkpoint.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -172,8 +173,8 @@ historical rows are not a claim that all current audio goals have passed.
 | [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol | Complete | 035 |
 | [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
 | [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
-| [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Ready | 036 |
-| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Ready | 038 |
+| [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
+| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | In progress | 038 |
 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Not started | 040, 038 |
 | [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Not started | 040, 038 |
 

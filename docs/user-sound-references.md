@@ -299,3 +299,15 @@ players, exclusive playback, four original top-band seek buttons and six retaine
 research plots. Graphify's AST graph was refreshed to 2159 nodes / 5933 edges /
 112 communities; the existing `rb.h:415` extraction limitation remains. No
 semantic extraction of these documentation/data additions is claimed.
+
+## Stage039 canonical reference protocol
+
+[The session lock and measurement protocol](stage-039.md) now decode selected
+source-level stereo float excerpts separately in `renders/reference-protocol/raw`.
+Use those per-channel powers for future quantitative work. The16 legacy mono
+files above stay preserved for historical reproduction; they cannot recover
+stereo cancellation and are not stereo calibration authority. Existing supplied
+recordings and all17 previously used Freesound sources are development data.
+The new GM-I6 session is reserved validation; the sparse Subaru candidate stays
+quarantined. Neither provides calibrated SPL or a measured RPM/load trace.
+Four common-gain/equal-RMS development controls are in the same RESULTS page.
