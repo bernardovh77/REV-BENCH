@@ -4,6 +4,35 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Six supplied039 candidates assessed — HOLD
+
+- Bernardo asks whether six supplied BMW/Subaru videos fill039's gap. Read
+  docs/stage-039-supplied-video-assessment.md and the compact supplied-candidate
+  ledger before intake.125sampled frames, uploader descriptions, full unfiltered
+ 48kHz stereo float decodes550.848646s and per-channel/speech-risk screens reviewed.
+- Stronger candidates: AJ Garage stock/custom muffler delete with2K/4K captions;
+  Python Don stock/twin2.25in catalyst-back pipes and stock3–4K rev caption;
+  Pyrenees BMW M54 hardware progression with actual OEM/Supersprint/Eisenmann
+  captions. No continuous tachometer/load/coast trace or mic gain/transfer proved.
+- Python Don X-pipe comparison also adds Magnaflow muffler; never attribute the
+  whole change to X alone. Same uploader/visible car as stock/straight comparison:
+  one conservative family, check reused material before session split. Pyrenees
+  first labeled setup already has Eisenmann rear, not completely stock.
+- Event BMW125.2dB is an uncalibrated uploader report. Short custom XV exact
+  engine/hardware/valve states unproved. Speech-risk flags are screening, not
+  proof of narration/music-free content. Decoded overshoots do not prove clipping.
+- Originals stay unmodified/untracked at supplied paths. Generated media and
+  evidence ignored. Existing locks11sessions/34intervals, page55players, engine
+  choices and Claude setup untouched; six seen candidates not admitted/held out.
+  Temporary FFmpeg7.0.2 from imageio-ffmpeg0.6.0 handles AV1; no dependency change.
+-039 acquisition remains open; user needs no personal car/pro recording. Best
+  next video has identified engine/exhaust, tachometer during pull/long coast
+  and disclosed recording setup. No041/tuning started. Save/sync assessment, hold.
+- Nine reference tests pass without skips;194protected files, both lock
+  revisions and113stage rows preserved. Final source/raw/screen hashes pass.
+  Graphify queried/AST-refreshed2784nodes/7559edges/158communities; known rb.h
+  warning retained. No new native/WASM/browser/render suites claimed.
+
 ## 2026-10-24: Extended039 source research; matched acquisition open — HOLD
 
 - Bernardo clarified that RPM/load/microphone acquisition belongs to039; prior

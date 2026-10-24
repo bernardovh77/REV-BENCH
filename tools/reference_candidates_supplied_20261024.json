@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-24",
+  "baseline_revision": "8affe42d1f1cac89cd43dbf99a34a9f5b283b152",
+  "scope": "Six supplied candidate assessment only; complements historical candidate catalogv2 and does not revise frozen audio session locksv1/v2.",
+  "evidence": "renders/evidence/stage-039-six-video-screen-2026-10-24",
+  "total_sampled_frames": 125,
+  "total_decoded_audio_seconds": 550.8486458333333,
+  "engine_tuning": false,
+  "stage039_complete": false,
+  "stage041_started": false,
+  "recordings": [
+    {
+      "id": "GqnUq5Y_fjs",
+      "preset_candidate": "i6",
+      "priority": "secondary",
+      "source_family": "gepflanzt-event-330ci",
+      "title": "BMW E46 330ci straight pipe",
+      "uploader": "GEPFLANZT AUTOMOBILE",
+      "source_page": "https://www.youtube.com/watch?v=GqnUq5Y_fjs",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "BMW E46 330ci straight pipe [GqnUq5Y_fjs].mkv",
+        "sha256": "b24d844744b702e7047a8d304daf5adf963998d7ceb76704ba508a1e79d163f0",
+        "bytes": 2857659
+      },
+      "inspection": {
+        "sampled_frames": 16,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/GqnUq5Y_fjs/frames.json",
+        "uploader_description_read": true,
+        "observations": "Event stationary rear-quarter candidate; crowded covered environment; title identifies330Ci; owner125.2dB claim has no verified test chain.",
+        "approximate_rpm_labels": [],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 1501310,
+        "seconds": 31.277291666666667,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          1.126002550125122,
+          1.126002550125122
+        ],
+        "channel_mean_power": [
+          0.05984907178703897,
+          0.05984906578640407
+        ],
+        "samples_at_or_above_full_scale": 780,
+        "channel_correlation": 0.9999999492667883,
+        "raw_sha256": "c5278a1aa03b74ac4934c9374af0b93c4aa3afb29376f1df7025706b2fbfa2fb",
+        "vad_peak": [
+          0.9999696016311646,
+          0.9999695420265198
+        ]
+      },
+      "limits": [
+        "Approximate family only; full hardware/RPM/load unknown.",
+        "Event sound-level report is not calibrated audio.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "S3DCHs8mJtg",
+      "preset_candidate": "i6",
+      "priority": "high-complementary",
+      "source_family": "python-don-e46-330ci",
+      "title": "BMW E46 330CI Straight Pipe Vs. X-Pipe Exhaust",
+      "uploader": "Python Don",
+      "source_page": "https://www.youtube.com/watch?v=S3DCHs8mJtg",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "BMW E46 330CI Straight Pipe Vs. X-Pipe Exhaust [S3DCHs8mJtg].webm",
+        "sha256": "3148ea12345381ad29f5a924a65967084a25d496c9cbd46012c81d04487fcbe6",
+        "bytes": 139929350
+      },
+      "inspection": {
+        "sampled_frames": 27,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/S3DCHs8mJtg/frames.json",
+        "uploader_description_read": true,
+        "observations": "Labeled starts/revs/acceleration/pass-bys; X-pipe plus Magnaflow muffler replaces prior straight system, so multiple components change.",
+        "approximate_rpm_labels": [],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 10150912,
+        "seconds": 211.47733333333332,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          0.4349011182785034,
+          0.4552536606788635
+        ],
+        "channel_mean_power": [
+          0.004987463278926847,
+          0.005563279364535601
+        ],
+        "samples_at_or_above_full_scale": 0,
+        "channel_correlation": 0.9567161675742215,
+        "raw_sha256": "ec3077608573e35453ad4a19da16505b68344414b395b33c157b8b22e8ac7ce3",
+        "vad_peak": [
+          0.13618728518486023,
+          0.13618728518486023
+        ]
+      },
+      "limits": [
+        "No continuous tachometer trace.",
+        "Check footage reuse and group both Python Don videos together.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "wUGmbzjB9U0",
+      "preset_candidate": "boxer4",
+      "priority": "highest",
+      "source_family": "aj-garage-impreza-gp",
+      "title": "Subaru Impreza/XV/Crosstrek Muffler Delete (2012-2016)",
+      "uploader": "AJ Garage",
+      "source_page": "https://www.youtube.com/watch?v=wUGmbzjB9U0",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "Subaru Impreza⧸XV⧸Crosstrek Muffler Delete (2012-2016) [wUGmbzjB9U0].mkv",
+        "sha256": "b503127d631912b8c49cc96f0e55a79bbac6936c3686619a30d80b0838e22173",
+        "bytes": 29955054
+      },
+      "inspection": {
+        "sampled_frames": 26,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/wUGmbzjB9U0/frames.json",
+        "uploader_description_read": true,
+        "observations": "Owner-described GP7/G4-era Impreza custom muffler delete versus stock, with visible rear hardware and approximate2K/4K rev captions.",
+        "approximate_rpm_labels": [
+          {
+            "rpm": 2000,
+            "basis": "uploader on-screen target caption",
+            "continuous_trace": false
+          },
+          {
+            "rpm": 4000,
+            "basis": "uploader on-screen target caption",
+            "continuous_trace": false
+          }
+        ],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 6084929,
+        "seconds": 126.76935416666667,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          1.0621041059494019,
+          1.0621041059494019
+        ],
+        "channel_mean_power": [
+          0.012390351746873252,
+          0.012390351722467377
+        ],
+        "samples_at_or_above_full_scale": 664,
+        "channel_correlation": 0.9999999994498873,
+        "raw_sha256": "f3f075862def88516b9bc9a210137914fb6d1997d6b115acb6bf7f0e513fd1e8",
+        "vad_peak": [
+          0.13142076134681702,
+          0.13143375515937805
+        ]
+      },
+      "limits": [
+        "Actual engine code not independently inspected; not exact XV/HKS system.",
+        "Before/after microphone position, gain and matched operation unproved.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "G_PgZoWrebE",
+      "preset_candidate": "boxer4",
+      "priority": "secondary",
+      "source_family": "heng-heng-custom-xv",
+      "title": "SUBARU XV | Valvetronic Exhaust System ~ Amazing Sound !!!!",
+      "uploader": "HENG HENG EXHAUST",
+      "source_page": "https://www.youtube.com/watch?v=G_PgZoWrebE",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "SUBARU XV ｜ Valvetronic Exhaust System ~ Amazing Sound !!!! [G_PgZoWrebE].mkv",
+        "sha256": "e8814fc359a5df1d3e80937c2381111ba5cef759e31386aac6258bdaefcf0391",
+        "bytes": 2427663
+      },
+      "inspection": {
+        "sampled_frames": 8,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/G_PgZoWrebE/frames.json",
+        "uploader_description_read": true,
+        "observations": "Short rear view of custom quad-outlet XV; title claims valved exhaust; exact engine and valve states unverified.",
+        "approximate_rpm_labels": [],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 754556,
+        "seconds": 15.719916666666666,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          1.0211684703826904,
+          1.0211684703826904
+        ],
+        "channel_mean_power": [
+          0.0312195405475024,
+          0.03121936030632933
+        ],
+        "samples_at_or_above_full_scale": 36,
+        "channel_correlation": 0.9999994469812904,
+        "raw_sha256": "55a823732eb48fe744b912557f09f1a7814954a70ea63429e72e1b4c75a94442",
+        "vad_peak": [
+          0.9961806535720825,
+          0.9961889386177063
+        ]
+      },
+      "limits": [
+        "No demonstrated controlled open/closed transition.",
+        "Engine/displacement and complete hardware unknown.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "ABubhIqrKm4",
+      "preset_candidate": "i6",
+      "priority": "highest",
+      "source_family": "python-don-e46-330ci",
+      "title": "BMW E46 330CI Stock Exhaust Vs. Straight Piped",
+      "uploader": "Python Don",
+      "source_page": "https://www.youtube.com/watch?v=ABubhIqrKm4",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "BMW E46 330CI Stock Exhaust Vs. Straight Piped [ABubhIqrKm4].mkv",
+        "sha256": "2e810cea3d5714fb1bdf26d9b0da1435d54c6e80afa011a14eed3f6b3a4aaaaa",
+        "bytes": 23892067
+      },
+      "inspection": {
+        "sampled_frames": 25,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/ABubhIqrKm4/frames.json",
+        "uploader_description_read": true,
+        "observations": "Stock/straight/warm stationary captions; twin2.25in from catalysts back named in video;3–4K label belongs to stock passage.",
+        "approximate_rpm_labels": [
+          {
+            "rpm_range": [
+              3000,
+              4000
+            ],
+            "basis": "stock passage on-screen rev caption",
+            "continuous_trace": false
+          }
+        ],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 4745788,
+        "seconds": 98.87058333333333,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          0.9619497656822205,
+          1.0125750303268433
+        ],
+        "channel_mean_power": [
+          0.030281264029312346,
+          0.04024213063843807
+        ],
+        "samples_at_or_above_full_scale": 1,
+        "channel_correlation": 0.9457612348344305,
+        "raw_sha256": "5f6764a6c52d407dfa6fd3f81a9cb04d6209a966367339e92a48609cf1abe229",
+        "vad_peak": [
+          0.4103134870529175,
+          0.4103134870529175
+        ]
+      },
+      "limits": [
+        "No continuous tachometer trace; do not assign stock RPM labels to modified passages.",
+        "Garage/camera/temperature/editing/gain differ or remain unknown.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "gUf-FNlyuqM",
+      "preset_candidate": "i6",
+      "priority": "highest",
+      "source_family": "pyrenees-bmw-e46-m54",
+      "title": "330i E46 Exhaust Sound Comparison #m54 #330i #bmw #exhaust #exhaustsound #bmwe46 #carsounds #sound",
+      "uploader": "Pyrenees BMW",
+      "source_page": "https://www.youtube.com/watch?v=gUf-FNlyuqM",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "330i E46 Exhaust Sound Comparison #m54 #330i #bmw #exhaust #exhaustsound #bmwe46 #carsounds #sound [gUf-FNlyuqM].webm",
+        "sha256": "c36c011d2e8b7be098fa4b23b13c5c7cb9b7a9dea7a39f53693540aa4d859406",
+        "bytes": 4691436
+      },
+      "inspection": {
+        "sampled_frames": 23,
+        "frame_manifest": "renders/evidence/stage-039-six-video-screen-2026-10-24/gUf-FNlyuqM/frames.json",
+        "uploader_description_read": true,
+        "observations": "Three labeled builds: OEM cats/line+Eisenmann Race rear; OEM cats+Supersprint X/line+Eisenmann; catless Supersprint headers/X/line+Eisenmann.",
+        "approximate_rpm_labels": [],
+        "continuous_independent_rpm_load_coast_trace_established": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "frames": 3203240,
+        "seconds": 66.73416666666667,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          1.0481282472610474,
+          1.048126220703125
+        ],
+        "channel_mean_power": [
+          0.03154283984302901,
+          0.03153988727424366
+        ],
+        "samples_at_or_above_full_scale": 250,
+        "channel_correlation": 0.9999794712981037,
+        "raw_sha256": "c29f97478f8d1325e328933f36650625315a543a55421d582000c9527404db81",
+        "vad_peak": [
+          0.32966211438179016,
+          0.3290870785713196
+        ]
+      },
+      "limits": [
+        "First labeled setup is not a fully stock rear system.",
+        "Several components and recording conditions change; no RPM/load trace.",
+        "Camera viewpoint does not establish audio microphone location.",
+        "Gain/processing and complete build not verified; subjective listening and final excerpt curation not performed in this screen."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    }
+  ]
+}

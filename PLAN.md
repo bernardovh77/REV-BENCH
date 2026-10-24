@@ -28,7 +28,15 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Checkpoint: Stage039 public-source research; full039 remains open.**
+**Checkpoint: Six supplied039 video candidates reviewed; full039 remains open.**
+The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
+useful stock/modified comparisons, approximate RPM captions and better named
+hardware for the M54/FB20-family gaps. No continuous RPM-visible loaded
+pull/long-coast trace or measured microphone transfer is established. These
+are inspected candidates, not six newly qualified calibration sessions; existing
+eleven locked sessions/34 excerpts and the55-player RESULTS page are unchanged.
+No engine tuning,039 completion or041 implementation is claimed.
+
 Bernardo clarified that matched-reference acquisition belongs to039; the
 earlier bounded protocol closeout did not finish the whole stage. The
 [new source-search review](docs/stage-039-reference-search.md) supersedes that
@@ -41,7 +49,8 @@ OEM identity sources, owner examples and measurement/dataset leads. This adds
 manufacturer-reported FB20 stationary noise comparisons and more documented
 exhaust variants. It does not add58 acquired recordings or qualify the public
 videos as calibrated audio. Original sources,34 excerpts and session splits
-remain unchanged; no new candidate audio was acquired or used for tuning.
+remain unchanged; that public search acquired no candidate audio or tuning data.
+The later six supplied files are assessed separately above, without fitting.
 
 **039 still needs claim-appropriate recordings with known engine/exhaust,
 independent RPM/operating state and microphone geometry/transfer.** Absolute
