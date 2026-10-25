@@ -19,6 +19,9 @@ void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
 void test_mixture_stationary_contact_and_wave(void);
 
+void test_thermal_capacity_and_closed_books(void);
+void test_thermal_constant_cv_convergence(void);
+void test_thermal_failure_and_hot_property_consistency(void);
 void test_gas_graph_entropy_advection(void);
 void test_gas_graph_mean_flux_and_energy(void);
 void test_gas_graph_advected_contact(void);
@@ -267,6 +270,9 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_thermal_capacity_and_closed_books),
+    T(test_thermal_constant_cv_convergence),
+    T(test_thermal_failure_and_hot_property_consistency),
     T(test_gas_graph_entropy_advection),
     T(test_gas_graph_mean_flux_and_energy),
     T(test_gas_graph_advected_contact),

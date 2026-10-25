@@ -4,6 +4,26 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-25: Stage047 reviewed;048 authorized
+
+- [047](docs/stage-047.md) completes property/fixed-wall characterization and
+  isolated finite-capacity gas/wall pair. Native232/4854529, focused native/
+  WASM/ASan4/5656, Python88/no skips, web17/build pass; five faults caught.
+  Native/WASM properties85/fixed18/pair11 CSVs exact. Accepted audio/production
+  core/WASM/Claude setup unchanged. Graphify3160/8880/167, known limitations.
+- Apparent40bar burned cp is not qualified frozen/equilibrium exhaust acoustics:
+  1000K cp/c jump-.53810%/+.079743%;2500K frozen-reference difference+36.0125%
+  cp/-3.1031%c. Do not globally change engine thermochemistry to mask this.
+  048 propagation envelope200–990K; hot EOS/relaxation remains before057/060.
+- Finite wall capacity747/1519J/K scenarios, gas tau.075–.299s vs wall16–133s,
+  Bi<=.025. New thermal pair E and CwTw close with exterior book; gas moving
+  cannot drag the wall, refinement cannot duplicate its capacity. Not measured
+  presets.272bytes,128.90–133.78ns/pair call microbenchmark, not runtime proof.
+- 048 must address actual stronger thermal/species contacts, current propagation,
+  coefficient work and ambient transport on reversal. A contact-preserving
+  material-coordinate reference is allowed, not production graph promotion.
+  Preserve043 rejection and046's expensive/weak-reference limits. Hold after048.
+
 ## 2026-10-25: Stages045/046 reviewed — HOLD
 
 - Bernardo authorizes045 then046, reviewing the predecessor. [046](docs/stage-046.md)

@@ -105,7 +105,7 @@ later gates. Weak-carrier envelope error and all limits are retained.
 
 **Starting evidence/specification:** [docs/stage-S2c.md](../../docs/stage-S2c.md), [docs/audio-robustness-research.md](../../docs/audio-robustness-research.md).
 
-**Execution record:** for new work, `docs/stage-047.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Executed:** [047 characterization](../stage-047.md) measures property consistency, independent NASA controls, fixed-wall energy and finite-capacity sensitivity. Its explicit apparent-cp/high-temperature and unmeasured-wall limits remain prerequisites for later qualification.
 
 <a id="stage-048"></a>
 ## Stage 048 — Thermal fronts, coefficient updates and reverse entrainment

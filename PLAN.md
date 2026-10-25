@@ -28,18 +28,21 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stages045 and046 reviewed; HOLD before047.**
-[045](docs/stage-045.md) proves bounded production-mixture gas coupling to the
-actual B0 uniform duct. [046](docs/stage-046.md) adds frozen signed flow,
-directional delays, actual contact/entropy transport and convected work.
-All frozen046 gates pass: Gaussian error<=1.120%, carrier<=0.02725dB/0.03132°,
-returns<.476tick, regional books<=7.102e-13. A resolved reflection gains1.506x
-energy versus1.505x ideal, with signed work accounted. Weak-carrier envelope
-error reaches2.527%; these separate declared gates and limits are retained.
-This expensive full-correction research reference remains far below real time;
-no production renderer is selected or engine clip replaced. The consolidated
-results page preserves all55 players/five long coasts and adds045/046 evidence.
-039 and S1/S2/S4/listening/runtime gates stay open. Stop after046 as authorized.
+**Current work: Stage047 complete and reviewed;048 is authorized next.**
+[047](docs/stage-047.md) characterizes the inherited EOS and fixed walls and
+proves an isolated finite-capacity wall pair. Internal/NASA low-temperature,
+wall-energy, independent integration, native/WASM/sanitizer and regression
+checks pass. The apparent40bar burned-gas high branch is not calibrated exhaust
+acoustics;048 must retain an explicit low-temperature domain and physical
+thermal/species/energy ownership. Continue048, then HOLD before049. Accepted
+engine clips and production settings are preserved;039/listening/runtime stay open.
+
+**Previous checkpoint:045/046 reviewed.**
+Their uniform gas/B0 coupling and signed-flow gates pass within their declared
+scope, with preserved accepted clips and a new numerical section in RESULTS.
+The expensive full correction grid remains far below real time; no production
+renderer is selected. Thermal fronts/reversal remain048. Their raw evidence,
+carrier-envelope limit and mean-flow energy accounting remain valid.
 
 **Previous checkpoint: Stages043 and044 reviewed.**
 [043](docs/stage-043.md) preserves mass/species/energy but fails the declared
@@ -268,7 +271,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Complete (bounded): five executable geometry controls, gas preparation, all paths; full component physics open | 037, 038 |
 | [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Complete (bounded): mixture/actual-B0 duct, fractional lengths, conservative feedback; research only | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Complete (bounded): signed flow, contact/entropy and convected work pass; research only | 045 |
-| [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |
+| [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Complete: properties/wall sensitivity, finite-capacity pair and explicit limits reviewed | 043, 046 |
 | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Not started | 046, 047 |
 | [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Not started | 044, 048 |
 | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing | Not started | 047, 049 |
