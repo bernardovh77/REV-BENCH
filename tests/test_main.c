@@ -14,6 +14,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+void test_mixture_eos_and_guards(void);
+void test_mixture_flux_and_neighbor(void);
+void test_mixture_conservation_and_boundary(void);
+void test_mixture_stationary_contact_and_wave(void);
+
 /* ---- core (tests/test_core.c) ---- */
 void test_core_config(void);
 void test_core_param_table(void);
@@ -253,6 +258,11 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_mixture_eos_and_guards),
+    T(test_mixture_flux_and_neighbor),
+    T(test_mixture_conservation_and_boundary),
+    T(test_mixture_stationary_contact_and_wave),
+
     T(test_core_config),
     T(test_core_param_table),
     T(test_core_param_set_get),

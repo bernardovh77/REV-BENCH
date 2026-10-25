@@ -19,7 +19,10 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Starting evidence/specification:** [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md), [docs/stage-S2d.md](../../docs/stage-S2d.md).
 
-**Execution record:** for new work, `docs/stage-043.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [043](../stage-043.md): production-EOS A2 experiment complete;
+rejected on acoustic bandwidth, moving-contact pressure/admissibility and cost.
+No qualified production adapter; A0/A1 retained. Future conservative replacements
+must re-pass these gates; B0/B1 work remains independent.
 
 <a id="stage-044"></a>
 ## Stage 044 — Executable shared exhaust geometry compiler

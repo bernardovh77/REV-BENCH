@@ -1,0 +1,22 @@
+"""Conservative-mixture causal/flux/wall/phase faults in isolated copies."""
+BUGS={
+ 'wrong-pressure-work':('experiments/acoustics/mixture.c',
+   'f.v[ENE]+=w.p*w.u;', 'f.v[ENE]-=w.p*w.u;',
+   ['test_mixture_stationary_contact_and_wave'],180),
+ 'wrong-propagation-speed':('experiments/acoustics/mixture.c',
+   's->flux[f],&s->flux_fallbacks)) return -1;',
+   's->flux[f],&s->flux_fallbacks)) return -1; s->flux[f]=scale(s->flux[f],1.05);',
+   ['test_mixture_stationary_contact_and_wave'],180),
+ 'detached-neighbor-pressure':('experiments/acoustics/mixture.c',
+   'rb_mix_primitive a,b;', 'rb_mix_primitive a,b; r=l;',
+   ['test_mixture_flux_and_neighbor'],180),
+ 'closed-wall-leaks':('experiments/acoustics/mixture.c',
+   'if(s->boundary==2) {', 'if(0) {',
+   ['test_mixture_conservation_and_boundary'],180),
+ 'wrong-boundary-work-book':('experiments/acoustics/mixture.c',
+   '1.0/6,add(add(b1,1,b2),4,b3)', '1.0/6,add(add(b1,1,b2),-4,b3)',
+   ['test_mixture_conservation_and_boundary'],180),
+ 'failed-state-reused':('experiments/acoustics/mixture.c',
+   '!s->q || s->failed ||', '!s->q ||',
+   ['test_mixture_eos_and_guards'],180),
+}

@@ -4,6 +4,25 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage 043 review and 044 authorization
+
+- Bernardo authorizes 043 then 044, reviewing the predecessor before advancing.
+  [043](docs/stage-043.md) completes the production-mixture A2 experiment and
+  rejects promotion: 128/248 representable weak-wave rows pass, 40 additional
+  alias controls retained; moving contacts generate 117–155 Pa false pressure
+  and two fine-grid cases reject an inadmissible stage. Conservation and six
+  exact shock/expansion references pass, but do not establish acoustic fidelity.
+- Native221/4843441, Python79, web17/build, focused WASM9/1212 and ASan/UBSan
+  10/1214 pass; six faults caught. No leak check under ptrace. Production core,
+  WASM, accepted sounds, reference split and Claude setup are unchanged.
+- A0 valve/tick controls retain 96kHz pumping errors ~11–12%; old uncoupled
+  implicit optimization remains rejected. A2 has no qualified production valve
+  adapter. Keep its mixture/phase/cost failures in future045/047/048/057/060.
+- Graphify refreshed2963/8116/167. Proceed with044's bounded executable
+  geometry compiler after this review. Do not create an ambient shortcut;
+  preserve all pipes, finite volumes, restriction metadata and unresolved
+  spatial provenance. Do not start045. 039/S1/S2/listening/runtime remain open.
+
 ## 2026-10-24: Stage 042 injection source checkpoint — HOLD
 
 - Bernardo authorizes 042 only. Read docs/stage-042.md for the 041 review,

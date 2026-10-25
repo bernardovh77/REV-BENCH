@@ -28,7 +28,12 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stage 042 complete within its source-event scope — HOLD.**
+**Current work: Stage 043 experiment complete/rejected; 044 in progress.**
+[043](docs/stage-043.md) preserves mass/species/energy but fails the declared
+moving-contact, acoustic-bandwidth and cost gates. A0/A1 remain controls; no
+A2 production promotion. Predecessor reviewed before beginning authorized044.
+
+**Previous checkpoint: Stage 042 complete within its source-event scope.**
 After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
 delivered fuel, records skipped fueling and proves one-to-one mass/event/sound
 behavior through startup, cut/resume, restart and retained fuel. Native, WASM,
@@ -240,8 +245,8 @@ historical rows are not a claim that all current audio goals have passed.
 
 | Stage | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
-| [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Ready | 035, 038 |
-| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Ready | 037, 038 |
+| [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Complete experiment: A2 rejected (wave/contact/cost); no production promotion | 035, 038 |
+| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | In progress after 043 review | 037, 038 |
 | [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Not started | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |
