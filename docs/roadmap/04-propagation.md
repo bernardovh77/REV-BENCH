@@ -122,12 +122,31 @@ later gates. Weak-carrier envelope error and all limits are retained.
 
 **Starting evidence/specification:** [docs/stage-S2c.md](../../docs/stage-S2c.md), [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Execution record:** for new work, `docs/stage-048.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Executed bounded fixtures:** [048](../stage-048.md) tests the material-coordinate thermal/contact, wall, reversal and current-pressure work reference. It does not qualify a changing B0 delay adapter or stationary engine-port/remap interface; that fixed-geometry continuation is explicitly114 before049. High-temperature EOS, high-band packet convergence and cost limits remain active.
+
+<a id="stage-114"></a>
+## Stage 114 — Fixed-geometry thermal transport bridge
+
+**Execution order:** appended after048; must run before049. Existing IDs stay stable.
+
+**Dependencies:** [044](04-propagation.md#stage-044), [046](04-propagation.md#stage-046), [047](04-propagation.md#stage-047), [048](04-propagation.md#stage-048)
+
+**Deliverable:** Prove a fixed physical-domain interface for a surviving thermal-capable transport candidate.048's moving-material research reference has no production remap or mass exchange at stationary engine ports. Either construct a conservative contact-aware material/ALE bridge, or independently qualify an evolving gas/acoustic adapter against that reference. Do not preselect the runtime renderer.
+
+**Required exit evidence:** Fixed canonical lengths/port identities and bounded storage through sustained throughflow and reversal; single accepted mass/species/momentum/enthalpy transfer at stationary partitions; strong thermal/species fronts, pressure equilibrium and coherent reflected feedback; global AND regional books; independent full-packet waveform reference/convergence, source-free coefficient work and fixed wall identity. Include packet shape as well as carrier transfer, including048's high-band failure cases. Report remap/creation/removal work, domain rejection, positivity/mesh interventions and full cost. Recheck native/WASM, faults and geometry/source contracts.
+
+**Stop/reject rule:** A moving observation plane, unchanged global inventory, correct carrier bin or pressure overwrite does not qualify fixed-port transport. Uniform brute-force refinement is a correctness reference, not an efficiency solution. Unqualified >990K closure stays explicit before engine promotion.
+
+**Coverage:** newly discovered material-reference integration gap; original D03/R05/R09 ownership remains active. This is a prerequisite split, not an exemption from048/049's physical goals.
+
+**Starting evidence:** [048](../stage-048.md), [047](../stage-047.md), [ownership ADR](../adr/0001-coupled-exhaust-ownership.md).
+
+**Execution record:** create `docs/stage-114.md` when authorized. No implementation or qualification is claimed here.
 
 <a id="stage-049"></a>
 ## Stage 049 — Branches, finite junctions and all-port transfer
 
-**Dependencies:** [044](../../docs/roadmap/04-propagation.md#stage-044), [048](../../docs/roadmap/04-propagation.md#stage-048)
+**Dependencies:** [044](../../docs/roadmap/04-propagation.md#stage-044), [048](../../docs/roadmap/04-propagation.md#stage-048), [114](04-propagation.md#stage-114)
 
 **Deliverable:** Validate area changes, cavities, Y/X/H routes and finite junction volumes under unequal areas, temperatures and supported flows. Test each physically connected source against every outlet and upstream load.
 

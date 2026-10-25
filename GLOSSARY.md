@@ -194,3 +194,20 @@ A spark suppression event is a separate decision and can occur after a real dose
   It is an account of that representation, never extra gas energy.
 - **Frozen mean flow:** a uniform reference speed fixed during one experiment.
   It does not establish evolving hot/cold fronts or time-dependent reversal.
+
+
+## Thermal/material reference (Stages047–048)
+
+- **Finite wall capacity:** solid energy Cw*Tw in joules, separate from the gas.
+  Its spatial interval stays fixed as gas moves; gas refinement does not add metal.
+- **Material cell:** a parcel with fixed species masses and evolving volume and
+  sensible internal energy. Its boundaries move with gas, unlike a fixed engine
+  port. A material reference does not automatically supply fixed-port mass flow.
+- **Compatible pressure work:** accepted midpoint pressure multiplies volume
+  change from the same midpoint velocities used by the momentum equation.
+  This ties gas internal energy and nodal kinetic work to one discrete account.
+- **Ambient entrainment:** actual outside gas crosses into the duct. Negative
+  velocity can instead return gas that previously left, so direction alone is
+  not proof that cold ambient composition entered.
+- **Packet fidelity:** accuracy of the complete transient waveform/envelope,
+  beyond magnitude/phase at a single carrier frequency.

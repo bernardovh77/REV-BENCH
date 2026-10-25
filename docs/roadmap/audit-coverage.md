@@ -57,3 +57,11 @@ impulses, component geometry/CFL and explicitly costly optional monitoring.
 Later integrated/browser/realism cross-checks in the table remain required;
 observing an equalisation cap or property extrapolation does not remove its
 physical limitation. C07/C08 bounded repairs remain112/113.
+
+
+048's material-coordinate experiment exposes an additional implementation
+prerequisite: [114 fixed-geometry transport](04-propagation.md#stage-114) now
+precedes049. It carries stationary port/remap acceptance for the new reference
+path under D03/R05/R09, without closing those original audit obligations or
+changing the historical27-finding count. Moving-domain/global-book success is
+not fixed-port/component qualification.

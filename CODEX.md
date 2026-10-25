@@ -4,6 +4,43 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-25: Stages047/048 reviewed — HOLD before114/049
+
+- [048](docs/stage-048.md) completes bounded material thermal/front/wall/reversal
+  reference after047. This is not an evolving B0/production engine adapter.
+  New [114](docs/roadmap/04-propagation.md#stage-114) explicitly owns fixed-domain
+  transport/remap/stationary-port proof before049; it is not started. Hold.
+- One material species/internal-E state, compatible nodal momentum/kinetic work,
+  current EOS/geometry; fixed spatial wall CwTw/exterior book.200–990K weak
+  acoustics only.047's apparent high-cp branch and real wall calibration stay
+  unresolved before057/060. Old A2 remains rejected; renderer choice stays open.
+- Main60 primary scattering +8 grid,12contacts,2reversal, positive-outlet history,
+  4wall,2one-second and unsupported-clock controls pass their declared gates.
+  Gaussian3.46149%, carrier.035889dB/7.21582°, but fine768-cell packet error20.65%
+  and coarse48.67% retained. Supplementary768/1536/3072-cell4kHz packet L2
+  converges20.65→5.18→1.392% cold-to-hot and14.23→3.59→1.006% hot-to-cold.
+- Initial finer loops failed from subtracting positions to obtain tiny dV.
+  Corrected geometric work uses accepted midpoint velocity differences; same
+  tolerances, replanted old computation caught by fine-native regression.
+  No thermal/species clipping or energy reset. All rejected controls retained.
+- Actual pressure-driven suction-first cold-air intrusion1.765e-7kg; positive
+  first cycle reverses but only returns hot gas. Bulk reversal is a separate
+  explicit-body-force control, not engine lift. Fixed-plane translation species/
+  enthalpy proof is not general Eulerian energy-flux/remap qualification.
+- Main normalized physical E<=1.858e-14, momentum<=2.238e-14; contacts false p
+  <=4.366e-11Pa.1s U0/+70,900K/4kHz matched-material cases maxPE1, final<=3.804e-10.
+  Fine geometry reference cost remains unacceptable for live delivery:
+ 768cell median.01464/.01455x native,3072cell.001123/.001131x; no efficiency claim.
+- Finalnative237/4855254; focused native/WASM/ASan5/725, Python88/no skips,
+  web17/build, seven native/WASM trajectories pass. Eleven faults caught;
+  no leak/runtime qualification. Updated single research page preserves clips/
+  coasts/references. No core/productionWASM/accepted sound or Claude setup changes.
+  New-system engine comparisons remain057/061.039 and realism/listening stay open.
+- Finalpage55players/four seeks/11research plots/3perspective views pass offline;
+  all68 prior embedded payloads,74protected tracked and105current files exact.
+  Timestamp manifests/page updates intentional. Graphify3220/9091/176, known
+  parser/inferred/semantic limits.114-stage DAG/343links pass;114 before049.
+
 ## 2026-10-25: Stage047 reviewed;048 authorized
 
 - [047](docs/stage-047.md) completes property/fixed-wall characterization and

@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-25. **One sequence: Stages 001–113.** This file is the only
+Updated 2026-10-25. **One sequence: Stages 001–114.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,14 +28,24 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current work: Stage047 complete and reviewed;048 is authorized next.**
-[047](docs/stage-047.md) characterizes the inherited EOS and fixed walls and
-proves an isolated finite-capacity wall pair. Internal/NASA low-temperature,
-wall-energy, independent integration, native/WASM/sanitizer and regression
-checks pass. The apparent40bar burned-gas high branch is not calibrated exhaust
-acoustics;048 must retain an explicit low-temperature domain and physical
-thermal/species/energy ownership. Continue048, then HOLD before049. Accepted
-engine clips and production settings are preserved;039/listening/runtime stay open.
+**Current checkpoint: Stages047/048 reviewed; HOLD after048.**
+[047](docs/stage-047.md) characterizes inherited gas properties/fixed walls and
+proves a finite-capacity wall element. [048](docs/stage-048.md) completes bounded
+material-coordinate thermal/contact, reversal, wall and acoustic-work fixtures.
+Native237/4855254, focused native/WASM/sanitizer, regression and eleven fault
+checks pass. High-resolution4kHz packet errors fall to1.40% after a geometric
+work precision fix; primary768-cell carrier passes alone conceal20.65% packet
+error. The research reference is far below real time, not a promoted renderer.
+
+**A newly explicit split must precede branches:** [114](docs/roadmap/04-propagation.md#stage-114)
+proves fixed-geometry thermal transport/port exchange.048's moving material
+reference does not supply that engine/remap interface.114 is not implemented;
+049 remains blocked by it. Execution order is048 →114 →049 with stable IDs.
+The >990K gas closure, actual wall calibration and efficiency/whole-engine
+acceptance remain open. Accepted clips, Claude setup and references are
+preserved. The single RESULTS page includes the new047/048 figure;039 and
+S1/S2/S4/listening/runtime gates stay open. No further development is authorized
+by this checkpoint; HOLD before114/049.
 
 **Previous checkpoint:045/046 reviewed.**
 Their uniform gas/B0 coupling and signed-flow gates pass within their declared
@@ -272,8 +282,9 @@ historical rows are not a claim that all current audio goals have passed.
 | [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Complete (bounded): mixture/actual-B0 duct, fractional lengths, conservative feedback; research only | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Complete (bounded): signed flow, contact/entropy and convected work pass; research only | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Complete: properties/wall sensitivity, finite-capacity pair and explicit limits reviewed | 043, 046 |
-| [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Not started | 046, 047 |
-| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Not started | 044, 048 |
+| [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Complete (bounded material-reference experiment); fixed-geometry continuation 114 required | 046, 047 |
+| [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge | Not started; prerequisite before 049 | 044, 046, 047, 048 |
+| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Blocked by 114 | 044, 048, 114 |
 | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing | Not started | 047, 049 |
 | [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency | Not started | 049 |
 | [052](docs/roadmap/04-propagation.md#stage-052) | Mixed-rate scheduler and state transitions | Not started | 048, 049, 050, 051 |

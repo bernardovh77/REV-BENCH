@@ -19,6 +19,11 @@ void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
 void test_mixture_stationary_contact_and_wave(void);
 
+void test_material_fine_geometry_work(void);
+void test_material_hot_contact_and_translation(void);
+void test_material_pulse_force_and_current_work(void);
+void test_material_reversal_and_fixed_wall(void);
+void test_material_coordinate_frame_and_failure(void);
 void test_thermal_capacity_and_closed_books(void);
 void test_thermal_constant_cv_convergence(void);
 void test_thermal_failure_and_hot_property_consistency(void);
@@ -270,6 +275,11 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_material_fine_geometry_work),
+    T(test_material_hot_contact_and_translation),
+    T(test_material_pulse_force_and_current_work),
+    T(test_material_reversal_and_fixed_wall),
+    T(test_material_coordinate_frame_and_failure),
     T(test_thermal_capacity_and_closed_books),
     T(test_thermal_constant_cv_convergence),
     T(test_thermal_failure_and_hot_property_consistency),

@@ -9,7 +9,9 @@ rejection rule. They are specifications, not a second status tracker.
 This roadmap was agreed in scope/order with Bernardo on 2026-10-23. It changes
 planning and documentation, not engine sound, production physics or deployment.
 Stages 001–035 preserve historical implementation/experiment evidence;
-036 establishes this roadmap. Appended review repairs 112/113 precede the
+036 establishes this roadmap.048 later appends114 for fixed-geometry thermal
+transport: execution order is048 →114 →049, without changing existing IDs.
+Appended review repairs112/113 precede the
 completed contracts stage037 and numerical observation stage038. The039
 implemented protocol, unresolved matched-recording acquisition and040 causal
 checkpoint are recorded in their execution notes; see PLAN for the current
@@ -237,7 +239,7 @@ flowchart TD
     H[001-036 Existing evidence and roadmap] --> C[037 Shared contracts]
     H --> R[039 Matched references]
     C --> E[038 and 040-042 Trustworthy events and diagnostics]
-    C --> P[043-052 Numerical candidates and components]
+    C --> P[043-052 and114 Propagation and components]
     E --> I[053-059 Sources scenes and engine qualification]
     P --> I
     R --> I
