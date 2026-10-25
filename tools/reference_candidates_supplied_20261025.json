@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-25",
+  "baseline_revision": "f7e6372ceddadba146104f54e9cd49156e687787",
+  "scope": "Two supplied dashboard videos assessed against Stage039 remaining acquisition needs; no development, fitting or lock admission.",
+  "evidence": "renders/evidence/stage-039-two-new-videos",
+  "total_sampled_frames": 48,
+  "total_decoded_audio_seconds": 80.05008333333333,
+  "engine_tuning": false,
+  "stage039_complete": false,
+  "stage114_started": false,
+  "recordings": [
+    {
+      "id": "WlRSgDQGiKA",
+      "preset_candidate": "boxer4",
+      "priority": "rpm-linked-road-candidate",
+      "source_family": "kacpa2-xv-manual-road",
+      "title": "2012 Subaru XV/Crosstrek 2.0i 6 speed manual acceleration 0-145km/h(0-90mph), with downshifts",
+      "uploader": "Kacpa2",
+      "upload_date": "20250414",
+      "source_page": "https://www.youtube.com/watch?v=WlRSgDQGiKA",
+      "uploader_description": "9.15-9.30-ish seconds to 100km/62mph. Subaru specs say around 10,5s to 100km/h with MT, 10,7s with CVT. If i didnt let it bounce off the limiter in first perhaps it would be 9s flat. It isnt fast, but it isnt slow either. For city driving quite fast as show by 0-50km/h time of 2.9-3 seconds, but even at taking it more gently and within 3-4k rpm its quite zippy especially of the line due to lack of any wheelspin.",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "2012 Subaru XV⧸Crosstrek 2.0i 6 speed manual acceleration 0-145km⧸h(0-90mph), with downshifts [WlRSgDQGiKA].mkv",
+        "sha256": "171abf09fa033e7fec8ee288e21101772df933c0833aed9545235c71e4a2e968",
+        "bytes": 27526141,
+        "container_duration_s": 63.7
+      },
+      "inspection": {
+        "sampled_frames": 24,
+        "frame_manifest": "renders/evidence/stage-039-two-new-videos/WlRSgDQGiKA/frames.json",
+        "uploader_description_read": true,
+        "camera_perspective": "interior dashboard/instrument view",
+        "actual_microphone_location": "unknown; cabin camera does not establish microphone position",
+        "visible_instruments": [
+          "analog tachometer",
+          "road speedometer"
+        ],
+        "approximate_navigation_windows": [
+          {
+            "start_s": 2,
+            "end_s": 34,
+            "state": "road acceleration with multiple gear changes"
+          },
+          {
+            "start_s": 34,
+            "end_s": 63,
+            "state": "slowing and downshifts; not one proven single-gear off-throttle coast"
+          }
+        ],
+        "observations": "Visible RPM and road speed across acceleration then slowdown/downshifts materially improve boxer operating-state coverage. Engine/build attributed to uploader title, not inspected.",
+        "rpm_evidence": "independent visible analog gauge; approximate sampled observations, no digitized continuous time-aligned trace",
+        "rpm_trace_digitized": false,
+        "physical_engine_load_measured": false,
+        "uninterrupted_single_gear_lift_coast_established": false,
+        "exhaust_build_verified": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "raw_sha256": "ebad81a2901fad5e98f5fa98baa13fcb41cf90f3e9c5524ef5fac5a1a7f20764",
+        "frames": 3056640,
+        "seconds": 63.68,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          0.9114782214164734,
+          0.9230571389198303
+        ],
+        "channel_mean_power": [
+          0.04243077316019575,
+          0.042113027804710976
+        ],
+        "samples_at_or_above_full_scale": 0,
+        "channel_correlation": 0.9104195625506639,
+        "vad_peak": [
+          0.406695157289505,
+          0.5886390209197998
+        ],
+        "speech_risk_intervals_s": [
+          [
+            1.568,
+            1.632
+          ]
+        ],
+        "model_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+        "runtime": "1.31.0",
+        "screen_only": true
+      },
+      "limits": [
+        "Exhaust, intake and ECU modifications are not disclosed; do not infer stock hardware.",
+        "Camera is inside; actual microphone, distance, gain and upstream processing unknown.",
+        "Road motion is observed; torque, throttle, clutch/brake and ECU fuel-cut states are not instrumented.",
+        "Gauge labels are approximate; camera, instrument and audio timing offsets not measured.",
+        "Raw source is lossy Opus; float decoding does not restore absent recording information.",
+        "Frame/technical audio screening is not subjective listening or final excerpt curation.",
+        "Downshift passages do not isolate single-gear overrun."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "use_supported": "approximate RPM-linked road-state and qualitative timbre/order review after excerpt curation",
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    },
+    {
+      "id": "LJsJTlYYGKw",
+      "preset_candidate": "i6",
+      "priority": "rpm-linked-road-candidate",
+      "source_family": "clappedm3-m54b30-road",
+      "title": "E46 M54B30 Revving to 7,000 RPM!!!",
+      "uploader": "Clapped M3",
+      "upload_date": "20230127",
+      "source_page": "https://www.youtube.com/watch?v=LJsJTlYYGKw",
+      "uploader_description": "",
+      "source": {
+        "kind": "user-supplied-local-video",
+        "path": "E46 M54B30 Revving to 7,000 RPM!!! [LJsJTlYYGKw].webm",
+        "sha256": "8bb3d2904ce9e7e85830b32373cabd284c0014a1b45fbcbcccd63f9f9a2dd422",
+        "bytes": 1191679,
+        "container_duration_s": 16.38
+      },
+      "inspection": {
+        "sampled_frames": 24,
+        "frame_manifest": "renders/evidence/stage-039-two-new-videos/LJsJTlYYGKw/frames.json",
+        "uploader_description_read": true,
+        "camera_perspective": "interior dashboard/instrument view",
+        "actual_microphone_location": "unknown; cabin camera does not establish microphone position",
+        "visible_instruments": [
+          "analog tachometer",
+          "road speedometer; latter partly cropped after BMW camera zoom"
+        ],
+        "approximate_navigation_windows": [
+          {
+            "start_s": 0.2,
+            "end_s": 15.3,
+            "state": "road high-rev rises with a likely intermediate shift; not stationary neutral revving"
+          },
+          {
+            "start_s": 15.3,
+            "end_s": 16.37,
+            "state": "brief terminal RPM drop; shift versus lift not independently distinguished"
+          }
+        ],
+        "observations": "Visible RPM and nonzero road speed establish a moving road example. Late tachometer approaches the high-six-thousand region approximately; exact 7000 RPM is not certified. Final drop is brief, not sustained coast. Channel name does not establish an M3/S54 engine.",
+        "rpm_evidence": "independent visible analog gauge; approximate sampled observations, no digitized continuous time-aligned trace",
+        "rpm_trace_digitized": false,
+        "physical_engine_load_measured": false,
+        "uninterrupted_single_gear_lift_coast_established": false,
+        "exhaust_build_verified": false,
+        "microphone_distance_verified": false,
+        "microphone_transfer_verified": false
+      },
+      "recording_screen": {
+        "raw_sha256": "96903873aeada540606c2c009765ac99aebc49678fd9230e4a0de07d1b431cf7",
+        "frames": 785764,
+        "seconds": 16.370083333333334,
+        "rate": 48000,
+        "channels": 2,
+        "finite": true,
+        "channel_peak": [
+          0.9873668551445007,
+          0.9873668551445007
+        ],
+        "channel_mean_power": [
+          0.021992306220261316,
+          0.021992348093499835
+        ],
+        "samples_at_or_above_full_scale": 0,
+        "channel_correlation": 0.9999999122521728,
+        "vad_peak": [
+          0.5201764702796936,
+          0.5201701521873474
+        ],
+        "speech_risk_intervals_s": [
+          [
+            0.0,
+            0.032
+          ],
+          [
+            2.368,
+            2.4
+          ]
+        ],
+        "model_sha256": "1a153a22f4509e292a94e67d6f9b85e8deb25b4988682b7e174c65279d8788e3",
+        "runtime": "1.31.0",
+        "screen_only": true
+      },
+      "limits": [
+        "Exhaust, intake and ECU modifications are not disclosed; do not infer stock hardware.",
+        "Camera is inside; actual microphone, distance, gain and upstream processing unknown.",
+        "Road motion is observed; torque, throttle, clutch/brake and ECU fuel-cut states are not instrumented.",
+        "Gauge labels are approximate; camera, instrument and audio timing offsets not measured.",
+        "Raw source is lossy Opus; float decoding does not restore absent recording information.",
+        "Frame/technical audio screening is not subjective listening or final excerpt curation.",
+        "No sustained visible-RPM I6 coast; this source does not validate the simulator research limit of 8500 RPM."
+      ],
+      "admission": {
+        "status": "inspected-candidate-only",
+        "audio_available": true,
+        "remote_media_downloaded": false,
+        "use_supported": "approximate RPM-linked road-state and qualitative timbre/order review after excerpt curation",
+        "added_to_session_lock": false,
+        "unseen_validation": false,
+        "qualified_for_matched_waveform": false,
+        "qualified_for_calibrated_audio_spl": false,
+        "engine_parameters_fitted": false,
+        "rights": "User-supplied local reference use; redistribution/training permission not established."
+      }
+    }
+  ]
+}

@@ -28,6 +28,15 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
+**Latest reference assessment: two supplied dashboard videos.**
+The [Subaru/BMW assessment](docs/stage-039-dashboard-reference-assessment.md)
+adds useful independently visible RPM/road-speed evidence: Subaru acceleration
+and slowing/downshifts, BMW high-rev road pulls. The BMW has no sustained coast;
+both exhaust builds and actual microphone setups remain unknown. These are
+inspected candidates for approximate state/timbre review, not new calibrated
+or locked sessions.039 remains open; accepted clips/RESULTS and the development
+hold after048, before114/049, are unchanged.
+
 **Current checkpoint: Stages047/048 reviewed; HOLD after048.**
 [047](docs/stage-047.md) characterizes inherited gas properties/fixed walls and
 proves a finite-capacity wall element. [048](docs/stage-048.md) completes bounded
@@ -87,8 +96,8 @@ references. Stage 042's later source correction is documented above.
 **Previous checkpoint: Six supplied039 video candidates reviewed.**
 The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
 useful stock/modified comparisons, approximate RPM captions and better named
-hardware for the M54/FB20-family gaps. No continuous RPM-visible loaded
-pull/long-coast trace or measured microphone transfer is established. These
+hardware for the M54/FB20-family gaps. Those six clips establish no continuous
+RPM-visible loaded pull/long-coast trace or measured microphone transfer. These
 are inspected candidates, not six newly qualified calibration sessions; existing
 eleven locked sessions/34 excerpts and the55-player RESULTS page are unchanged.
 That assessment did not include engine tuning or close 039; the later 041
@@ -107,7 +116,9 @@ manufacturer-reported FB20 stationary noise comparisons and more documented
 exhaust variants. It does not add58 acquired recordings or qualify the public
 videos as calibrated audio. Original sources,34 excerpts and session splits
 remain unchanged; that public search acquired no candidate audio or tuning data.
-The later six supplied files are assessed separately above, without fitting.
+The later six supplied files and two dashboard videos are assessed separately
+above, without fitting. The two dashboard sources materially improve visible
+RPM/road-state coverage, while exhaust setup and sustained I6 coast remain gaps.
 
 **039 still needs claim-appropriate recordings with known engine/exhaust,
 independent RPM/operating state and microphone geometry/transfer.** Absolute

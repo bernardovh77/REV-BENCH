@@ -4,6 +4,36 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-25: Two supplied dashboard references assessed — HOLD
+
+- Bernardo asks whether the XV acceleration/downshift and M54B30 high-rev
+  videos fill 039's remaining gap. See
+  [the assessment](docs/stage-039-dashboard-reference-assessment.md) and
+  [candidate ledger](tools/reference_candidates_supplied_20261025.json).
+- Both show visible analog RPM and actual road motion; Subaru adds roughly
+  2–34s acceleration/gear changes and 34–63 s slowing/downshifts. BMW is a moving
+  high-rev example, not stationary revving; its terminal RPM drop is brief.
+  No continuous digitized trace or uninterrupted I6 lift/coast established.
+- 48 sampled frames plus enlarged instrument views and public uploader metadata
+  checked. Camera views are inside; actual microphone, gain and exhaust/build
+  unknown. Do not infer stock or transfer hardware from other recordings.
+  M54 title attribution is not S54 identity or 8500 rpm validation. These support
+  narrower approximate RPM/state/timbre review after excerpt curation; no
+  professional SPL recording is required for every such claim.
+- Raw 48 kHz stereo float decodes are unfiltered/unscaled, per-channel power
+  retained; BMW is effectively dual mono. Separate 16 kHz Silero risk screen is
+  not speech/music purity or subjective listening. No final excerpt admission,
+  fitting/training, unseen-validation assignment or remote media download.
+- 039 remains Awaiting matched references. Most useful additional I6 example:
+  visible-tach road pull followed by sustained lift/coast with exhaust stated.
+  Original sources and frozen eleven sessions/34 excerpts remain untouched.
+  No engine/accepted clip/RESULTS/Claude changes; no 114/049 work. Hold.
+- Nine focused reference tests pass; 74 protected files, 106 current results,
+  both session locks, sources/raw decodes and RESULTS exact. 114-stage DAG valid.
+  Graphify queried/refreshed 3228/9100/171; known parser/inferred/stale semantic
+  limits remain. Raw evidence/commands/checks in ignored
+  renders/evidence/stage-039-two-new-videos/. Save/sync assessment and hold.
+
 ## 2026-10-25: Stages047/048 reviewed — HOLD before114/049
 
 - [048](docs/stage-048.md) completes bounded material thermal/front/wall/reversal
