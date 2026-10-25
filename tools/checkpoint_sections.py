@@ -16,6 +16,7 @@ SECTIONS = {
     "coupling-proof": ("COUPLING PROOF", "Coupling proof"),
     "reference-protocol": ("REFERENCE PROTOCOL", "Reference controls"),
     "geometry-checkpoint": ("GEOMETRY CHECKPOINT", "Stages 43–44"),
+    "flow-checkpoint": ("FLOW CHECKPOINT", "Stages 45–46"),
 }
 
 

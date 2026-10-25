@@ -19,6 +19,9 @@ void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
 void test_mixture_stationary_contact_and_wave(void);
 
+void test_gas_graph_entropy_advection(void);
+void test_gas_graph_mean_flux_and_energy(void);
+void test_gas_graph_advected_contact(void);
 void test_gas_graph_prepare_and_inventory(void);
 void test_gas_graph_tagged_pulse_transport(void);
 void test_gas_graph_fractional_flux_and_clock(void);
@@ -264,6 +267,9 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_gas_graph_entropy_advection),
+    T(test_gas_graph_mean_flux_and_energy),
+    T(test_gas_graph_advected_contact),
     T(test_gas_graph_prepare_and_inventory),
     T(test_gas_graph_tagged_pulse_transport),
     T(test_gas_graph_fractional_flux_and_clock),

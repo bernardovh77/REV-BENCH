@@ -82,7 +82,13 @@ thermal fronts and efficient scheduling remain later work.
 
 **Starting evidence/specification:** [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Execution record:** for new work, `docs/stage-046.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Executed:** [Stage046](../stage-046.md) passes its frozen uniform-flow
+matrix with separate c±U delays, conservative composition/weak-entropy advection,
+current reflected feedback and signed convected work. Gaussian shape, carrier
+transfer, directional travel, separate regional books and six1s cases pass;
+resolved reflection energy gain is accounted. Full correction is far below
+real time; thermal fronts, flowing junctions and production integration remain
+later gates. Weak-carrier envelope error and all limits are retained.
 
 <a id="stage-047"></a>
 ## Stage 047 — Gas-property and wall-thermal model characterization

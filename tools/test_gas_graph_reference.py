@@ -31,3 +31,13 @@ class SimpleWaveReferenceTests(unittest.TestCase):
         rho,velocity,E=wave.state(x,time)
         np.testing.assert_allclose(velocity,u,atol=1e-10)
         np.testing.assert_allclose(rho,p/(self.R*T),rtol=1e-12)
+
+    def test_galilean_transform_and_energy(self):
+        x=np.linspace(0,1,100);time=.001
+        still=SimpleWave(self.eos,300,amplitude=.001)
+        for U in (-70,70):
+            moving=SimpleWave(self.eos,300,amplitude=.001,mean_flow=U)
+            rho,u,E=moving.state(x,time);r0,u0,E0=still.state(x-U*time,time)
+            np.testing.assert_allclose(rho,r0,rtol=1e-12)
+            np.testing.assert_allclose(u,u0+U,atol=1e-10)
+            np.testing.assert_allclose(E,E0+U*r0*u0+.5*U*U*r0,atol=1e-8)

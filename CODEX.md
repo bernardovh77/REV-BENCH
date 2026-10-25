@@ -4,6 +4,40 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-25: Stages045/046 reviewed — HOLD
+
+- Bernardo authorizes045 then046, reviewing the predecessor. [046](docs/stage-046.md)
+  completes the bounded frozen signed-flow experiment after045. No047 work.
+  One physical state remains: gas upstream, actual B0 directional coordinates
+  plus transported contacts downstream; exact fractional lengths and sparse
+  overlap projection. Default B0 and production core/WASM/audio are unchanged.
+- 156profiles (84Gaussian/clock/spatial,72carriers),18returns,8composition,
+  six1s and three supplemental resolved-reflection controls pass declared
+  gates. WorstGaussian1.11991%; carrier0.027246dB/0.031316°, envelope2.52668%
+  explicitly reported under separate frozen gates. Zero-U48profiles exactly
+  equal frozen045. Return<.476tick; species contrast0.034266% error.
+- Regional physical books<=7.102e-13, convected-work<=1.406e-14 relative.
+  Sixcompact1s maxPEratio1, final<=2.899e-20. Separate resolved R=-1/+1
+  at-70m/s gain1.505989/1.506029 vs1.504971 ideal; accounted mean-flow work,
+  not hidden growth. Reservoir pressure reflections are not sealed walls.
+  Weak+1mK entropy-contact and actual accepted mass-vs-volume controls pass.
+- Fullnative228/4847488 pass; test-only transit/entropy extensions then final
+  native/WASM/ASan8/5443 each. Python88/no skips, web17/build, six native/WASM
+  trajectory CSVs exactly equal. Nine behavioral faults caught. Original
+  backward-overlap miss exposed end-only observer weakness; retain it and the
+  strengthened intermediate inventory check. No leak/runtime qualification.
+- Median full-correction fixture speeds atU=-70/0/+70:0.002298/0.003334/0.003262x
+  simulated/CPUtime, six interleaved20ms controls each; expensive reference,
+  not an efficiency solution or preselected architecture. Optimization and
+  whole-engine choice remain052/060/062. Thermal/reversal/junctions unqualified.
+- Graphify final3126/8759/177, known rb.h415 parser/inferred-edge/semantic-label
+  limits;113-stage DAG/50 local links pass. All74 protected tracked and105
+  accepted current files exact; timestamp manifest/page updates intentional.
+- `tools/flow_checkpoint.py` registers the045/046 figure and results in one
+  rebuildable RESULTS page. Existing audio/coasts/references unchanged; no new
+  full-engine renders before057/061. Stage039 and S1/S2/S4/listening stay open.
+  Preserve original videos, user skills, CLAUDE.md and .claude/. Save/sync; HOLD.
+
 ## 2026-10-25: Stage 045 coupling proof reviewed; 046 authorized
 
 - Bernardo authorizes045 then046, with predecessor review. [045](docs/stage-045.md)

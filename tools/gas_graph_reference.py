@@ -7,9 +7,9 @@ calibration or chemistry validation.
 import numpy as np
 
 class SimpleWave:
-    def __init__(self,eos,temperature,pressure=101325.,center=.1,width=.035,amplitude=.001,frequency=0.):
+    def __init__(self,eos,temperature,pressure=101325.,center=.1,width=.035,amplitude=.001,frequency=0.,mean_flow=0.):
         self.eos=eos;self.T0=temperature;self.p0=pressure;self.center=center;self.width=width
-        self.amplitude=amplitude;self.frequency=frequency
+        self.amplitude=amplitude;self.frequency=frequency;self.U=mean_flow
         self.nodes,self.weights=np.polynomial.legendre.leggauss(24)
         self.c0=float(self.sound(np.array(temperature)))
 
@@ -35,14 +35,14 @@ class SimpleWave:
     def initial(self,x):
         distance=(x-self.center)/self.width
         dp=np.where(abs(distance)<=6,self.amplitude*np.exp(-distance**2)*
-                    np.cos(2*np.pi*self.frequency*(x-self.center)/self.c0),0)
+                    np.cos(2*np.pi*self.frequency*(x-self.center)/(self.c0+self.U)),0)
         p=self.p0*(1+dp);target=self.eos['R']*np.log1p(dp)
         T=self.T0*np.exp(target/(self.cv(np.array(self.T0))+self.eos['R']))
         for _ in range(8):T-=(self.integral(T,'entropy')-target)*T/(self.cv(T)+self.eos['R'])
-        return p,T,self.integral(T,'velocity')
+        return p,T,self.U+self.integral(T,'velocity')
 
     def state(self,x,time):
-        x=np.asarray(x);foot=x-self.c0*time
+        x=np.asarray(x);foot=x-(self.c0+self.U)*time
         for _ in range(24):
             _,T,u=self.initial(foot);next_foot=x-(u+self.sound(T))*time
             error=np.max(abs(next_foot-foot));foot=next_foot

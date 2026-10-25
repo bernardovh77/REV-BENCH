@@ -297,3 +297,9 @@ help:
 	@awk 'NR > 1 && /^#/ { sub(/^# ?/, ""); print; next } NR > 1 { exit }' Makefile
 
 -include $(ALL_OBJ:.o=.d)
+
+$(BUILD)/gas_graph_probe.wasm: tools/gas_graph_probe.c $(CORE_SRC) $(CORE_HDR) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) Makefile
+	@mkdir -p $(BUILD)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
+	  -ffp-contract=off -Icore/include -Icore/src -Inative -Iexperiments/acoustics \
+	  tools/gas_graph_probe.c $(CORE_SRC) $(ACOUSTIC_SRC) -o $@

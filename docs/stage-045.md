@@ -111,7 +111,8 @@ interface contributions use the same RK weights on both sides.
 
 The first diagnostic test used B0's balance with the wrong sign for added
 coordinate work. B0 defines source-minus-storage-minus-loss, so its residual
-is **minus** the separately recorded coordinate-energy increment. Correcting
+equals **minus** the separately recorded coordinate-energy increment; the
+closed observer is `rb_ac_balance + coordinate_work = 0`. Correcting
 the observer sign fixes that test; it never changes a physical energy state
 or relaxes an acceptance threshold. First-run failures remain local.
 

@@ -180,3 +180,17 @@ existing acoustic ringing may continue.
 One decision at intake closing, recording actual delivery or an explicit skip
 reason. It distinguishes fuel already in the cylinder from new injected fuel.
 A spark suppression event is a separate decision and can occur after a real dose.
+
+
+## Uniform-flow acoustic coupling (Stages045–046)
+
+- **Acoustic mass flow:** the perturbation in transported mass, including both
+  density times volume-flow change and mean velocity times density change.
+  It differs from acoustic volume flow when the gas has a nonzero mean speed.
+- **Contact coordinates:** retained entropy/composition degrees of freedom
+  transported at the gas velocity, alongside pressure waves traveling at U±c.
+- **Coordinate work:** change in a quadratic wave-energy diagnostic caused by
+  inserting the conservative nonlinear residual into the same physical state.
+  It is an account of that representation, never extra gas energy.
+- **Frozen mean flow:** a uniform reference speed fixed during one experiment.
+  It does not establish evolving hot/cold fronts or time-dependent reversal.

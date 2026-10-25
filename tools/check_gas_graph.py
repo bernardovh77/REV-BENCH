@@ -15,9 +15,10 @@ from gas_graph_reference import SimpleWave
 
 
 def run(probe,out,name,*,mode='profile',rate=192000,T=300,mix=0,length=1.50317,
-        cut=.313,n=86,amplitude=.001,frequency=0,duration=.003,reflection=0,area=.003):
+        cut=.313,n=86,amplitude=.001,frequency=0,duration=.003,reflection=0,area=.003,mean_flow=None):
     args=[str(probe),mode,*map(str,(rate,T,mix,length,cut,n,amplitude,frequency,duration,reflection))]
     args.append(str(area))
+    if mean_flow is not None:args.append(str(mean_flow))
     r=subprocess.run(args,text=True,capture_output=True,timeout=300)
     (out/(name+'.csv')).write_text(r.stdout)
     records=[line.removeprefix('RB_GG_RESULT ') for line in r.stderr.splitlines() if line.startswith('RB_GG_RESULT ')]

@@ -130,3 +130,115 @@ void test_gas_graph_domain_failure_requires_prepare(void)
     CHECK(s.failures>0);CHECK_EQ_INT(rb_gg_step(&s),RB_GG_STATE);
     CHECK(isnan(rb_gg_pressure(&s,0)));release(m);
 }
+/* 046 uniform signed flow: actual port transfer, not a helper-only formula. */
+void test_gas_graph_mean_flux_and_energy(void)
+{
+    for(int sign=-1;sign<=1;sign+=2) {
+        rb_gg_state s;rb_gg_spec p=spec(1);p.mean_flow=70*sign;memory m=prepare(&s,p);
+        CHECK(s.graph.line[0].count!=s.graph.line[1].count);
+        CHECK_NEAR((s.downstream_cells+s.fraction)*s.dx,p.length-p.interface_x,1e-14);
+        CHECK_NEAR((s.back_cells+s.back_fraction)*s.back_dx,p.length-p.interface_x,1e-14);
+        rb_mix_cell *initial=calloc((size_t)s.cells,sizeof *initial);CHECK(initial!=NULL);
+        for(int i=0;i<s.cells;i++)initial[i]=s.base;
+        const double eps=.1,H=s.h0+.5*p.mean_flow*p.mean_flow;
+        for(int i=0;i<p.gas_cells;i++) {
+            for(int j=0;j<3;j++)initial[i].v[j]+=p.y[j]*eps/(s.c*s.c);
+            initial[i].v[3]+=eps*(p.mean_flow/(s.c*s.c)+1/s.c);
+            initial[i].v[4]+=eps*(H/(s.c*s.c)+p.mean_flow/s.c);
+        }
+        CHECK_EQ_INT(rb_gg_load(&s,initial,s.cells),0);free(initial);
+        CHECK_EQ_INT(rb_gg_step(&s),0);
+        double delta_mass=0;for(int j=0;j<3;j++)delta_mass+=s.last_linear.v[j]*p.rate/p.area-s.base_flux.v[j];
+        const double expected=((1+p.mean_flow/s.c)*s.accepted_outgoing-(1-p.mean_flow/s.c)*s.used_return)/s.c;
+        CHECK_NEAR(delta_mass,expected,2e-8);
+        const double quiescent=(s.accepted_outgoing-s.used_return)/s.c;
+        CHECK(fabs(delta_mass-quiescent)>fabs(expected)*.1);
+        int status=0;double maxwork=0;
+        for(int tick=0;tick<430;tick++) {
+            if((status=rb_gg_step(&s)))break;
+            CHECK_NEAR(s.received_return,s.used_return,0);
+            maxwork=fmax(maxwork,fabs(rb_gg_acoustic_balance(&s)));
+            /* End-only books miss a removed returning wave after it has left.
+             * Inspect both physical inventories throughout its transit. */
+            if(tick%17==0)for(int side=0;side<2;side++) {
+                rb_mix_cell b=rb_gg_balance(&s,side);
+                for(int j=0;j<5;j++)CHECK_NEAR(b.v[j],0,j==4 ? 1e-8:1e-11);
+            }
+        }
+        CHECK_EQ_INT(status,0);CHECK(maxwork<1e-15);
+        for(int side=0;side<2;side++) {
+            rb_mix_cell b=rb_gg_balance(&s,side);
+            for(int j=0;j<5;j++)CHECK_NEAR(b.v[j],0,j==4 ? 1e-8:1e-11);
+        }
+        release(m);
+    }
+}
+void test_gas_graph_advected_contact(void)
+{
+    for(int sign=-1;sign<=1;sign+=2) {
+        rb_gg_state s;rb_gg_spec p=spec(0);p.mean_flow=70*sign;memory m=prepare(&s,p);
+        rb_mix_cell patch;const double y[]={.099,.0015,.8995};
+        rb_mix_make(p.pressure,p.temperature,p.mean_flow,y,&patch);
+        rb_mix_cell *initial=calloc((size_t)s.cells,sizeof *initial);CHECK(initial!=NULL);
+        const double lo=p.interface_x+(sign>0 ? -.04:.01),hi=lo+.03;
+        for(int i=0;i<s.cells;i++) {
+            const double dx=rb_gg_cell_width(&s,i),x=rb_gg_cell_center(&s,i);
+            double fraction=fmax(0,fmin(x+.5*dx,hi)-fmax(x-.5*dx,lo))/dx;
+            for(int j=0;j<5;j++)initial[i].v[j]=s.base.v[j]+fraction*(patch.v[j]-s.base.v[j]);
+        }
+        CHECK_EQ_INT(rb_gg_load(&s,initial,s.cells),0);free(initial);
+        int status=0;for(int tick=0;tick<90;tick++)if((status=rb_gg_step(&s)))break;
+        CHECK_EQ_INT(status,0);rb_gg_totals(&s,1);
+        const double time=s.steps/p.rate,passed=fmax(0,fmin(.03,70*time-.01));
+        for(int j=0;j<3;j++) {
+            const double expected=sign*p.area*passed*(patch.v[j]-s.base.v[j]);
+            double excess=s.interface_transfer.v[j]-p.area*time*s.base_flux.v[j];
+            CHECK_NEAR(excess,expected,.05*fabs(expected));
+        }
+        for(int i=0;i<s.cells;i++) {
+            rb_mix_primitive w;CHECK_EQ_INT(rb_mix_decode(s.q[i],&w),0);
+            CHECK_NEAR(w.p,p.pressure,1);CHECK_NEAR(w.u,p.mean_flow,.001);
+        }
+        for(int side=0;side<2;side++) {
+            rb_mix_cell b=rb_gg_balance(&s,side);
+            for(int j=0;j<5;j++)CHECK_NEAR(b.v[j],0,j==4 ? 1e-8:1e-11);
+        }
+        release(m);
+    }
+    rb_gg_spec p=spec(0);p.mean_flow=1000;size_t a,b;
+    CHECK_EQ_INT(rb_gg_sizes(&p,&a,&b),RB_GG_DOMAIN);
+}
+void test_gas_graph_entropy_advection(void)
+{
+    /* Independent entropy contact: same composition and pressure, +1 mK.
+     * This weak frozen-reference test is not sharp thermal-front qualification. */
+    for(int sign=-1;sign<=1;sign+=2) {
+        rb_gg_state s;rb_gg_spec p=spec(0);p.mean_flow=70*sign;memory m=prepare(&s,p);
+        rb_mix_cell patch;rb_mix_make(p.pressure,p.temperature+.001,p.mean_flow,p.y,&patch);
+        rb_mix_cell *initial=calloc((size_t)s.cells,sizeof *initial);CHECK(initial!=NULL);
+        const double lo=p.interface_x+(sign>0 ? -.04:.01),hi=lo+.03;
+        for(int i=0;i<s.cells;i++) {
+            const double dx=rb_gg_cell_width(&s,i),x=rb_gg_cell_center(&s,i);
+            const double f=fmax(0,fmin(x+.5*dx,hi)-fmax(x-.5*dx,lo))/dx;
+            for(int j=0;j<5;j++)initial[i].v[j]=s.base.v[j]+f*(patch.v[j]-s.base.v[j]);
+        }
+        CHECK_EQ_INT(rb_gg_load(&s,initial,s.cells),0);free(initial);
+        int status=0;for(int tick=0;tick<90;tick++)if((status=rb_gg_step(&s)))break;
+        CHECK_EQ_INT(status,0);rb_gg_totals(&s,1);
+        double time=s.steps/p.rate,passed=fmax(0,fmin(.03,70*time-.01));
+        for(int j=0;j<5;j++) {
+            const double expected=sign*p.area*passed*(patch.v[j]-s.base.v[j]);
+            const double excess=s.interface_transfer.v[j]-p.area*time*s.base_flux.v[j];
+            CHECK_NEAR(excess,expected,.05*fabs(expected));
+        }
+        for(int i=0;i<s.cells;i++) {
+            rb_mix_primitive w;CHECK_EQ_INT(rb_mix_decode(s.q[i],&w),0);
+            CHECK_NEAR(w.p,p.pressure,1);CHECK_NEAR(w.u,p.mean_flow,.001);
+        }
+        for(int side=0;side<2;side++) {
+            rb_mix_cell b=rb_gg_balance(&s,side);
+            for(int j=0;j<5;j++)CHECK_NEAR(b.v[j],0,j==4 ? 1e-8:1e-11);
+        }
+        release(m);
+    }
+}
