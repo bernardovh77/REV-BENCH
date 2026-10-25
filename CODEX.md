@@ -4,6 +4,32 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-25: Stage 045 coupling proof reviewed; 046 authorized
+
+- Bernardo authorizes045 then046, with predecessor review. [045](docs/stage-045.md)
+  couples production-EOS gas to the actual B0 two-node uniform duct. Fractional
+  lengths preserve signed inventory; downstream wave/contact coordinates own
+  one physical state, no independent gas/acoustic duplicate or pressure rewrite.
+- Final62 profiles pass2% waveform,1dB/10° carrier and1e-10 regional-book gates:
+  worstL2=1.9021%, Gaussian1.0549%,0.02237dB/0.007891°. Six load/partition
+  returns pass, max1.476ticks; matchedreturn0.007172Pa. Three1s cases show
+  maximumenergy/initial1 andfinal<=3.185e-20. Maxnormalizedbook8.098e-14.
+  Two adverseamplitudes.05/.1 reject; no repairs. Ten exact044 component
+  subduct controls preserve lengths/areas/IDs and reflected load; not full
+  engine or component-loss qualification. Nonuniform fuel transport tested.
+- Initial diffusion, WENO-only weak-shape and diagnostic sign/harness failures
+  are retained. Final weak-linear/finite-WENO, SSPRK3 acoustic / conservative
+  reconstructed-residual RK2 construction passes unchanged thresholds.
+- Fullnative226/4845645, finalnew5/2268, Python87, web17/build pass; focused
+  WASM/ASan5/2268 including fractional extension. Seven compiled
+  faults caught. No leak qualification under ptrace. Expensive full correction
+  grid remains; measured0.000834–0.01138x is not an efficiency solution.
+- Evidence `renders/evidence/stage-045/`, frozen measured probe outside the
+  evolving build folder, all rejected matrices preserved. Graphify3101/8655/165;
+  known public-header/inferred-edge limits. Production core/WASM, accepted
+  audio/reference splits and Claude setup preserved. Review passes for046's
+  uniform signed-flow experiment; no default sound change or production promotion.
+
 ## 2026-10-24: Stage 044 geometry checkpoint — HOLD
 
 - Bernardo authorizes043 then044 with predecessor review. [043](docs/stage-043.md)

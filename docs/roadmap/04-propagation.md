@@ -61,7 +61,11 @@ later gates; unsupported physical-exhaust execution explicitly rejects.
 
 **Starting evidence/specification:** [docs/stage-S2d-0b-B1a.md](../../docs/stage-S2d-0b-B1a.md), [docs/adr/0001-coupled-exhaust-ownership.md](../../docs/adr/0001-coupled-exhaust-ownership.md).
 
-**Execution record:** for new work, `docs/stage-045.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [045](../stage-045.md): production-EOS retained gas and
+actual B0 uniform-duct graph with fractional lengths, one accepted conservative
+flux and current reflection. Independent profile/phase/return/book/stability
+gates pass; seven faults caught. Finite junctions, full-engine integration,
+thermal fronts and efficient scheduling remain later work.
 
 <a id="stage-046"></a>
 ## Stage 046 — Uniform mean-flow coupling

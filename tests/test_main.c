@@ -19,6 +19,12 @@ void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
 void test_mixture_stationary_contact_and_wave(void);
 
+void test_gas_graph_prepare_and_inventory(void);
+void test_gas_graph_tagged_pulse_transport(void);
+void test_gas_graph_fractional_flux_and_clock(void);
+void test_gas_graph_contact_and_physical_pressure(void);
+void test_gas_graph_domain_failure_requires_prepare(void);
+
 /* ---- core (tests/test_core.c) ---- */
 void test_core_config(void);
 void test_core_param_table(void);
@@ -258,6 +264,12 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_gas_graph_prepare_and_inventory),
+    T(test_gas_graph_tagged_pulse_transport),
+    T(test_gas_graph_fractional_flux_and_clock),
+    T(test_gas_graph_contact_and_physical_pressure),
+    T(test_gas_graph_domain_failure_requires_prepare),
+
     T(test_mixture_eos_and_guards),
     T(test_mixture_flux_and_neighbor),
     T(test_mixture_conservation_and_boundary),

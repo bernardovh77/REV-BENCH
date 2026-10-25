@@ -28,7 +28,15 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stages 043 and 044 reviewed — HOLD after 044.**
+**Current work: Stage045 reviewed; Stage046 is authorized next.**
+[045](docs/stage-045.md) proves production-mixture gas coupling to the actual
+B0 uniform-duct graph, fractional lengths, current reflected load and one
+conservative transfer. Accuracy, regional inventory, stability and fault gates
+pass within the declared envelope. This expensive research reference is not
+a production engine renderer or efficiency solution. Continue with frozen
+signed mean flow in046; preserve accepted audio and open realism gates.
+
+**Previous checkpoint: Stages043 and044 reviewed.**
 [043](docs/stage-043.md) preserves mass/species/energy but fails the declared
 moving-contact, acoustic-bandwidth and cost gates. A0/A1 remain controls; no
 A2 production promotion. After that review, [044](docs/stage-044.md) compiles
@@ -37,7 +45,7 @@ geometry controls:42 connected and14 disconnected cylinder/outlet pairs agree
 in native/WASM, with preserved storage and no ambient shortcut. Full component
 physics and engine coupling remain later gates. The single results page adds
 the numerical checkpoint and preserves all accepted audio/coasts/references.
-039 stays open. Do not start045 until further instruction.
+039 stays open. Subsequent045/046 authorization is recorded above.
 
 **Previous checkpoint: Stage 042 complete within its source-event scope.**
 After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
@@ -253,7 +261,7 @@ historical rows are not a claim that all current audio goals have passed.
 | --- | --- | --- | --- |
 | [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Complete experiment: A2 rejected (wave/contact/cost); no production promotion | 035, 038 |
 | [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Complete (bounded): five executable geometry controls, gas preparation, all paths; full component physics open | 037, 038 |
-| [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044, 113 |
+| [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Complete (bounded): mixture/actual-B0 duct, fractional lengths, conservative feedback; research only | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Not started | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |
 | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Not started | 046, 047 |
