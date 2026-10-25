@@ -113,7 +113,7 @@ def experiment(probe,out):
         max([r for r in nonlinear if r['mode']==m][0]['l1_relative']) for m in ('sod','rarefaction'))
     failures=[r for r in rows if r['status']]
     summary=dict(wave_rows=len(rows),excluded_cfl=len(failures),alias_controls=sum(not r['representation_pass'] for r in rows),acoustic_pass=sum(r['acoustic_pass'] for r in rows),
-                 acoustic_fail=sum(not r['acoustic_pass'] for r in rows if not r['status']),
+                 acoustic_fail=sum(not r['acoustic_pass'] for r in rows if r['representation_pass'] and not r['status']),
                  max_balance=max(max(r['relative_balance']) for r in rows+contacts+finite+boundary if not r['status']),
                  contacts=contacts,finite_amplitude=finite,boundaries=boundary,nonlinear=nonlinear,nonlinear_pass=nonlinear_pass,
                  full_screen_pass=all(r['acoustic_pass'] for r in rows) and all(r['pressure_drift_Pa']<=1 for r in contacts) and nonlinear_pass,

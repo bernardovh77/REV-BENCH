@@ -39,7 +39,12 @@ must re-pass these gates; B0/B1 work remains independent.
 
 **Starting evidence/specification:** [docs/stage-13b-p.md](../../docs/stage-13b-p.md), [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Execution record:** for new work, `docs/stage-044.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Execution record:** [044](../stage-044.md): canonical description compiles into
+gas region/port/cell preparation and actual B0 lossless geometry controls for
+all five builds. Full topology/storage/provenance,42 connected/14 disconnected
+pairs, spatial consistency, native/WASM and eight compiler faults pass.
+Full component impedance, engine coupling and real installation routes remain
+later gates; unsupported physical-exhaust execution explicitly rejects.
 
 <a id="stage-045"></a>
 ## Stage 045 — General zero-flow open gas-to-graph coupling

@@ -15,6 +15,7 @@ SECTIONS = {
     "user-references": ("USER REFERENCES", "New references"),
     "coupling-proof": ("COUPLING PROOF", "Coupling proof"),
     "reference-protocol": ("REFERENCE PROTOCOL", "Reference controls"),
+    "geometry-checkpoint": ("GEOMETRY CHECKPOINT", "Stages 43–44"),
 }
 
 

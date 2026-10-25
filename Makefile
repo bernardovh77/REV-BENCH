@@ -84,6 +84,7 @@ BENCH_OBJ  := $(call obj,native/rb_bench.c)
 AUDIT_OBJ  := $(call obj,native/rb_audit.c)
 ACOUSTIC_SRC := experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c experiments/acoustics/mixture.c
 ACOUSTIC_OBJ := $(call obj,$(ACOUSTIC_SRC))
+ACOUSTIC_HDR := $(wildcard experiments/acoustics/*.h)
 ACOUSTIC_PROBE_OBJ := $(call obj,tools/acoustic_candidate_probe.c)
 COUPLED_PROBE_OBJ := $(call obj,tools/coupled_duct_probe.c)
 BUILD_CONTRACT_OBJ := $(call obj,tools/build_contract_probe.c)
@@ -94,9 +95,10 @@ COMBUSTION_VARIATION_OBJ := $(call obj,tools/combustion_variation_probe.c)
 INJECTION_SCENARIO_OBJ := $(call obj,tools/injection_scenarios_probe.c)
 MIXTURE_PROBE_OBJ := $(call obj,tools/mixture_probe.c)
 MIXTURE_ENGINE_OBJ := $(call obj,tools/mixture_engine_control.c)
+EXHAUST_GEOMETRY_OBJ := $(call obj,tools/exhaust_geometry_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -141,6 +143,9 @@ $(BUILD)/mixture_probe: $(MIXTURE_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(BUILD)/mixture_engine_control: $(MIXTURE_ENGINE_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(BUILD)/exhaust_geometry_probe: $(EXHAUST_GEOMETRY_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 .PHONY: diagnostics-check
@@ -269,11 +274,17 @@ WASM_TEST_FILTER ?= chamber_batch gas pipe_acoustic_transport pipe_conserves_eve
 test-wasm: $(BUILD)/rb_tests.wasm
 	node tools/bench_wasm.mjs $< $(WASM_TEST_FILTER)
 
-$(BUILD)/rb_tests.wasm: $(TEST_SRC) $(CORE_SRC) $(CORE_HDR) $(NATIVE_SRC) $(ACOUSTIC_SRC) tests/rb_test.h Makefile
+$(BUILD)/rb_tests.wasm: $(TEST_SRC) $(CORE_SRC) $(CORE_HDR) $(NATIVE_SRC) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) tests/rb_test.h Makefile
 	@mkdir -p $(@D)
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
 	  -Wall -Wextra -Icore/include -Icore/src -Inative -Iexperiments/acoustics \
 	  $(TEST_SRC) $(CORE_SRC) $(NATIVE_SRC) $(ACOUSTIC_SRC) -o $@
+
+$(BUILD)/exhaust_geometry_probe.wasm: tools/exhaust_geometry_probe.c $(CORE_SRC) $(CORE_HDR) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) Makefile
+	@mkdir -p $(@D)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
+	  -Wall -Wextra -Icore/include -Icore/src -Iexperiments/acoustics \
+	  tools/exhaust_geometry_probe.c $(CORE_SRC) $(ACOUSTIC_SRC) -o $@
 
 clean:
 	rm -rf build build-san

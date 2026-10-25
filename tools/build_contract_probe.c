@@ -84,7 +84,22 @@ static int output(rb_sim *sim,const char *preset)
             printf("%s\"%s\":%.17g",f ? ",":"",rb_pipe_field_name(f),rb_get_pipe(sim,k,f));
         putchar('}');
     }
-    puts("]}");
+    printf("],\"geometry_inventory\":{\"collectors\":[");
+    for(int c=0;c<sim->engine.collectors;c++)
+        printf("%s%.17g",c ? ",":"",sim->engine.collector[c].V);
+    printf("],\"junction_volume_m3\":%.17g,\"pipes\":[",d->junction_volume);
+    for(int k=0;k<rb_pipe_count(sim);k++) {
+        const rb_pipe *p=rb_engine_pipe(&sim->engine,k);
+        double volume=0;
+        for(int j=0;j<p->cells;j++) volume+=p->cell[j].V;
+        const rb_face *packed=p->cells>1 ? &p->face[0]:&p->end_face[0];
+        printf("%s{\"kind\":%d,\"number\":%d,\"length_m\":%.17g,\"area_m2\":%.17g,\"volume_m3\":%.17g,\"packing_R\":%.17g,\"packing_tau\":%.17g,\"end_laminar\":[%.17g,%.17g],\"end_exit\":[%.17g,%.17g],\"friction_factor\":%.17g,\"wall_temperature_K\":%.17g}",
+            k ? ",":"",(int)rb_get_pipe(sim,k,RB_PIPE_KIND),(int)rb_get_pipe(sim,k,RB_PIPE_NUMBER),
+            p->length,p->area,volume,packed->packing,packed->settle_time,
+            p->end_face[0].laminar,p->end_face[1].laminar,p->end_face[0].exit,p->end_face[1].exit,
+            p->friction_factor,p->wall_temperature);
+    }
+    puts("]}}");
     return ferror(stdout)!=0;
 }
 

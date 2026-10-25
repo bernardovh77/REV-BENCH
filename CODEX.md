@@ -4,6 +4,45 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-24: Stage 044 geometry checkpoint — HOLD
+
+- Bernardo authorizes043 then044 with predecessor review. [043](docs/stage-043.md)
+  is a completed rejected A2 experiment, saved78db7cf: do not promote it.
+  [044](docs/stage-044.md) completes bounded geometry compilation/control,
+  preserving production core/WASM/presets/accepted audio and Claude setup.
+- `tools/exhaust_geometry.py` prepares immutable serialized canonical-build
+  plans:68 pipe regions,1412 gas cells,14 catalyst/baffle/packing interfaces,
+  finite collector/X/Y inventories and236 source/port-outlet paths across
+  five engines. Native observer supplies actual recipe dimensions/coefficients;
+  unannotated dimensions remain model estimates. No hardcoded replacement
+  pipe, fabricated 3D route, loss filter or production graph promotion.
+- Split ambient terminal identity per aperture: I6/flat banks do not gain a
+  zero-delay connection through their shared environment label. All42 connected
+  and14 disconnected cylinder/outlet pairs execute correctly in actual B0
+  controls; gas inventory/port/cell bindings are prepared but not evolved through
+  engine junctions. Matched fixture boundaries are not physical valves/radiation.
+- Work residual<=5.830e-13; all native/WASM inventories,bindings,arrival ticks
+  and peaks match exactly. Python84 pass/no skips; five end-to-end preparation
+  tests also pass under ASan/UBSan (no leak check under ptrace). Eight compiler
+  faults caught, plus043's six. Retain221/4843441 full native and web17/build
+  evidence from043 with identical production/native-test sources; no application
+  worklet or runtime deadline claim. Preparation costs stay outside audio ticks.
+- First short-delay test premise was wrong; corrected native-valid5cm header
+  rejects at8kHz/4000K. WASI clock-link failure fixed with explicitly labeled
+  monotonic timing. Acoustic-header WASM dependencies and043 alias-summary
+  classification corrected; original failure records preserved.
+- Single `renders/RESULTS.html` adds the registered043/044 section/figure and
+  rebuilds in one operation. All55 clips, five long coasts, retained8 research
+  plots and3 reference views survive; new figure passes offline checks.
+  All66 original embedded media payloads remain exact; only one figure added.
+  3676 prior ignored files verified unchanged; page/manifest are intentional
+  exceptions. Evidence under `renders/evidence/stage-044/`.
+- Graphify queried/refreshed3003nodes/8286edges/167communities, known rb.h:415
+  parser/inferred-edge limits. Save/sync and HOLD after044. Do not start045.
+  039 acquisition, S1/S2/S4/listening/runtime remain open. Future045–059 must
+  not treat the lossless geometry capability as a full exhaust renderer;
+  075/094 retain real spatial/component measurements, 061 owns public bindings.
+
 ## 2026-10-24: Stage 043 review and 044 authorization
 
 - Bernardo authorizes 043 then 044, reviewing the predecessor before advancing.

@@ -23,4 +23,3 @@ class RiemannReferenceTests(unittest.TestCase):
         a=exact_riemann(0,1,(1,-.5,1),(1,.5,1),1.4)
         self.assertAlmostEqual(a[1],0,places=12)
         self.assertLess(a[0],1);self.assertLess(a[2],1)
-

@@ -28,10 +28,16 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current work: Stage 043 experiment complete/rejected; 044 in progress.**
+**Current checkpoint: Stages 043 and 044 reviewed — HOLD after 044.**
 [043](docs/stage-043.md) preserves mass/species/energy but fails the declared
 moving-contact, acoustic-bandwidth and cost gates. A0/A1 remain controls; no
-A2 production promotion. Predecessor reviewed before beginning authorized044.
+A2 production promotion. After that review, [044](docs/stage-044.md) compiles
+all five exhausts into physical region/port/cell plans and actual lossless B0
+geometry controls:42 connected and14 disconnected cylinder/outlet pairs agree
+in native/WASM, with preserved storage and no ambient shortcut. Full component
+physics and engine coupling remain later gates. The single results page adds
+the numerical checkpoint and preserves all accepted audio/coasts/references.
+039 stays open. Do not start045 until further instruction.
 
 **Previous checkpoint: Stage 042 complete within its source-event scope.**
 After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
@@ -39,8 +45,8 @@ delivered fuel, records skipped fueling and proves one-to-one mass/event/sound
 behavior through startup, cut/resume, restart and retained fuel. Native, WASM,
 fault, 105 seeded scenario and complete listening-page checks pass. Recorded
 engine trajectories are unchanged. The current instantaneous fueling/modal
-surrogate is not calibrated real PFI/GDI hardware. Stage 043 is next after
-review; no later work is started or authorized here. Stage 039 stays open.
+surrogate is not calibrated real PFI/GDI hardware. The subsequent043/044
+review and experiment outcomes are documented above. Stage039 stays open.
 
 **Previous checkpoint: Stage 041 complete within its numerical scope.**
 After reviewing 040, [041](docs/stage-041.md) separates mean charge physics
@@ -98,8 +104,8 @@ one-page examples are a new listening checkpoint, not pre-accepted sound.
 **041 retains 040's causal ignition/heat fix and completes its numerical handoff.**
 Its results do not validate a new kernel-failure or late-chemistry law, high
 dilution extrapolation, real-engine COV, acoustic transport or real-time delivery.
-043/044 remain Ready by dependencies, not authorization to skip the agreed
-order. Preserve 041's unqualified findings in later work.
+043/044 subsequently execute in the agreed review order. Their bounded
+outcomes do not retire041's unqualified findings; preserve them in later work.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -246,7 +252,7 @@ historical rows are not a claim that all current audio goals have passed.
 | Stage | Deliverable | Status | Depends on |
 | --- | --- | --- | --- |
 | [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Complete experiment: A2 rejected (wave/contact/cost); no production promotion | 035, 038 |
-| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | In progress after 043 review | 037, 038 |
+| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Complete (bounded): five executable geometry controls, gas preparation, all paths; full component physics open | 037, 038 |
 | [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Not started | 034, 035, 043, 044, 113 |
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Not started | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Not started | 043, 046 |

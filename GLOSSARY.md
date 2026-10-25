@@ -6,6 +6,21 @@ the evidence used to judge them.
 
 ## Language
 
+**Prepared exhaust geometry**:
+A validated, immutable description compiled into physical regions, port and
+cell bindings, finite volumes and source/outlet paths. Stage044 executes a
+lossless geometry control; preparation does not qualify complete muffler,
+catalyst, hot-flow or radiation behavior.
+
+**Pressure-equilibrium preservation**:
+Keeping initially uniform pressure and velocity uniform while a source-free
+gas-mixture contact moves. Conserving mass and total energy alone does not
+guarantee it; Stage043's rejected candidate demonstrates the distinction.
+
+**Ambient terminal identity**:
+The identity of one physical aperture into the environment. Two outlets may
+share ambient temperature and pressure without a zero-delay acoustic connection.
+
 **Physical engine**:
 The engine whose crank motion, combustion, valves and gas exchange determine its
 operating response and the causes of its sound.

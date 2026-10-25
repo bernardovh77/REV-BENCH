@@ -127,9 +127,12 @@ cell graph: chambered cans have sealed mesh endpoints and internal cell
 attachments that must not be mistaken for missing physical connections. Cell
 indices, discretization, guard-modified effective geometry, all-port scattering,
 finite junctions, losses and their observability remain Stages 038/043–052.
-Stage 044 compiles one full physical geometry into candidate-specific grids.
-Until then the engine recipe is authoritative and derived geometry cannot be
-edited independently. No compiler or general graph coupling is claimed here.
+The [Stage044 compiler](../docs/stage-044.md) now prepares the bounded legacy
+subset into gas region/port/cell incidence and an executable lossless B0
+geometry control. Catalyst/packing/baffle metadata and finite volumes survive;
+full component physics, general graph coupling and production promotion remain
+later gates. The engine recipe stays authoritative and derived geometry cannot
+be edited independently. The Stage037 reference alone remains a contract proof.
 
 Frames are right-handed with metres: vehicle +X right, +Y toward the front,
 +Z up; engine +Y toward the crank front and +Z upward. The engine origin is
