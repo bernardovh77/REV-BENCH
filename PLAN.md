@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-25. **One sequence: Stages 001–114.** This file is the only
+Updated 2026-10-26. **One sequence: Stages 001–114.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,16 +28,30 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
+**Current checkpoint:114 complete and reviewed;049 authorized next.**
+Bernardo authorizes114 then049 on2026-10-26, reviewing each predecessor.
+[114](docs/stage-114.md) proves fixed cells/ports, one current conservative
+transfer, thermal/species contacts and finite throughflow/reversal with bounded
+storage.241native/4871163checks, focused native/WASM/sanitizer4/15909,
+88Python,17web/build, thirteen faults and eight exact parity trajectories pass.
+Four primary4kHz packet failures are retained; predeclared4096-cell controls
+reduce the worst fine error to2.4142%. This slow correctness reference is not
+a production renderer.039/hot EOS/realism/listening/runtime remain open.
+Accepted clips, reference locks and Claude setup are preserved; RESULTS gains
+one numerical figure. Next049 must retain these interface/energy gates and
+validate finite junctions/all ports. Hold after049; no050 work is authorized.
+
 **Latest reference assessment: two supplied dashboard videos.**
 The [Subaru/BMW assessment](docs/stage-039-dashboard-reference-assessment.md)
 adds useful independently visible RPM/road-speed evidence: Subaru acceleration
 and slowing/downshifts, BMW high-rev road pulls. The BMW has no sustained coast;
 both exhaust builds and actual microphone setups remain unknown. These are
 inspected candidates for approximate state/timbre review, not new calibrated
-or locked sessions.039 remains open; accepted clips/RESULTS and the development
-hold after048, before114/049, are unchanged.
+or locked sessions.039 remains open. This reference assessment changed no
+accepted clips/RESULTS and did not authorize later development; the subsequent
+114/049 authorization is recorded above.
 
-**Current checkpoint: Stages047/048 reviewed; HOLD after048.**
+**Previous checkpoint: Stages047/048 reviewed; held after048.**
 [047](docs/stage-047.md) characterizes inherited gas properties/fixed walls and
 proves a finite-capacity wall element. [048](docs/stage-048.md) completes bounded
 material-coordinate thermal/contact, reversal, wall and acoustic-work fixtures.
@@ -46,15 +60,16 @@ checks pass. High-resolution4kHz packet errors fall to1.40% after a geometric
 work precision fix; primary768-cell carrier passes alone conceal20.65% packet
 error. The research reference is far below real time, not a promoted renderer.
 
-**A newly explicit split must precede branches:** [114](docs/roadmap/04-propagation.md#stage-114)
-proves fixed-geometry thermal transport/port exchange.048's moving material
-reference does not supply that engine/remap interface.114 is not implemented;
-049 remains blocked by it. Execution order is048 →114 →049 with stable IDs.
+**The prerequisite introduced after048:** [114](docs/roadmap/04-propagation.md#stage-114)
+must prove fixed-geometry thermal transport/port exchange.048's moving material
+reference does not supply that engine/remap interface. At that checkpoint114
+was unimplemented and049 blocked;114's later proof/review is recorded above.
+Execution order remains048 →114 →049 with stable IDs.
 The >990K gas closure, actual wall calibration and efficiency/whole-engine
 acceptance remain open. Accepted clips, Claude setup and references are
 preserved. The single RESULTS page includes the new047/048 figure;039 and
 S1/S2/S4/listening/runtime gates stay open. No further development is authorized
-by this checkpoint; HOLD before114/049.
+by that earlier checkpoint; the later114/049 authorization supersedes its hold.
 
 **Previous checkpoint:045/046 reviewed.**
 Their uniform gas/B0 coupling and signed-flow gates pass within their declared
@@ -294,8 +309,8 @@ historical rows are not a claim that all current audio goals have passed.
 | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Complete (bounded): signed flow, contact/entropy and convected work pass; research only | 045 |
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Complete: properties/wall sensitivity, finite-capacity pair and explicit limits reviewed | 043, 046 |
 | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Complete (bounded material-reference experiment); fixed-geometry continuation 114 required | 046, 047 |
-| [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge | Not started; prerequisite before 049 | 044, 046, 047, 048 |
-| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Blocked by 114 | 044, 048, 114 |
+| [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge | Complete (bounded fixed-port prototype); reviewed | 044, 046, 047, 048 |
+| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Ready; authorized next after 114 review | 044, 048, 114 |
 | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing | Not started | 047, 049 |
 | [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency | Not started | 049 |
 | [052](docs/roadmap/04-propagation.md#stage-052) | Mixed-rate scheduler and state transitions | Not started | 048, 049, 050, 051 |

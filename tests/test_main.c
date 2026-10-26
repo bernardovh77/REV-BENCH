@@ -14,6 +14,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+void test_fixed_transport_contact_and_stationary_books(void);
+void test_fixed_transport_current_shared_port(void);
+void test_fixed_transport_reversal_wall_and_domain(void);
+void test_fixed_transport_separate_fronts_and_fixed_exterior(void);
 void test_mixture_eos_and_guards(void);
 void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
@@ -275,6 +279,10 @@ static const struct {
     const char *name;
     void (*fn)(void);
 } TESTS[] = {
+    T(test_fixed_transport_contact_and_stationary_books),
+    T(test_fixed_transport_current_shared_port),
+    T(test_fixed_transport_reversal_wall_and_domain),
+    T(test_fixed_transport_separate_fronts_and_fixed_exterior),
     T(test_material_fine_geometry_work),
     T(test_material_hot_contact_and_translation),
     T(test_material_pulse_force_and_current_work),

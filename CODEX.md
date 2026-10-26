@@ -4,6 +4,47 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-26:114 reviewed;049 authorized next
+
+- Bernardo authorizes114 then049, predecessor review before each completion;
+  hold after049. Read [114](docs/stage-114.md).048's five material regressions
+  pass before114; retain its packet/GCL/high-EOS/cost limits.
+- New fixed_transport.[ch] is a separate uniform-area research arm: stationary
+  FV cells, two named pressure-equilibrium contact constituents, production
+  u(T)/200–990K, one physical E and current shared SSP-RK2 flux. No clipping,
+  pressure overwrite, acoustic reservoir or unbounded parcel queue. Existing
+  engine/B0/A2 controls and accepted audio are not replaced.
+- Full/split ports at two positions return current reflected load and identical
+  accepted transfers.60primary profiles retained;4 primary4kHz packet misses
+  (worst7.15644%) require predeclared4096/4MHz controls (worst2.41419%). Selected
+  shape<=4.7088%, carrier<=.34173dB/.82362deg. Independent fixed-grid clock
+  refinement leaves6.76087% error; shape requires mesh accuracy.
+- Four-residence throughflow at±70, pressure-driven cold-air return, thermal-only
+  and species-only contacts, one fixed wall and1s hot/flow/4kHz stability pass.
+  Physical normalized books<=4.109e-11; independently audited inlet enthalpy
+  error<=1.013e-13.500Pa Gaussian mismatch versus048 reference falls1.3535→.4668%
+  at1024→2048cells. This is not general3% amplitude/shock/mixing qualification.
+- Review fixes: independent trace fractions, stable star mass flux, one-sided
+  thermal impedances, final heat/domain/CFL checks before flux commit, exact
+  zero-inner-heat identity. All13 meaningful faults caught, including pure
+  exterior cooling per physical wall. Failed histories retained.
+- Final fullnative241/4871163; focused native/WASM/ASan4/15909each;88Python
+  no skips;17web/build; eight native/WASM trajectories exactly equal. No leak,
+  application worklet or listening/runtime qualification. Report-only timing
+  labels distinguish native CPU from WASI monotonic elapsed; CSV replay exact.
+- Fixed reference cost at256cells/512kHz median.0079773/.0079863x CPU forU0/+70;
+  121936bytes,2048cell967760bytes,4096cell1934416bytes. Not real time or a
+  production choice. Actual engine/junction/component/hot-EOS/common gates
+  remain049–062;039 stays Awaiting matched references.
+- Single RESULTS adds114research figure,55players/four seeks/15images pass
+  offline.69old embedded payloads/105current files/74protected plus2locks exact;
+  results timestamp/registry/page changes intentional. Final evidence including
+  frozen executable hashes: renders/evidence/stage-114/. Graphify refresh and
+  link/DAG/preservation check recorded at closeout. Save/sync114 before049.
+- Graphify3296/9358/179; known rb.h415/inferred/stale semantic limits.114-stage
+  DAG and982 local planning/card file links pass. First permission review timed
+  out; one allowed refresh retry succeeded. No remaining tool block.
+
 ## 2026-10-25: Two supplied dashboard references assessed — HOLD
 
 - Bernardo asks whether the XV acceleration/downshift and M54B30 high-rev
