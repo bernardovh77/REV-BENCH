@@ -25,6 +25,9 @@ typedef struct {
     double wall_x0,wall_x1,h_inner,outer,ambient_T,ambient_heat,gas_heat;
     unsigned long long steps,recon_fallbacks,eos_iterations;
 } rb_ft_state;
+/* EOS/face descriptor only: no physical gas cells or stepping capability. */
+int rb_ft_thermodynamics(rb_ft_state *s,double p0,const double y0[3],
+                         const double y1[3],double T0,double T1);
 int rb_ft_prepare(rb_ft_state *s,int n,double length,double area,double p0,
                   const double y0[3],const double y1[3],double T0,double T1,
                   rb_ft_slot *storage,size_t count);
@@ -36,6 +39,10 @@ int rb_ft_wall(rb_ft_state *s,double capacity,double T,double x0,double x1,
 /* Conservative current face solve: flux densities in +x, u and p of contact.
  * The flux energy contains total enthalpy; pressure work is not added again. */
 int rb_ft_riemann(const rb_ft_state *s,rb_ft_q left,rb_ft_q right,rb_ft_flux *out);
+/* Same physical solve with already reconstructed thermodynamics. Checks the
+ * supplied primitive/conserved pair; no stale or independent pressure input. */
+int rb_ft_riemann_known(const rb_ft_state *s,rb_ft_q left,rb_ft_q right,
+                        const rb_ft_primitive *wl,const rb_ft_primitive *wr,rb_ft_flux *out);
 int rb_ft_step(rb_ft_state *s,double dt,rb_ft_q left,rb_ft_q right);
 /* Same-area, same-dx, same material definitions; shared face solved ONCE at
  * each RK stage. The next engine/network caller must retain this ownership. */

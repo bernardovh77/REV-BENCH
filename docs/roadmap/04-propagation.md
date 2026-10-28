@@ -163,7 +163,15 @@ This is not an engine/variable-area adapter or a runtime renderer promotion.
 
 **Starting evidence/specification:** [docs/stage-13b-p.md](../../docs/stage-13b-p.md), [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Execution record:** for new work, `docs/stage-049.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+**Executed bounded reference:** [049](../stage-049.md) follows review of114 and
+validates finite prism Y/X/H/area geometry, all-port complex response, current
+reflected load, signed hot fronts/reversal and conservative regional exchange.
+Six primary material-resolution misses require retained finer controls; the
+final v3 numerical/fault/parity/cost/preservation gates pass. Fine meshes remain
+far below real time. Two-constituent/200–990K/weak-flow, planar inviscid and
+matched-port limits do not certify hardware losses, hotter chemistry or actual
+engine breathing. Whole-engine integration/runtime/promotion remain later gates.
+Reviewed and held after049;050 requires Bernardo's next instruction.
 
 <a id="stage-050"></a>
 ## Stage 050 — Catalysts, mufflers, perforates and packing

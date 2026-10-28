@@ -18,6 +18,13 @@ void test_fixed_transport_contact_and_stationary_books(void);
 void test_fixed_transport_current_shared_port(void);
 void test_fixed_transport_reversal_wall_and_domain(void);
 void test_fixed_transport_separate_fronts_and_fixed_exterior(void);
+void test_junction_vector_flux_and_cached_thermodynamics(void);
+void test_junction_current_rk_wall_and_closed_energy(void);
+void test_junction_regional_accounts_and_domain(void);
+void test_junction_disconnected_ports_do_not_share_ambient(void);
+void test_junction_current_ports_and_reversal(void);
+void test_junction_trace_material_at_one_sided_open_port(void);
+void test_junction_closed_source_free_second(void);
 void test_mixture_eos_and_guards(void);
 void test_mixture_flux_and_neighbor(void);
 void test_mixture_conservation_and_boundary(void);
@@ -283,6 +290,13 @@ static const struct {
     T(test_fixed_transport_current_shared_port),
     T(test_fixed_transport_reversal_wall_and_domain),
     T(test_fixed_transport_separate_fronts_and_fixed_exterior),
+    T(test_junction_vector_flux_and_cached_thermodynamics),
+    T(test_junction_current_rk_wall_and_closed_energy),
+    T(test_junction_regional_accounts_and_domain),
+    T(test_junction_disconnected_ports_do_not_share_ambient),
+    T(test_junction_current_ports_and_reversal),
+    T(test_junction_trace_material_at_one_sided_open_port),
+    T(test_junction_closed_source_free_second),
     T(test_material_fine_geometry_work),
     T(test_material_hot_contact_and_translation),
     T(test_material_pulse_force_and_current_work),

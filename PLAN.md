@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-26. **One sequence: Stages 001–114.** This file is the only
+Updated 2026-10-28. **One sequence: Stages 001–114.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,18 +28,28 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint:114 complete and reviewed;049 authorized next.**
-Bernardo authorizes114 then049 on2026-10-26, reviewing each predecessor.
-[114](docs/stage-114.md) proves fixed cells/ports, one current conservative
-transfer, thermal/species contacts and finite throughflow/reversal with bounded
-storage.241native/4871163checks, focused native/WASM/sanitizer4/15909,
-88Python,17web/build, thirteen faults and eight exact parity trajectories pass.
-Four primary4kHz packet failures are retained; predeclared4096-cell controls
-reduce the worst fine error to2.4142%. This slow correctness reference is not
-a production renderer.039/hot EOS/realism/listening/runtime remain open.
-Accepted clips, reference locks and Claude setup are preserved; RESULTS gains
-one numerical figure. Next049 must retain these interface/energy gates and
-validate finite junctions/all ports. Hold after049; no050 work is authorized.
+**Current checkpoint: Stages 114 and 049 complete within their research scope;
+reviewed in order; HOLD before 050.** Bernardo authorized114 then049, with a
+predecessor review before the next completion. [114](docs/stage-114.md) proves
+bounded conservative fixed-port thermal transport. After reviewing it,
+[049](docs/stage-049.md) extends that physical flux to finite vector-Euler
+Y/X/H/area junctions and checks every connected source, return and outlet.
+Thirty source runs /441 complex responses pass independent refined-reference
+gates; the worst response-matrix difference is2.87743%. Six coarse hot-flow
+misses require retained finer controls; all selected signed-flow/reversal,
+clock, conservation and stability gates pass. Failed candidates remain recorded.
+This costly inviscid planar reference is not a selected real-time renderer or
+whole-engine adapter.200–990K/two-constituent/weak-flow limits remain active.
+
+Full native248tests/4951907checks, focused native/WASM/sanitizer11/96653,
+95Python,17web/build, sixteen physical faults and eight raw parity trajectories
+pass. The single RESULTS page adds the049numerical figure; all55players,
+four seeks and16images pass offline. All70previous embedded payloads,
+105current media/diagnostic files,76protected files (including reference locks)
+and Claude's setup are preserved. Graphify's code graph is refreshed; its
+known semantic/parser limitations remain.039, hot EOS, real-hardware losses,
+whole-engine/listening and runtime qualification stay open. No050work has
+started or is authorized at this checkpoint. Wait for Bernardo's instruction.
 
 **Latest reference assessment: two supplied dashboard videos.**
 The [Subaru/BMW assessment](docs/stage-039-dashboard-reference-assessment.md)
@@ -310,7 +320,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Complete: properties/wall sensitivity, finite-capacity pair and explicit limits reviewed | 043, 046 |
 | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Complete (bounded material-reference experiment); fixed-geometry continuation 114 required | 046, 047 |
 | [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge | Complete (bounded fixed-port prototype); reviewed | 044, 046, 047, 048 |
-| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Ready; authorized next after 114 review | 044, 048, 114 |
+| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Complete (bounded finite-junction reference); reviewed | 044, 048, 114 |
 | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing | Not started | 047, 049 |
 | [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency | Not started | 049 |
 | [052](docs/roadmap/04-propagation.md#stage-052) | Mixed-rate scheduler and state transitions | Not started | 048, 049, 050, 051 |

@@ -82,7 +82,7 @@ CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
 BENCH_OBJ  := $(call obj,native/rb_bench.c)
 AUDIT_OBJ  := $(call obj,native/rb_audit.c)
-ACOUSTIC_SRC := experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c experiments/acoustics/mixture.c experiments/acoustics/gas_graph.c experiments/acoustics/thermal.c experiments/acoustics/material.c experiments/acoustics/fixed_transport.c
+ACOUSTIC_SRC := experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c experiments/acoustics/mixture.c experiments/acoustics/gas_graph.c experiments/acoustics/thermal.c experiments/acoustics/material.c experiments/acoustics/fixed_transport.c experiments/acoustics/junction.c
 ACOUSTIC_OBJ := $(call obj,$(ACOUSTIC_SRC))
 ACOUSTIC_HDR := $(wildcard experiments/acoustics/*.h)
 ACOUSTIC_PROBE_OBJ := $(call obj,tools/acoustic_candidate_probe.c)
@@ -98,12 +98,13 @@ MIXTURE_ENGINE_OBJ := $(call obj,tools/mixture_engine_control.c)
 EXHAUST_GEOMETRY_OBJ := $(call obj,tools/exhaust_geometry_probe.c)
 MATERIAL_PROBE_OBJ := $(call obj,tools/material_probe.c)
 FIXED_TRANSPORT_OBJ := $(call obj,tools/fixed_transport_probe.c)
+JUNCTION_PROBE_OBJ := $(call obj,tools/junction_probe.c)
 THERMAL_BENCH_OBJ := $(call obj,tools/thermal_bench.c)
 THERMAL_PROBE_OBJ := $(call obj,tools/thermal_probe.c)
 GAS_GRAPH_PROBE_OBJ := $(call obj,tools/gas_graph_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -337,3 +338,12 @@ $(BUILD)/material_probe.wasm: tools/material_probe.c $(CORE_SRC) $(CORE_HDR) $(A
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
 	  -ffp-contract=off -Icore/include -Icore/src -Inative -Iexperiments/acoustics \
 	  tools/material_probe.c $(CORE_SRC) $(ACOUSTIC_SRC) -o $@
+
+$(BUILD)/junction_probe: $(JUNCTION_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+$(BUILD)/junction_probe.wasm: tools/junction_probe.c $(CORE_SRC) $(CORE_HDR) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) Makefile
+	@mkdir -p $(BUILD)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
+	  -ffp-contract=off -Icore/include -Icore/src -Inative -Iexperiments/acoustics \
+	  tools/junction_probe.c $(CORE_SRC) $(ACOUSTIC_SRC) -o $@

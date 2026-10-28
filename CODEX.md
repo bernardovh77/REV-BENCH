@@ -4,6 +4,49 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-28:049 complete and reviewed; HOLD before050
+
+- Execution order preserved: review048 → complete/review114 (synced ef08fe3) →
+  complete/review [049](docs/stage-049.md). No050 implementation is authorized.
+- Frozen v3 is a caller-owned stationary vector-Euler prism-mesh reference,
+  reusing114's physical normal flux, two fixed contact constituents and one E.
+  Current shared SSPRK2 transfer, regional/global books, rigid-wall impulse,
+  explicit ports and fail/poison lifecycle pass. No tick allocation or state
+  clipping. Production core/web/contracts and accepted engine sound are exact.
+- Ten cold/hot all-port matrices:30source runs/441complex responses; maximum
+  relative matrix difference2.87743%, strong-entry errors<=.636dB/5.846degrees.
+  Independently refined FE truth, actual upstream geometry-response change,
+  finite pulse, spatial/clock/capture and1s source-free checks pass.
+- Six primary signed hot-flow controls miss the5%net-material resolution gate;
+  finer current-source controls pass with decreasing differences. The H control
+  passes at subdivision32 + axial40 (2.31385% material difference); retain
+  uniform24/32 misses and the explicitly local refinement separately;
+  do not report local axial resolution as a uniform finer mesh. All raw primary
+  failures remain in ignored renders/evidence/stage-049/.
+- Real review fixes: physically bound open-port reconstruction; absent-material
+  thermodynamic query limit without erasing extensive state; actual donor trace
+  transport; and an EOS-consistent near-unit fraction bound/nonnegative slope
+  coefficient. V2's1.07%clock failure is retained; corrected v3 changes only
+  .00178283% in the same2→4MHz net-material control. No gate was relaxed.
+- Full native248/4951907; focused native/WASI/ASan11/96653each;95Python/no skips;
+ 17web/typecheck/build; all16planted faults caught. Eight native/WASI raw traces
+  agree to stated per-field tolerances (pressure<=1.456e-11Pa, mass exact).
+  Leak detection disabled; no application-worklet/runtime/listening proof.
+- Native no-I/O fixture timing remains far below real time (H16about.000081–
+  .000086simulated/CPU); preparation/allocation and diagnostic I/O excluded.
+  Storage is bounded;8192-cell local H uses13,377,592bytes. These are accuracy
+  references, not a promoted backend. Keep052/057/060/061 and high-EOS gates.
+- Single RESULTS adds049figure:55players/four seeks/16images pass offline;
+ 70old embedded payloads/105current files/76protected files including two locks
+  preserved. No altered engine renders, reference fitting or newly locked
+  calibration sessions.039 and S1/S2/S4/listening remain open.
+- Graphify code AST refreshed3434nodes/9875edges/176communities; rb.h415 parser,
+  inferred edges and stale semantic/community labels remain limitations. No
+  semantic/doc/paper refresh is claimed.114-stage DAG and current file links
+  checked. Source/evidence/executable hashes, failures and final review are in
+  docs049 and the ignored evidence root. Commit/sync this completed checkpoint,
+  then hold for Bernardo; do not start050 from readiness alone.
+
 ## 2026-10-26:114 reviewed;049 authorized next
 
 - Bernardo authorizes114 then049, predecessor review before each completion;

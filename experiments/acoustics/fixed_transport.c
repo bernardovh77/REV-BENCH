@@ -14,23 +14,28 @@ static rb_ft_q scale(rb_ft_q a,double b)
 {
     return (rb_ft_q){{b*a.r[0],b*a.r[1]},b*a.momentum,b*a.energy,{b*a.alpha[0],b*a.alpha[1]}};
 }
-int rb_ft_prepare(rb_ft_state *s,int n,double length,double area,double p0,
-                  const double y0[3],const double y1[3],double T0,double T1,
-                  rb_ft_slot *storage,size_t count)
+int rb_ft_thermodynamics(rb_ft_state *s,double p0,const double y0[3],const double y1[3],double T0,double T1)
 {
-    if(!s||!storage||!y0||!y1||n<4||n>8192||count<(size_t)n+1||
-       !positive(length)||!positive(area)||!positive(p0)||!isfinite(T0)||!isfinite(T1)||
+    if(!s||!y0||!y1||!positive(p0)||!isfinite(T0)||!isfinite(T1)||
        T0<200||T0>990||T1<200||T1>990)return -1;
     for(int k=0;k<2;k++) {
         const double *y=k?y1:y0;double total=0;
         for(int j=0;j<3;j++){if(!isfinite(y[j])||y[j]<0)return -1;total+=y[j];}
         if(fabs(total-1)>1e-12)return -1;
     }
-    memset(s,0,sizeof *s);memset(storage,0,((size_t)n+1)*sizeof *storage);
-    s->cells=n;s->length=length;s->area=area;s->dx=length/n;s->p0=p0;s->slot=storage;
+    memset(s,0,sizeof *s);s->p0=p0;
     rb_gas_init(&s->gas[0],y0);rb_gas_init(&s->gas[1],y1);
     memcpy(s->y[0],y0,sizeof s->y[0]);memcpy(s->y[1],y1,sizeof s->y[1]);
     s->T_reference[0]=T0;s->T_reference[1]=T1;return 0;
+}
+int rb_ft_prepare(rb_ft_state *s,int n,double length,double area,double p0,
+                  const double y0[3],const double y1[3],double T0,double T1,
+                  rb_ft_slot *storage,size_t count)
+{
+    if(!s||!storage||n<4||n>8192||count<(size_t)n+1||!positive(length)||!positive(area))return -1;
+    if(rb_ft_thermodynamics(s,p0,y0,y1,T0,T1))return -1;
+    memset(storage,0,((size_t)n+1)*sizeof *storage);
+    s->cells=n;s->length=length;s->area=area;s->dx=length/n;s->slot=storage;return 0;
 }
 static rb_ft_q make(const rb_ft_state *s,double p,double u,const double alpha[2],double T0,double T1)
 {
@@ -107,9 +112,8 @@ static rb_ft_q physical(rb_ft_q q,rb_ft_primitive w)
 {
     return (rb_ft_q){{q.r[0]*w.u,q.r[1]*w.u},q.momentum*w.u+w.p,(q.energy+w.p)*w.u,{q.alpha[0]*w.u,q.alpha[1]*w.u}};
 }
-int rb_ft_riemann(const rb_ft_state *s,rb_ft_q l,rb_ft_q r,rb_ft_flux *out)
+static int riemann(rb_ft_q l,rb_ft_q r,rb_ft_primitive a,rb_ft_primitive b,rb_ft_flux *out)
 {
-    rb_ft_primitive a,b;if(!out||rb_ft_decode(s,l,&a)||rb_ft_decode(s,r,&b))return -1;
     /* One-sided physical characteristic impedances are essential at a
      * thermal/material jump. Taking the largest c on BOTH sides changes the
      * small-signal reflection coefficient. Strong shock states are excluded. */
@@ -132,6 +136,33 @@ int rb_ft_riemann(const rb_ft_state *s,rb_ft_q l,rb_ft_q r,rb_ft_flux *out)
     *out=(rb_ft_flux){flux,sm,ps,{q.alpha[0],q.alpha[1]}};
     for(int k=0;k<2;k++)out->f.alpha[k]=q.alpha[k]*sm;
     return 0;
+}
+int rb_ft_riemann(const rb_ft_state *s,rb_ft_q l,rb_ft_q r,rb_ft_flux *out)
+{
+    rb_ft_primitive a,b;if(!out||rb_ft_decode(s,l,&a)||rb_ft_decode(s,r,&b))return -1;
+    return riemann(l,r,a,b,out);
+}
+static int known_valid(const rb_ft_state *s,rb_ft_q q,const rb_ft_primitive *w)
+{
+    if(!s||!w||!positive(w->p)||fabs(w->p/s->p0-1)>.03||!isfinite(w->u)||!positive(w->rho)||!positive(w->c))return 0;
+    double D=0;
+    for(int k=0;k<2;k++) {
+        if(!isfinite(w->T[k])||w->T[k]<200||w->T[k]>990||!isfinite(w->alpha[k])||w->alpha[k]<0||
+           w->alpha[k]>1+1e-12||!isfinite(q.r[k])||q.r[k]<0||q.alpha[k]!=w->alpha[k])return 0;
+        D+=w->alpha[k]*rb_gas_cv(&s->gas[k],w->T[k])/s->gas[k].R;
+    }
+    if(fabs(w->alpha[0]+w->alpha[1]-1)>1e-12||fabs(w->u)/w->c>.25)return 0;
+    rb_ft_q expected=make(s,w->p,w->u,w->alpha,w->T[0],w->T[1]);
+    if(!isfinite(q.energy)||!isfinite(q.momentum)||fabs(q.energy-expected.energy)>1e-10*fmax(s->p0,fabs(q.energy))||
+       fabs(q.momentum-expected.momentum)>1e-10*w->rho*w->c||fabs(w->rho-q.r[0]-q.r[1])>1e-10*w->rho)return 0;
+    for(int k=0;k<2;k++)if(fabs(q.r[k]-expected.r[k])>1e-10*w->rho)return 0;
+    return fabs(w->c*w->c/(w->p*(1+1/D)/w->rho)-1)<=1e-10;
+}
+int rb_ft_riemann_known(const rb_ft_state *s,rb_ft_q l,rb_ft_q r,
+                        const rb_ft_primitive *a,const rb_ft_primitive *b,rb_ft_flux *out)
+{
+    if(!out||!known_valid(s,l,a)||!known_valid(s,r,b))return -1;
+    return riemann(l,r,*a,*b,out);
 }
 static double mc(double a,double b)
 {
