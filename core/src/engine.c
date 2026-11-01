@@ -400,12 +400,14 @@ static int system_of(const rb_engine *e, int c)
  * by: the cylinders' work varies by 1-3 % of the mean (the COV of IMEP) wide
  * open, and 4-8 % idling, where the spark is held back from its best and the
  * work changes faster with the burn's timing. So each cycle, at intake valve
- * closing, the kernel delay uses the nonnegative arm of VARY_START times the
- * expected burn length; bulk duration varies by VARY_LENGTH. Both scale with
- * `variation`; the two normal numbers are VARY_ALIKE alike. This
- * causal surrogate is not a fitted physical delay law (Stage040/041).
- * The engine computer times the spark
- * for the burn it expects, not this one.
+ * closing, the flame's development delay after the spark is drawn, never
+ * negative, with an RMS spread of VARY_START times the expected burn length
+ * (an exponential, combustion.c: rb_kernel_delay_unit; stage 115), and the
+ * bulk duration varies by VARY_LENGTH. Both scale with `variation`; the two
+ * normal numbers they come from are VARY_ALIKE alike. This causal surrogate
+ * is not a fitted physical delay law (stages 040, 041 and 115). The engine
+ * computer times the spark for the burn it expects, its mean delay
+ * included, not this one.
  * The cylinders also differ a little, for good: the injectors and the ports'
  * air give each its own mixture (CYL_FUEL) and swirl, so its own burn length
  * (CYL_BURN); the oxygen sensor keeps their mean on the target, and on
@@ -952,7 +954,9 @@ static double computer_spark(const rb_engine *e, double duration, double kernel_
     const double best = mbt_advance(e, duration, kernel_delay);
     if (!e->hold_speed && d->idle_rpm > 0.0 && e->throttle_pos < 0.01
         && e->rpm_smooth < d->idle_rpm + IDLE_SPARK_BAND) {
-        const double s = IDLE_SPARK + IDLE_SPARK_GAIN * (d->idle_rpm - idle_heading(e));
+        /* ... earlier by the flame's expected development delay, so the
+         * burn sits where IDLE_SPARK put it before there was one. */
+        const double s = IDLE_SPARK + kernel_delay + IDLE_SPARK_GAIN * (d->idle_rpm - idle_heading(e));
         return (s < 0.0) ? 0.0 : (s < best) ? s : best;
     }
     /* Overrun entry removes torque through ignition before cutting fuel.
@@ -1020,7 +1024,7 @@ static void close_intake(rb_engine *e, int i, double fraction)
     const double ceiling=capped ? 180.0:720.0;
     const double trim=1.0+v*CYL_BURN*e->trim_burn[i];
     b->mean_duration=rb_burn_mean_duration(base,v*VARY_LENGTH,trim,ceiling);
-    b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_positive_mean();
+    b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_delay_mean();
     const double requested=computer_spark(e,b->mean_duration,b->mean_kernel_delay,rpm);
     const double advance = spark_advance(requested);
     if(advance!=requested) b->flame_flags|=RB_FLAME_SPARK_LIMIT;
@@ -1041,12 +1045,13 @@ static void close_intake(rb_engine *e, int i, double fraction)
     double duration = base * exp(v * VARY_LENGTH * length) * trim;
     if (!(duration >= 0.25 * base)) duration = 0.25 * base;
     b->duration = (duration < ceiling) ? duration : ceiling;
-    /* Keep the pre-existing positive development-delay arm. Its negative
-     * arm was unphysical pre-spark ignition. This causal projection is not
-     * a calibrated kernel-delay distribution (Stage041). */
-    const double delay=v * VARY_START * expected * start;
+    /* The flame's development delay after the spark: never negative (the
+     * flame can't start before the spark, stage 040), its own every cycle,
+     * spread as stage 12c's start was (combustion.c,
+     * rb_kernel_delay_unit). The computer's spark allows for its mean. */
+    const double delay=v * VARY_START * expected * rb_kernel_delay_unit(start);
     b->kernel_raw_delay_deg=delay;
-    b->kernel_delay_deg=delay>0 ? delay:0;
+    b->kernel_delay_deg=isfinite(delay) ? delay : 0.0;   /* a NaN starts with the spark */
     b->start_angle=cycle_angle(b->spark_angle+b->kernel_delay_deg);
     b->spark_due = 1;
 }

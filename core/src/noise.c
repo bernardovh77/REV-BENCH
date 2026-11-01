@@ -25,12 +25,22 @@
                                    octave): the jet's smallest eddies, the air */
 
 /* The jets inside the engine: the share of a choked jet's stream power that
- * becomes sound (times M^5 below choking; calibrated against the real
- * engines' energy above 2 kHz), and their band: from about 1 kHz, where the
- * pipes' own sound fades, falling 6 dB an octave of spectral density, and
- * 12 above where the way out takes off the highs. */
-#define VALVE_ETA      2e-3
-#define THROTTLE_ETA   2e-3
+ * becomes sound (times M^5 below choking), and their band: from about 1 kHz,
+ * where the pipes' own sound fades, falling 6 dB an octave of spectral
+ * density, and 12 above where the way out takes off the highs.
+ * Calibrated in stage 115, when the jets' Mach number became the gap's:
+ *   - the exhaust valves' (and a chambered can's baffles'), heard down the
+ *     exhaust, against the real engines' energy above 2 kHz, idling and under
+ *     load: 5e-4, within IEC 60534-8-3's range for valves (1e-4 as a gap
+ *     begins to choke, about 1e-3 well beyond);
+ *   - the throttle's, the idle valve's and the intake valves', heard at the
+ *     intake's mouth: a tenth of that. Their noise is made downstream of the
+ *     gap and has to come back up through it, against the flow (a choked gap
+ *     lets no sound back at all), then through the air box. 5e-5 keeps the
+ *     four's highs over the open bonnet where stage 12b calibrated them (the
+ *     Honda V6 recorded in front); 5e-4 put them 7 dB higher. */
+#define VALVE_ETA      5e-4
+#define THROTTLE_ETA   5e-5
 #define INNER_HP_HZ    800.0
 #define INNER_LP_HZ    1500.0
 
@@ -165,16 +175,41 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     case RB_MUFFLER_STRAIGHT: pass = PASS_STRAIGHT;  top_hz = TOP_STRAIGHT_HZ;  break;
     default:                  pass = PASS_CHAMBERED; top_hz = TOP_CHAMBERED_HZ; break;
     }
-    n->blow_pass = PASS_CATALYST * pass;
+    /* The catalyst takes its share only if there is one: catalyst_laminar is
+     * 0 for bypass pipes with no substrate (engine.h). */
+    n->blow_pass = (d->catalyst_laminar > 0.0 ? PASS_CATALYST : 1.0) * pass;
     for (int s = 0; s < RB_MAX_COLLECTORS; s++)
         band_init(&n->blow[s], INNER_HP_HZ, INNER_LP_HZ, top_hz, n->dt);
+
+    /* Where each cylinder's noise comes out. Its gas goes down its header,
+     * its collector's exhaust pipe, the centre pipe and link if the exhaust
+     * has them, a muffler and its tailpipe. Without a junction that is its
+     * own system's tailpipe. Where the banks meet in a junction, an X before
+     * the centre pipes or a Y before the mufflers, it goes on down every
+     * pipe that leaves the junction: the same noise (the same phase) at each
+     * tailpipe it reaches, its power shared equally among them. The paths
+     * beyond a junction are equally long, so it arrives at all of them at
+     * once. */
+    int beyond[RB_MAX_COLLECTORS] = { 0 };   /* the tailpipes a junction feeds */
+    if (d->junction_volume > 0.0) {
+        if (d->junction_before_center)       /* X: every centre pipe leaves it */
+            for (int c = 0; c < e->collectors; c++) beyond[(e->systems == 2) ? c : 0] = 1;
+        else                                 /* Y: every muffler starts there  */
+            for (int s = 0; s < e->systems; s++) beyond[s] = 1;
+    }
+    const double middle = (d->center_length > 0.0) ? d->center_length + d->link_length : 0.0;
     for (int i = 0; i < d->cylinders; i++) {
-        const double path = d->header_length[i] + d->exhaust_pipe_length + d->muffler_length
-                          + d->tailpipe_length;
+        const double path = d->header_length[i] + d->exhaust_pipe_length + middle
+                          + d->muffler_length + d->tailpipe_length;
         double steps = path / EXHAUST_C / n->dt;
         if (!(steps < RB_NOISE_DELAY - 1)) steps = RB_NOISE_DELAY - 1;
         n->blow_delay[i] = (int)lround(steps);
-        n->blow_system[i] = (e->systems == 2) ? d->collector[i] : 0;
+        int reach[RB_MAX_COLLECTORS] = { 0 }, count = 0;
+        if (d->junction_volume > 0.0) memcpy(reach, beyond, sizeof reach);
+        else reach[(e->systems == 2) ? d->collector[i] : 0] = 1;
+        for (int s = 0; s < RB_MAX_COLLECTORS; s++) count += reach[s];
+        for (int s = 0; s < RB_MAX_COLLECTORS; s++)
+            n->blow_share[i][s] = reach[s] ? 1.0 / sqrt((double)count) : 0.0;
     }
     band_init(&n->hiss, INNER_HP_HZ, INNER_LP_HZ, TOP_AIRBOX_HZ, n->dt);
     band_init(&n->intake_roar, 150.0, 1200.0, TOP_AIRBOX_HZ, n->dt);
@@ -202,18 +237,32 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
 /* ---- the flow ---- */
 
 /* The sound power (W) of a jet through an orifice into a pipe: a share
- * RB_..._ETA M^5 of its stream power 1/2 mdot U^2, U the gas's speed in the
- * gap (sonic at most), gamma the gas's heat capacity ratio. */
+ * eta M^5 of its stream power 1/2 mdot U^2, U the gas's speed in the gap
+ * and M its Mach number there, gamma the gas's heat capacity ratio.
+ *
+ * U and M come from the pressures either side, as the nozzle's flow does
+ * (flow.c): the gas expands from the upstream chamber's p0 and T0 down to
+ * the pressure downstream, or only to the critical pressure if that is
+ * lower: then the gap is choked and M = 1. With x = (p / p0)^((g-1)/g),
+ * the gap's T / T0,
+ *     U^2 = 2 g / (g - 1) R T0 (1 - x),    M^2 = 2 / (g - 1) (1 / x - 1),
+ * and choked x = 2 / (g + 1): U is the sonic speed there, sqrt(2 g R T0 /
+ * (g + 1)). Until stage 115, U was mdot / (rho0 A cd), with the upstream
+ * gas's density rather than the gap's, and M = U / c0: a choked gap read
+ * M = 0.58 and 15.8 dB too little power (the audit's D02,
+ * docs/sound-physics-audit-2026-10-22.md). */
 static double inner_jet(const rb_orifice *o, double gamma, double eta)
 {
     if (!(o->area > 0.0 && o->mdot > 0.0)) return 0.0;   /* shut, or flowing back */
-    const rb_chamber *up = o->a;
-    if (!(up->rho > 0.0 && up->T > 0.0)) return 0.0;
-    const double c = sqrt(gamma * up->gas.R * up->T);
-    double u = o->mdot / (up->rho * o->area * o->cd);
-    if (u > c) u = c;   /* choked: sonic in the gap */
-    const double m = u / c, m2 = m * m;
-    return eta * m2 * m2 * m * 0.5 * o->mdot * u * u;
+    const rb_chamber *up = o->a, *down = o->b;
+    /* No jet unless the pressure falls across the gap (and nothing is NaN). */
+    if (!(up->T > 0.0 && down->p >= 0.0 && down->p < up->p)) return 0.0;
+    const double choked = 2.0 / (gamma + 1.0);
+    double x = pow(down->p / up->p, (gamma - 1.0) / gamma);
+    if (x < choked) x = choked;   /* choked: sonic in the gap */
+    const double u2 = 2.0 * gamma / (gamma - 1.0) * up->gas.R * up->T * (1.0 - x);
+    const double m2 = 2.0 / (gamma - 1.0) * (1.0 / x - 1.0);
+    return eta * m2 * m2 * sqrt(m2) * 0.5 * o->mdot * u2;
 }
 
 static void flow_noise(rb_noise *n, const rb_engine *e)
@@ -227,20 +276,22 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     for (int i = 0; i < d->cylinders; i++)
         n->intake_power += inner_jet(&e->intake[i], GAMMA_AIR, THROTTLE_ETA);
 
-    /* The exhaust valves: each one's noise into its system's way down,
+    /* The exhaust valves: each one's noise into the tailpipes it reaches,
      * arriving when it gets there (a ring the cylinders write ahead into). */
     for (int i = 0; i < d->cylinders; i++) {
         const double w = inner_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
         if (w > 0.0) {
             const int at = (n->blow_pos + n->blow_delay[i]) & (RB_NOISE_DELAY - 1);
-            n->blow_ring[n->blow_system[i]][at] += (float)(sqrt(radiate * w * n->blow_pass) * white(&n->state));
+            const double x = sqrt(radiate * w * n->blow_pass) * white(&n->state);
+            for (int s = 0; s < e->systems; s++)
+                if (n->blow_share[i][s] > 0.0) n->blow_ring[s][at] += (float)(x * n->blow_share[i][s]);
         }
     }
 
     for (int s = 0; s < e->systems; s++) {
         /* Chambered baffles are a downstream constriction. Their generated
          * noise bypasses the catalyst; use the modeled effective hole area
-         * and upstream gas, with the same low-Mach jet approximation. */
+         * and the cells either side, with the same jet law. */
         if (d->muffler_type == RB_MUFFLER_CHAMBERED) {
             const rb_face *f = &e->tailpipe[s].end_face[0];
             rb_orifice hole = {0};

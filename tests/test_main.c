@@ -262,7 +262,9 @@ void test_variation_trapped_mixture(void);
 void test_variation_trapped_mixture_capture(void);
 /* ---- the flow's noise and the engine's own sound (tests/test_noise.c) ---- */
 void test_noise_jet_eighth_power(void);
+void test_noise_jets_at_the_gap(void);
 void test_noise_valve_jets(void);
+void test_noise_valve_routing(void);
 void test_noise_throttle_hiss(void);
 void test_noise_impacts_per_cycle(void);
 void test_noise_strikes(void);
@@ -519,7 +521,9 @@ static const struct {
     T(test_variation_trapped_mixture),
     T(test_variation_trapped_mixture_capture),
     T(test_noise_jet_eighth_power),
+    T(test_noise_jets_at_the_gap),
     T(test_noise_valve_jets),
+    T(test_noise_valve_routing),
     T(test_noise_throttle_hiss),
     T(test_noise_impacts_per_cycle),
     T(test_noise_strikes),

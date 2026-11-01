@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-28. **One sequence: Stages 001–114.** This file is the only
+Updated 2026-10-31. **One sequence: Stages 001–115.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,7 +28,22 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Current checkpoint: Stages 114 and 049 complete within their research scope;
+**Latest: Stage 115 complete (2026-10-31); paused for Bernardo.** Claude reviewed
+Codex's stages 037–049 and 114, and Bernardo asked for the first repair and a
+pause. [Stage 115](docs/stage-115.md) fixes the audit's D02–D05 in `noise.c`:
+- the jets' Mach number is now the gap's, recalibrated against the real engines;
+- valve noise goes through the X and Y junctions to every tailpipe beyond them;
+- the noise's path includes the centre pipes and links;
+- the catalyst takes its share only when there is one.
+
+It also brings the cycles' variation back to the real 1–3 % COV of IMEP wide
+open (0.87–2.30 %, from 0.63–1.22 %), with the test's floor restored. The
+engines' gas, pipes, presets and exhausts are unchanged. Under load the exhaust's
+rasp is now in the real engines' range, and the sound repeats 1.3–4 dB less. The
+remaining gaps are in the stage record. Nothing after 115 is authorized: wait for
+Bernardo's listening and instructions.
+
+**Before that, Codex's checkpoint: Stages 114 and 049 complete within their research scope;
 reviewed in order; HOLD before 050.** Bernardo authorized114 then049, with a
 predecessor review before the next completion. [114](docs/stage-114.md) proves
 bounded conservative fixed-port thermal transport. After reviewing it,
@@ -435,6 +450,7 @@ historical rows are not a claim that all current audio goals have passed.
 | --- | --- | --- | --- |
 | [112](docs/roadmap/14-review-fixes.md#stage-112) | Recoverable checkpoint section publication — C08 | Complete | 033, 036 |
 | [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic derived-state and numerical failure guards — C07 | Complete | 032, 034, 036 |
+| [115](docs/roadmap/14-review-fixes.md#stage-115) | Valve jet noise (D02–D05) and the cycles' variation back to 1–3 % | Complete: native 250 tests / 4950073 checks, 11 planted bugs caught, sanitizers, WASM and web green; A/B renders for listening | 040, 041, 042, 113 |
 
 ## Release gates and unresolved legacy obligations
 

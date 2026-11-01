@@ -18,10 +18,12 @@
  *   - jets inside the engine: the exhaust valves' at blowdown (the gas at
  *     several bar, choked through the valve's gap) and the throttle's at part
  *     load. A share eta = ETA M^5 of the jet's stream power, 1/2 mdot U^2,
- *     becomes sound (M = U / c, at most 1: a choked valve's noise as in IEC
- *     60534-8-3, simplified to one law). It travels with the gas to the open
- *     end: the exhaust valves' down the exhaust (the catalyst and the muffler
- *     taking their share) to the tailpipe, the throttle's back through the
+ *     becomes sound (U and M the gas's speed and Mach number in the gap, from
+ *     the pressures either side, M = 1 when choked: a choked valve's noise
+ *     as in IEC 60534-8-3, simplified to one law). It travels with the gas to
+ *     the open end: the exhaust valves' down the exhaust (the catalyst and
+ *     the muffler taking their share; through an X or Y junction, on to
+ *     every tailpipe beyond it) to the tailpipe, the throttle's back through the
  *     air box and its filter to the intake's mouth. Such small, fast jets put
  *     their sound high (their Strouhal peaks are above the audible band);
  *     what comes out starts near 1 kHz, where the pipes' own sound fades,
@@ -107,10 +109,15 @@ typedef struct rb_noise {
     rb_noise_band blow[RB_MAX_COLLECTORS];   /* the exhaust valves' noise, at
                                               * each tailpipe                   */
     double   blow_pass;                      /* of its power, through the
-                                              * catalyst and the muffler        */
+                                              * catalyst (if any) and the muffler */
     float    blow_ring[RB_MAX_COLLECTORS][RB_NOISE_DELAY];   /* on its way down */
     int      blow_delay[RB_MAX_CYLINDERS];   /* physics steps, each cylinder's  */
-    int      blow_system[RB_MAX_CYLINDERS];  /* the tailpipe it comes out of    */
+    double   blow_share[RB_MAX_CYLINDERS][RB_MAX_COLLECTORS];   /* how much of each
+                                              * cylinder's noise (pressure) comes
+                                              * out of each tailpipe: 1 from its
+                                              * own; through an X or Y junction
+                                              * 1/sqrt(n) from each of the n it
+                                              * reaches (stage 115)             */
     int      blow_pos;
     rb_noise_band hiss;                      /* the throttle's, at the mouth    */
     rb_noise_band intake_roar;

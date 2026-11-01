@@ -4,6 +4,7 @@
  */
 #include "audio.h"
 #include "engine.h"
+#include "flow.h"
 #include "noise.h"
 #include "presets.h"
 #include "rb.h"
@@ -105,90 +106,266 @@ void test_noise_jet_eighth_power(void)
     CHECK_NEAR(flow_rms(&n, RB_NOISE_TAIL0, 1000), 0.0, 0.0);
 }
 
-void test_noise_valve_jets(void)
+/* The jets inside the engine (stage 115). The noise's jets come from the
+ * pressures either side of a gap, so the tests set them: the chambers either
+ * side of orifice o at p0 and T0 upstream and p downstream, of gas y, and
+ * the nozzle's own flow through it (flow.c), as the engine would have it. */
+static const double AIR[RB_NSPECIES] = { 1.0, 0.0, 0.0 };
+static const double BURNED[RB_NSPECIES] = { 0.0, 0.0, 1.0 };
+
+static void across(rb_orifice *o, double p0, double T0, double p, const double *y, double gamma)
 {
-    /* An exhaust valve blowing down. Its noise comes out of the tailpipe
-     * when it gets there (header, exhaust pipe, muffler and tailpipe at
-     * 580 m/s), not a step before. Below choking its power goes as
-     * M^5 mdot U^2: through the same gap, twice the flow is 2^8 the power,
-     * 24.1 dB. Choked, the gas can't go faster: twice the flow, twice the
-     * power, 3 dB. Choked through a chambered can, it's at the level of
-     * its law: a share 2e-3 of the jet's stream power 1/2 mdot c^2, half
-     * of that through the catalyst and 0.004 through the can, within
-     * 0.5 dB. The muffler lets through its share of the power: a straight
-     * pipe's pressure is sqrt(1 / 0.08) times a straight-through's (11 dB),
-     * which is sqrt(0.08 / 0.004) times a chambered can's (13 dB). With two
-     * systems, a cylinder's noise comes out of its own tailpipe. */
+    rb_chamber_init(o->a, o->a->V, p0, T0, y);
+    rb_chamber_init(o->b, o->b->V, p, T0, y);
+    o->mdot = rb_nozzle_mdot(o->area * o->cd, p0, T0, o->a->gas.R, gamma, p);
+}
+
+/* A jet's sound power, eta M^5 1/2 mdot U^2, with M and U in the gap
+ * written as a textbook does: M from the pressure ratio (1 at or below the
+ * critical ratio: choked), the gap's temperature T0 / (1 + (g - 1)/2 M^2),
+ * and U = M sqrt(g R T). */
+static double jet_power(double p0, double T0, double p, double R, double g, double mdot, double eta)
+{
+    const double critical = pow(2.0 / (g + 1.0), g / (g - 1.0));
+    const double M = (p / p0 <= critical) ? 1.0
+                   : sqrt(2.0 / (g - 1.0) * (pow(p0 / p, (g - 1.0) / g) - 1.0));
+    const double T = T0 / (1.0 + 0.5 * (g - 1.0) * M * M);
+    const double U = M * sqrt(g * R * T);
+    return eta * pow(M, 5) * 0.5 * mdot * U * U;
+}
+
+/* What a power W (watts) of noise reads 1 m away (Pa RMS), in the outside
+ * air of the engine e. */
+static double at_a_metre(double w)
+{
+    const double rho0 = e.exhaust_air.rho;
+    const double c0 = sqrt(1.4 * e.exhaust_air.gas.R * e.exhaust_air.T);
+    return sqrt(rho0 * c0 / (4.0 * PI) * w);
+}
+
+void test_noise_jets_at_the_gap(void)
+{
+    /* Stage 115 (the audit's D02): a jet's speed and Mach number are the
+     * gap's, from the pressures either side. Air at 2 bar and 300 K into
+     * 0.2 bar is choked: M = 1 in the gap and U = sqrt(2 g R T0 / (g + 1)),
+     * the intake roar's power exactly the law's with them (before stage 115
+     * it read M = 0.58 and 15.8 dB less). At 1.2 bar into 1 bar it isn't,
+     * and the law holds with the gap's subsonic M and U. Across the
+     * critical ratio the power is continuous. No jet with the pressure
+     * rising across the gap, or with a NaN. (The intake valves' share is
+     * the mouth's, 5e-5: noise.c.) */
     rb_engine_desc d;
     preset_desc("i4", &d);
-    double r[RB_MUFFLER_CHAMBERED + 1][4], law = 0.0;
+    rb_engine_init(&e, &d, DT);
+    rb_orifice *o = &e.intake[0];
+    o->area = 2e-4;
+    const double cases[3][3] = { { 2e5, 300.0, 2e4 }, { 1.2e5, 300.0, 1e5 }, { 1.05e5, 350.0, 1e5 } };
+    for (int k = 0; k < 3; k++) {
+        across(o, cases[k][0], cases[k][1], cases[k][2], AIR, 1.4);
+        rb_noise_init(&n, &e, 3);
+        rb_noise_step(&n, &e, RB_NOISE_FLOW);
+        const double want = jet_power(cases[k][0], cases[k][1], cases[k][2], o->a->gas.R, 1.4,
+                                      o->mdot, 5e-5);
+        CHECK(want > 0.0);
+        CHECK_NEAR(n.intake_power / want, 1.0, 1e-9);
+    }
+    /* Choked, it's the sonic gap's: 1/2 mdot (2 g R T0 / (g + 1)) of eta. */
+    across(o, 2e5, 300.0, 2e4, AIR, 1.4);
+    rb_noise_init(&n, &e, 3);
+    rb_noise_step(&n, &e, RB_NOISE_FLOW);
+    CHECK_NEAR(n.intake_power / (5e-5 * 0.5 * o->mdot * 2.0 * 1.4 * o->a->gas.R * 300.0 / 2.4), 1.0, 1e-9);
+    /* Either side of the critical ratio, the same power (to 1e-5). */
+    const double critical = pow(2.0 / 2.4, 1.4 / 0.4);
+    double w[2];
+    for (int k = 0; k < 2; k++) {
+        across(o, 2e5, 300.0, 2e5 * critical * (k ? 1.000001 : 0.999999), AIR, 1.4);
+        o->mdot = 0.01;
+        rb_noise_init(&n, &e, 3);
+        rb_noise_step(&n, &e, RB_NOISE_FLOW);
+        w[k] = n.intake_power;
+    }
+    CHECK(w[0] > 0.0);
+    CHECK_NEAR(w[1] / w[0], 1.0, 1e-5);
+    /* No jet the wrong way, or from a NaN, and neither silences the others:
+     * with a second cylinder's valve choked beside it, the roar is that
+     * valve's alone. */
+    rb_orifice *other = &e.intake[1];
+    other->area = 2e-4;
+    across(other, 2e5, 300.0, 2e4, AIR, 1.4);
+    const double alone = jet_power(2e5, 300.0, 2e4, other->a->gas.R, 1.4, other->mdot, 5e-5);
+    across(o, 1e5, 300.0, 1.2e5, AIR, 1.4);
+    o->mdot = 0.01;
+    rb_noise_init(&n, &e, 3);
+    rb_noise_step(&n, &e, RB_NOISE_FLOW);
+    CHECK_NEAR(n.intake_power / alone, 1.0, 1e-9);
+    across(o, 2e5, 300.0, 1e5, AIR, 1.4);
+    o->b->p = NAN;
+    rb_noise_step(&n, &e, RB_NOISE_FLOW);
+    CHECK_NEAR(n.intake_power / alone, 1.0, 1e-9);
+}
+
+void test_noise_valve_jets(void)
+{
+    /* An exhaust valve blowing down, its gas at 4 bar and 1100 K into the
+     * header at 1 bar: choked. Its noise comes out of the tailpipe when it
+     * gets there (header, exhaust pipe, the four's centre can and link, its
+     * muffler and tailpipe at 580 m/s; until stage 115 the centre and link
+     * were left out: the audit's D04), not a step before. Through a
+     * chambered can it's at the level of its law: a share 5e-4 of the gap's
+     * stream power at M = 1, half of that through the catalyst and 0.004
+     * through the can, within 0.5 dB. Through the same pressures, twice the
+     * flow (a gap twice as wide) is twice the power, 3 dB. Blowing down from
+     * 1.3 bar it isn't choked, and it's quieter as the law says. The muffler
+     * lets through its share of the power: a straight pipe's pressure is
+     * sqrt(1 / 0.08) times a straight-through's (11 dB), which is
+     * sqrt(0.08 / 0.004) times a chambered can's (13 dB). Without a catalyst
+     * (its bypass, catalyst_laminar 0) nothing takes the catalyst's half: 3 dB
+     * louder (the audit's D05). */
+    rb_engine_desc d;
+    preset_desc("i4", &d);
+    double r[RB_MUFFLER_CHAMBERED + 1], twice = 0.0, gentle = 0.0, bypass = 0.0;
+    double law = 0.0, law_gentle = 0.0;
     for (int m = RB_MUFFLER_NONE; m <= RB_MUFFLER_CHAMBERED; m++) {
         d.muffler_type = m;
         rb_engine_init(&e, &d, DT);
         rb_orifice *v = &e.exhaust[0];
         v->area = 2e-4;   /* barely open */
-        const rb_chamber *cyl = v->a;
-        const double sonic = cyl->rho * v->area * v->cd * sqrt(1.32 * cyl->gas.R * cyl->T);
-        const double flows[4] = { 0.05 * sonic, 0.1 * sonic, 2.0 * sonic, 4.0 * sonic };
+        across(v, 4e5, 1100.0, 1e5, BURNED, 1.32);
+        rb_noise_init(&n, &e, 3);
         if (m == RB_MUFFLER_CHAMBERED) {
-            const double c = sqrt(1.32 * cyl->gas.R * cyl->T), rho0 = e.exhaust_air.rho;
-            const double c0 = sqrt(1.4 * e.exhaust_air.gas.R * e.exhaust_air.T);
-            law = sqrt(rho0 * c0 / (4.0 * PI) * 2e-3 * 0.5 * flows[2] * c * c * 0.5 * 0.004);
-        }
-        for (int k = 0; k < 4; k++) {
-            v->mdot = flows[k];
-            rb_noise_init(&n, &e, 3);
-            if (m == RB_MUFFLER_CHAMBERED && k == 0) {
-                const double path = d.header_length[0] + d.exhaust_pipe_length + d.muffler_length
-                                  + d.tailpipe_length;
-                CHECK_EQ_INT(n.blow_delay[0], lround(path / 580.0 / DT));
-                int first = -1;
-                for (int s = 0; s < n.blow_delay[0] + 10 && first < 0; s++) {
-                    rb_noise_step(&n, &e, RB_NOISE_FLOW);
-                    if (n.out[RB_NOISE_TAIL0] != 0.0) first = s;
-                }
-                CHECK_EQ_INT(first, n.blow_delay[0]);
+            const double R = v->a->gas.R;
+            law = at_a_metre(jet_power(4e5, 1100.0, 1e5, R, 1.32, v->mdot, 5e-4) * 0.5 * 0.004);
+            const double path = d.header_length[0] + d.exhaust_pipe_length + d.center_length
+                              + d.link_length + d.muffler_length + d.tailpipe_length;
+            CHECK(d.center_length > 0.0 && d.link_length > 0.0);
+            CHECK_EQ_INT(n.blow_delay[0], lround(path / 580.0 / DT));
+            int first = -1;
+            for (int s = 0; s < n.blow_delay[0] + 10 && first < 0; s++) {
+                rb_noise_step(&n, &e, RB_NOISE_FLOW);
+                if (n.out[RB_NOISE_TAIL0] != 0.0) first = s;
             }
-            flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
-            r[m][k] = flow_rms(&n, RB_NOISE_TAIL0, 192000);
+            CHECK_EQ_INT(first, n.blow_delay[0]);
         }
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        r[m] = flow_rms(&n, RB_NOISE_TAIL0, 192000);
+        if (m != RB_MUFFLER_CHAMBERED) continue;
+        v->mdot *= 2.0;
+        rb_noise_init(&n, &e, 3);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        twice = flow_rms(&n, RB_NOISE_TAIL0, 192000);
+        across(v, 1.3e5, 1100.0, 1e5, BURNED, 1.32);
+        law_gentle = at_a_metre(jet_power(1.3e5, 1100.0, 1e5, v->a->gas.R, 1.32, v->mdot, 5e-4)
+                                * 0.5 * 0.004);
+        rb_noise_init(&n, &e, 3);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        gentle = flow_rms(&n, RB_NOISE_TAIL0, 192000);
+        e.desc.catalyst_laminar = 0.0;
+        across(v, 4e5, 1100.0, 1e5, BURNED, 1.32);
+        rb_noise_init(&n, &e, 3);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        bypass = flow_rms(&n, RB_NOISE_TAIL0, 192000);
     }
     const int c = RB_MUFFLER_CHAMBERED;
-    CHECK_NEAR(db(r[c][1] / r[c][0]), db(16.0), 0.5);
-    CHECK_NEAR(db(r[c][3] / r[c][2]), 10.0 * log10(2.0), 0.5);
-    CHECK_NEAR(db(r[c][2] / law), 0.0, 0.5);
-    CHECK_NEAR(db(r[RB_MUFFLER_NONE][2] / r[RB_MUFFLER_STRAIGHT][2]), 10.0 * log10(1.0 / 0.08), 0.5);
-    CHECK_NEAR(db(r[RB_MUFFLER_STRAIGHT][2] / r[c][2]), 10.0 * log10(0.08 / 0.004), 0.5);
+    CHECK_NEAR(db(r[c] / law), 0.0, 0.5);
+    CHECK_NEAR(db(twice / r[c]), 10.0 * log10(2.0), 0.5);
+    CHECK(law_gentle < 0.25 * law);   /* about 18 dB quieter */
+    CHECK_NEAR(db(gentle / law_gentle), 0.0, 0.5);
+    CHECK_NEAR(db(bypass / r[c]), 10.0 * log10(2.0), 0.5);
+    CHECK_NEAR(db(r[RB_MUFFLER_NONE] / r[RB_MUFFLER_STRAIGHT]), 10.0 * log10(1.0 / 0.08), 0.5);
+    CHECK_NEAR(db(r[RB_MUFFLER_STRAIGHT] / r[c]), 10.0 * log10(0.08 / 0.004), 0.5);
+}
+
+/* Blows down exhaust valve i of the engine e (choked, as above), and returns
+ * each tailpipe's valve noise (Pa RMS at 1 m) over `steps` steps, with
+ * `same` 1 if the two tailpipes' noise is the same sample for sample. */
+static void blow(int i, long steps, double rms[2], int *same)
+{
+    rb_orifice *v = &e.exhaust[i];
+    v->area = 2e-4;
+    across(v, 4e5, 1100.0, 1e5, BURNED, 1.32);
+    rb_noise_init(&n, &e, 3);
+    for (long s = 0; s < n.blow_delay[i] + 20000; s++) rb_noise_step(&n, &e, RB_NOISE_FLOW);
+    double sum[2] = { 0.0, 0.0 };
+    *same = 1;
+    for (long s = 0; s < steps; s++) {
+        rb_noise_step(&n, &e, RB_NOISE_FLOW);
+        for (int k = 0; k < 2; k++) sum[k] += n.out[RB_NOISE_TAIL0 + k] * n.out[RB_NOISE_TAIL0 + k];
+        *same &= n.out[RB_NOISE_TAIL0] == n.out[RB_NOISE_TAIL1];
+    }
+    for (int k = 0; k < 2; k++) rms[k] = sqrt(sum[k] / steps);
+}
+
+void test_noise_valve_routing(void)
+{
+    /* Stage 115 (the audit's D03): an exhaust valve's noise comes out where
+     * its gas does. With two systems and no junction (the flat-plane V8,
+     * the six) a cylinder's comes out of its own system's tailpipe only.
+     * Where the banks meet in a junction it goes on to every tailpipe beyond
+     * it, the same noise at each (the paths beyond are equally long), its
+     * power shared equally: the cross-plane V8's X, ahead of its centre
+     * pipes, sends half of a bank-1 cylinder's to each tailpipe, together
+     * as much as the same exhaust without the X sends to its own; the
+     * boxer's Y, ahead of its two rear silencers, does the same for its one
+     * collector. Its tailpipe 1 was silent before. */
+    static const char *const apart[2] = { "v8-flat", "i6" };
+    rb_engine_desc d;
+    double rms[2];
+    int same;
+    for (int k = 0; k < 2; k++) {
+        preset_desc(apart[k], &d);
+        CHECK(d.junction_volume == 0.0 && d.exhaust_systems == 2);
+        rb_engine_init(&e, &d, DT);
+        int i = 0;
+        while (i < d.cylinders && d.collector[i] != 1) i++;
+        CHECK(i < d.cylinders);
+        blow(i, 20000, rms, &same);
+        CHECK(rms[1] > 0.0);
+        CHECK_NEAR(rms[0], 0.0, 0.0);
+    }
 
     preset_desc("v8-cross", &d);
+    CHECK(d.junction_volume > 0.0 && d.junction_before_center == 1 && d.exhaust_systems == 2);
     rb_engine_init(&e, &d, DT);
     int i = 0;
     while (i < d.cylinders && d.collector[i] != 1) i++;
     CHECK(i < d.cylinders);
-    rb_orifice *v = &e.exhaust[i];
-    v->area = 2e-4;
-    v->mdot = 2.0 * v->a->rho * v->area * v->cd * sqrt(1.32 * v->a->gas.R * v->a->T);
-    rb_noise_init(&n, &e, 3);
-    flow_rms(&n, RB_NOISE_TAIL1, n.blow_delay[i] + 20000);
-    CHECK(flow_rms(&n, RB_NOISE_TAIL1, 20000) > 0.0);
-    CHECK_NEAR(flow_rms(&n, RB_NOISE_TAIL0, 20000), 0.0, 0.0);
+    blow(i, 40000, rms, &same);
+    const double crossed = rms[0] * rms[0] + rms[1] * rms[1];
+    CHECK(rms[0] > 0.0 && same);
+    d.junction_volume = 0.0;          /* the same exhaust without its X */
+    d.junction_before_center = 0;
+    CHECK_EQ_INT(rb_engine_init(&e, &d, DT), 0);
+    blow(i, 40000, rms, &same);
+    CHECK_NEAR(rms[0], 0.0, 0.0);
+    CHECK_NEAR(10.0 * log10(crossed / (rms[1] * rms[1])), 0.0, 0.01);
+
+    preset_desc("boxer4", &d);
+    CHECK(d.junction_volume > 0.0 && d.junction_before_center == 0 && d.exhaust_systems == 2);
+    rb_engine_init(&e, &d, DT);
+    for (int c = 0; c < d.cylinders; c++) {
+        CHECK_EQ_INT(d.collector[c], 0);
+        blow(c, 20000, rms, &same);
+        CHECK(rms[0] > 0.0 && same);
+        e.exhaust[c].area = 0.0;
+    }
 }
 
 void test_noise_throttle_hiss(void)
 {
-    /* The throttle's jet is heard at the intake's mouth, choked as at idle:
-     * twice the flow, twice the power (3 dB); none, no hiss. The exhaust's
-     * noise stays at the tailpipe. */
+    /* The throttle's jet is heard at the intake's mouth, choked as at idle
+     * (the air box at 1 bar, the plenum at 0.35): twice the flow through
+     * the same pressures, twice the power (3 dB); none, no hiss. The
+     * exhaust's noise stays at the tailpipe. */
     rb_engine_desc d;
     preset_desc("i4", &d);
     rb_engine_init(&e, &d, DT);
     rb_orifice *t = &e.throttle;
     t->area = 1e-5;
-    const rb_chamber *box = t->a;
-    const double sonic = box->rho * t->area * t->cd * sqrt(1.4 * box->gas.R * box->T);
+    across(t, 1e5, 300.0, 0.35e5, AIR, 1.4);
+    const double choked = t->mdot;
     double r[2];
     for (int k = 0; k < 2; k++) {
-        t->mdot = 2.0 * (k + 1) * sonic;
+        t->mdot = (k + 1) * choked;
         rb_noise_init(&n, &e, 11);
         flow_rms(&n, RB_NOISE_MOUTH, 20000);
         r[k] = flow_rms(&n, RB_NOISE_MOUTH, 192000);
@@ -199,11 +376,11 @@ void test_noise_throttle_hiss(void)
     t->mdot = 0.0;
     rb_noise_init(&n, &e, 11);
     CHECK_NEAR(flow_rms(&n, RB_NOISE_MOUTH, 1000), 0.0, 0.0);
-    /* The idle valve beside the throttle, choked too, hisses as the
-     * throttle would with the same flow. */
+    /* The idle valve beside the throttle, between the same air box and
+     * plenum, hisses as the throttle would with the same flow. */
     rb_orifice *iv = &e.idle_air;
     iv->area = t->area;
-    iv->mdot = 2.0 * sonic;
+    iv->mdot = choked;
     rb_noise_init(&n, &e, 11);
     flow_rms(&n, RB_NOISE_MOUTH, 20000);
     CHECK_NEAR(db(flow_rms(&n, RB_NOISE_MOUTH, 192000) / r[0]), 0.0, 0.5);
@@ -673,14 +850,19 @@ static double heard_highs(int where, int layers)
 void test_audio_engine_bay(void)
 {
     /* Over the open bonnet the engine's own sound is what's heard above
-     * 2 kHz, over 10 dB above the pipes' and the flow's together; behind
-     * the car, muffled by the body and further away, it's under them. */
+     * 2 kHz, over 5 dB above the pipes' and the flow's together; behind
+     * the car, muffled by the body and further away, it's under them. (Over
+     * 10 dB until stage 115: at 3000 rpm wide open the front hears the
+     * exhaust valves' rasp from the tailpipe too, and their jets' noise was
+     * up to 15.8 dB too weak when choked, the audit's D02. Corrected and
+     * calibrated against the real engines from behind, it is 7 dB under the
+     * engine's own sound here.) */
     const double front_engine = heard_highs(RB_HEAR_FRONT, RB_LAYER_ENGINE);
     const double front_rest = heard_highs(RB_HEAR_FRONT, RB_LAYER_PIPES | RB_LAYER_FLOW);
     const double behind_engine = heard_highs(RB_HEAR_BEHIND, RB_LAYER_ENGINE);
     const double behind_rest = heard_highs(RB_HEAR_BEHIND, RB_LAYER_PIPES | RB_LAYER_FLOW);
     CHECK(front_rest > 0.0 && behind_engine > 0.0);
-    CHECK(db(front_engine / front_rest) > 10.0);
+    CHECK(db(front_engine / front_rest) > 5.0);
     CHECK(behind_engine < behind_rest);
 }
 
@@ -693,8 +875,9 @@ void test_noise_intake_and_baffles(void)
     rb_engine_init(&e, &d, DT);
     rb_noise_init(&n, &e, 19);
     CHECK_NEAR(flow_rms(&n, RB_NOISE_MOUTH, 1000), 0.0, 0.0);
-    for (int i = 0; i < d.cylinders; i++) {
+    for (int i = 0; i < d.cylinders; i++) {   /* drawing in: the cylinders at 0.7 bar */
         e.intake[i].area = 1e-4;
+        rb_chamber_init(e.intake[i].b, e.intake[i].b->V, 0.7e5, 320.0, AIR);
         e.intake[i].mdot = 0.01;
     }
     const double r1 = flow_rms(&n, RB_NOISE_MOUTH, 30000);
@@ -703,7 +886,9 @@ void test_noise_intake_and_baffles(void)
     for (int i = 0; i < d.cylinders; i++) e.intake[i].mdot *= 1.25;
     const double r2 = flow_rms(&n, RB_NOISE_MOUTH, 30000);
     CHECK(n.intake_power > p1 && r2 > r1);
-    e.tailpipe[0].end_face[0].moved = 0.04;
+    rb_face *f = &e.tailpipe[0].end_face[0];   /* the can's baffles, 1.1 bar behind them */
+    rb_chamber_init(f->a, f->a->V, 1.1e5, 700.0, BURNED);
+    f->moved = 0.04;
     flow_rms(&n, RB_NOISE_TAIL0, 1000);
     CHECK(n.baffle_power > 0.0);
     e.desc.muffler_type = RB_MUFFLER_STRAIGHT;

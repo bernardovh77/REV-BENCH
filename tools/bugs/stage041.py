@@ -13,7 +13,7 @@ BUGS={
    '/* faulty hidden extrapolation */',
    ['test_combustion_fit_range_and_fallback'],300),
  'omit-mean-kernel-delay':('core/src/engine.c',
-   'b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_positive_mean();',
+   'b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_delay_mean();',
    'b->mean_kernel_delay=0;',
    ['test_combustion_actual_heat_ca50'],300),
  'wrong-gross-work-sign':('core/src/engine.c',

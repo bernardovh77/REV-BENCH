@@ -4,6 +4,32 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-10-31: Claude's review and Stage 115; paused for Bernardo
+
+- Claude reviewed stages 037–049 and 114 for Bernardo. At his request it then
+  did only [Stage 115](docs/stage-115.md):
+  - **D02–D05 fixed in `core/src/noise.c`:** the jets' Mach number and speed
+    come from the pressures either side of the gap. Noise goes through the X
+    and Y junctions to every tailpipe beyond them, in phase, its power shared.
+    The path includes the centre pipes and links, and the catalyst takes its
+    share only with a catalyst.
+  - **Recalibrated:** `VALVE_ETA` 5e-4 (exhaust valves, baffles) and
+    `THROTTLE_ETA` 5e-5 (throttle, idle valve, intake valves), against the
+    real recordings from behind and the Honda V6 in front.
+- **Cycle variation back to 1–3 % COV wide open:** the kernel delay is
+  `rb_kernel_delay_unit(z)` = −ln Φ(−z), a unit exponential, never negative.
+  It replaces `max(z, 0)`, which halved the spread. The idle spark now allows
+  for the delay's mean. `test_variation_cov_of_imep`'s floor (`cov > 0.008`)
+  is restored. `rb_kernel_positive_mean` is gone: use
+  `rb_kernel_delay_mean`.
+- **Test limit moved:** `test_audio_engine_bay`'s front margin is now 5 dB,
+  not 10, explained in the stage record.
+- **Bug tables:** the `stage040.py` and `stage041.py` entries that touched the
+  changed lines were updated so they still apply.
+- **WASM:** rebuilt with `make wasm` (zig 0.17). It is reproducible from the
+  repo now.
+- No gas dynamics, preset or exhaust changed. Nothing after 115 is authorized.
+
 ## 2026-10-28:049 complete and reviewed; HOLD before050
 
 - Execution order preserved: review048 → complete/review114 (synced ef08fe3) →

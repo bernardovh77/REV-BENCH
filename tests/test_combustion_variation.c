@@ -64,12 +64,28 @@ void test_combustion_conditional_means(void)
     }
     CHECK_NEAR(rb_burn_mean_duration(60,0,1,720),60,0);
     CHECK_NEAR(rb_burn_mean_duration(60,.1,-1,720),15,0);
-    double positive=3*.5*erfc(3/sqrt(2));
+    /* The kernel's delay (stage 115): -ln(Phi(-z)) of the kept normal, by
+     * the same quadrature with its two point masses: its mean, and its
+     * spread like stage 12c's symmetric start's (0.986), not stage 040's
+     * half-normal's (0.58). Never negative, longer for a larger z. */
+    const double q=.5*erfc(3/sqrt(2));
+    double mean=q*(-log(.5*erfc(3/sqrt(2)))-log(.5*erfc(-3/sqrt(2)))),square=0;
     for(int j=0;j<40000;j++) {
-        const double z=(j+.5)*3/40000;
-        positive+=z*exp(-.5*z*z)/sqrt(2*PI)*3/40000;
+        const double z=-3+(j+.5)*6/40000;
+        const double g=-log(.5*erfc(z/sqrt(2)));
+        mean+=g*exp(-.5*z*z)/sqrt(2*PI)*6/40000;
     }
-    CHECK_NEAR(rb_kernel_positive_mean(),positive,1e-8);
+    CHECK_NEAR(rb_kernel_delay_mean(),mean,1e-8);
+    square=q*(pow(rb_kernel_delay_unit(3)-mean,2)+pow(rb_kernel_delay_unit(-3)-mean,2));
+    for(int j=0;j<40000;j++) {
+        const double z=-3+(j+.5)*6/40000;
+        square+=pow(rb_kernel_delay_unit(z)-mean,2)*exp(-.5*z*z)/sqrt(2*PI)*6/40000;
+    }
+    CHECK(sqrt(square)>0.95 && sqrt(square)<1.0);
+    CHECK_NEAR(rb_kernel_delay_unit(9),rb_kernel_delay_unit(3),0);
+    CHECK(rb_kernel_delay_unit(-3)>0 && rb_kernel_delay_unit(-1)<rb_kernel_delay_unit(0)
+          && rb_kernel_delay_unit(0)<rb_kernel_delay_unit(1));
+    CHECK_NEAR(rb_kernel_delay_unit(0),log(2.0),1e-15);
     for(int i=1;i<10;i++) {
         const double f=.1*i;
         CHECK_NEAR(rb_wiebe(rb_wiebe_quantile(f,5,2),1,5,2),f,1e-13);

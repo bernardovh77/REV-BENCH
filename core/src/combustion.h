@@ -109,7 +109,11 @@ double rb_wiebe_quantile(double fraction, double a, double m);
  * Z standard normal. This is the actual duration draw's conditional mean,
  * including winsorized tails and duration bounds, not one random cycle. */
 double rb_burn_mean_duration(double base, double sigma, double trim, double ceiling);
-/* Mean positive arm of clamp(Z,-3,3), used by the causal kernel surrogate. */
-double rb_kernel_positive_mean(void);
+/* The kernel's development delay in units of its spread, -ln(Phi(-z)) for a
+ * standard normal z kept within +-3: a unit exponential, never negative
+ * (stage 115). */
+double rb_kernel_delay_unit(double z);
+/* Its mean, E[rb_kernel_delay_unit(Z)] = 0.998651. */
+double rb_kernel_delay_mean(void);
 
 #endif /* RB_COMBUSTION_H */

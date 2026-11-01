@@ -44,6 +44,19 @@ kernel/extinction and late-chemistry limits remain explicit and open through041.
 | R17 | Real-time delivery unresolved | [062](05-engine-qualification.md#stage-062), [069](07-browser.md#stage-069) | [077](08-3d.md#stage-077), [084](09-turbo.md#stage-084), [099](12-release.md#stage-099), [102](12-release.md#stage-102) | Actual full-engine callbacks, tails/max/observed misses/memory on named hardware and deployed product. |
 | R18 | Isolated tests / ambiguous completion | [036](03-contracts-and-sources.md#stage-036) | [060](05-engine-qualification.md#stage-060), [061](05-engine-qualification.md#stage-061), [063](05-engine-qualification.md#stage-063), [069](07-browser.md#stage-069), [099](12-release.md#stage-099), [102](12-release.md#stage-102) | Independent fixtures, failure controls, production path and separate numerical/realism/runtime/user acceptance. |
 
+[Stage 115](../stage-115.md) fixed the defects D02–D05 name in the production
+noise layer:
+- **D02:** the gap's Mach number from the pressure ratio, recalibrated;
+- **D03:** equal-power, in-phase routing through X and Y junctions;
+- **D04:** full path lengths, still at a fixed 580 m/s;
+- **D05:** the catalyst's share only with a catalyst.
+
+The owners above keep the rest:
+- complex transfer and scattering through the junctions;
+- delays that follow temperature and flow;
+- losses that depend on frequency, and the centre silencers;
+- qualification against matched recordings.
+
 The later [completed-stage review](../review-completed-stages-2026-10-23.md)
 also reproduced C07/C08. Their bounded repairs are [113](../stage-113.md)
 (derived-state/numerical guards) and [112](../stage-112.md) (section publication).

@@ -90,14 +90,17 @@ void test_variation_off_is_exact(void)
         CHECK(same);
     }
     e.variation = 1e9;                  /* and with a long burn, so its start */
-    e.desc.burn_duration = 170.0;       /* large positive kernel delays allowed */
-    int sane = 1;                      /* electrical spark stays within90deg */
+    e.desc.burn_duration = 170.0;       /* the kernel's delays can be long:  */
+    int sane = 1;                       /* the spark stays within 90 degrees */
+    /* The longest delay: variation counts up to 4, of 7 % of a burn of at
+     * most 180 degrees, times the unit delay's most (z = 3). */
+    const double longest = 4.0 * 0.07 * 180.0 * rb_kernel_delay_unit(3.0);
     for (int k = 0; k < 8; k++) {
         CHECK(cycles(&e, 1));
         for (int i = 0; i < 4; i++) {
             const double a = fmod(720.0 - e.burn[i].spark_angle + 360.0, 720.0) - 360.0;
             sane &= isfinite(e.cyl[i].gas.p) && e.burn[i].duration <= 720.0 && fabs(a) <= 90.0
-                && e.burn[i].kernel_delay_deg>=0 && e.burn[i].kernel_delay_deg<=151.2+1e-12;
+                && e.burn[i].kernel_delay_deg > 0 && e.burn[i].kernel_delay_deg <= longest + 1e-9;
         }
     }
     CHECK(sane);
@@ -126,11 +129,13 @@ void test_variation_cov_of_imep(void)
 {
     /* Real engines' cylinders vary from cycle to cycle by 1-3 % of their
      * work (the COV of IMEP) wide open (Heywood, section 9.4). The four held
-     * wide open at 3000 rpm with variation 1 reads about 1.2 %; its mean
-     * work is less than 1 % under the unvaried engine's (a burn off its best
-     * timing either way loses a little); with variation 2 the COV more than
-     * doubles. Each cylinder has its own mean: the headers differ, and so do
-     * the cylinders' own mixture and burn. */
+     * wide open at 3000 rpm with variation 1 reads 1.0-2.0 % (stage 115:
+     * stage 040's half-normal kernel delay had cut it to 0.7-1.1 %, and
+     * stage 041 dropped this test's floor rather than fix it); its mean
+     * work is less than 1.5 % under the unvaried engine's (a burn off its
+     * best timing either way loses a little); with variation 2 the COV more
+     * than doubles. Each cylinder has its own mean: the headers differ, and
+     * so do the cylinders' own mixture and burn. */
     double mean0[RB_MAX_CYLINDERS], cov0[RB_MAX_CYLINDERS], mean[RB_MAX_CYLINDERS], cov[RB_MAX_CYLINDERS];
     double mean2[RB_MAX_CYLINDERS], cov2[RB_MAX_CYLINDERS];
     held(&e, 0.0);
@@ -145,16 +150,59 @@ void test_variation_cov_of_imep(void)
     double lo = INFINITY, hi = 0.0;
     for (int i = 0; i < 4; i++) {
         CHECK(cov0[i] < 1e-4);
-        /* Numerical dose response, not a universal real-engine lower bound:
-         * corrected mean CA50 changes work's timing sensitivity. Stage041
-         * reports the original .8%/1–3% target miss rather than retuning noise. */
-        CHECK(cov[i]>0 && cov[i]>10*cov0[i] && cov[i]<0.025);
+        CHECK(cov[i] > 0.008 && cov[i] < 0.025);
         CHECK(cov2[i] > 2.0 * cov[i]);
         lo = fmin(lo, mean[i]);
         hi = fmax(hi, mean[i]);
     }
     CHECK(all < all0 && all > 0.985 * all0);
     CHECK(hi - lo > 0.003 * all);
+}
+
+/* The four started with the key and left idling with `variation`, then n
+ * cycles: each cylinder's mean work and COV of IMEP, the slowest and fastest
+ * cycles' speeds, and the mean spark advance and the flame's mean expected
+ * development delay (degrees). 0 if it didn't start. */
+typedef struct idle_stats {
+    double mean[4], cov[4], rpm_lo, rpm_hi, advance, delay;
+} idle_stats;
+
+static int idle(double variation, long n, idle_stats *r)
+{
+    rb_engine_desc d;
+    preset_desc("i4", &d);
+    rb_engine_init(&e, &d, DT_FAST);
+    e.hold_speed = 0;
+    e.throttle_pos = 0.0;
+    e.ignition = 1;
+    e.starter = 1;
+    e.variation = variation;
+    for (long k = 0; k < lround(6.0 / DT_FAST); k++) {
+        if (e.starter && e.rpm_smooth > 0.75 * d.idle_rpm) e.starter = 0;
+        rb_engine_step(&e);
+    }
+    if (e.starter) return 0;
+    const double vd = rb_engine_displacement(&e) / 4;
+    double s1[4] = { 0.0 }, s2[4] = { 0.0 };
+    r->rpm_lo = INFINITY;
+    r->rpm_hi = r->advance = r->delay = 0.0;
+    for (long k = 0; k < n; k++) {
+        if (!cycles(&e, 1)) return 0;
+        r->rpm_lo = fmin(r->rpm_lo, e.result.rpm);
+        r->rpm_hi = fmax(r->rpm_hi, e.result.rpm);
+        for (int i = 0; i < 4; i++) {
+            const double p = e.burn[i].last_work / vd;
+            s1[i] += p;
+            s2[i] += p * p;
+            r->advance += fmod(720.0 - e.burn[i].spark_angle + 720.0, 720.0) / (4 * n);
+            r->delay += e.burn[i].mean_kernel_delay / (4 * n);
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        r->mean[i] = s1[i] / n;
+        r->cov[i] = sqrt(fmax(s2[i] / n - r->mean[i] * r->mean[i], 0.0)) / fabs(r->mean[i]);
+    }
+    return 1;
 }
 
 void test_variation_cov_at_idle(void)
@@ -164,42 +212,23 @@ void test_variation_cov_at_idle(void)
      * changes faster with the burn's timing: real engines' COV of IMEP is
      * 4-8 % there, about four times wide open's. The four, started with the
      * key and idling with variation 1, reads about 4.3 % (its accessories
-     * load it: unloaded it read 7 %), and the idle speed still holds. */
-    double mean[RB_MAX_CYLINDERS], cov[RB_MAX_CYLINDERS];
+     * load it: unloaded it read 7 %), and the idle speed still holds.
+     * The computer's idle spark allows for the flame's mean development
+     * delay after the spark (stage 115): with variation 1 the delay is about
+     * 4.6 degrees, and the spark less the delay is what it is without
+     * variation (17.1 degrees), within 1 degree, so the burns sit where they
+     * did without the delay. */
+    idle_stats r, r0;
     rb_engine_desc d;
     preset_desc("i4", &d);
-    rb_engine_init(&e, &d, DT_FAST);
-    e.hold_speed = 0;
-    e.throttle_pos = 0.0;
-    e.ignition = 1;
-    e.starter = 1;
-    e.variation = 1.0;
-    for (long k = 0; k < lround(6.0 / DT_FAST); k++) {
-        if (e.starter && e.rpm_smooth > 0.75 * d.idle_rpm) e.starter = 0;
-        rb_engine_step(&e);
-    }
-    CHECK(!e.starter);
-    double rpm_lo = INFINITY, rpm_hi = 0.0, cov_mean = 0.0;
-    const double vd = rb_engine_displacement(&e) / 4;
-    double s1[4] = { 0.0 }, s2[4] = { 0.0 };
-    const long n = 60;
-    for (long k = 0; k < n; k++) {
-        CHECK(cycles(&e, 1));
-        rpm_lo = fmin(rpm_lo, e.result.rpm);
-        rpm_hi = fmax(rpm_hi, e.result.rpm);
-        for (int i = 0; i < 4; i++) {
-            const double p = e.burn[i].last_work / vd;
-            s1[i] += p;
-            s2[i] += p * p;
-        }
-    }
-    for (int i = 0; i < 4; i++) {
-        mean[i] = s1[i] / n;
-        cov[i] = sqrt(fmax(s2[i] / n - mean[i] * mean[i], 0.0)) / fabs(mean[i]);
-        cov_mean += cov[i] / 4;
-    }
+    CHECK(idle(1.0, 60, &r));
+    double cov_mean = 0.0;
+    for (int i = 0; i < 4; i++) cov_mean += r.cov[i] / 4;
     CHECK(cov_mean > 0.03 && cov_mean < 0.08);
-    CHECK(rpm_lo > d.idle_rpm - 40.0 && rpm_hi < d.idle_rpm + 40.0);
+    CHECK(r.rpm_lo > d.idle_rpm - 40.0 && r.rpm_hi < d.idle_rpm + 40.0);
+    CHECK(idle(0.0, 20, &r0));
+    CHECK(r0.delay == 0.0 && r.delay > 2.0);
+    CHECK_NEAR(r.advance - r.delay, r0.advance, 1.0);
 }
 
 void test_variation_repeatable(void)

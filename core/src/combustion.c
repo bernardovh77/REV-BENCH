@@ -113,7 +113,25 @@ double rb_burn_mean_duration(double base,double sigma,double trim,double ceiling
         +upper*(normal_cdf(3)-normal_cdf(hi));
 }
 
-double rb_kernel_positive_mean(void)
+/* The flame kernel's development delay, in units of its spread, from a
+ * standard normal draw z kept within +-3 (stage 115): -ln(Phi(-z)), a unit
+ * exponential. It is never negative (the flame can't start before the
+ * spark), every cycle has its own, the slow starts are the long tail (as
+ * real engines' slow cycles are), and its RMS spread is 0.991: the spread
+ * of stage 12c's symmetric start. A larger z gives a longer delay, so the
+ * burn's length, drawn alike with z, stays longer after a slow start.
+ * (Stage 040 used max(z, 0) instead: half the cycles then started at once,
+ * and the spread fell to 0.582, under the real engines' 1-3 % COV of IMEP
+ * wide open.) */
+double rb_kernel_delay_unit(double z)
 {
-    return (1-exp(-4.5))/sqrt(2*3.14159265358979323846)+3*normal_cdf(-3);
+    return -log(normal_cdf(-clamp(z,-3,3)));
+}
+
+/* Its mean over the kept normal: with q = Phi(-3), the share beyond each
+ * bound, 1 - 2 q - ln(1 - q) = 0.998651. */
+double rb_kernel_delay_mean(void)
+{
+    const double q=normal_cdf(-3);
+    return 1-2*q-log1p(-q);
 }

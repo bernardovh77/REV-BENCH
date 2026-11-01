@@ -43,3 +43,32 @@ stability proof, engine coupling or production promotion. No silent protective
 intervention may be reported as an ordinary successful acoustic step.
 
 **Execution record:** [Stage 113](../stage-113.md).
+
+<a id="stage-115"></a>
+## Stage 115 — Valve jet noise and the cycles' variation
+
+**Dependencies:** [040](03-contracts-and-sources.md#stage-040), [041](03-contracts-and-sources.md#stage-041), [042](03-contracts-and-sources.md#stage-042), [113](#stage-113)
+
+**Deliverable:** Fix the audit's D02–D05 in the production noise layer:
+- the gap's Mach number and speed from the pressures either side;
+- valve noise through X and Y junctions to every tailpipe beyond them;
+- full path lengths;
+- the catalyst's share only with a catalyst.
+
+Recalibrate what the corrected law moves. Bring the cycles' variation back to the
+real engines' 1–3 % COV of IMEP wide open with a causal delay, and restore the
+test's floor.
+
+**Required exit evidence:**
+- an independent law check across choking;
+- power-conserving, in-phase routing;
+- per-preset COV;
+- before and after measurements against the real recordings;
+- planted bugs caught;
+- native, sanitizer, WASM and web suites green;
+- A/B renders for listening.
+
+**Stop/reject rule:** Change no gas dynamics, preset or exhaust. Don't move a
+test's limit unless the corrected physics explains it, and say so where it moves.
+
+**Execution record:** [Stage 115](../stage-115.md).
