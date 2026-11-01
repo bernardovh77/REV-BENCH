@@ -22,8 +22,9 @@ interests as me and give a purpose to my learnings.
 
 The latest stages: [Stage 115](docs/stage-115.md) fixed the valves' jet noise and brought the
 cycles' variation back to real engines' range, and [Stage 116](docs/stage-116.md) tightened the
-tests that had been loosened. The browser still plays a test tone. The playable engine (stages
-066–069), the 3D view (070–077), turbo, knock and more layouts are planned. The
+tests that had been loosened. The browser still plays a test tone. Next comes the engine
+playing in the browser (stages 119, 118 and 066–069), then the sound to real-engine standard
+(039, 050–063), the 3D view (070–077), turbo, knock and more layouts. The
 [stage protocol](docs/roadmap/README.md) keeps experiment results, the engine, runtime and
 Bernardo's listening as separate checks.
 

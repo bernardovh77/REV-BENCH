@@ -1,500 +1,346 @@
-# REV-BENCH — canonical project roadmap
+# REV-BENCH — the plan
 
-Updated 2026-11-01. **One sequence: Stages 001–117.** This file is the only
-authority for stage status and scheduling. It replaces the overlapping numeric,
-lettered and sound-track numbering. Historical evidence stays at its existing
-paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
-acceptance checks. The [old plan is archived](docs/roadmap/legacy-plan.md).
+Updated 2026-11-01. This file is the only place that says which stages are done and what comes
+next. Each stage's full specification (deliverable, dependencies, evidence, rejection rule) is in
+`docs/roadmap/`, and each finished stage has its record in `docs/stage-NNN.md`.
 
-REV-BENCH is a browser engine test bench: build and modify a physical engine,
-hear its response, measure it on the dyno and inspect a synchronized procedural
-3D engine. **Realism is the absolute priority.** More processing cost is
-acceptable when demonstrated realism gains justify it and the required
-hardware is stated. Every realism fix needs research and physical evidence.
+**Status marks:**
+- ✅ done;
+- 🟡 done, with a part still open (the note says which);
+- ⬜ not started;
+- 💤 optional or conditional, not needed for the release.
 
-## Scope and agreed order
+## What REV-BENCH is
 
-Bernardo confirmed on 2026-10-23:
+A browser engine test bench: pick an engine, change its displacement, compression, cams,
+headers, exhaust and later its turbo, and hear, measure and see the difference in real time. The
+sound comes from a physical simulation of the gas moving through the engine, not from
+recordings. **Realism is the absolute priority**: every realism change needs research, physical
+evidence and Bernardo's ears. The first full release includes:
+- the engine and exhaust editor, instruments and a dyno;
+- a 3D engine with cutaway, motion and gas views;
+- turbocharging, knock, limits and damage;
+- a larger engine catalog;
+- saving and sharing builds;
+- polish and public deployment.
 
-- The first complete release includes the engine/exhaust editor, instruments
-  and dyno, full 3D cutaway/motion/gas views, turbocharging, knock/limits/damage,
-  expanded engine catalog, save/share, polish and public deployment. Earlier
-  playable milestones are useful; they do not shrink that release scope.
-- Define shared contracts first, then complete necessary sound-physics and
-  runtime gates, then the playable browser bench and 3D. Learned synthesis is
-  conditional research, not an automatic prerequisite or a selected renderer.
-- Optional vehicle/gearbox, exports, two-stroke, fuels, supercharger, ITBs,
-  anti-lag, garage and video are separate later stages.
+## Where the project is (2026-11-01)
 
-## Current state and next action
+- **Done: stages 001–049 and 112–117.** Five preset engines (I4, I6, cross-plane V8, flat-plane
+  V8, boxer-4) with their own researched exhausts, all running natively in C. Their sound is
+  rendered to WAV files as a listener around the car hears it, in mono or in eight stereo
+  scenes. Native tests: 250 tests, 4,950,077 checks.
+- **The sound now:**
+  - **Under load:** the exhaust's rasp above 2 kHz is in the range of recordings of real engines
+    (stage 115).
+  - **The cycles:** each one differs from the last as much as a real engine's do (COV of IMEP
+    1–2.3 %).
+  - **Still open:** idling from behind is too dull above 2 kHz. The sound still repeats more
+    exactly than a real engine's. The cross-plane V8 lost its burble at 3000 rpm to its X-pipe
+    exhaust.
+- **Research done but not in the engine:** stages 043–049 and 114 built exhaust-acoustics
+  solvers in `experiments/acoustics/`. They run far below real time and only on weak, cool
+  waves. They wait for stages 050–063 to decide whether any of them improves the engine.
+- **The browser still plays a test tone.** The engine isn't in the browser yet, and the
+  heaviest presets don't run in real time at the default quality: the cross-plane V8 renders at
+  0.4× real time natively, the four at 0.9×.
+- **Bernardo's reference recordings and videos** are on his machine, in `renders/` (git-ignored;
+  docs/user-sound-references.md). Stages 039, 058, 059 and 063 need them.
 
-**Latest: Stage 117 complete (2026-11-01).** [Stage 117](docs/stage-117.md)
-made the docs readable and current:
-- the spaces Codex's docs had lost between words and numbers are back (1,164 places);
-- CLAUDE.md, the README and docs/workspace.md describe the project as it is now;
-- the glossary spells out the research stages' abbreviations;
-- `rb_cli`'s help reads properly.
+## The order of the work
 
-**Stage 116 (2026-11-01).** After listening to Stage 115 ("the
-renders are decent so keep going"), [Stage 116](docs/stage-116.md) tightened the
-tests that had been loosened until they couldn't catch what they were written
-for: the junction's energy books, the wild cam's burn length, the coast's fuel
-cut and the rev limiter's top. Each one now catches a planted bug that passed
-the old limit. It also fixed the Python test that failed under GNU make 4.3. No
-`core/` change.
+Bernardo (2026-11-01): "Execute in the order you find most ideal as long as all the work is
+complete and there are no gaps in between." The original order (2026-10-23) was contracts, then
+all the sound physics and runtime work, then the browser, then 3D. One change:
 
-**Stage 115 (2026-10-31).** Claude reviewed
-Codex's stages 037–049 and 114, and Bernardo asked for the first repair and a
-pause. [Stage 115](docs/stage-115.md) fixes the audit's D02–D05 in `noise.c`:
-- the jets' Mach number is now the gap's, recalibrated against the real engines;
-- valve noise goes through the X and Y junctions to every tailpipe beyond them;
-- the noise's path includes the centre pipes and links;
-- the catalyst takes its share only when there is one.
+**The engine plays in the browser first.** The playable browser (066–069) moves ahead of the long
+sound-physics chain (050–063). It plays today's engine at a quality that runs in real time (new
+stage 118). Every later sound improvement then lands in something Bernardo can play and hear
+live, not only in WAV files. Nothing is dropped. The sound stages still all come before 3D,
+turbo and the rest, as agreed.
 
-It also brings the cycles' variation back to the real 1–3 % COV of IMEP wide
-open (0.87–2.30 %, from 0.63–1.22 %), with the test's floor restored. The
-engines' gas, pipes, presets and exhausts are unchanged. Under load the exhaust's
-rasp is now in the real engines' range, and the sound repeats 1.3–4 dB less. The
-remaining gaps are in the stage record. Nothing after 115 is authorized: wait for
-Bernardo's listening and instructions.
+1. **Phase A, clean-up and play:**
+   - [ ] **119:** the review's leftovers;
+   - [ ] **118:** a real-time tier for today's engine;
+   - [ ] **066 → 067 → 068 → 069:** the playable browser.
+2. **Phase B, real sound:**
+   - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
+   - [ ] **050, 051 → 052;**
+   - [ ] **053, 055, 056 → 054;**
+   - [ ] **057 → 058 → 059 → 060 → 061 → 062 → 063:** base sound acceptance. Each of these
+     updates the browser too.
+3. **Phase C, the 3D engine:** [ ] 070 → 071 → 072 → 073 → 074 → 075 → 076 → 077.
+4. **Phase D, turbo:** [ ] 078 → 084.
+5. **Phase E, knock and limits:** [ ] 085 → 089.
+6. **Phase F, more engines:** [ ] 090 → 094.
+7. **Phase G, release:** [ ] 095 → 102.
+8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
+   103–111 (optional extras).
 
-**Before that, Codex's checkpoint: Stages 114 and 049 complete within their research scope;
-reviewed in order; HOLD before 050.** Bernardo authorized 114 then 049, with a
-predecessor review before the next completion. [114](docs/stage-114.md) proves
-bounded conservative fixed-port thermal transport. After reviewing it,
-[049](docs/stage-049.md) extends that physical flux to finite vector-Euler
-Y/X/H/area junctions and checks every connected source, return and outlet.
-Thirty source runs / 441 complex responses pass independent refined-reference
-gates; the worst response-matrix difference is 2.87743%. Six coarse hot-flow
-misses require retained finer controls; all selected signed-flow/reversal,
-clock, conservation and stability gates pass. Failed candidates remain recorded.
-This costly inviscid planar reference is not a selected real-time renderer or
-whole-engine adapter. The 200–990 K, two-constituent and weak-flow limits remain active.
+**Next stage: 119.**
 
-Full native 248 tests / 4,951,907 checks, focused native/WASM/sanitizer 11 / 96,653,
-95 Python, 17 web/build, sixteen physical faults and eight raw parity trajectories
-pass. The single RESULTS page adds the 049 numerical figure; all 55 players,
-four seeks and 16 images pass offline. All 70 previous embedded payloads,
-105 current media/diagnostic files, 76 protected files (including reference locks)
-and Claude's setup are preserved. Graphify's code graph is refreshed; its
-known semantic/parser limitations remain. 039, hot EOS, real-hardware losses,
-whole-engine/listening and runtime qualification stay open. No 050 work has
-started or is authorized at this checkpoint. Wait for Bernardo's instruction.
+## The stages, in the order they'll be done
 
-**Latest reference assessment: two supplied dashboard videos.**
-The [Subaru/BMW assessment](docs/stage-039-dashboard-reference-assessment.md)
-adds useful independently visible RPM/road-speed evidence: Subaru acceleration
-and slowing/downshifts, BMW high-rev road pulls. The BMW has no sustained coast;
-both exhaust builds and actual microphone setups remain unknown. These are
-inspected candidates for approximate state/timbre review, not new calibrated
-or locked sessions. 039 remains open. This reference assessment changed no
-accepted clips/RESULTS and did not authorize later development; the subsequent
-114/049 authorization is recorded above.
+Click a stage's number for its specification. "Depends on" lists stages that must be done first.
 
-**Previous checkpoint: Stages 047/048 reviewed; held after 048.**
-[047](docs/stage-047.md) characterizes inherited gas properties/fixed walls and
-proves a finite-capacity wall element. [048](docs/stage-048.md) completes bounded
-material-coordinate thermal/contact, reversal, wall and acoustic-work fixtures.
-Native 237 / 4,855,254, focused native/WASM/sanitizer, regression and eleven fault
-checks pass. High-resolution 4 kHz packet errors fall to 1.40% after a geometric
-work precision fix; primary 768-cell carrier passes alone conceal 20.65% packet
-error. The research reference is far below real time, not a promoted renderer.
+### Phase A — clean-up and the engine in the browser
 
-**The prerequisite introduced after 048:** [114](docs/roadmap/04-propagation.md#stage-114)
-must prove fixed-geometry thermal transport/port exchange. 048's moving material
-reference does not supply that engine/remap interface. At that checkpoint 114
-was unimplemented and 049 blocked; 114's later proof/review is recorded above.
-Execution order remains 048 →114 →049 with stable IDs.
-The >990K gas closure, actual wall calibration and efficiency/whole-engine
-acceptance remain open. Accepted clips, Claude setup and references are
-preserved. The single RESULTS page includes the new 047/048 figure; 039 and
-S1/S2/S4/listening/runtime gates stay open. No further development is authorized
-by that earlier checkpoint; the later 114/049 authorization supersedes its hold.
-
-**Previous checkpoint:045/046 reviewed.**
-Their uniform gas/B0 coupling and signed-flow gates pass within their declared
-scope, with preserved accepted clips and a new numerical section in RESULTS.
-The expensive full correction grid remains far below real time; no production
-renderer is selected. Thermal fronts/reversal remain 048. Their raw evidence,
-carrier-envelope limit and mean-flow energy accounting remain valid.
-
-**Previous checkpoint: Stages 043 and 044 reviewed.**
-[043](docs/stage-043.md) preserves mass/species/energy but fails the declared
-moving-contact, acoustic-bandwidth and cost gates. A0/A1 remain controls; no
-A2 production promotion. After that review, [044](docs/stage-044.md) compiles
-all five exhausts into physical region/port/cell plans and actual lossless B0
-geometry controls:42 connected and 14 disconnected cylinder/outlet pairs agree
-in native/WASM, with preserved storage and no ambient shortcut. Full component
-physics and engine coupling remain later gates. The single results page adds
-the numerical checkpoint and preserves all accepted audio/coasts/references.
-039 stays open. Subsequent 045/046 authorization is recorded above.
-
-**Previous checkpoint: Stage 042 complete within its source-event scope.**
-After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
-delivered fuel, records skipped fueling and proves one-to-one mass/event/sound
-behavior through startup, cut/resume, restart and retained fuel. Native, WASM,
-fault, 105 seeded scenario and complete listening-page checks pass. Recorded
-engine trajectories are unchanged. The current instantaneous fueling/modal
-surrogate is not calibrated real PFI/GDI hardware. The subsequent 043/044
-review and experiment outcomes are documented above. Stage 039 stays open.
-
-**Previous checkpoint: Stage 041 complete within its numerical scope.**
-After reviewing 040, [041](docs/stage-041.md) separates mean charge physics
-from variation amplitude, exposes flame-fit validity, corrects expected
-heat-release phasing and aligns gross/net work. The 120 seeded maps, 15 stereo
-repetition runs, deliberate faults, native/WASM/web checks and rebuilt complete
-sound checkpoint pass their declared numerical gates. Real-engine calibration
-and listening acceptance remain open; see the explicit V8 idle, I4/boxer
-repetition and I4 coast-rise findings. Stage 039 remains open for matched
-references. Stage 042's later source correction is documented above.
-
-**Previous checkpoint: Six supplied 039 video candidates reviewed.**
-The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
-useful stock/modified comparisons, approximate RPM captions and better named
-hardware for the M54/FB20-family gaps. Those six clips establish no continuous
-RPM-visible loaded pull/long-coast trace or measured microphone transfer. These
-are inspected candidates, not six newly qualified calibration sessions; existing
-eleven locked sessions/34 excerpts and the 55-player RESULTS page are unchanged.
-That assessment did not include engine tuning or close 039; the later 041
-implementation is documented separately above.
-
-Bernardo clarified that matched-reference acquisition belongs to 039; the
-earlier bounded protocol closeout did not finish the whole stage. The
-[new source-search review](docs/stage-039-reference-search.md) supersedes that
-completion decision. The existing protocol and eleven sessions/34 raw stereo
-excerpts remain valid. Stages 001–038 and 040 retain their documented completions.
-
-The expanded [candidate catalog](tools/reference_candidates_v2.json) records
-58 references across 23 exhaust manufacturers/brands, five engine configurations,
-OEM identity sources, owner examples and measurement/dataset leads. This adds
-manufacturer-reported FB20 stationary noise comparisons and more documented
-exhaust variants. It does not add 58 acquired recordings or qualify the public
-videos as calibrated audio. Original sources, 34 excerpts and session splits
-remain unchanged; that public search acquired no candidate audio or tuning data.
-The later six supplied files and two dashboard videos are assessed separately
-above, without fitting. The two dashboard sources materially improve visible
-RPM/road-state coverage, while exhaust setup and sustained I6 coast remain gaps.
-
-**039 still needs claim-appropriate recordings with known engine/exhaust,
-independent RPM/operating state and microphone geometry/transfer.** Absolute
-SPL additionally needs a calibrated recording chain. Product scalar levels,
-dyno curves, general test methods and video titles cannot supply missing
-time-aligned recording metadata. Our I6 is M54B30/330i-inspired; E46 M3/S54 is
-a related engine, not the exact preset. GR86 FA24 remains distinct from FB20.
-Missing acquisition stays in 039; its later qualification consumers still retain
-their own gates. Bernardo may look for additional references later; no new
-recording request is pending now.
-
-[Stage040](docs/stage-040.md) separates commanded/permitted discharge,
-nonnegative kernel development and bulk heat. Independent controls show zero
-pre-command heat across all five engines; mass/species/energy/work, deliberate
-faults, native/WASM, complete 34 clip sound and offline page checks pass. This
-fix does not establish a calibrated kernel law or solve propagation realism.
-The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
-one-page examples are a new listening checkpoint, not pre-accepted sound.
-
-**041 retains 040's causal ignition/heat fix and completes its numerical handoff.**
-Its results do not validate a new kernel-failure or late-chemistry law, high
-dilution extrapolation, real-engine COV, acoustic transport or real-time delivery.
-043/044 subsequently execute in the agreed review order. Their bounded
-outcomes do not retire 041's unqualified findings; preserve them in later work.
-
-The physical native engine and five presets already exist. The browser still
-plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
-worklet/application engine operation is not integrated. No product 3D, turbo
-or damage implementation is claimed. The latest bounded open-duct proof
-passes its declared numerical checks and remains below real time. It is not
-a production-engine-to-B0 adapter. No trained runtime sound model exists.
-
-Accepted sound selection stays: **I6 8500 rpm with its earlier twin exhaust;
-flat V8 9000 rpm with its earlier exhaust; cross V8 7500 rpm with the sharper
-rear-delete X.** These research limits are not durability certifications.
-Preserve the accepted engine/exhaust selections, original references, `CLAUDE.md`
-and `.claude/`. Physical fixes regenerate the complete checkpoint with comparison
-evidence; each new sound checkpoint still needs listening acceptance.
-
-## How to use the stages
-
-- Say “do Stage 039” or “next stage.” Read this tracker, `CLAUDE.md`, `CODEX.md`
-  and the linked stage specification/evidence first.
-- Follow explicit dependencies, not just the preceding row. The numbering is
-  the planned order; independent reference work and conditional branches are
-  identified. IDs are stable from this migration onward. Future splits receive
-  the next unused ID and dependencies; never create suffix families or rewrite
-  historical IDs. Update the execution order/index when a new prerequisite is added.
-- `Complete (bounded)` means the historical deliverable is documented within
-  its stated scope; it does not close later realism or release requirements.
-  An experiment may be complete while its tested candidate is rejected.
-- `Ready` means its declared prerequisites are satisfied, not authorization to
-  implement every later stage. `Not started` means planned work; `Conditional`
-  and `Optional` stages do not block the default release unless explicitly adopted.
-- Every new stage follows [the evidence protocol](docs/roadmap/README.md).
-  A future test or engineering threshold is a requirement, never claimed proof.
-  No roadmap guarantees zero rework; explicit contracts, independent tests,
-  rejection criteria and review checkpoints reduce that risk.
-
-## Mandatory architecture and working rules
-
-One physical engine owns crank, combustion and gas exchange. One canonical
-description supplies breathing, acoustic routes, controls, persistence and 3D;
-one actual event clock supplies sound and visualization. The active propagation
-path owns each physical region and one conservative interface transfer. The
-prototype comparison still decides whether conservative, coupled or a justified
-component combination is promoted; this roadmap does not preselect the winner.
-
-The intended stack remains a C11 core, native measurement harness, shared WASM
-and AudioWorklet, TypeScript browser app and procedural 3D. Specific future
-library/backend versions and capability assumptions must be verified at their
-execution stage. Native validation precedes dependent browser integration.
-Charts, controls and 3D must reuse core descriptions and actual state.
-
-All realism work: primary research → explicit hypothesis/validity range →
-independent native fixture → controlled engine comparison → native/WASM and
-deployed runtime → Bernardo’s listening/appearance acceptance where relevant.
-Keep hypotheses separate from findings, and prototype results separate from
-production promotion. Record rejected controls and interventions, not only wins.
-
-Every source-changing stage runs the native, existing Python and web unit
-suites plus checks appropriate to its scope; core changes rebuild WASM and
-render/compare the affected complete sound checkpoint.
-Browser changes validate development and production builds. Physics tests need
-targeted deliberate faults. Documentation-only stages check documentation and
-preservation; they do not claim freshly rerun physics suites. Full details are
-in [the protocol](docs/roadmap/README.md).
-
-Publish one portable `renders/RESULTS.html` at each sound checkpoint, including
-current examples and all long coasts. Measurements use unfiltered float stereo;
-filtered copies are listening aids. Record source intervals, perspective
-uncertainty, processing and gains; brightness is not a microphone position.
-Seek additional recordings or ask Bernardo when evidence is insufficient.
-Keep generated/reference audio ignored, preserve references and replace only
-superseded generated audio after the replacement passes validation.
-
-Query Graphify before code exploration; refresh its AST graph after code
-changes. Keep current stage notes, source/evidence hashes, glossary and decisions
-up to date. Do not replace Claude’s setup or stage user-added skills incidentally.
-Commit/sync completed authorized work; publication/deployment is a separate
-execution-stage action with a reviewable build.
-
-## Canonical stage tracker
-
-Click a stage for its deliverable, dependencies, evidence, rejection rule and
-execution record. All future stages also inherit the common protocol. The
-historical rows are not a claim that all current audio goals have passed.
-
-### 1. Historical foundations and engine core
-
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [001](docs/roadmap/01-foundations.md#stage-001) | Initial research and native-first project setup | Complete (bounded) | — |
-| [002](docs/roadmap/01-foundations.md#stage-002) | Native scaffold, WAV/CSV output and C tests | Complete (bounded) | — |
-| [003](docs/roadmap/01-foundations.md#stage-003) | WASM and AudioWorklet tone scaffold | Complete (bounded) | — |
-| [004](docs/roadmap/01-foundations.md#stage-004) | Gas properties, chambers and orifice flow | Complete (bounded) | — |
-| [005](docs/roadmap/01-foundations.md#stage-005) | Slider-crank and motored cylinder | Complete (bounded) | — |
-| [006](docs/roadmap/01-foundations.md#stage-006) | Valvetrain, throttle and intake plenum | Complete (bounded) | — |
-| [007](docs/roadmap/01-foundations.md#stage-007) | Baseline combustion and wall heat | Complete (bounded) | — |
-| [008](docs/roadmap/01-foundations.md#stage-008) | Free crank, starter, ECU and multicylinder running | Complete (bounded) | — |
-| [009](docs/roadmap/01-foundations.md#stage-009) | Five base engine layouts and description API | Complete (bounded) | — |
-| [010](docs/roadmap/01-foundations.md#stage-010) | Native absorbing dyno and original engine calibration | Complete (bounded) | — |
-| [011](docs/roadmap/01-foundations.md#stage-011) | Original one-dimensional intake and exhaust pipes | Complete (bounded) | — |
-| [012](docs/roadmap/01-foundations.md#stage-012) | Acoustic extraction and digital audio output chain | Complete (bounded) | — |
-| [013](docs/roadmap/01-foundations.md#stage-013) | Original mufflers, intake path and listener | Complete (bounded) | — |
-| [014](docs/roadmap/01-foundations.md#stage-014) | Initial performance, quality levels and stability pass | Complete (bounded) | — |
-| [015](docs/roadmap/01-foundations.md#stage-015) | Original flow noise, mechanical sound and cabin | Complete (bounded) | — |
-| [016](docs/roadmap/01-foundations.md#stage-016) | Initial variation, limiter and deceleration scenarios | Complete (bounded) | — |
+| ⬜ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
+| ⬜ | [118](docs/roadmap/07-browser.md#stage-118) | A real-time tier for today's engine: profile and speed up the production engine until a declared quality runs at least 1.5× real time as WebAssembly for all five presets, with what that tier changes measured | 119 |
+| ⬜ | [066](docs/roadmap/07-browser.md#stage-066) | Playable browser engine and audio lifecycle: start, idle, rev, stop, presets, stereo, in dev and production builds | 037, 118 |
+| ⬜ | [067](docs/roadmap/07-browser.md#stage-067) | Engine, intake and exhaust control panel, from the core's metadata | 037, 066 |
+| ⬜ | [068](docs/roadmap/07-browser.md#stage-068) | Live instruments, telemetry and the native-owned dyno | 066, 067 |
+| ⬜ | [069](docs/roadmap/07-browser.md#stage-069) | First playable browser qualification in Chrome and Firefox: callback deadlines, 15-minute stress run, listening. The first playable milestone | 066, 067, 068, 118 |
 
-### 2. Existing sound, measurements and bounded prototypes
+### Phase B — the sound to real-engine standard
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [017](docs/roadmap/02-existing-sound.md#stage-017) | Float-audio analysis and Windows paths | Complete (bounded) | — |
-| [018](docs/roadmap/02-existing-sound.md#stage-018) | Finite burns stop at exhaust opening | Complete (bounded) | — |
-| [019](docs/roadmap/02-existing-sound.md#stage-019) | Five-preset repetition and combustion audit | Complete (bounded) | — |
-| [020](docs/roadmap/02-existing-sound.md#stage-020) | Trapped-mixture burn feedback | Complete (bounded) | — |
-| [021](docs/roadmap/02-existing-sound.md#stage-021) | Raw user-reference catalog | Complete (bounded) | — |
-| [022](docs/roadmap/02-existing-sound.md#stage-022) | Filtered reference listening library | Complete (bounded) | — |
-| [023](docs/roadmap/02-existing-sound.md#stage-023) | Loaded exhaust detail and lift-transition correction | Complete (bounded) | — |
-| [024](docs/roadmap/02-existing-sound.md#stage-024) | Native stereo scenes implementation | Complete (bounded) | — |
-| [025](docs/roadmap/02-existing-sound.md#stage-025) | Complete sound and engine-physics audit | Complete (bounded) | — |
-| [026](docs/roadmap/02-existing-sound.md#stage-026) | Batched thermodynamics and SIMD optimization | Complete (bounded) | — |
-| [027](docs/roadmap/02-existing-sound.md#stage-027) | Five model-specific exhaust research configurations | Complete (bounded) | — |
-| [028](docs/roadmap/02-existing-sound.md#stage-028) | High-RPM configurations and selective rollback | Complete (bounded) | — |
-| [029](docs/roadmap/02-existing-sound.md#stage-029) | Independent source, mesh and timestep experiment | Complete (bounded) | — |
-| [030](docs/roadmap/02-existing-sound.md#stage-030) | Acoustic architecture comparison specification | Complete (bounded) | — |
-| [031](docs/roadmap/02-existing-sound.md#stage-031) | Initial conservative-duct experiment | Complete (bounded) | — |
-| [032](docs/roadmap/02-existing-sound.md#stage-032) | Static quiescent acoustic graph fixtures | Complete (bounded) | — |
-| [033](docs/roadmap/02-existing-sound.md#stage-033) | Complete results inventory and atomic rebuilding | Complete (bounded) | — |
-| [034](docs/roadmap/02-existing-sound.md#stage-034) | Same-tick acoustic receive and commit interface | Complete (bounded) | — |
-| [035](docs/roadmap/02-existing-sound.md#stage-035) | Homogeneous open gas/characteristic duct proof | Complete (bounded) | — |
+| 🟡 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol. The protocol is done; recordings with known engine, exhaust, state and microphone are still needed | 036 |
+| ⬜ | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing for the actual exhausts | 047, 049 |
+| ⬜ | [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency at the tailpipe | 049 |
+| ⬜ | [052](docs/roadmap/04-propagation.md#stage-052) | Mixed-rate scheduler and state transitions | 048, 049, 050, 051 |
+| ⬜ | [053](docs/roadmap/05-engine-qualification.md#stage-053) | Compressible and reversing turbulent-flow excitation (stage 115 fixed the choking; the energy ownership and reverse flow remain) | 040, 042, 047, 038 |
+| ⬜ | [055](docs/roadmap/05-engine-qualification.md#stage-055) | Engine-specific structure and accessories (block, head, body modes per engine) | 041, 042 |
+| ⬜ | [056](docs/roadmap/05-engine-qualification.md#stage-056) | Listener, vehicle and recording-transfer validation | 024, 037, 038, 051 |
+| ⬜ | [054](docs/roadmap/05-engine-qualification.md#stage-054) | Unified pulse and noise routing (stage 115 fixed the paths and junction sharing; the frequency-dependent transfer remains) | 044, 049, 050, 051, 053 |
+| ⬜ | [057](docs/roadmap/05-engine-qualification.md#stage-057) | Whole-engine candidate integration of the surviving research solvers | 041–052, 054, 055, 056 |
+| ⬜ | [058](docs/roadmap/05-engine-qualification.md#stage-058) | Deceleration and lift-off: find the causes of the robotic texture and the boom | 039, 057 |
+| ⬜ | [059](docs/roadmap/05-engine-qualification.md#stage-059) | Five-engine physical and acoustic qualification against matched references | 039, 057, 058 |
+| ⬜ | [060](docs/roadmap/05-engine-qualification.md#stage-060) | Renderer comparison and architecture decision (an ADR) | 043, 057, 059 |
+| ⬜ | [061](docs/roadmap/05-engine-qualification.md#stage-061) | Production renderer promotion, into the core, native, WebAssembly and the browser | 060 |
+| ⬜ | [062](docs/roadmap/05-engine-qualification.md#stage-062) | Fidelity tiers, optimization and native/WebAssembly parity for the promoted renderer | 061, 059 |
+| ⬜ | [063](docs/roadmap/05-engine-qualification.md#stage-063) | Base-engine sound and realism acceptance: Bernardo listens, per preset and scenario | 039, 059, 061, 062 |
+| 💤 | [064](docs/roadmap/06-learned-research.md#stage-064) | Conditional: learned pulse and DSP-parameter benchmark | 039, 053, 054, 059 |
+| 💤 | [065](docs/roadmap/06-learned-research.md#stage-065) | Conditional: learned unresolved-source integration | 064, 060, 061, 063 |
 
-### 3. Roadmap, shared contracts and trustworthy excitation
+### Phase C — the 3D engine
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol | Complete | 035 |
-| [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts | Complete | 036 |
-| [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Complete numerical guard and flux observability | Complete | 037 |
-| [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol | Awaiting matched references | 036 |
-| [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality | Complete (bounded) | 038 |
-| [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Continuous combustion variation and residual validity | Complete (bounded): numerical consistency/characterization; calibration open | 040, 038 |
-| [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Actual fuel-injection events and acoustic triggers | Complete (bounded): actual dose/event/sound coupling; real injector calibration open | 040, 038 |
+| ⬜ | [070](docs/roadmap/08-3d.md#stage-070) | 3D scene, visual style and capability foundation | 037, 069 |
+| ⬜ | [071](docs/roadmap/08-3d.md#stage-071) | Procedural bottom end and manual kinematics | 037, 070 |
+| ⬜ | [072](docs/roadmap/08-3d.md#stage-072) | Procedural top end and valve motion | 071 |
+| ⬜ | [073](docs/roadmap/08-3d.md#stage-073) | Coherent snapshots and sound-synchronized live animation | 037, 066, 072 |
+| ⬜ | [074](docs/roadmap/08-3d.md#stage-074) | Diagnostic slow motion and four-stroke inspection | 073 |
+| ⬜ | [075](docs/roadmap/08-3d.md#stage-075) | Shared 3D intake and complete exhaust routing | 044, 049, 071, 073 |
+| ⬜ | [076](docs/roadmap/08-3d.md#stage-076) | Gas, combustion, pulse and thermal visualization | 047, 074, 075 |
+| ⬜ | [077](docs/roadmap/08-3d.md#stage-077) | Combined 3D/audio performance and fallback qualification | 069, 073, 074, 075, 076 |
 
-### 4. Propagation prototypes and physical components
+### Phase D — turbocharging
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver and production-mixture control | Complete experiment: A2 rejected (wave/contact/cost); no production promotion | 035, 038 |
-| [044](docs/roadmap/04-propagation.md#stage-044) | Executable shared exhaust geometry compiler | Complete (bounded): five executable geometry controls, gas preparation, all paths; full component physics open | 037, 038 |
-| [045](docs/roadmap/04-propagation.md#stage-045) | General zero-flow open gas-to-graph coupling | Complete (bounded): mixture/actual-B0 duct, fractional lengths, conservative feedback; research only | 034, 035, 043, 044, 113 |
-| [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling | Complete (bounded): signed flow, contact/entropy and convected work pass; research only | 045 |
-| [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal model characterization | Complete: properties/wall sensitivity, finite-capacity pair and explicit limits reviewed | 043, 046 |
-| [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts, coefficient updates and reverse entrainment | Complete (bounded material-reference experiment); fixed-geometry continuation 114 required | 046, 047 |
-| [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge | Complete (bounded fixed-port prototype); reviewed | 044, 046, 047, 048 |
-| [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer | Complete (bounded finite-junction reference); reviewed | 044, 048, 114 |
-| [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing | Not started | 047, 049 |
-| [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency | Not started | 049 |
-| [052](docs/roadmap/04-propagation.md#stage-052) | Mixed-rate scheduler and state transitions | Not started | 048, 049, 050, 051 |
+| ⬜ | [078](docs/roadmap/09-turbo.md#stage-078) | Turbo compressor and turbine map components | 037, 061, 039 |
+| ⬜ | [079](docs/roadmap/09-turbo.md#stage-079) | Turbo shaft and engine gas-system integration | 078 |
+| ⬜ | [080](docs/roadmap/09-turbo.md#stage-080) | Boost, wastegate, intercooler and blow-off control | 079 |
+| ⬜ | [081](docs/roadmap/09-turbo.md#stage-081) | Turbo acoustic sources and turbine propagation | 080, 054, 055, 051 |
+| ⬜ | [082](docs/roadmap/09-turbo.md#stage-082) | Turbo controls, instrumentation and build integration | 067, 068, 080, 081 |
+| ⬜ | [083](docs/roadmap/09-turbo.md#stage-083) | Turbo geometry, shaft motion and valve visualization | 073, 075, 082 |
+| ⬜ | [084](docs/roadmap/09-turbo.md#stage-084) | Turbo engine, audio, visual and runtime qualification | 077, 080, 081, 082, 083 |
 
-### 5. Engine integration, architecture selection and base acceptance
+### Phase E — knock, mechanical limits and damage
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [053](docs/roadmap/05-engine-qualification.md#stage-053) | Compressible and reversing turbulent-flow excitation | Not started | 040, 042, 047, 038 |
-| [054](docs/roadmap/05-engine-qualification.md#stage-054) | Unified pulse and noise routing | Not started | 044, 049, 050, 051, 053 |
-| [055](docs/roadmap/05-engine-qualification.md#stage-055) | Engine-specific structure and accessories | Not started | 041, 042 |
-| [056](docs/roadmap/05-engine-qualification.md#stage-056) | Listener, vehicle and recording-transfer validation | Not started | 024, 037, 038, 051 |
-| [057](docs/roadmap/05-engine-qualification.md#stage-057) | Whole-engine candidate integration | Not started | 041, 042, 043, 044, 045, 046, 047, 048, 049, 050, 051, 052, 054, 055, 056 |
-| [058](docs/roadmap/05-engine-qualification.md#stage-058) | Robotic deceleration and lift-off causal diagnosis | Not started | 039, 057 |
-| [059](docs/roadmap/05-engine-qualification.md#stage-059) | Five-engine physical and acoustic qualification | Not started | 039, 057, 058 |
-| [060](docs/roadmap/05-engine-qualification.md#stage-060) | Renderer comparison and architecture decision | Not started | 043, 057, 059 |
-| [061](docs/roadmap/05-engine-qualification.md#stage-061) | Production renderer promotion and API integration | Not started | 060 |
-| [062](docs/roadmap/05-engine-qualification.md#stage-062) | Fidelity tiers, optimization and native/WASM parity | Not started | 061, 059 |
-| [063](docs/roadmap/05-engine-qualification.md#stage-063) | Base-engine sound and realism acceptance | Not started | 039, 059, 061, 062 |
+| ⬜ | [085](docs/roadmap/10-limits.md#stage-085) | End-gas and knock physical model | 041, 080 |
+| ⬜ | [086](docs/roadmap/10-limits.md#stage-086) | Knock-limited ECU, audible knock and feedback | 084, 085, 055 |
+| ⬜ | [087](docs/roadmap/10-limits.md#stage-087) | Piston speed, valve float and mechanical limits | 086 |
+| ⬜ | [088](docs/roadmap/10-limits.md#stage-088) | Optional damage state, warnings and reset behavior | 086, 087 |
+| ⬜ | [089](docs/roadmap/10-limits.md#stage-089) | Knock and damage presentation effects | 076, 088 |
 
-### 6. Conditional learned-synthesis research
+### Phase F — more engines and exhausts
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [064](docs/roadmap/06-learned-research.md#stage-064) | Standalone learned pulse and DSP-parameter benchmark | Conditional | 039, 053, 054, 059 |
-| [065](docs/roadmap/06-learned-research.md#stage-065) | Conditional learned unresolved-source integration | Conditional | 064, 060, 061, 063 |
+| ⬜ | [090](docs/roadmap/11-engine-catalog.md#stage-090) | Additional inline and single-cylinder engines | 009, 071, 073, 087 |
+| ⬜ | [091](docs/roadmap/11-engine-catalog.md#stage-091) | 60-degree and 90-degree V6 engines | 009, 071, 073, 087 |
+| ⬜ | [092](docs/roadmap/11-engine-catalog.md#stage-092) | V10 and V12 engines | 009, 071, 073, 087 |
+| ⬜ | [093](docs/roadmap/11-engine-catalog.md#stage-093) | Boxer-six engine | 009, 071, 073, 087 |
+| ⬜ | [094](docs/roadmap/11-engine-catalog.md#stage-094) | Complete engine-specific exhaust and catalog calibration | 039, 084, 086, 087, 089, 090–093 |
 
-### 7. Playable browser bench
+### Phase G — saving, final acceptance and release
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [066](docs/roadmap/07-browser.md#stage-066) | Playable browser engine and audio lifecycle | Not started | 037, 061, 062, 063 |
-| [067](docs/roadmap/07-browser.md#stage-067) | Engine, intake and exhaust control panel | Not started | 037, 066 |
-| [068](docs/roadmap/07-browser.md#stage-068) | Live instruments, engine telemetry and native-owned dyno | Not started | 066, 067 |
-| [069](docs/roadmap/07-browser.md#stage-069) | First playable browser qualification | Not started | 062, 063, 066, 067, 068 |
+| ⬜ | [095](docs/roadmap/12-release.md#stage-095) | Versioned local build persistence | 037, 067, 082, 088, 094 |
+| ⬜ | [096](docs/roadmap/12-release.md#stage-096) | Shareable builds and validated imports | 095 |
+| ⬜ | [097](docs/roadmap/12-release.md#stage-097) | Usability, accessibility and visual polish | 067, 068, 070, 077, 082, 089, 094, 096 |
+| ⬜ | [098](docs/roadmap/12-release.md#stage-098) | Final per-preset listening and realism acceptance | 039, 063, 084, 089, 094, 097 |
+| ⬜ | [099](docs/roadmap/12-release.md#stage-099) | Complete-browser and hardware release qualification | 077, 084, 089, 094, 096, 097, 098 |
+| ⬜ | [100](docs/roadmap/12-release.md#stage-100) | Release documentation, evidence and asset review | 099 |
+| ⬜ | [101](docs/roadmap/12-release.md#stage-101) | Static production deployment | 100 |
+| ⬜ | [102](docs/roadmap/12-release.md#stage-102) | Deployed second-device acceptance and full release | 101 |
 
-### 8. Complete 3D engine experience
+### Optional, after the release
 
-| Stage | Deliverable | Status | Depends on |
+| | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| [070](docs/roadmap/08-3d.md#stage-070) | 3D scene, visual style and capability foundation | Not started | 037, 069 |
-| [071](docs/roadmap/08-3d.md#stage-071) | Procedural bottom end and manual kinematics | Not started | 037, 070 |
-| [072](docs/roadmap/08-3d.md#stage-072) | Procedural top end and valve motion | Not started | 071 |
-| [073](docs/roadmap/08-3d.md#stage-073) | Coherent snapshots and sound-synchronized live animation | Not started | 037, 066, 072 |
-| [074](docs/roadmap/08-3d.md#stage-074) | Diagnostic slow motion and four-stroke inspection | Not started | 073 |
-| [075](docs/roadmap/08-3d.md#stage-075) | Shared 3D intake and complete exhaust routing | Not started | 044, 049, 071, 073 |
-| [076](docs/roadmap/08-3d.md#stage-076) | Gas, combustion, pulse and thermal visualization | Not started | 047, 074, 075 |
-| [077](docs/roadmap/08-3d.md#stage-077) | Combined 3D/audio performance and fallback qualification | Not started | 069, 073, 074, 075, 076 |
+| 💤 | [103](docs/roadmap/13-optional.md#stage-103) | Gearbox and vehicle-driving mode | 102 |
+| 💤 | [104](docs/roadmap/13-optional.md#stage-104) | WAV recording and audio export | 102 |
+| 💤 | [105](docs/roadmap/13-optional.md#stage-105) | Two-stroke engine cycle | 102 |
+| 💤 | [106](docs/roadmap/13-optional.md#stage-106) | Alternative fuels | 102 |
+| 💤 | [107](docs/roadmap/13-optional.md#stage-107) | Supercharger system | 102 |
+| 💤 | [108](docs/roadmap/13-optional.md#stage-108) | Individual throttle bodies | 102 |
+| 💤 | [109](docs/roadmap/13-optional.md#stage-109) | Anti-lag system | 102, 084, 085, 087 |
+| 💤 | [110](docs/roadmap/13-optional.md#stage-110) | 3D garage or dyno-room environment | 102 |
+| 💤 | [111](docs/roadmap/13-optional.md#stage-111) | Synchronized video capture | 102 |
 
-### 9. Turbocharged engine development
+## Done
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [078](docs/roadmap/09-turbo.md#stage-078) | Turbo compressor and turbine map components | Not started | 037, 061, 039 |
-| [079](docs/roadmap/09-turbo.md#stage-079) | Turbo shaft and engine gas-system integration | Not started | 078 |
-| [080](docs/roadmap/09-turbo.md#stage-080) | Boost, wastegate, intercooler and blow-off control | Not started | 079 |
-| [081](docs/roadmap/09-turbo.md#stage-081) | Turbo acoustic sources and turbine propagation | Not started | 080, 054, 055, 051 |
-| [082](docs/roadmap/09-turbo.md#stage-082) | Turbo controls, instrumentation and build integration | Not started | 067, 068, 080, 081 |
-| [083](docs/roadmap/09-turbo.md#stage-083) | Turbo geometry, shaft motion and valve visualization | Not started | 073, 075, 082 |
-| [084](docs/roadmap/09-turbo.md#stage-084) | Turbo engine, audio, visual and runtime qualification | Not started | 077, 080, 081, 082, 083 |
+Each stage's record holds what it proved and its limits. 🟡 marks a stage whose part listed in
+the note stays open and belongs to a later stage.
 
-### 10. Knock, mechanical limits and damage
+### The engine and its first sound (001–016)
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [085](docs/roadmap/10-limits.md#stage-085) | End-gas and knock physical model | Not started | 041, 080 |
-| [086](docs/roadmap/10-limits.md#stage-086) | Knock-limited ECU, audible knock and feedback | Not started | 084, 085, 055 |
-| [087](docs/roadmap/10-limits.md#stage-087) | Piston speed, valve float and mechanical limits | Not started | 086 |
-| [088](docs/roadmap/10-limits.md#stage-088) | Optional damage state, warnings and reset behavior | Not started | 086, 087 |
-| [089](docs/roadmap/10-limits.md#stage-089) | Knock and damage presentation effects | Not started | 076, 088 |
+| | Stage | What |
+| --- | --- | --- |
+| ✅ | [001](docs/roadmap/01-foundations.md#stage-001) | Initial research and native-first project setup |
+| ✅ | [002](docs/roadmap/01-foundations.md#stage-002) | Native scaffold, WAV/CSV output and C tests |
+| ✅ | [003](docs/roadmap/01-foundations.md#stage-003) | WebAssembly and AudioWorklet tone scaffold |
+| ✅ | [004](docs/roadmap/01-foundations.md#stage-004) | Gas properties, chambers and orifice flow |
+| ✅ | [005](docs/roadmap/01-foundations.md#stage-005) | Slider-crank and motored cylinder |
+| ✅ | [006](docs/roadmap/01-foundations.md#stage-006) | Valvetrain, throttle and intake plenum |
+| ✅ | [007](docs/roadmap/01-foundations.md#stage-007) | Baseline combustion and wall heat |
+| ✅ | [008](docs/roadmap/01-foundations.md#stage-008) | Free crank, starter, engine computer and multicylinder running |
+| ✅ | [009](docs/roadmap/01-foundations.md#stage-009) | Five engine layouts and the description API |
+| ✅ | [010](docs/roadmap/01-foundations.md#stage-010) | Native dyno and calibration against real engines |
+| ✅ | [011](docs/roadmap/01-foundations.md#stage-011) | One-dimensional intake and exhaust pipes |
+| ✅ | [012](docs/roadmap/01-foundations.md#stage-012) | Sound extraction and the digital audio chain |
+| ✅ | [013](docs/roadmap/01-foundations.md#stage-013) | Mufflers, intake path and the listener |
+| 🟡 | [014](docs/roadmap/01-foundations.md#stage-014) | Performance, quality levels and stability. The 4× real-time native target was not met (→ 118, 062) |
+| ✅ | [015](docs/roadmap/01-foundations.md#stage-015) | Flow noise, mechanical sound and the cabin |
+| ✅ | [016](docs/roadmap/01-foundations.md#stage-016) | Cycle variation, the soft-cut limiter and deceleration drives |
 
-### 11. Expanded engine and exhaust catalog
+### Sound work, measurements and early prototypes (017–035)
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [090](docs/roadmap/11-engine-catalog.md#stage-090) | Additional inline and single-cylinder engines | Not started | 009, 071, 073, 087 |
-| [091](docs/roadmap/11-engine-catalog.md#stage-091) | 60-degree and 90-degree V6 engines | Not started | 009, 071, 073, 087 |
-| [092](docs/roadmap/11-engine-catalog.md#stage-092) | V10 and V12 engines | Not started | 009, 071, 073, 087 |
-| [093](docs/roadmap/11-engine-catalog.md#stage-093) | Boxer-six engine | Not started | 009, 071, 073, 087 |
-| [094](docs/roadmap/11-engine-catalog.md#stage-094) | Complete engine-specific exhaust and catalog calibration | Not started | 039, 084, 086, 087, 089, 090, 091, 092, 093 |
+| | Stage | What |
+| --- | --- | --- |
+| ✅ | [017](docs/roadmap/02-existing-sound.md#stage-017) | Float-audio analysis and Windows paths |
+| ✅ | [018](docs/roadmap/02-existing-sound.md#stage-018) | Finite burns stop at exhaust opening |
+| ✅ | [019](docs/roadmap/02-existing-sound.md#stage-019) | Five-preset repetition and combustion audit |
+| ✅ | [020](docs/roadmap/02-existing-sound.md#stage-020) | Trapped-mixture burn feedback |
+| ✅ | [021](docs/roadmap/02-existing-sound.md#stage-021) | Bernardo's reference recordings cataloged |
+| ✅ | [022](docs/roadmap/02-existing-sound.md#stage-022) | Filtered reference listening library |
+| ✅ | [023](docs/roadmap/02-existing-sound.md#stage-023) | Loaded exhaust detail and lift-transition correction |
+| ✅ | [024](docs/roadmap/02-existing-sound.md#stage-024) | Native stereo scenes |
+| ✅ | [025](docs/roadmap/02-existing-sound.md#stage-025) | Complete sound and engine-physics audit (D01–D09, R01–R18) |
+| ✅ | [026](docs/roadmap/02-existing-sound.md#stage-026) | Batched thermodynamics and SIMD |
+| ✅ | [027](docs/roadmap/02-existing-sound.md#stage-027) | Five model-specific researched exhausts |
+| ✅ | [028](docs/roadmap/02-existing-sound.md#stage-028) | High-rpm configurations and the selective rollback (the accepted sound) |
+| ✅ | [029](docs/roadmap/02-existing-sound.md#stage-029) | Source, mesh and time-step experiment |
+| ✅ | [030](docs/roadmap/02-existing-sound.md#stage-030) | Acoustic architecture comparison specification |
+| ✅ | [031](docs/roadmap/02-existing-sound.md#stage-031) | Initial conservative-duct experiment (candidate rejected) |
+| ✅ | [032](docs/roadmap/02-existing-sound.md#stage-032) | Static acoustic graph fixtures |
+| ✅ | [033](docs/roadmap/02-existing-sound.md#stage-033) | Results inventory and atomic rebuilding |
+| ✅ | [034](docs/roadmap/02-existing-sound.md#stage-034) | Same-tick acoustic receive and commit interface |
+| ✅ | [035](docs/roadmap/02-existing-sound.md#stage-035) | Open gas/characteristic duct proof |
 
-### 12. Persistence, final acceptance and release
+### The roadmap, contracts and the engine's events (036–042)
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [095](docs/roadmap/12-release.md#stage-095) | Versioned local build persistence | Not started | 037, 067, 082, 088, 094 |
-| [096](docs/roadmap/12-release.md#stage-096) | Shareable builds and validated imports | Not started | 095 |
-| [097](docs/roadmap/12-release.md#stage-097) | Usability, accessibility and visual polish | Not started | 067, 068, 070, 077, 082, 089, 094, 096 |
-| [098](docs/roadmap/12-release.md#stage-098) | Final per-preset listening and realism acceptance | Not started | 039, 063, 084, 089, 094, 097 |
-| [099](docs/roadmap/12-release.md#stage-099) | Complete-browser and hardware release qualification | Not started | 077, 084, 089, 094, 096, 097, 098 |
-| [100](docs/roadmap/12-release.md#stage-100) | Release documentation, evidence and asset review | Not started | 099 |
-| [101](docs/roadmap/12-release.md#stage-101) | Static production deployment | Not started | 100 |
-| [102](docs/roadmap/12-release.md#stage-102) | Deployed second-device acceptance and full release | Not started | 101 |
+| | Stage | What |
+| --- | --- | --- |
+| ✅ | [036](docs/roadmap/03-contracts-and-sources.md#stage-036) | Unified roadmap and evidence protocol |
+| ✅ | [037](docs/roadmap/03-contracts-and-sources.md#stage-037) | Shared build, geometry, event and snapshot contracts |
+| ✅ | [038](docs/roadmap/03-contracts-and-sources.md#stage-038) | Numerical guard and flux observability |
+| ✅ | [040](docs/roadmap/03-contracts-and-sources.md#stage-040) | Spark, ignition and flame-development causality |
+| 🟡 | [041](docs/roadmap/03-contracts-and-sources.md#stage-041) | Combustion variation and the charge's burn model. Calibration against real engines stays open (→ 059); its variation shortfall was fixed in 115 |
+| 🟡 | [042](docs/roadmap/03-contracts-and-sources.md#stage-042) | Fuel-injection events and their clicks. Real injector calibration stays open (→ 055) |
 
-### 13. Optional expansions
+### Exhaust-acoustics research (043–049, 114)
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [103](docs/roadmap/13-optional.md#stage-103) | Gearbox and vehicle-driving mode | Optional | 102 |
-| [104](docs/roadmap/13-optional.md#stage-104) | WAV recording and audio export | Optional | 102 |
-| [105](docs/roadmap/13-optional.md#stage-105) | Two-stroke engine cycle | Optional | 102 |
-| [106](docs/roadmap/13-optional.md#stage-106) | Alternative fuels | Optional | 102 |
-| [107](docs/roadmap/13-optional.md#stage-107) | Supercharger system | Optional | 102 |
-| [108](docs/roadmap/13-optional.md#stage-108) | Individual throttle bodies | Optional | 102 |
-| [109](docs/roadmap/13-optional.md#stage-109) | Anti-lag system | Optional | 102, 084, 085, 087 |
-| [110](docs/roadmap/13-optional.md#stage-110) | 3D garage or dyno-room environment | Optional | 102 |
-| [111](docs/roadmap/13-optional.md#stage-111) | Synchronized video capture | Optional | 102 |
+These are research experiments, not part of the engine (`experiments/acoustics/`). They are
+valid only for weak waves under 990 K and run far below real time. Stages 050–060 decide what, if
+anything, goes into the engine.
 
-### 14. Bounded review repairs (execute before 037)
+| | Stage | What |
+| --- | --- | --- |
+| ✅ | [043](docs/roadmap/04-propagation.md#stage-043) | Improved conservative solver with the production gas. Its candidate, A2, was rejected |
+| ✅ | [044](docs/roadmap/04-propagation.md#stage-044) | Shared exhaust geometry compiler |
+| ✅ | [045](docs/roadmap/04-propagation.md#stage-045) | Zero-flow gas-to-acoustic-graph coupling |
+| ✅ | [046](docs/roadmap/04-propagation.md#stage-046) | Uniform mean-flow coupling |
+| ✅ | [047](docs/roadmap/04-propagation.md#stage-047) | Gas-property and wall-thermal characterization |
+| ✅ | [048](docs/roadmap/04-propagation.md#stage-048) | Thermal fronts and reverse entrainment (material reference) |
+| ✅ | [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge |
+| ✅ | [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer |
 
-| Stage | Deliverable | Status | Depends on |
-| --- | --- | --- | --- |
-| [112](docs/roadmap/14-review-fixes.md#stage-112) | Recoverable checkpoint section publication — C08 | Complete | 033, 036 |
-| [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic derived-state and numerical failure guards — C07 | Complete | 032, 034, 036 |
-| [115](docs/roadmap/14-review-fixes.md#stage-115) | Valve jet noise (D02–D05) and the cycles' variation back to 1–3 % | Complete: native 250 tests / 4950073 checks, 11 planted bugs caught, sanitizers, WASM and web green; A/B renders for listening | 040, 041, 042, 113 |
-| [116](docs/roadmap/14-review-fixes.md#stage-116) | Loosened tests tightened; the make 4.3 Python test failure fixed | Complete: native 250 tests and Python 95 of 95 green, 4 planted bugs caught; no core change | 115 |
-| [117](docs/roadmap/14-review-fixes.md#stage-117) | Docs readable and current: spaces restored, CLAUDE.md/README/workspace/glossary updated, rb_cli help | Complete: native 250 tests, Python 95 of 95, web green; links checked | 116 |
+### Review repairs (112–117)
 
-## Release gates and unresolved legacy obligations
+| | Stage | What |
+| --- | --- | --- |
+| ✅ | [112](docs/roadmap/14-review-fixes.md#stage-112) | Recoverable checkpoint publication |
+| ✅ | [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic numerical failure guards |
+| ✅ | [115](docs/roadmap/14-review-fixes.md#stage-115) | The valves' jet noise fixed (the audit's D02–D05) and the cycles' variation back to real engines' |
+| ✅ | [116](docs/roadmap/14-review-fixes.md#stage-116) | The loosened tests tightened, the make 4.3 Python test fixed |
+| ✅ | [117](docs/roadmap/14-review-fixes.md#stage-117) | The docs readable and current |
 
-- **Base sound checkpoint:** 063; first playable browser: 069; full 3D: 077;
-  turbo: 084; full catalog: 094; final listening: 098; hardware/browser: 099;
-  actual public release: 102. Optional 064–065 and 103–111 are excluded unless adopted.
-- Legacy **S1/S1e** remain open through causal/variation/events 040–042,
-  structure/deceleration 055/058, qualification 059 and listening 063/098.
-- Legacy **S2/S2d/S2e** remain open through 043–061 and acceptance 063/098.
-  The tested initial conservative candidate is rejected; the coupled method is
-  not yet an arbitrary graph/mixture/engine implementation.
-- Legacy **S4** remains open through 056/063 and actual browser/visual delivery
-  069/073/077/099. A completed native scene implementation does not close it.
-- Full legacy **13b** remains open through transport/decision/optimization and
-  actual delivery 043/060/062/069/099. Historical 4x-native/2x-WASM targets and
-  rejected implicit probes are retained; targets are met only with evidence or
-  changed explicitly with Bernardo. Optimization tactics are candidates, not
-  substitutes for the fidelity and delivery goals.
-- All **27 audit findings** have [explicit owners and closure evidence](docs/roadmap/audit-coverage.md).
-  A scoped limitation, deferred decision or rejected hypothesis is recorded as
-  such, never silently converted into a fix by this renumbering.
+## How a stage is done
+
+1. Say "do stage 119" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
+   entry, then the stage's specification in `docs/roadmap/`.
+2. Do only that stage. Follow its dependencies, not just the row above it.
+3. End with all tests green:
+   - native: `make test`;
+   - Python: the tools' unit tests;
+   - web: `npm test`, plus the Playwright test in dev and `E2E_PREVIEW=1` for browser work.
+4. New physics tests must be able to fail: plant bugs (`tools/plant_bugs.py`).
+5. A change in `core/` rebuilds the WebAssembly core (`make wasm`).
+6. **The sound check:** a change in `core/` also renders the affected sound and compares it with
+   the real recordings (`tools/compare_real.py`, `tools/orders.py`). Bernardo's ears decide
+   realism.
+7. Write `docs/stage-NNN.md`, mark the stage here with a one-line note, and add a short entry to
+   `CODEX.md`. Then commit (one per stage) and push.
+8. New work that no stage covers gets the next unused number (120, ...) and a place in the order
+   above. Stage numbers never change.
+
+The full evidence protocol, gates and architecture sketch are in
+[docs/roadmap/README.md](docs/roadmap/README.md).
+
+## Rules that hold for every stage
+
+- One physical engine owns the crank, combustion and gas exchange. One description of it feeds
+  the sound, the controls, saving and the 3D view, and one event clock drives sound and
+  visuals. JavaScript never duplicates the engine's geometry or physics.
+- The stack: a C11 core, native measurement tools, the same core as WebAssembly in an
+  AudioWorklet, a TypeScript browser app, procedural 3D. The engine is validated natively before
+  it goes into the browser.
+- Realism work goes: research, a stated hypothesis, an independent native test, a controlled
+  engine comparison, native and WebAssembly runs, then Bernardo's listening. Keep findings apart
+  from hypotheses, and research results apart from what goes into the engine.
+- Measurements use unfiltered float audio. Generated and reference audio stay out of git.
+- Query the code graph (graphify) before exploring code, and refresh it after code changes.
+- Never silently lower the sound's quality for speed. A faster tier says what it changes.
+
+## What stays open from earlier plans
+
+- **The old sound tracks:** S1 (cycle variation, deceleration) closes at 058, 059 and 063. S2 (the
+  exhaust's acoustics) closes at 050–061 and 063. S4 (the listener's scenes) closes at 056 and
+  063, and in the browser at 069 and 077.
+- **Speed:** the old targets (4× real time natively, 2× in WebAssembly) are unmet. 118 gets a
+  real-time tier for today's engine; 062 does it for the promoted renderer.
+- **The audit's 27 findings** each have an owner stage and closure evidence in
+  [docs/roadmap/audit-coverage.md](docs/roadmap/audit-coverage.md).
+- **Release gates:**
+  - first playable browser: 069;
+  - base sound acceptance: 063;
+  - full 3D: 077;
+  - turbo: 084;
+  - full catalog: 094;
+  - final listening: 098;
+  - hardware and browser qualification: 099;
+  - public release: 102.
 
 ## Documentation map
 
-- [Protocol, quantitative gates, evidence package and architecture sketch](docs/roadmap/README.md)
-- [All 62 old stage IDs → current stages](docs/roadmap/legacy-map.md)
-- [27-finding audit coverage](docs/roadmap/audit-coverage.md)
-- [Roadmap decision](docs/adr/0002-canonical-roadmap-and-evidence-gates.md)
-- [Domain language](GLOSSARY.md), [research](RESEARCH.md), [current handoff](CODEX.md)
-- [Accepted results workflow](docs/render-workflow.md), [reference provenance](docs/user-sound-references.md)
+- [Stage protocol, gates and architecture](docs/roadmap/README.md); the stage specifications are
+  in `docs/roadmap/01-…14-*.md`.
+- [Every old stage number → today's](docs/roadmap/legacy-map.md) and the
+  [archived first plan](docs/roadmap/legacy-plan.md). Earlier versions of this file are in git's
+  history: Codex's checkpoint-by-checkpoint log is at commit 011b3cf.
+- [The audit's findings and their owners](docs/roadmap/audit-coverage.md),
+  [roadmap decision](docs/adr/0002-canonical-roadmap-and-evidence-gates.md).
+- [Glossary](GLOSSARY.md), [research](RESEARCH.md), [Codex's handoff log](CODEX.md),
+  [notes for Claude](CLAUDE.md), [where the project is worked on](docs/workspace.md).
+- [Results workflow](docs/render-workflow.md), [Bernardo's references](docs/user-sound-references.md).

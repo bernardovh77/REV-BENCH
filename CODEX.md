@@ -4,6 +4,22 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-01: PLAN.md remade; the browser comes first
+
+- **The new layout:** at Bernardo's request, Claude rewrote PLAN.md around where the project
+  is: a check mark per stage (✅ done, 🟡 done with a part open, ⬜ not started, 💤
+  optional), every stage ID kept, and the stages listed in the order they'll be done.
+- **The new order** ("the order you find most ideal ... no gaps"):
+  - **phase A:** 119 (the review's leftovers), then 118 (a real-time tier for today's engine),
+    then the playable browser, 066–069;
+  - **phase B:** the sound chain, 039 and 050–063;
+  - **phase C onwards:** 3D, turbo, limits, catalog, release.
+- **Dependencies changed:** 066 now depends on 037 and 118, and 069 on 066–068 and 118.
+  Neither waits for 061–063 any more.
+- **Where the old log went:** Codex's checkpoint log from PLAN.md's old "Current state" is in
+  git's history (commit 011b3cf) and in the stage records.
+- **Next stage: 119.**
+
 ## 2026-11-01: Stage 117, docs readable and current
 
 - [Stage 117](docs/stage-117.md) restored the spaces lost between words and

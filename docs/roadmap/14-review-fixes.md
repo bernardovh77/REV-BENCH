@@ -114,3 +114,37 @@ identifier changed by the pass; links checked; native, Python and web suites gre
 spacing; the cases a script can't decide safely stay listed.
 
 **Execution record:** [Stage 117](../stage-117.md).
+
+<a id="stage-119"></a>
+## Stage 119 — The review's leftovers
+
+**Dependencies:** [117](#stage-117)
+
+**Deliverable:** Close what Claude's review of Codex's work (2026-10-31) found and stages
+115–117 didn't fix:
+- **Readable C:** Codex's compressed code in `core/` (engine.c, combustion.c, ignition.c,
+  injection.c, scene.c, diagnostics.c, radiation.c, exhaust_models.c and the rest) is formatted
+  and commented as CLAUDE.md asks, with no change in behaviour.
+- **The reference tools measure in stereo as they say:** `prepare_user_references.py` folds to
+  mono by default while the page says stereo.
+- **Failed publishes:** a failed audio-experiment publish no longer blocks `make results` and
+  `make render`.
+- **Checks:** the tools' acceptance checks are explicit exceptions, not `assert`s (`python -O`
+  drops those).
+- **Paths and timing:** Windows paths and encodings work, and "lift time" means one instant in
+  every report.
+- **Prose numbers:** numbers in published prose come from the evidence.
+- **The research solvers' tests can fail:**
+  - `gas_graph` gets an accuracy test against an analytic wave;
+  - its energy checks no longer pass by construction;
+  - `test_junction.c`'s closed-box test checks bounded energy, not numerical damping.
+
+**Required exit evidence:**
+- Renders and test results before and after the reformatting are identical, bit for bit.
+- A planted bug for each new or changed test.
+- Native, Python and web suites green.
+
+**Stop/reject rule:** No physics change. Reformatting that changes a single rendered sample is
+a bug.
+
+**Execution record:** `docs/stage-119.md`.

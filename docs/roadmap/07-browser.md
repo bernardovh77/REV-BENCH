@@ -4,10 +4,37 @@
 
 These are stage specifications. Current statuses live only in PLAN.md. Future exit evidence is required, not already achieved. Historical completions retain their original validity limits and test dates.
 
+<a id="stage-118"></a>
+## Stage 118 — A real-time tier for today's engine
+
+**Dependencies:** [119](../../docs/roadmap/14-review-fixes.md#stage-119)
+
+**Deliverable:** Profile the production engine (A0, with its noise and listener) natively and as
+WebAssembly. Speed it up without changing what it computes, where measurements point. Declare a
+quality tier that runs every preset at least 1.5 times real time as WebAssembly on Bernardo's
+desktop baseline, and measure what that tier changes: torque, VE and the sound measures against
+the default quality (`tools/compare_real.py`, `tools/orders.py`).
+
+**Required exit evidence:**
+- Interleaved native and WebAssembly timings per preset and tier, best of several runs.
+- Renders at the default quality identical, or within stated tolerances, before and after the
+  speed-ups.
+- The tier's differences measured and listened to.
+- All suites green.
+
+**Stop/reject rule:** No silent quality loss: a tier states what it changes. Below-real-time
+correctness prototypes don't count. The promoted renderer's own tiers stay stage 062.
+
+**Why it's here (2026-11-01):** the browser stages 066–069 now come before the sound-physics
+chain 050–063, so Bernardo can play the engine and hear each sound improvement live. They need
+today's engine to run in real time first.
+
+**Execution record:** `docs/stage-118.md`.
+
 <a id="stage-066"></a>
 ## Stage 066 — Playable browser engine and audio lifecycle
 
-**Dependencies:** [037](../../docs/roadmap/03-contracts-and-sources.md#stage-037), [061](../../docs/roadmap/05-engine-qualification.md#stage-061), [062](../../docs/roadmap/05-engine-qualification.md#stage-062), [063](../../docs/roadmap/05-engine-qualification.md#stage-063)
+**Dependencies:** [037](../../docs/roadmap/03-contracts-and-sources.md#stage-037), [118](#stage-118). Until 2026-11-01 it waited for 061, 062 and 063. Now it plays today's engine, and 061/062 bring their renderer into the browser when they land.
 
 **Deliverable:** Select the real engine source through the shared API; deliver ignition, starter, throttle/load and preset commands with acknowledgments. Implement actual stereo worklet output, minimal engine telemetry and user-gesture/suspend/resume/device-rate/dispose lifecycle.
 
@@ -58,7 +85,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-069"></a>
 ## Stage 069 — First playable browser qualification
 
-**Dependencies:** [062](../../docs/roadmap/05-engine-qualification.md#stage-062), [063](../../docs/roadmap/05-engine-qualification.md#stage-063), [066](../../docs/roadmap/07-browser.md#stage-066), [067](../../docs/roadmap/07-browser.md#stage-067), [068](../../docs/roadmap/07-browser.md#stage-068)
+**Dependencies:** [066](../../docs/roadmap/07-browser.md#stage-066), [067](../../docs/roadmap/07-browser.md#stage-067), [068](../../docs/roadmap/07-browser.md#stage-068), [118](#stage-118). Until 2026-11-01 it also waited for 062 and 063. Base sound acceptance stays 063, and the final listening stays 098.
 
 **Deliverable:** Qualify the actual engine/control/stereo path in Chrome and Firefox on Bernardo's named desktop baseline. Define supported sample rates, lifecycle behavior, tier and command/telemetry budgets.
 

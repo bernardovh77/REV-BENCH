@@ -15,7 +15,7 @@
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
   Playwright test in both modes (dev and `E2E_PREVIEW=1`). Stages that touch `core/` also do the
-  sound check (PLAN.md, working agreement 6).
+  sound check (PLAN.md, "How a stage is done", step 6).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
   which tests catch them. `python3 tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
   applies each bug of `tools/bugs/stageSTAGE.py` (a stage's own table: start from the last one's)
@@ -38,10 +38,10 @@
   and for the refining of the sound to be treated as very important. After stage 12b's: "the
   3000 on all engines feel like they should be the idle", "too smooth... less like a piano
   note", the limiter's "huge gap", the deceleration "very off" (stage 12c's work).
-- **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md's sound track acts
-  on them: stage 12b (the jets' noise, the engine's own sound, the cabin; S3 folded into it), then
-  S1, S2 and S4, and S5 at the end. Working agreement 6 adds a sound check to every stage. Never
-  trade sound for speed silently.
+- **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md (remade
+  2026-11-01) acts on them in phase B, stages 039 and 050–063, after the engine plays in the
+  browser (phase A: 119, 118, 066–069). Every stage that touches `core/` does the sound check
+  (PLAN.md, "How a stage is done", step 6). Never trade sound for speed silently.
 - **Measuring:** `tools/compare_real.py` measures renders like the recordings of real engines in
   `tools/real_engines.csv` (Freesound, CC0/CC BY/Sampling+). `fetch` puts the recordings in
   `renders/real/` once (needs ffmpeg), then `compare [--kind steady|rev] WAV@T0-T1:LABEL...`.
