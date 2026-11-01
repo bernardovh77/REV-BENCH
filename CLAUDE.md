@@ -3,6 +3,14 @@
 ## Workflow
 - The roadmap lives in `PLAN.md`. When asked to "do stage N" or "next stage", read `PLAN.md` first,
   do only that stage, then update its tracker row (status + one-line note) and write `docs/stage-NN.md`.
+- **Stage numbers:** since 2026-10-23 PLAN.md numbers the stages from 001 (Codex's roadmap,
+  docs/roadmap/). Stage numbers in this file older than that are the old ones, mapped in
+  docs/roadmap/legacy-map.md. For example, the old 14 (the engine in the browser) is now 066/069,
+  the old 17–19 (the 3D view) are 070–077, and S1/S5 are spread over 040–063 and 098. "Stage 14"
+  in PLAN.md is a finished early stage, not the browser.
+- Codex (OpenAI's agent) also works on this repo: AGENTS.md is its instructions and CODEX.md its
+  dated handoff log. Read the log's latest entry and PLAN.md's "Current state" before working,
+  and add a short entry there for what you did.
 - Validate physics natively (tests, CSV plots, WAV renders) before wiring anything into the browser.
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
@@ -12,15 +20,19 @@
   which tests catch them. `python3 tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
   applies each bug of `tools/bugs/stageSTAGE.py` (a stage's own table: start from the last one's)
   to a fresh copy of the sources in WORKDIR, builds the test binary there and runs the tests named
-  for it; two work dirs run two bugs at once. The whole suite takes 3.5 min in Claude's cloud
-  workspace (more with the sanitizers, so run that in filtered parts), and processes started in
-  the background can die with a call: run a few bugs per call under `timeout`, and never
-  `pkill -f` a pattern that also matches your own command line.
+  for it; two work dirs run two bugs at once. The whole suite takes 5–9 min in Claude's cloud
+  workspace (3.5 at stage 12c; more with the sanitizers, so run that in filtered parts), and
+  processes started in the background can die with a call: run a few bugs per call under
+  `timeout`, and never `pkill -f` a pattern that also matches your own command line.
 - make rebuilds every object whose headers changed (-MMD), if the object is in the Makefile's
   ALL_OBJ: a new program's objects go there too. Stage 13's segfault after a header change was
   rb_bench.o, left out of it.
 
 ## Sound: Bernardo's top priority
+- **Bernardo's own references:** recordings and videos of the engines the presets are modelled on
+  (docs/user-sound-references.md, docs/video-sound-references-2026-10-24.md) are on his machine
+  only, in `renders/` (git-ignored). A cloud session can't see them; ask him to attach them, or
+  for a session started on his machine (docs/workspace.md).
 - **What Bernardo said:** after stage 12's renders, "dull and really artificial" (only the
   cross-plane V8's sweep came close). He asked for research and comparisons with real engines,
   and for the refining of the sound to be treated as very important. After stage 12b's: "the
@@ -50,6 +62,12 @@
     to −41 idling from behind and −24/−22 for the four's and the V8's pulls (real −42 to −6).
   - **The highs were the gap, not the mids.** Under load our energy above 1 kHz was already the
     real engines' (−14 dB).
+- **Stage 115** (docs/stage-115.md): the valves' and throttle's jet noise takes its Mach number
+  from the pressures either side of the gap (a choked jet had read 15.8 dB too weak),
+  recalibrated (`VALVE_ETA` 5e-4 from behind, `THROTTLE_ETA` 5e-5 at the intake's mouth); it
+  goes through X and Y junctions to every tailpipe beyond. Under load the highs above 2 kHz are
+  now −11 to −20 dB (real revving engines −42 to −6, median −20); idling from behind they are
+  still −38 for the four (real median −25).
 - **How engine-sim does it:** its physics stops at 1.9 kHz too. Its highs come from time jitter,
   noise multiplied into the flow and a convolution with an impulse response, with a leveler at
   the end.
@@ -251,11 +269,13 @@
   13 K; `test_engine_vacuum`).
 - Stage 12c, no two cycles alike (`e->variation`, 0 by default so the tests and dyno numbers stay
   exact; `rb_cli sound` uses 1, the fuzzer 0–2; tests/test_variation.c):
-  - at IVC each burn's start (`b->start_angle`; `b->spark_angle` stays the computer's spark) moves
-    by 7 % of its length and its length by 6 % (RMS), correlated 0.5; each cylinder has its own
+  - at IVC each burn's length varies by 6 % (RMS) and the flame's start after the spark by 7 % of
+    its length (since stage 040 a development delay that is never negative; since stage 115 a
+    unit exponential, `rb_kernel_delay_unit`, whose mean the computer's spark allows for, idle
+    spark included), correlated 0.5; each cylinder has its own
     mixture (2 %) and burn length (4 %), drawn at init with their mean taken away; each exhaust
-    valve's area flickers 15 % (RMS, below 2 kHz) while open. COV of IMEP 1.2 % wide open, 4.3 %
-    idling. `core/src/rand.h` is the seeded generator (noise.c's too): renders repeat exactly;
+    valve's area flickers 15 % (RMS, below 2 kHz) while open. COV of IMEP 1.0–2.3 % per
+    cylinder wide open (stage 115), 3–8 % idling. `core/src/rand.h` is the seeded generator (noise.c's too): renders repeat exactly;
   - `b->work`/`b->last_work`: each cylinder's work over its own cycle;
   - the presets' headers are unequal (the four 0.58/0.40/0.30/0.52 m, the six's outer and the
     cross-plane V8's front ones longest); `rb_engine_desc_default` keeps equal ones;
@@ -269,6 +289,16 @@
     physics step (`rb_cli sound --hold`); a rebuilt engine drops it;
   - `rb_cli sound`: `--hold` on that dyno, `--sweep` with the road's load ending clutch-in at idle,
     `--rev` (neutral revs), `--variation`, `--headers`, `--load`.
+- Codex's additions (stages 037–049, 114; read CODEX.md for the details):
+  - `ignition.c`/`injection.c` (spark discharge and injection events, traced), `radiation.c`
+    (the tailpipe outlet's causal radiation load), `exhaust_models.c` (each preset's researched
+    exhaust: centre pipes, links, X/Y junctions, `rb_exhaust_model`), `scene.c` (stereo scenes,
+    `rb_set_scene`/`rb_render_stereo`), `diagnostics.c` (optional numerical observation slots);
+    `RB_QUALITY_ULTRA`; the overrun spark retard before the fuel cut (`overrun_transition`).
+  - `experiments/acoustics/`: research solvers (wave, euler, mixture, gas_graph, thermal,
+    material, fixed_transport, junction). They are linked only into the tests and probes, never
+    into the core or the browser, and run far below real time.
+  - `contracts/`: versioned JSON contracts for builds and engine fields (`make build-contract-check`).
 
 ## Tools and charts
 - `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`

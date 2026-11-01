@@ -169,7 +169,9 @@ static void usage(FILE *f)
         "      --throttle X      ... and throttle, 0..1 (default 1): cylinder 1's pipes over one\n"
         "                        cycle, every 2 degrees (renders/pipes.csv)\n"
         "      --csv FILE        output CSV\n"
-        "\n"
+        "\n",
+        f);
+    fputs(
         "sound options (a listener around the car, the anti-alias filter, DC blocker and soft\n"
         "limiter; full scale is 40 Pa, 126 dB SPL):\n"
         "      --preset KEY      the engine                 (default i4)\n"
@@ -207,8 +209,9 @@ static void usage(FILE *f)
         "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
         "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
         "                        mechanical sound)\n"
-        "      --variation V     stochastic amplitude0..4;0 retains the same charge model\n"
-        "      --seed K          engine variation seed1..4294967295 (default core seed)\n"
+        "      --variation V     how much each cycle varies, 0..4 (default 1); 0 keeps the same\n"
+        "                        charge model with no variation\n"
+        "      --seed K          the variation's seed, 1..4294967295 (default: the core's)\n"
         "      --burn-model M    charge (default) or capped diagnostic duration control\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
@@ -217,13 +220,15 @@ static void usage(FILE *f)
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
         "      --quality Q       low, medium, high or ultra: physics/pipe rates together\n"
         "                        (rb.h: RB_QUALITY_*; high is the default)\n"
-        "\n"
+        "\n",
+        f);
+    fputs(   /* split: C99 compilers need only take string literals up to 4095 characters */
         "fuzz options:\n"
         "      --sets N          how many random engines    (default 20)\n"
         "  -s, --seconds S       each one's run             (default 10)\n"
         "      --seed K          the first one's seed; the others follow (default 1)\n"
         "  -x, --oversample N    physics substeps per 48 kHz sample (default 4)\n"
-        "      --quality Q       low, medium or high, as for sound\n",
+        "      --quality Q       low, medium, high or ultra, as for sound\n",
         f);
 }
 
@@ -2089,7 +2094,7 @@ static int cmd_sound(int argc, char **argv)
         return 2;
     }
     if(seed_given && !(seed_value>=1 && seed_value<=4294967295.0 && floor(seed_value)==seed_value)) {
-        fprintf(stderr,"rb_cli sound: --seed must be an integer1..4294967295\n");
+        fprintf(stderr,"rb_cli sound: --seed must be an integer in [1, 4294967295]\n");
         return 2;
     }
     if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
@@ -2173,16 +2178,22 @@ static int cmd_sound(int argc, char **argv)
         }
     }
 
-    printf("sound: %s, %d cylinder%s, %.2f L, %s%s%s; heard from %s: ", engine_name,
+    printf("sound: %s, %d cylinder%s, %.2f L, %s%s%s; ", engine_name,
            d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3,
-           MUFFLER_SAYS[d.muffler_type], e->systems > 1 ? "s" : "", equal ? ", equal headers" : "",
-           LISTENERS[where]);
-    if (e->systems > 1)
+           MUFFLER_SAYS[d.muffler_type], e->systems > 1 ? "s" : "", equal ? ", equal headers" : "");
+    if (scene >= 0)   /* the stereo scene places the listener, not --listener */
+        printf("heard in the %s scene (stereo)\n", scenes[scene]);
+    else
+        printf("heard from %s: ", LISTENERS[where]);
+    if (scene >= 0)
+        ;
+    else if (e->systems > 1)
         printf("the tailpipes %.2f and %.2f m away", rb_listener_distance(&sim->listener, 0),
                rb_listener_distance(&sim->listener, 1));
     else
         printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
-    printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
+    if (scene < 0)
+        printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
     printf("  physics at %.0f kHz, the pipes at %.0f kHz", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
     printf("; burn model %s, variation seed %llu",burn_model==RB_BURN_CHARGE?"charge":"capped",
            (unsigned long long)e->variation_seed);

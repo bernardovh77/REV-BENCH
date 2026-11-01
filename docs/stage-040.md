@@ -1,17 +1,17 @@
-# Stage040 — Spark, ignition and flame-development causality
+# Stage 040 — Spark, ignition and flame-development causality
 
-Executed after review038 and the qualified039 protocol. Baseline1f964f4
-physics;039 reference work changes no engine/audio code. User authorizes through
-040 and review of each predecessor. Matched039 calibration evidence remains
-pending and does not gate independent numerical040 fixtures.
+Executed after review 038 and the qualified 039 protocol. Baseline 1f964f4
+physics; 039 reference work changes no engine/audio code. User authorizes through
+040 and review of each predecessor. Matched 039 calibration evidence remains
+pending and does not gate independent numerical 040 fixtures.
 
 ## Frozen physical question and research
 
 The previous engine schedules `spark()` at the randomly shifted burn-start
 angle, rather than the commanded spark angle. Negative variation therefore
 allows modeled chemical heat before the intended discharge. A baseline-compatible
-independent commanded-angle oracle at held3000rpm/.6 throttle/variation1 over0.5s
-measures154.44J (I4),247.11J (I6),356.42J (cross V8),276.62J (flat V8),160.54J
+independent commanded-angle oracle at held 3000rpm/.6 throttle/variation 1 over 0.5s
+measures 154.44J (I4),247.11J (I6),356.42J (cross V8),276.62J (flat V8),160.54J
 (boxer) before command. This is a causality failure; it does not diagnose all
 robotic deceleration sound or supply a calibrated timbre correction.
 
@@ -27,7 +27,7 @@ nonnegative development interval. Retain the positive arm of the existing
 onset-variation parameter as a bounded surrogate; clip the unphysical negative
 arm to zero. Zero-delay means unresolved kernel development within the existing
 Wiebe curve, not physically instantaneous complete combustion. State-conditioned
-kernel-delay statistics/extinction calibration remain041. Do not invent new
+kernel-delay statistics/extinction calibration remain 041. Do not invent new
 noise, random pops, fuel losses or afterfire to resemble a recording.
 
 ## Architecture and predeclared gates
@@ -36,27 +36,27 @@ The physical engine owns a uint64 step clock and per-cylinder charge sequence.
 Separate scheduled angle, commanded/discharged event, kernel progress and heat.
 Native optional caller-owned event records include tick, fractional-step time,
 cylinder/charge identity, angle, delay and fuel, with counted bounded overflow.
-No callback allocation/I/O. Full public event/snapshot/WASM transport stays061.
+No callback allocation/I/O. Full public event/snapshot/WASM transport stays 061.
 
 The discharge and kernel occur within the actual step interval. Chemical heat
 can use only elapsed time after discharge and after nonnegative kernel delay;
-no modulo wrap can turn a small negative age into nearly720degrees. Inhibit
+no modulo wrap can turn a small negative age into nearly 720 degrees. Inhibit
 new discharge for ignition off or hard/soft cut. A previously lit flame may
 continue after switching ignition off. Distinguish no reactants, pending-kernel
 cancellation at EVO, and partial burn; remaining fuel stays in species books.
 No unsupported thermochemical flammability/extinction threshold is claimed.
 
-Gates: zero pre-command/pre-discharge heat at1e-12J step tolerance; exact event
+Gates: zero pre-command/pre-discharge heat at 1e-12J step tolerance; exact event
 ordering at zero delay and across cycle wrap; first-step heat bounded by the
 post-event interval; closed mass/species/fuel/energy/crank-work books at existing
 native tolerances. All five presets: startup, idle, cut/resume, overrun and
 retained-fuel scenarios. Exercise zero/nominal/high variation, positive delay,
 empty mixture and event overflow. Taps on/off preserve physical state. Plant
 an early-heat fault and incorrect scheduling/delay/cut faults in copies; checks
-must reject. Rebuild native/WASM and full34 float renders, then publish the one
-results page preserving039 controls and all prior research/reference sections.
+must reject. Rebuild native/WASM and full 34 float renders, then publish the one
+results page preserving 039 controls and all prior research/reference sections.
 
-Review039 first: preserve its freeze, uncertainty and exclusion rules. No use
+Review 039 first: preserve its freeze, uncertainty and exclusion rules. No use
 of its new validation/quarantine sources for fitting or listening-based tuning.
 
 ## Implemented causal state and ownership
@@ -87,7 +87,7 @@ is distinct from a modeled flame. No electrical spark energy is included.
 suppression, eligible burnable fuel at kernel, potential unburned eligible fuel
 at EVO, and zero on schedule/no-reactants. It is not delivered injector mass
 or a uniform event delta. Species inventories remain the physical authority;
-Stage042 supplies injection identity and Stage061 types the public event payloads.
+Stage 042 supplies injection identity and Stage 061 types the public event payloads.
 
 Each step advances development by `max(crank_step,6*100rpm*dt)`; the floor
 retains the existing time progression when the crank slows or stops. Only the
@@ -101,17 +101,17 @@ off prevents new discharges; it does not extinguish a flame already lit.
 
 Observers allocate nothing and perform no I/O while stepping. A full tap drops
 new records and counts losses while totals continue; drain only between steps.
-Capacity0 is allowed for totals-only monitoring. Reinitializing the engine
+Capacity 0 is allowed for totals-only monitoring. Reinitializing the engine
 clears the pointer and tick: rebind externally and identify the reset epoch.
-This internal tap is not the complete Stage061 public event/snapshot transport;
+This internal tap is not the complete Stage 061 public event/snapshot transport;
 no build UUID, cross-reset generation, concurrent consumer or hardware voltage
 measurement is claimed. Existing public C/TS parameter IDs remain unchanged.
 
 ## Executed independent proof
 
 The baseline-compatible commanded-angle oracle is unchanged. With identical
-3000rpm/.6-throttle/variation1/0.5s controls, pre-command heat becomes **0J in
-all five engines**, versus the154–356J baseline above. No reference recording
+3000rpm/.6-throttle/variation 1/0.5s controls, pre-command heat becomes **0J in
+all five engines**, versus the 154–356J baseline above. No reference recording
 was used to tune this change. The local baseline executable/probe and source
 revision identify the before control.
 
@@ -119,25 +119,25 @@ Four native test families cover all five presets with zero/nominal/high
 variation; commanded phase and discharge/kernel ordering across wrap; an
 independent pre-command heat oracle; first-step Wiebe heat bounded by actual
 post-discharge time; ignition-off/no-reactants/hard-cut/soft-cut/resume;
-artificial1000degree pending-kernel expiry; and saturated monitoring versus
+artificial 1000 degree pending-kernel expiry; and saturated monitoring versus
 an unobserved identical engine. A test initially pinned the obsolete planned
 start angle; it now also pins the actual development delay. The high-variation
 bound applies to commanded spark plus bounded positive delay, not the old
 pre-spark onset. No physical tolerance was relaxed.
 
-`tools/ignition_scenarios_probe.c` separately executes25 cold-start short
-controls:5presets × startup(.8s), held idle(.4s), cut/resume(.4s), overrun(.4s)
+`tools/ignition_scenarios_probe.c` separately executes 25 cold-start short
+controls:5 presets × startup(.8s), held idle(.4s), cut/resume(.4s), overrun(.4s)
 and low-efficiency retained fuel(.4s). Native taps drain every step. All pass
 mass/species/fuel, transported/internal energy and crank-work accounting at the
-frozen tolerances. Maximum absolute residuals: mass1.07e-15kg, species1.10e-15kg,
-energy3.45e-9J, crank4.46e-8J; the latter subtracts large controlled flywheel
+frozen tolerances. Maximum absolute residuals: mass 1.07e-15kg, species 1.10e-15kg,
+energy 3.45e-9J, crank 4.46e-8J; the latter subtracts large controlled flywheel
 energies. Zero early-heat steps, invalid events and dropped records. Sampled
 per-charge event times/delays accompany every scenario. These are short
 causal/accounting controls, not a qualified warm-engine operating map.
 
-The scenario fixture first rejected an inertia exactly at the strict100kg·m²
-upper limit; it was corrected to50, then all25 were rerun. The isolated
-suppression fixture also uses this valid50kg·m² inertia to stay in the cut band.
+The scenario fixture first rejected an inertia exactly at the strict 100kg·m²
+upper limit; it was corrected to 50, then all 25 were rerun. The isolated
+suppression fixture also uses this valid 50kg·m² inertia to stay in the cut band.
 No engine validation rule was weakened.
 
 Six **compiled, behaviorally rejected** faulty engine copies test:
@@ -185,37 +185,37 @@ not a fitted kernel law. There is no researched universal threshold for weak
 mixture extinction, fuel film, late exhaust chemistry or random afterfire in
 this implementation. Empty-reactant/cut/pending-at-EVO outcomes are explicit;
 state-conditioned development/failure, residual statistics, continuous mean
-model at variation→0 and gross/net IMEP remain041. The ECU still estimates
+model at variation→0 and gross/net IMEP remain 041. The ECU still estimates
 advance from the existing expected burn duration; the causal projection changes
 the onset distribution and does not recalibrate mean CA50/torque. That shared
-model/calibration work belongs to041/059, rather than compensating by moving
+model/calibration work belongs to 041/059, rather than compensating by moving
 actual discharge away from its commanded angle. Fuel-injection identity and
-its acoustic click stay042. Substep event traces constrain integrated release;
+its acoustic click stay 042. Substep event traces constrain integrated release;
 they do not turn all operator-split valve/gas updates into exact substep solves.
-Custom cam coincidences and the full warm operating envelope remain059 checks.
+Custom cam coincidences and the full warm operating envelope remain 059 checks.
 
 The optional tap is not enabled by default in the audio callback. No throughput
 or sound-realism acceptance follows solely from causal correctness. Propagation,
 turbulence, source clocks, mechanical/cabin response, real reference matching,
 runtime and Bernardo's listening remain open at their owned stages. S1/S1e/S2/S4
-and full13b are not closed. Review039 found no blocking protocol defect but
+and full 13b are not closed. Review 039 found no blocking protocol defect but
 matched calibration still awaits source metadata; public online research is the
-user's chosen next acquisition method. Stop after the040 checkpoint; do not
-start041 without further instruction.
+user's chosen next acquisition method. Stop after the 040 checkpoint; do not
+start 041 without further instruction.
 
 ## Test execution and evidence inventory
 
-Native full206tests/694027checks pass; after strengthening the soft-cut and
-EVO-state assertions, the affected4tests/655335checks pass again. This is
-206distinct tests/694149checks using the final versions, not a claim that the
-unchanged full suite was run twice. ASan/UBSan19tests/655542checks pass, plus
-the final strengthened4/655335; no sanitizer finding. Final SIMD WASM13tests/
-655645checks pass. Python64 and cached web17 pass; the copied source tree and
-169326byte WASM/fingerprint agree. Public browser engine operation is still the
-existing tone scaffold; rebuilt WASM does not imply Stage066 product integration.
+Native full 206 tests/694027checks pass; after strengthening the soft-cut and
+EVO-state assertions, the affected 4 tests/655335checks pass again. This is
+206 distinct tests/694149checks using the final versions, not a claim that the
+unchanged full suite was run twice. ASan/UBSan 19 tests/655542 checks pass, plus
+the final strengthened 4/655335; no sanitizer finding. Final SIMD WASM13tests/
+655645 checks pass. Python 64 and cached web 17 pass; the copied source tree and
+169326 byte WASM/fingerprint agree. Public browser engine operation is still the
+existing tone scaffold; rebuilt WASM does not imply Stage 066 product integration.
 
 Local evidence under `renders/evidence/stage-040/`: independent before/after
-causality JSONL,25scenario rows with sampled events, six fault results and exact
+causality JSONL, 25 scenario rows with sampled events, six fault results and exact
 mutant logs/runner, build/test logs, protected input hashes, full raw-stereo
 sound metrics, source/build fingerprints and final offline playback evidence.
 Temporary whole-checkpoint before WAV copies are removed only after comparison
@@ -226,18 +226,18 @@ current complete engine examples and all five long coasts.
 
 ## Complete sound checkpoint comparison
 
-All34 raw float clips are finite with headroom and zero reported limiter or
-nonfinite samples:337.112s versus337.248s before. The33 engine clips change;
+All 34 raw float clips are finite with headroom and zero reported limiter or
+nonfinite samples:337.112s versus 337.248s before. The 33 engine clips change;
 the test tone remains byte-identical. Exhaust selection, rev limits, recording
-gains, perspectives and long-coast controls are unchanged. At held3000rpm,
-raw RMS changes−0.021…+0.086dB and2–16kHz band share−0.051…+0.160dB across
+gains, perspectives and long-coast controls are unchanged. At held 3000rpm,
+raw RMS changes−0.021…+0.086dB and 2–16kHz band share−0.051…+0.160dB across
 the five feedback examples. This is a modest spectral change, not evidence of
 a large crispness improvement or resolution of the propagation bottleneck.
 
 The pre-lift(-.8…-.2s) to early-coast(.2….8s) raw mean-channel level steps
 are I4:+2.99→+4.55dB; I6:−.34→−.33dB; cross V8:−4.94→−5.23dB;
-flat V8:−1.39→−1.71dB; boxer:−2.53→−2.17dB. The I4 rise increases1.56dB;
-retain it as an explicit Stage058 thermal/flow/trajectory diagnosis target,
+flat V8:−1.39→−1.71dB; boxer:−2.53→−2.17dB. The I4 rise increases 1.56dB;
+retain it as an explicit Stage 058 thermal/flow/trajectory diagnosis target,
 not a successful coast-level correction. These windows follow each pedal lift,
 not matched RPM/load. No compensating gain or extra sound layer hides it.
 The causal engine correction is supported independently of this sound metric;
@@ -251,18 +251,18 @@ change invalidates the recorded comparison.
 
 ## Outcome — bounded completion and HOLD
 
-Stage040 completes its declared causal/accounting correction after predecessor
-review. Final offline playback of all52players, exclusive playback, four seek
+Stage 040 completes its declared causal/accounting correction after predecessor
+review. Final offline playback of all 52 players, exclusive playback, four seek
 controls and all eight plots passes against the published page fingerprint.
-All34 installed raw files match the comparison report. All104protected
-reference/audio/Claude files and18non-current-engine embedded examples remain
+All 34 installed raw files match the comparison report. All 104 protected
+reference/audio/Claude files and 18 non-current-engine embedded examples remain
 identical. Verified duplicate before WAVs/page are cleaned after measurement;
 current originals and scientific evidence remain in ignored renders/.
 
 Graphify was queried for spark/heat call paths and refreshed from source; its
 AST graph is navigation assistance, not validation of physical correctness.
 The known rb.h parser warning remains. Claude setup and user-added skill files
-are preserved. Save/sync the checkpoint, then hold;041 is not started.039's
+are preserved. Save/sync the checkpoint, then hold; 041 is not started.039's
 matched-data requirement is still open despite the completed protocol and
 public-source search. Bernardo's sound acceptance and the parent realism gates
 remain open.

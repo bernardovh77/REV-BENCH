@@ -90,7 +90,7 @@ printed precision at 80/160/320 cells. At ±70 m/s, 80/160-cell cases develop
 repair is applied. The first probe incorrectly printed requested time for
 failed runs; the corrected probe reports accepted time and these contacts were
 rerun. No claim of a 2-ms successful fine-grid run is retained.
-The nine final contact runs count189,878 limiter selections and52,126
+The nine final contact runs count 189,878 limiter selections and 52,126
 reconstructed-state fallbacks, including work attempted in rejected stages;
 there are no HLLC-to-HLLE fallbacks. The weak-wave sweep counts zero limiter,
 reconstruction or flux fallbacks. Thus weak-wave attenuation is present even

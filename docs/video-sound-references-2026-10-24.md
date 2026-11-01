@@ -4,9 +4,9 @@ Bernardo supplied three local WebM videos for reference and asked that their
 images guide perspective annotation. He reports that most/all GR86 driving
 sound is inside the cabin and warns that the E46 has substantial non-car content.
 This work curates the recordings; it changes no engine, exhaust or sound model
-and does not start Stage041. The later [039 source-search review](stage-039-reference-search.md)
+and does not start Stage 041. The later [039 source-search review](stage-039-reference-search.md)
 retains this completed intake/protocol while keeping matched-recording acquisition
-open in039; real-engine calibration claims remain unqualified.
+open in 039; real-engine calibration claims remain unqualified.
 
 ## Source identity and usefulness
 
@@ -14,7 +14,7 @@ open in039; real-engine calibration claims remain unqualified.
 | --- | --- | --- |
 | [GR86 mountain run, DriveVibe](https://www.youtube.com/watch?v=ve9CSQ0d1xw) | GR86 identified by uploader and visible car; selected footage is cabin POV | Related NA boxer cabin texture and driving transitions. Exhaust hardware, microphone, gain, tune, RPM/load and ASC state unknown. The title's “full exhaust sounds” is not proof of an aftermarket full exhaust system. |
 | [GR86 AWE Touring, AZAR](https://www.youtube.com/watch?v=AWZnjjcWIbk) | Uploader identifies a2025 GR86 Premium and AWE Touring cat-back with Diamond Black tips; selected footage is driver POV | Related NA boxer cabin response with a named rear system. Upstream exhaust, microphone/window state, gain, tune, RPM/load and ASC state remain unverified. |
-| [E46 M3, Valvetronic Designs](https://www.youtube.com/watch?v=0vfvIaQLIS0) | Manufacturer's video identifies Section3+headers; visible E46 M3, separate open/closed valve captions and exterior/roadside/near-tailpipe views | Much closer NA I6 family reference than the earlier turbo M4. Header specification, sections1/2, tune, exact RPM/load, distance, microphone response and gain remain unknown. Valve captions are uploader claims, not independent actuator telemetry. |
+| [E46 M3, Valvetronic Designs](https://www.youtube.com/watch?v=0vfvIaQLIS0) | Manufacturer's video identifies Section 3+headers; visible E46 M3, separate open/closed valve captions and exterior/roadside/near-tailpipe views | Much closer NA I6 family reference than the earlier turbo M4. Header specification, sections 1/2, tune, exact RPM/load, distance, microphone response and gain remain unknown. Valve captions are uploader claims, not independent actuator telemetry. |
 
 The [Toyota specification](https://www.toyota.com/content/dam/toyota/brochures/pdf/2024/gr86_ebrochure.pdf)
 identifies the GR86's2.4-litre FA24 naturally aspirated boxer. Our current boxer
@@ -31,7 +31,7 @@ All files are supplied for local reference. Their public availability and the
 mountain video's separate music credit do not grant rights to redistribute the
 videos or train a model. Original file paths/bytes are preserved. Same-volume
 hardlinks under ignored `renders/video-references/sources/` provide the source
-library without duplicating4.4GB. The three original root filenames are also
+library without duplicating 4.4GB. The three original root filenames are also
 explicitly ignored; no media enters Git. Never write either hardlink name.
 
 ## Visual review and selected source windows
@@ -47,7 +47,7 @@ Do not infer distance from brightness or undo cabin response/Doppler with EQ.
 | GR86 mountain |130–142;172–184;232–244;296–308| Cabin POV, with differing camera angles across the source. No exterior audio class is inferred. |
 | GR86 AWE |82–94;174–186;306–318;530–542| Driver cabin POV. Intro garage/startup/crossfade is excluded. |
 | E46 |184–192| Stationary rear-quarter; uploader label valves OPEN. |
-| E46 |198–200| Brief stationary rear-quarter; uploader label valves CLOSED. Shortened before the truck visible at203s; ambient traffic may still be present. |
+| E46 |198–200| Brief stationary rear-quarter; uploader label valves CLOSED. Shortened before the truck visible at 203s; ambient traffic may still be present. |
 | E46 |232–244| Roadside pass-by; uploader label valves CLOSED. Motion and Doppler are retained. |
 | E46 |252–264| Roadside pass-by; uploader label valves OPEN. Not matched RPM/load to the closed take. |
 | E46 |480–492;520–532| Exterior view mounted beside/down toward tailpipes. Microphone attachment/distance and valve state remain unknown; wind/road contamination is possible. |
@@ -59,9 +59,9 @@ and in-cabin commentary sections are excluded. The E46 tailpipe view is a
 separate source class from its stationary rear-quarter and roadside recordings.
 No “engine-only stem” or perfectly clean background is claimed.
 
-All source times are exact sample selections on the decoded48kHz audio clock.
+All source times are exact sample selections on the decoded 48kHz audio clock.
 Video-frame times are observational context, not synchronized RPM/load labels.
-The containers report video start0 and Opus start−7ms; decoder priming and first
+The containers report video start 0 and Opus start−7ms; decoder priming and first
 frame metadata are recorded. No invented timing correction is applied. These
 small codec/container offsets preclude a sample-exact audiovisual timing claim.
 Visible gauges are not promoted to a verified RPM/load trace.
@@ -69,17 +69,17 @@ Visible gauges are not promoted to a verified RPM/load trace.
 ## Audio screening and measurement authority
 
 Each source is decoded without EQ, denoising, normalization, gating, pitch or
-channel mixing. Measurement excerpts retain both original channels as48kHz
+channel mixing. Measurement excerpts retain both original channels as 48kHz
 float32. This is decoded Opus, not recovered lossless master audio. Per-channel
-time/band powers are computed before averaging powers, using the existing039
+time/band powers are computed before averaging powers, using the existing 039
 protocol. Waveform-averaged mono is only a cancellation diagnostic.
 
-A separate16kHz stereo QA copy is screened with the official
+A separate 16kHz stereo QA copy is screened with the official
 [Silero model](https://github.com/snakers4/silero-vad/tree/60b7ffa243625ebdc1070275a29f18c87843786a)
 (MIT, pinned commit and model SHA recorded locally). CPU inference processes L/R
-separately in a two-channel batch with separate recurrent states,512-sample
-windows and64-sample context. Source state resets between videos. Any channel
-at/above0.35 rejects a candidate, with0.55s padding. The model catches the E46's
+separately in a two-channel batch with separate recurrent states, 512-sample
+windows and 64-sample context. Source state resets between videos. Any channel
+at/above 0.35 rejects a candidate, with 0.55s padding. The model catches the E46's
 known speech control. False negatives and non-speech music remain possible;
 visual exclusion supplements the screen. QA resampling never changes the raw
 measurement files. Model/runtime are isolated analysis tools, not app dependencies.
@@ -92,12 +92,12 @@ engine tuning. Our current action performs no such tuning.
 
 ## Reproduction and results
 
-- [Version2 lock](../tools/reference_sessions_v2.json):11sessions/34intervals,
-  including the prior8sessions/20intervals and these3sources/14new excerpts.
+- [Version 2 lock](../tools/reference_sessions_v2.json):11 sessions/34 intervals,
+  including the prior 8 sessions/20 intervals and these 3 sources/14 new excerpts.
 - [Video producer](../tools/prepare_video_references.py): verifies ancestor lock,
   source-bound per-channel speech checks, raw preparation and listening previews.
 - [Reference protocol](../tools/reference_protocol.py): explicitly selects audio
-  track0 from a video container; retains channels and rejects changed hashes.
+  track 0 from a video container; retains channels and rejects changed hashes.
 - Local evidence: `renders/evidence/video-references-2026-10-24/` contains source
   probes/hashes, frame review, decoder/model/runtime provenance, speech scores,
   selection corrections, commands and preservation/test/playback reports.
@@ -119,7 +119,7 @@ not new Claude or application setup requirements.
 
 Each source has one stereo listening compilation in the existing single
 `renders/RESULTS.html`, under the video references section. Excerpts keep source
-order, with0.7s gaps and10ms endpoint fades; one fixed gain per source maintains
+order, with 0.7s gaps and 10ms endpoint fades; one fixed gain per source maintains
 its internal dynamics and headroom.192kbps MP3 is a listening convenience.
 Different source compilations have independent gains and cannot establish
 absolute or relative engine loudness. No audio separation, distance compensation
@@ -128,27 +128,27 @@ or corrective EQ has been applied.
 
 ## Verified intake checkpoint
 
-Native206tests/694149checks, Python67tests and web17tests pass. Three new
+Native 206 tests/694149checks, Python 67 tests and web 17 tests pass. Three new
 behavior tests cover ancestor/session preservation and FA24/FB20 distinction,
 padded speech in either channel, and a video with two audio tracks whose default
 program would be wrong. Four temporary faulty copies are rejected: changed
 parent, false exact-engine mapping, ignored right-channel speech and automatic
 wrong-track decoding. No working-tree fault is retained.
 
-All14selected measurement excerpts match the corresponding full original-channel
-source decode exactly, including the shortened closed-valve prefix. All20prior
-raw reference hashes and52old embedded audio payloads remain unchanged. The
-single-page rebuild and all55offline playback controls, exclusive playback,
+All 14 selected measurement excerpts match the corresponding full original-channel
+source decode exactly, including the shortened closed-valve prefix. All 20 prior
+raw reference hashes and 52 old embedded audio payloads remain unchanged. The
+single-page rebuild and all 55 offline playback controls, exclusive playback,
 four seek buttons, eight previous plots and three new viewpoint panels pass.
-The protected176raw/reference/core/WASM/Claude files are unchanged; only the
+The protected 176 raw/reference/core/WASM/Claude files are unchanged; only the
 expected generated results manifest is refreshed. Originals remain at all three
 supplied paths. Full-length intermediate WAVs/16kHz QA WAVs can be regenerated
 from the recorded commands; they are removed after proof to avoid duplicate audio.
 Selected raw excerpts, source videos, scores/hashes/models and visual evidence
-remain local. The3new previews total161.7s.
+remain local. The 3 new previews total 161.7s.
 
-Graphify was queried and AST-refreshed to2753nodes/7515edges/161communities;
+Graphify was queried and AST-refreshed to 2753 nodes/7515 edges/161 communities;
 its known rb.h parse warning remains. Source, documentation and small metadata
 are committed/synced; no video/audio/frame/model is uploaded to GitHub. Hold
-for instruction after this intake. Stage039 matched calibration,041 onward and
+for instruction after this intake. Stage 039 matched calibration, 041 onward and
 the parent realism/listening gates remain open.

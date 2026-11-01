@@ -84,9 +84,9 @@ the physical nozzle maximum, so it does not test real choking integration.
 one collector-numbered outlet. It does not scatter through the newer shared
 junction. The gas-pressure layer does traverse the physical network.
 
-Fresh one-valve fixtures give tail0/tail1 RMS **.00300817/0 Pa** for the
+Fresh one-valve fixtures give tail 0/tail 1 RMS **.00300817/0 Pa** for the
 cross V8 and **.000851735/0 Pa** for the boxer. All boxer cylinders belong to
-collector 0, so their added valve noise never reaches tail1 despite the real
+collector 0, so their added valve noise never reaches tail 1 despite the real
 modeled Y split. Both V8 X junctions likewise fail to mix this noise layer
 across banks. Outlet coherence, stereo balance and timbre can disagree between
 layers. Research a source-to-outlet transfer/scattering treatment, preserving

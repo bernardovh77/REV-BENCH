@@ -1,18 +1,18 @@
-# Stage039 — Matched references and calibration protocol
+# Stage 039 — Matched references and calibration protocol
 
-Execution begins2026-10-23 after review of038; baseline1f964f4.
-Authorized scope continues through040, reviewing each predecessor before the
+Execution begins 2026-10-23 after review of 038; baseline 1f964f4.
+Authorized scope continues through 040, reviewing each predecessor before the
 next completion. Claude setup and accepted engine examples remain protected.
 
-**Current handoff after Bernardo's clarification:** The full039 matched-reference
+**Current handoff after Bernardo's clarification:** The full 039 matched-reference
 acquisition remains open. The [public-source search](stage-039-reference-search.md)
 and [candidate catalogv2](../tools/reference_candidates_v2.json) supersede the
 bounded closure below; the existing stereo/split/audition protocol remains
-implemented. Missing recording conditions have not been moved out of039. Hold
-after this research;041 stays unstarted.
+implemented. Missing recording conditions have not been moved out of 039. Hold
+after this research; 041 stays unstarted.
 
-**2026-10-24 closeout:** Bernardo requests completion/review of039 and readiness
-for041. The acquisition, annotation and comparison-protocol deliverable is
+**2026-10-24 closeout:** Bernardo requests completion/review of 039 and readiness
+for 041. The acquisition, annotation and comparison-protocol deliverable is
 complete within the available recordings' declared claim limits; see the
 [closeout review](stage-039-review.md) for the exit-evidence checklist, coverage,
 fresh checks and remaining calibration ownership. Zero sources are qualified
@@ -20,7 +20,7 @@ for calibrated SPL or matched-engine response. Earlier awaiting-data decisions
 below are historical checkpoints, not a claim that missing data was obtained.
 PLAN owns the final bounded status. No041 work starts at this checkpoint.
 
-## Review038
+## Review 038
 
 Reviewed the optional tap lifetime, capacity preflight, signed transfers,
 impulse units, bounded traces, invalid-value accounting, junction inspection,
@@ -69,7 +69,7 @@ into a matched calibration reference.
 The currently missing decisive examples are naturally aspirated I6 and boxer
 recordings with a known exhaust, independently stated RPM/load and microphone
 position/distance. Asked Bernardo for targeted links/details; research and
-independent040 fixtures continue while that evidence is pending.
+independent 040 fixtures continue while that evidence is pending.
 
 ## Implementation and acquired evidence
 
@@ -81,16 +81,16 @@ The two ambiguous rear V8 sources share the Mustang's conservative uncertainty
 family; none is split into validation. Lock before any engine comparisons;
 validation metadata/power QA is allowed, fitting/listening-based tuning is not.
 
-- [Ears68's GM/Holden race six](https://freesound.org/people/Ears68/sounds/185151/):
+- [Ears 68's GM/Holden race six](https://freesound.org/people/Ears68/sounds/185151/):
   author describes carburettors, open rear headers, a hillclimb and a DR-05
   recorder. Carburettors suggest NA; induction is not independently verified.
-  Preview decoded full interval0–61.137417s, stereo48kHz float. RPM, microphone
+  Preview decoded full interval 0–61.137417s, stereo 48kHz float. RPM, microphone
   distance and load trace are unknown. CC0 verified on the source page.
 - [mario1298's Subaru-labelled recording](https://freesound.org/people/mario1298/sounds/181233/):
   sparse uploader metadata, including an unverified year/model combination;
-  no verified induction/exhaust/state/position. Full preview0–13.869667s,
-  stereo48kHz float, CC0. Quarantine it rather than call it a known NA boxer.
-- [The previously catalogued Toyota1G-FE](https://freesound.org/people/qopsinonstudios/sounds/768643/)
+  no verified induction/exhaust/state/position. Full preview 0–13.869667s,
+  stereo 48kHz float, CC0. Quarantine it rather than call it a known NA boxer.
+- [The previously catalogued Toyota 1G-FE](https://freesound.org/people/qopsinonstudios/sounds/768643/)
   has author-reported vehicle/recorder/cold-start metadata, but still lacks
   matched exhaust, distance and RPM/load. It was already used historically;
   reclassifying it as fresh validation would leak development evidence.
@@ -108,12 +108,12 @@ did not provide a verified matching NA I6/FB20 set with all required metadata.
 ## Measurements and audition evidence
 
 `tools/reference_protocol.py` verifies every source fingerprint before decoding,
-keeps original channels, decodes/resamples once, slices exact48kHz sample frames,
+keeps original channels, decodes/resamples once, slices exact 48kHz sample frames,
 and verifies saved float samples against that decode. Twenty raw references are
 now available in `renders/reference-protocol/raw/`, separate from unchanged
 legacy mono files. Reports include both channel powers/peaks, RMS dBFS,
 per-channel Hann/8192-bin band powers and averaged powers. Folded-mono power is
-reported only as a cancellation diagnostic. Version1 refuses calibrated-SPL or
+reported only as a cancellation diagnostic. Version 1 refuses calibrated-SPL or
 matched-engine qualification claims, even if a metadata field is populated.
 
 | New reference | L RMS dBFS | R RMS dBFS | Mean channel power | Folded mono power |
@@ -122,17 +122,17 @@ matched-engine qualification claims, even if a metadata field is populated.
 | Subaru candidate |−35.194|−35.194|0.000302424|0.000302424|
 
 Those values describe decoded digital recordings, not engine SPL or relative
-engine loudness. Anti-phase100Hz control retains0.02 power per channel and
-0.02 averaged power while folded mono is zero. A pair differing by4× amplitude
-retains16× power ratio under common gain; equal-RMS mode yields1×. Listening
+engine loudness. Anti-phase100Hz control retains 0.02 power per channel and
+0.02 averaged power while folded mono is zero. A pair differing by 4× amplitude
+retains 16× power ratio under common gain; equal-RMS mode yields 1×. Listening
 conversion rejects peaks beyond full scale; measurement float retains±2 exactly.
 
-Four4s **development-only** controls (two Ferrari excerpts, two gain modes) are
+Four 4s **development-only** controls (two Ferrari excerpts, two gain modes) are
 registered in the same `renders/RESULTS.html`, under Reference controls. Shared
 gain preserves recorded relationships; equal-RMS mode intentionally removes
 them. No new validation or quarantined recording is exposed as a tuning audition.
-All earlier48 payloads, current34 engine/tone WAVs and original supplied/reference
-files are preserved. There are now52 players in the one results page.
+All earlier 48 payloads, current 34 engine/tone WAVs and original supplied/reference
+files are preserved. There are now 52 players in the one results page.
 
 ## Reproduction and gates
 
@@ -158,7 +158,7 @@ was corrected before the five behavioral mutation results were counted.
 
 Final verification/evidence: `renders/evidence/stage-039/`, with coverage,
 source pages/download fingerprints, reports, faults, preservation and logs.
-All202 native tests/38814checks pass. Python64 and web17 pass; full offline
+All 202 native tests/38814checks pass. Python 64 and web 17 pass; full offline
 playback/rebuild and preservation are checked before the checkpoint commit.
 
 ## Initial outcome and review handoff — 2026-10-23
@@ -166,19 +166,19 @@ playback/rebuild and preservation are checked before the checkpoint commit.
 The reference acquisition/uncertainty ledger, locked session partition and
 measurement/audition protocol are implemented. **Matched calibration remains
 unqualified:** no known exhaust/RPM/load/microphone calibration set was supplied
-or acquired. Stage039 stays awaiting matched references; its missing data is not
+or acquired. Stage 039 stays awaiting matched references; its missing data is not
 silently waived. Bernardo authorizes public-source research first and has no additional recordings
 currently. The [public candidate ledger](../tools/reference_candidates_v1.json)
 records YouTube/Instagram/owner/manufacturer leads, not qualified calibration data.
 No request to supply recordings remains pending.
 
-Review this protocol before040 completion. In particular: no retroactive held-out
+Review this protocol before 040 completion. In particular: no retroactive held-out
 claims, no Subaru-model inference from its title, no comparison using filtered
 or waveform-averaged targets, and no use of the new validation session to retune
 the engine. The roadmap explicitly allows independent numerical fixtures to
-continue while decisive calibration data is missing;040 depends on038, not039.
+continue while decisive calibration data is missing; 040 depends on 038, not 039.
 
-## Public-source follow-up and review before040
+## Public-source follow-up and review before 040
 
 The owner’s [FB20/factory-muffler post](https://minkara.carview.co.jp/userid/956048/car/1531576/6544040/parts.aspx)
 links [YouTube](https://www.youtube.com/watch?v=CEjUwubjXPQ), but has descriptive
@@ -195,17 +195,17 @@ current exhaust signature do not establish time-aligned RPM, original channel
 gains or the exhaust fitted at recording time. The linked SoundCloud mix cannot
 be treated as an isolated calibrated tailpipe. No media from these candidates
 was downloaded, auditioned, redistributed or used for tuning/training. Rights
-remain unknown. A manufacturer video link returned404 on direct repeat verification; its
+remain unknown. A manufacturer video link returned 404 on direct repeat verification; its
 [catalog](https://www.supersprint.com/en-gb/supersprint-performance-sport-exhaust-for-toyota-gt86.aspx)
 still lists component-specific stock/full-system comparisons. These FA20
 examples are a separate boxer architecture, not verified FB20 calibration.
 
-Pre040 review: six protocol tests and five behavior faults support the locked
+Pre 040 review: six protocol tests and five behavior faults support the locked
 partition, stereo-power and safe-gain rules. Full preparation/rebuild preserves
 all earlier recordings. No blocking protocol defect found; calibration remains
-open for source metadata and rights. Continue039 on public sources when new
+open for source metadata and rights. Continue 039 on public sources when new
 leads provide the missing information; ask Bernardo later only if it becomes
-necessary. Independent040 never fits against these candidates or the untouched
+necessary. Independent 040 never fits against these candidates or the untouched
 new validation/quarantine excerpts.
 
 
@@ -214,17 +214,17 @@ new validation/quarantine excerpts.
 Bernardo supplied two GR86 videos and a Valvetronic Designs E46 M3 video,
 with explicit cabin-audio and non-car-content guidance. The
 [intake record](video-sound-references-2026-10-24.md) documents visual scene
-review, per-channel speech screening,14selected raw stereo excerpts and three
+review, per-channel speech screening, 14 selected raw stereo excerpts and three
 local listening compilations. [Lockv2](../tools/reference_sessions_v2.json)
 preserves all eight v1 sessions unchanged and adds three development sources;
-none becomes unseen validation. The default protocol now usesv2 and explicitly
+none becomes unseen validation. The default protocol now uses v2 and explicitly
 selects the first audio track from video containers.
 
 This supplies useful NA I6/exhaust-valve and related NA boxer/cabin references.
 The GR86's FA24 differs from the FB20 preset, and cabin ASC state is unknown.
 The E46 footage distinguishes source-reported open/closed valves and camera
 views, while RPM/load, complete exhaust geometry and microphone calibration
-remain unknown. At the intake checkpoint039 was still awaiting matched
+remain unknown. At the intake checkpoint 039 was still awaiting matched
 calibration, with better usable references now available. No additional recording request is pending;
 no engine sound or later numerical stage is changed by this intake.
 
@@ -234,27 +234,27 @@ The [review](stage-039-review.md) checks every required protocol exit item and
 records the negative calibration result explicitly. The original stop rule
 blocks unsupported calibration claims; it does not require unknown metadata
 to be invented before independent numerical work can proceed. All eleven
-source fingerprints,34 float-stereo excerpts and their measured powers are
+source fingerprints, 34 float-stereo excerpts and their measured powers are
 checked again. Earlier eight sessions/20 excerpts, development-only auditions,
 the held-out/quarantine assignments, original videos, engine/WASM/Claude files
-and the existing55-player results page remain intact. Nine focused reference
+and the existing 55-player results page remain intact. Nine focused reference
 behavior tests pass with no skips. No audio or engine parameter is changed.
 
 Remaining real-engine, listener-transfer, training-rights and listening claims
 stay at their explicitly owned gates in the review and roadmap; this closeout
-does not waive them. The040 handoff is reviewed without starting041. Hold for
+does not waive them. The 040 handoff is reviewed without starting 041. Hold for
 Bernardo's next instruction after saving/syncing this checkpoint.
 
 ## Extended manufacturer/public-source research — 2026-10-24
 
-Bernardo requests broad online research before041 and an honest attempt to close
-039. The [research record](stage-039-reference-search.md) covers58 selected
-source records across23 exhaust brands,76 targeted queries, primary documents,
+Bernardo requests broad online research before 041 and an honest attempt to close
+039. The [research record](stage-039-reference-search.md) covers 58 selected
+source records across 23 exhaust brands, 76 targeted queries, primary documents,
 measurement methods, public videos and owner reports. Catalog/measurement
 evidence is retained separately from the eleven actual source sessions. No
 current audio, protocol lock or engine setting is changed.
 
 Useful FB20 scalar measurements and system-specific variants improve coverage,
 but no complete matched recording set was recovered. The unclosed acquisition
-therefore stays in039. The user may supply further references later; do not
-repeat a premature completion decision or start041 at this checkpoint.
+therefore stays in 039. The user may supply further references later; do not
+repeat a premature completion decision or start 041 at this checkpoint.

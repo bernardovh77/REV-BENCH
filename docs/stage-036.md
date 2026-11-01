@@ -52,7 +52,7 @@ does not authorize executing those future feature stages or deploying now.
 
 Historical 001–035 are bounded evidence, not new acceptance of unresolved
 sound or performance requirements. Candidate rejection can be a completed
-experiment without yielding a production artifact. Legacy S1/S1e/S2/S4/full13b
+experiment without yielding a production artifact. Legacy S1/S1e/S2/S4/full 13b
 remain open under their explicit new owners. Old 4x-native/2x-WASM goals,
 rejected implicit-valve convergence and sound targets were not silently retired.
 

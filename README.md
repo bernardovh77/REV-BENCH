@@ -12,38 +12,20 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status:** [the canonical roadmap](PLAN.md) now uses Stages **001–113**,
-with a [crosswalk for every old ID](docs/roadmap/legacy-map.md). Native engine
-physics, five presets, rendering and bounded acoustic experiments exist. The
-latest [open-duct coupling proof](docs/stage-S2d-0b-B1a.md) passes its stated
-numerical fixtures; it is below real time and does not yet connect the full
-production engine to the acoustic graph. The browser is still the tone scaffold;
-product 3D, turbo, knock/damage and expanded layouts remain planned.
+**Status (2026-11-01):** [the roadmap](PLAN.md) runs Stages 001–116, with a
+[crosswalk for every old ID](docs/roadmap/legacy-map.md). What exists today:
+- the engine, natively: its physics, five presets with researched exhausts, and its sound
+  rendered as a listener around the car hears it, in mono or in stereo scenes;
+- research solvers for the exhaust's acoustics (stages 043–049 and 114), far below real time and
+  not connected to the engine;
+- [versioned contracts](contracts/README.md) for builds and engine fields.
 
-The [review repairs](docs/roadmap/14-review-fixes.md) harden checkpoint
-publication and acoustic numerical failure handling. Those repairs preserved
-their accepted audio; broader sound-physics/integration gates remain open.
-
-The [shared versioned contracts](contracts/README.md) now have a
-[five-preset native proof](docs/stage-037.md), including stable identities and
-explicit event/clock/snapshot/rebuild rules. Their production APIs and runtime
-delivery remain later work.
-
-[Stage038](docs/stage-038.md) adds optional numerical guard/flux monitoring and
-fixes the two bounded Stage037 contract issues. All34 regenerated recordings
-match the accepted audio exactly; no sound tuning is part of this checkpoint.
-
-[Stage039](docs/stage-039.md) provides a locked reference ledger and stereo-safe
-comparison controls; matched calibration awaits better recording metadata.
-[Stage040](docs/stage-040.md) is complete within its causal/accounting scope.
-Development is held at this checkpoint. It separates actual spark discharge, nonnegative
-kernel development and bulk heat. Its independent controls remove pre-command
-heat in all five presets; complete sound and runtime checks qualify this checkpoint.
-The accepted exhausts/rev limits remain. Causal source/propagation qualification
-still precedes the playable browser and3D.
-The [stage protocol](docs/roadmap/README.md) separates experiment results,
-production integration, runtime and Bernardo's realism acceptance. Full release
-includes the original feature scope; learned synthesis and extras are conditional.
+The latest stages: [Stage 115](docs/stage-115.md) fixed the valves' jet noise and brought the
+cycles' variation back to real engines' range, and [Stage 116](docs/stage-116.md) tightened the
+tests that had been loosened. The browser still plays a test tone. The playable engine (stages
+066–069), the 3D view (070–077), turbo, knock and more layouts are planned. The
+[stage protocol](docs/roadmap/README.md) keeps experiment results, the engine, runtime and
+Bernardo's listening as separate checks.
 
 Current accepted sound remains the [selective rollback](docs/stage-13b-r-rollback.md):
 I6 earlier twin exhaust at 8500 rpm, flat V8 earlier exhaust at 9000 rpm, cross V8

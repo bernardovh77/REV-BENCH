@@ -9,14 +9,14 @@ rejection rule. They are specifications, not a second status tracker.
 This roadmap was agreed in scope/order with Bernardo on 2026-10-23. It changes
 planning and documentation, not engine sound, production physics or deployment.
 Stages 001–035 preserve historical implementation/experiment evidence;
-036 establishes this roadmap.048 later appends114 for fixed-geometry thermal
-transport: execution order is048 →114 →049, without changing existing IDs.
-Appended review repairs112/113 precede the
-completed contracts stage037 and numerical observation stage038. The039
-implemented protocol, unresolved matched-recording acquisition and040 causal
+036 establishes this roadmap.048 later appends 114 for fixed-geometry thermal
+transport: execution order is 048 →114 →049, without changing existing IDs.
+Appended review repairs 112/113 precede the
+completed contracts stage 037 and numerical observation stage 038. The 039
+implemented protocol, unresolved matched-recording acquisition and 040 causal
 checkpoint are recorded in their execution notes; see PLAN for the current
 frontier. Additional recordings may be acquired alongside independent numerical
-work. A completed processing protocol does not finish039's missing matched
+work. A completed processing protocol does not finish 039's missing matched
 reference acquisition or qualify an unmatched recording for calibration. Future stage
 numbers are not evidence that their work has started.
 

@@ -1,20 +1,20 @@
 # Stage 049 — finite junctions and all-port transfer
 
-2026-10-26. Authorized after reviewed114, baseline ef08fe3. Hold after049.
-Reference039, production promotion, listening and runtime gates remain open.
+2026-10-26. Authorized after reviewed 114, baseline ef08fe3. Hold after 049.
+Reference 039, production promotion, listening and runtime gates remain open.
 
 ## Predecessor review and frozen design
 
 114 proves current conservative fixed-port exchange, supported contact
 transport and reflected load. It does not prove a finite junction, arbitrary
 areas or efficient delivery. Its four primary packet failures, fine-grid
-reference cost and200–990K EOS limit remain active. Its independent fractions,
+reference cost and 200–990K EOS limit remain active. Its independent fractions,
 star mass-flux precision, physical impedances, stage/final thermal guards and
 failed-state lifecycle must survive this stage. No accepted sound is changed.
 
 A compact uniform-pressure junction cannot resolve travel through a crossover
 or momentum direction. Prototype a **fixed finite-volume vector Euler junction**
-using114's actual one-dimensional EOS/characteristic face kernel in each face
+using 114's actual one-dimensional EOS/characteristic face kernel in each face
 normal. Each cell owns two constituent mass densities, three momentum
 components, one total physical energy and independent volume fractions. Normal
 Riemann states remove transverse kinetic energy for the scalar solve; upwind
@@ -47,9 +47,9 @@ clipping. Unsupported clocks/states/topologies fail and poison until prepare.
 
 ## Independent references and gates, before candidate measurements
 
-- Freeze ideal-mixture gas200–990K, p0=101325Pa, weak pressure<=3% guard and
+- Freeze ideal-mixture gas 200–990K, p0=101325Pa, weak pressure<=3% guard and
   bulk |M|<=.05 for junction qualification. The guard is not a proof at every
-  amplitude. Start1Pa pulse transfers; finite5/100Pa controls retain actual
+  amplitude. Start 1Pa pulse transfers; finite 5/100Pa controls retain actual
   nonlinear conservation and refinement evidence.
 - No-flow complex all-port response is checked against an independent
   frequency-domain P1 finite-element Helmholtz solve, not a linearization of
@@ -65,10 +65,10 @@ clipping. Unsupported clocks/states/topologies fail and poison until prepare.
   do not share numerical fluxes, reconstruction, time stepping or fitted
   trajectories.
 - Test every source against every return/outlet of each connected fixture,
-  unequal areas, both300/900K and geometry/path changes. Primary junction
-  subdivision16; report8 and predeclare24/32 finer controls where necessary.
-  Independently refine time. Physical plane-port band200–2000Hz at300K and
-  200–4000Hz at900K for widths<=.06m; report transverse/termination limits.
+  unequal areas, both 300/900K and geometry/path changes. Primary junction
+  subdivision 16; report 8 and predeclare 24/32 finer controls where necessary.
+  Independently refine time. Physical plane-port band 200–2000Hz at 300K and
+  200–4000Hz at 900K for widths<=.06m; report transverse/termination limits.
   Require full matrix relative error<=5%, strong entries(|S|>=.05) within
   1dB/10deg, weaker entries absolute complex error<=.01. Independent FE
   refinement changes must be<=2% before serving as an accuracy reference.
@@ -93,7 +93,7 @@ Status at preflight: in progress. Results and final scope decision follow.
 
 The first no-flow matrix passes for all five shapes at both temperatures, but
 the signed hot-front suite rejects the first implementation. At X-cell184,
-117microseconds into the positive1000Pa control, the outgoing cold constituent
+117 microseconds into the positive 1000Pa control, the outgoing cold constituent
 becomes negative(-7.94e-86kg/m³). This is a real domain failure despite its tiny
 size; the failed traces remain in `renders/evidence/stage-049/flow/`.
 An open-port gradient bound incorrectly allowed negative extrapolated material
@@ -107,14 +107,14 @@ not close the stage. Per-face first-order fallback counts remain explicit.
 
 Before rerunning signed branch controls, freeze the quantitative refinement
 gate: complete boundary-pressure traces and actual transported-material changes
-must differ by<=5% between subdivisions8/16. Failure requires retained24/32
+must differ by<=5% between subdivisions 8/16. Failure requires retained 24/32
 follow-ups or rejection, with unchanged physical book/domain gates. Independently
 refine the clock on a representative hot branch and use exact straight-duct
 thermal translation to distinguish transport errors from branch dynamics.
 
-A separate16-grid failure then reveals floating underflow: one constituent's
+A separate 16-grid failure then reveals floating underflow: one constituent's
 mass rounds to the smallest positive double while its volume fraction rounds
-to zero. For a thermodynamic **query** only, when both are below32*DBL_MIN,
+to zero. For a thermodynamic **query** only, when both are below 32*DBL_MIN,
 049 uses the exact absent-constituent limit. The actual mass, fraction and
 energy bits remain in storage, fluxes and all physical inventories. Finite
 inconsistent constituents and negative underflows still reject. A regression
@@ -123,15 +123,15 @@ rejections.114's finite-state EOS implementation is unchanged. This is a
 floating representation limit, not a finite-temperature or mixing closure.
 Retained failed and superseded runs do not qualify the corrected candidate.
 
-Further24-grid signed-Y testing finds that this limiting query must also
+Further 24-grid signed-Y testing finds that this limiting query must also
 preserve the actual donor at a face. Recreating density from a subnormal volume
 fraction manufactured an outflow after its mass rounded to zero(-DBL_TRUE_MIN
-at4940ticks). Candidatev2 uses first-order **stored trace mass/fraction only**
-below the same32*DBL_MIN limit, retaining second-order pressure, velocity and
+at 4940 ticks). Candidate v2 uses first-order **stored trace mass/fraction only**
+below the same 32*DBL_MIN limit, retaining second-order pressure, velocity and
 the major constituent. It counts these face predictions separately; no stored
 inventory, pressure or energy is reset. A zero-total-minor-mass regression and
 planted recreated-mass fault test this exact failure. All current-source gates
-are rerun against a frozenv2 executable. Earlier passing physics and failed
+are rerun against a frozen v2 executable. Earlier passing physics and failed
 traces stay available;v1 is not the qualification candidate.
 
 Fine-Y initial geometry also exposed cancellation in the clipped half-plane
@@ -142,12 +142,12 @@ simulated fraction. A moving oversized-clock test initially missed a removed
 CFL check because a later Mach guard still failed. An exactly quiet fixture
 now isolates and catches that missing guard.
 
-v1's Y-reversal32-grid net-material difference remains5.533%, above the5%gate.
-Beforev2 fine measurements, extend follow-ups to40/48 at8MHz where the existing
-8192-cell/65536-face capacity supports them. Retain24/32 misses and require the
-same decreasing adjacent-grid difference, physical books and5% criteria;
+v1's Y-reversal32-grid net-material difference remains 5.533%, above the 5%gate.
+Before v2 fine measurements, extend follow-ups to 40/48 at 8MHz where the existing
+8192-cell/65536-face capacity supports them. Retain 24/32 misses and require the
+same decreasing adjacent-grid difference, physical books and 5% criteria;
 unsupported larger meshes reject. This extends accuracy work, not the gate.
-Also retain an independent16-grid area-reversal4MHz clock control: clock-only
+Also retain an independent 16-grid area-reversal4MHz clock control: clock-only
 pressure and net-material differences must be<=1%, alongside the positive-Y
 clock control. These grids are costly correctness references, not a production
 runtime proposal. Analytical compact comparisons retain all real stub lengths,
@@ -155,43 +155,43 @@ finite plenum volumes and the H connector; fully collapsed no-delay diagnostics
 are separately labelled. No measured delay/gain is fitted.
 
 The corrected model's16-grid area-reversal clock control changes net transported
-material by1.07056% at2→4MHz, narrowly above its1%gate (pressure changes<=.0416%).
-Retain that rejected primary and, before measuring it, add4→8MHz at the same
+material by 1.07056% at 2→4MHz, narrowly above its 1%gate (pressure changes<=.0416%).
+Retain that rejected primary and, before measuring it, add 4→8MHz at the same
 geometry, pulse, duration and amplitude. Qualification requires decreasing
 material error<=1% and the original physical/pressure gates; do not relabel the
 4MHz primary as a pass. This separates time sensitivity from the much larger
 coarse spatial discrepancy. A passing finer clock is a representative convergence
 control, not certification of every timestep, flow or installation.
 
-For H, uniform40 would exceed the existing8192-cell capacity. Before measuring
-the32-grid follow-up, predeclare a conservative local alternative **only if32
-still misses**: retain32 subdivisions across the geometry and increase axial
-resolution40/48 in the initial thermal-front bridge and the upper-left return
+For H, uniform 40 would exceed the existing 8192-cell capacity. Before measuring
+the 32-grid follow-up, predeclare a conservative local alternative **only if 32
+still misses**: retain 32 subdivisions across the geometry and increase axial
+resolution 40/48 in the initial thermal-front bridge and the upper-left return
 stub. Those are the two known thermal-front paths: the bridge initially crosses
 the cold/hot partition, and that return's900K reservoir can enter its initially
 300K branch. All other port identity, gas volume, wall and external geometry is
 unchanged; terminal cross-section subdivisions still match the T boxes. These
-meshes have7680/8192cells, stay at4MHz and use the same decreasing5%material,
+meshes have 7680/8192 cells, stay at 4MHz and use the same decreasing 5%material,
 pressure and physical-book gates. This is explicit local convergence evidence,
-not a claim of uniform48-grid or full-installation convergence. Native
+not a claim of uniform 48-grid or full-installation convergence. Native
 preparation/max-capacity and geometric/initial-inventory checks are required.
 
-## Near-unit reconstruction review — candidatev3
+## Near-unit reconstruction review — candidate v3
 
-The4→8MHz reversal comparison still changes net material by1.03529%, so the
+The 4→8MHz reversal comparison still changes net material by 1.03529%, so the
 clock gate remains unresolved. A direct two-cell regression then exposes an
 independent implementation error: the EOS accepts an alpha average of
-1+roundoff, but the open-face upper bound was exactly1. Its shared fraction
+1+roundoff, but the open-face upper bound was exactly 1. Its shared fraction
 limiter could become negative or flatten the other constituent's valid slope,
 and trigger a whole-face fallback. The regression fails both slope direction
-and fallback-count checks onv2 (`near-unit-before.log`). It is not enough to
+and fallback-count checks on v2 (`near-unit-before.log`). It is not enough to
 loosen the clock gate or use acoustic conservation alone.
 
 [NASA's Wind-US limiter reference](https://www.grc.nasa.gov/WWW/winddocs/user/keywords/tvd.html)
 describes scalar reconstruction limiting on unstructured meshes and the
 different neighborhood choices. The numerical correction here keeps every
 accepted cell average inside its admissible reconstruction interval and keeps
-the gradient multiplier in[0,1]. The fraction bound now uses the same1+1e-12
+the gradient multiplier in[0,1]. The fraction bound now uses the same 1+1e-12
 roundoff envelope as the existing EOS. A16*DBL_EPSILON inward gradient margin
 protects the short floating-point face dot products; this is a roundoff guard,
 not a physical mixing/temperature/pressure parameter. It changes no stored
@@ -199,20 +199,20 @@ mass, fraction or energy. Remaining invalid reconstructions still report a
 fallback and invalid accepted states still poison. This does not assert a
 general positivity theorem for arbitrary meshes or real exhaust conditions.
 
-Candidatev3 must first pass that regression and the hard fixed-grid reversal
+Candidate v3 must first pass that regression and the hard fixed-grid reversal
 clock comparison, then qualify the full current-source matrix and physical
-controls. A new excluded-average fault must fail. Keepv2's complete passing
+controls. A new excluded-average fault must fail. Keep v2's complete passing
 no-flow/physical-book evidence and rejected clock/refinement records;v2 is not
 the final candidate. The current accepted engine audio and Claude setup remain
-unchanged. Stage049 is still open until this review's gates pass.
+unchanged. Stage 049 is still open until this review's gates pass.
 
 For a rising face variation, theta=(upper-average)/variation must be
-nonnegative. An upper of1 with an accepted average of1+epsilon violates that
+nonnegative. An upper of 1 with an accepted average of 1+epsilon violates that
 condition. Including the accepted roundoff envelope restores a convex gradient
-scaling. In the hard16-grid reversal pilot, v3's2→4MHz material difference is
+scaling. In the hard 16-grid reversal pilot, v3's2→4MHz material difference is
 0.00178283% and pressure-trace differences<=0.00278%; whole-face reconstruction
-fallbacks fall to zero in both runs. Physical books still pass. The unchanged1%
-clock gate now passes because of the numerical correction. The fullv3 replay,
+fallbacks fall to zero in both runs. Physical books still pass. The unchanged 1%
+clock gate now passes because of the numerical correction. The full v3 replay,
 including any required spatial follow-ups, remains necessary before closure.
 
 ## Frozen v3 results and validation
@@ -270,7 +270,7 @@ Validation of the frozen v3 physical code:
 
 - Full native: 248 tests / 4,951,907 checks.
 - Focused native, WASI and ASan/UBSan: 11 tests / 96,653 checks each, including
-  the four predecessor114 regressions. Leak detection was disabled; no leak
+  the four predecessor 114 regressions. Leak detection was disabled; no leak
   qualification is claimed. The maximum-capacity local H mesh also passes
   native preparation and sanitizer checks.
 - All 16 targeted planted faults are caught. Earlier missed-fault records are
@@ -368,7 +368,7 @@ net material uses the actual final-minus-initial mass vector. The table gives
 adjacent-grid differences, not error against an exact nonlinear solution.
 Every selected comparison meets both the 5% pressure and 5% material gates:
 
-| Geometry / control | Primary8→16 material difference | Selected subdivision | Selected adjacent-grid material difference |
+| Geometry / control | Primary 8→16 material difference | Selected subdivision | Selected adjacent-grid material difference |
 | --- | ---: | ---: | ---: |
 | AREA / flow / -1000 Pa | 0.3453% | 16 | 0.3453% |
 | AREA / flow / +1000 Pa | 0.0179% | 16 | 0.0179% |

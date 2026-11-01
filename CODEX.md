@@ -4,6 +4,16 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-01: Stage 117, docs readable and current
+
+- [Stage 117](docs/stage-117.md) restored the spaces lost between words and
+  numbers in 30 docs, in prose only. Please keep a space there ("stage 049",
+  "248 tests").
+- It brought CLAUDE.md, the README and docs/workspace.md up to date, spelled
+  out A0, A1, A2, B0, CFL, EOS, GCL and SSPRK2 in GLOSSARY.md, and fixed
+  `rb_cli`'s help.
+- Bernardo's reference recordings are only on his machine, in `renders/`.
+
 ## 2026-11-01: Stage 116, tests that can fail again
 
 - [Stage 116](docs/stage-116.md) tightened four loosened tests:
@@ -44,88 +54,88 @@ CLAUDE.md and .claude/ have been preserved.
   repo now.
 - No gas dynamics, preset or exhaust changed. Nothing after 115 is authorized.
 
-## 2026-10-28:049 complete and reviewed; HOLD before050
+## 2026-10-28:049 complete and reviewed; HOLD before 050
 
-- Execution order preserved: review048 → complete/review114 (synced ef08fe3) →
+- Execution order preserved: review 048 → complete/review 114 (synced ef08fe3) →
   complete/review [049](docs/stage-049.md). No050 implementation is authorized.
 - Frozen v3 is a caller-owned stationary vector-Euler prism-mesh reference,
-  reusing114's physical normal flux, two fixed contact constituents and one E.
+  reusing 114's physical normal flux, two fixed contact constituents and one E.
   Current shared SSPRK2 transfer, regional/global books, rigid-wall impulse,
   explicit ports and fail/poison lifecycle pass. No tick allocation or state
   clipping. Production core/web/contracts and accepted engine sound are exact.
-- Ten cold/hot all-port matrices:30source runs/441complex responses; maximum
-  relative matrix difference2.87743%, strong-entry errors<=.636dB/5.846degrees.
+- Ten cold/hot all-port matrices:30 source runs/441 complex responses; maximum
+  relative matrix difference 2.87743%, strong-entry errors<=.636dB/5.846 degrees.
   Independently refined FE truth, actual upstream geometry-response change,
-  finite pulse, spatial/clock/capture and1s source-free checks pass.
-- Six primary signed hot-flow controls miss the5%net-material resolution gate;
+  finite pulse, spatial/clock/capture and 1s source-free checks pass.
+- Six primary signed hot-flow controls miss the 5%net-material resolution gate;
   finer current-source controls pass with decreasing differences. The H control
-  passes at subdivision32 + axial40 (2.31385% material difference); retain
-  uniform24/32 misses and the explicitly local refinement separately;
+  passes at subdivision 32 + axial 40 (2.31385% material difference); retain
+  uniform 24/32 misses and the explicitly local refinement separately;
   do not report local axial resolution as a uniform finer mesh. All raw primary
   failures remain in ignored renders/evidence/stage-049/.
 - Real review fixes: physically bound open-port reconstruction; absent-material
   thermodynamic query limit without erasing extensive state; actual donor trace
   transport; and an EOS-consistent near-unit fraction bound/nonnegative slope
   coefficient. V2's1.07%clock failure is retained; corrected v3 changes only
-  .00178283% in the same2→4MHz net-material control. No gate was relaxed.
-- Full native248/4951907; focused native/WASI/ASan11/96653each;95Python/no skips;
- 17web/typecheck/build; all16planted faults caught. Eight native/WASI raw traces
+  .00178283% in the same 2→4MHz net-material control. No gate was relaxed.
+- Full native 248/4951907; focused native/WASI/ASan11/96653each;95Python/no skips;
+ 17 web/typecheck/build; all 16 planted faults caught. Eight native/WASI raw traces
   agree to stated per-field tolerances (pressure<=1.456e-11Pa, mass exact).
   Leak detection disabled; no application-worklet/runtime/listening proof.
 - Native no-I/O fixture timing remains far below real time (H16about.000081–
   .000086simulated/CPU); preparation/allocation and diagnostic I/O excluded.
-  Storage is bounded;8192-cell local H uses13,377,592bytes. These are accuracy
-  references, not a promoted backend. Keep052/057/060/061 and high-EOS gates.
-- Single RESULTS adds049figure:55players/four seeks/16images pass offline;
- 70old embedded payloads/105current files/76protected files including two locks
+  Storage is bounded; 8192-cell local H uses 13,377,592 bytes. These are accuracy
+  references, not a promoted backend. Keep 052/057/060/061 and high-EOS gates.
+- Single RESULTS adds 049 figure:55 players/four seeks/16 images pass offline;
+ 70 old embedded payloads/105 current files/76 protected files including two locks
   preserved. No altered engine renders, reference fitting or newly locked
   calibration sessions.039 and S1/S2/S4/listening remain open.
-- Graphify code AST refreshed3434nodes/9875edges/176communities; rb.h415 parser,
+- Graphify code AST refreshed 3434 nodes/9875 edges/176 communities; rb.h415 parser,
   inferred edges and stale semantic/community labels remain limitations. No
   semantic/doc/paper refresh is claimed.114-stage DAG and current file links
   checked. Source/evidence/executable hashes, failures and final review are in
-  docs049 and the ignored evidence root. Commit/sync this completed checkpoint,
-  then hold for Bernardo; do not start050 from readiness alone.
+  docs 049 and the ignored evidence root. Commit/sync this completed checkpoint,
+  then hold for Bernardo; do not start 050 from readiness alone.
 
-## 2026-10-26:114 reviewed;049 authorized next
+## 2026-10-26:114 reviewed; 049 authorized next
 
-- Bernardo authorizes114 then049, predecessor review before each completion;
-  hold after049. Read [114](docs/stage-114.md).048's five material regressions
-  pass before114; retain its packet/GCL/high-EOS/cost limits.
+- Bernardo authorizes 114 then 049, predecessor review before each completion;
+  hold after 049. Read [114](docs/stage-114.md).048's five material regressions
+  pass before 114; retain its packet/GCL/high-EOS/cost limits.
 - New fixed_transport.[ch] is a separate uniform-area research arm: stationary
   FV cells, two named pressure-equilibrium contact constituents, production
   u(T)/200–990K, one physical E and current shared SSP-RK2 flux. No clipping,
   pressure overwrite, acoustic reservoir or unbounded parcel queue. Existing
   engine/B0/A2 controls and accepted audio are not replaced.
 - Full/split ports at two positions return current reflected load and identical
-  accepted transfers.60primary profiles retained;4 primary4kHz packet misses
-  (worst7.15644%) require predeclared4096/4MHz controls (worst2.41419%). Selected
+  accepted transfers.60primary profiles retained; 4 primary 4kHz packet misses
+  (worst 7.15644%) require predeclared 4096/4MHz controls (worst 2.41419%). Selected
   shape<=4.7088%, carrier<=.34173dB/.82362deg. Independent fixed-grid clock
-  refinement leaves6.76087% error; shape requires mesh accuracy.
+  refinement leaves 6.76087% error; shape requires mesh accuracy.
 - Four-residence throughflow at±70, pressure-driven cold-air return, thermal-only
-  and species-only contacts, one fixed wall and1s hot/flow/4kHz stability pass.
+  and species-only contacts, one fixed wall and 1s hot/flow/4kHz stability pass.
   Physical normalized books<=4.109e-11; independently audited inlet enthalpy
-  error<=1.013e-13.500Pa Gaussian mismatch versus048 reference falls1.3535→.4668%
-  at1024→2048cells. This is not general3% amplitude/shock/mixing qualification.
+  error<=1.013e-13.500Pa Gaussian mismatch versus 048 reference falls 1.3535→.4668%
+  at 1024→2048 cells. This is not general 3% amplitude/shock/mixing qualification.
 - Review fixes: independent trace fractions, stable star mass flux, one-sided
   thermal impedances, final heat/domain/CFL checks before flux commit, exact
-  zero-inner-heat identity. All13 meaningful faults caught, including pure
+  zero-inner-heat identity. All 13 meaningful faults caught, including pure
   exterior cooling per physical wall. Failed histories retained.
-- Final fullnative241/4871163; focused native/WASM/ASan4/15909each;88Python
-  no skips;17web/build; eight native/WASM trajectories exactly equal. No leak,
+- Final full native 241/4871163; focused native/WASM/ASan4/15909each;88Python
+  no skips; 17 web/build; eight native/WASM trajectories exactly equal. No leak,
   application worklet or listening/runtime qualification. Report-only timing
   labels distinguish native CPU from WASI monotonic elapsed; CSV replay exact.
-- Fixed reference cost at256cells/512kHz median.0079773/.0079863x CPU forU0/+70;
-  121936bytes,2048cell967760bytes,4096cell1934416bytes. Not real time or a
+- Fixed reference cost at 256 cells/512kHz median.0079773/.0079863x CPU forU0/+70;
+  121936 bytes, 2048cell967760bytes,4096cell1934416bytes. Not real time or a
   production choice. Actual engine/junction/component/hot-EOS/common gates
-  remain049–062;039 stays Awaiting matched references.
-- Single RESULTS adds114research figure,55players/four seeks/15images pass
-  offline.69old embedded payloads/105current files/74protected plus2locks exact;
+  remain 049–062;039 stays Awaiting matched references.
+- Single RESULTS adds 114 research figure, 55 players/four seeks/15 images pass
+  offline.69old embedded payloads/105 current files/74 protected plus 2 locks exact;
   results timestamp/registry/page changes intentional. Final evidence including
   frozen executable hashes: renders/evidence/stage-114/. Graphify refresh and
-  link/DAG/preservation check recorded at closeout. Save/sync114 before049.
-- Graphify3296/9358/179; known rb.h415/inferred/stale semantic limits.114-stage
-  DAG and982 local planning/card file links pass. First permission review timed
+  link/DAG/preservation check recorded at closeout. Save/sync 114 before 049.
+- Graphify 3296/9358/179; known rb.h415/inferred/stale semantic limits.114-stage
+  DAG and 982 local planning/card file links pass. First permission review timed
   out; one allowed refresh retry succeeded. No remaining tool block.
 
 ## 2026-10-25: Two supplied dashboard references assessed — HOLD
@@ -158,159 +168,159 @@ CLAUDE.md and .claude/ have been preserved.
   limits remain. Raw evidence/commands/checks in ignored
   renders/evidence/stage-039-two-new-videos/. Save/sync assessment and hold.
 
-## 2026-10-25: Stages047/048 reviewed — HOLD before114/049
+## 2026-10-25: Stages 047/048 reviewed — HOLD before 114/049
 
 - [048](docs/stage-048.md) completes bounded material thermal/front/wall/reversal
-  reference after047. This is not an evolving B0/production engine adapter.
+  reference after 047. This is not an evolving B0/production engine adapter.
   New [114](docs/roadmap/04-propagation.md#stage-114) explicitly owns fixed-domain
-  transport/remap/stationary-port proof before049; it is not started. Hold.
+  transport/remap/stationary-port proof before 049; it is not started. Hold.
 - One material species/internal-E state, compatible nodal momentum/kinetic work,
   current EOS/geometry; fixed spatial wall CwTw/exterior book.200–990K weak
   acoustics only.047's apparent high-cp branch and real wall calibration stay
-  unresolved before057/060. Old A2 remains rejected; renderer choice stays open.
-- Main60 primary scattering +8 grid,12contacts,2reversal, positive-outlet history,
-  4wall,2one-second and unsupported-clock controls pass their declared gates.
-  Gaussian3.46149%, carrier.035889dB/7.21582°, but fine768-cell packet error20.65%
-  and coarse48.67% retained. Supplementary768/1536/3072-cell4kHz packet L2
-  converges20.65→5.18→1.392% cold-to-hot and14.23→3.59→1.006% hot-to-cold.
+  unresolved before 057/060. Old A2 remains rejected; renderer choice stays open.
+- Main 60 primary scattering +8 grid, 12 contacts, 2 reversal, positive-outlet history,
+  4 wall, 2 one-second and unsupported-clock controls pass their declared gates.
+  Gaussian 3.46149%, carrier.035889dB/7.21582°, but fine 768-cell packet error 20.65%
+  and coarse 48.67% retained. Supplementary 768/1536/3072-cell4kHz packet L2
+  converges 20.65→5.18→1.392% cold-to-hot and 14.23→3.59→1.006% hot-to-cold.
 - Initial finer loops failed from subtracting positions to obtain tiny dV.
   Corrected geometric work uses accepted midpoint velocity differences; same
   tolerances, replanted old computation caught by fine-native regression.
   No thermal/species clipping or energy reset. All rejected controls retained.
-- Actual pressure-driven suction-first cold-air intrusion1.765e-7kg; positive
+- Actual pressure-driven suction-first cold-air intrusion 1.765e-7kg; positive
   first cycle reverses but only returns hot gas. Bulk reversal is a separate
   explicit-body-force control, not engine lift. Fixed-plane translation species/
   enthalpy proof is not general Eulerian energy-flux/remap qualification.
 - Main normalized physical E<=1.858e-14, momentum<=2.238e-14; contacts false p
   <=4.366e-11Pa.1s U0/+70,900K/4kHz matched-material cases maxPE1, final<=3.804e-10.
   Fine geometry reference cost remains unacceptable for live delivery:
- 768cell median.01464/.01455x native,3072cell.001123/.001131x; no efficiency claim.
-- Finalnative237/4855254; focused native/WASM/ASan5/725, Python88/no skips,
-  web17/build, seven native/WASM trajectories pass. Eleven faults caught;
+ 768 cell median.01464/.01455x native, 3072 cell.001123/.001131x; no efficiency claim.
+- Final native 237/4855254; focused native/WASM/ASan5/725, Python 88/no skips,
+  web 17/build, seven native/WASM trajectories pass. Eleven faults caught;
   no leak/runtime qualification. Updated single research page preserves clips/
   coasts/references. No core/productionWASM/accepted sound or Claude setup changes.
-  New-system engine comparisons remain057/061.039 and realism/listening stay open.
-- Finalpage55players/four seeks/11research plots/3perspective views pass offline;
-  all68 prior embedded payloads,74protected tracked and105current files exact.
-  Timestamp manifests/page updates intentional. Graphify3220/9091/176, known
-  parser/inferred/semantic limits.114-stage DAG/343links pass;114 before049.
+  New-system engine comparisons remain 057/061.039 and realism/listening stay open.
+- Final page 55 players/four seeks/11 research plots/3 perspective views pass offline;
+  all 68 prior embedded payloads, 74 protected tracked and 105 current files exact.
+  Timestamp manifests/page updates intentional. Graphify 3220/9091/176, known
+  parser/inferred/semantic limits.114-stage DAG/343 links pass; 114 before 049.
 
-## 2026-10-25: Stage047 reviewed;048 authorized
+## 2026-10-25: Stage 047 reviewed; 048 authorized
 
 - [047](docs/stage-047.md) completes property/fixed-wall characterization and
-  isolated finite-capacity gas/wall pair. Native232/4854529, focused native/
-  WASM/ASan4/5656, Python88/no skips, web17/build pass; five faults caught.
-  Native/WASM properties85/fixed18/pair11 CSVs exact. Accepted audio/production
-  core/WASM/Claude setup unchanged. Graphify3160/8880/167, known limitations.
-- Apparent40bar burned cp is not qualified frozen/equilibrium exhaust acoustics:
+  isolated finite-capacity gas/wall pair. Native 232/4854529, focused native/
+  WASM/ASan 4/5656, Python 88/no skips, web 17/build pass; five faults caught.
+  Native/WASM properties 85/fixed 18/pair 11 CSVs exact. Accepted audio/production
+  core/WASM/Claude setup unchanged. Graphify 3160/8880/167, known limitations.
+- Apparent 40bar burned cp is not qualified frozen/equilibrium exhaust acoustics:
   1000K cp/c jump-.53810%/+.079743%;2500K frozen-reference difference+36.0125%
   cp/-3.1031%c. Do not globally change engine thermochemistry to mask this.
-  048 propagation envelope200–990K; hot EOS/relaxation remains before057/060.
-- Finite wall capacity747/1519J/K scenarios, gas tau.075–.299s vs wall16–133s,
+  048 propagation envelope 200–990K; hot EOS/relaxation remains before 057/060.
+- Finite wall capacity 747/1519J/K scenarios, gas tau.075–.299s vs wall 16–133s,
   Bi<=.025. New thermal pair E and CwTw close with exterior book; gas moving
   cannot drag the wall, refinement cannot duplicate its capacity. Not measured
   presets.272bytes,128.90–133.78ns/pair call microbenchmark, not runtime proof.
 - 048 must address actual stronger thermal/species contacts, current propagation,
   coefficient work and ambient transport on reversal. A contact-preserving
   material-coordinate reference is allowed, not production graph promotion.
-  Preserve043 rejection and046's expensive/weak-reference limits. Hold after048.
+  Preserve 043 rejection and 046's expensive/weak-reference limits. Hold after 048.
 
-## 2026-10-25: Stages045/046 reviewed — HOLD
+## 2026-10-25: Stages 045/046 reviewed — HOLD
 
-- Bernardo authorizes045 then046, reviewing the predecessor. [046](docs/stage-046.md)
-  completes the bounded frozen signed-flow experiment after045. No047 work.
+- Bernardo authorizes 045 then 046, reviewing the predecessor. [046](docs/stage-046.md)
+  completes the bounded frozen signed-flow experiment after 045. No047 work.
   One physical state remains: gas upstream, actual B0 directional coordinates
   plus transported contacts downstream; exact fractional lengths and sparse
   overlap projection. Default B0 and production core/WASM/audio are unchanged.
-- 156profiles (84Gaussian/clock/spatial,72carriers),18returns,8composition,
-  six1s and three supplemental resolved-reflection controls pass declared
-  gates. WorstGaussian1.11991%; carrier0.027246dB/0.031316°, envelope2.52668%
+- 156 profiles (84 Gaussian/clock/spatial, 72 carriers),18 returns, 8 composition,
+  six 1s and three supplemental resolved-reflection controls pass declared
+  gates. Worst Gaussian 1.11991%; carrier 0.027246dB/0.031316°, envelope 2.52668%
   explicitly reported under separate frozen gates. Zero-U48profiles exactly
-  equal frozen045. Return<.476tick; species contrast0.034266% error.
+  equal frozen 045. Return<.476tick; species contrast 0.034266% error.
 - Regional physical books<=7.102e-13, convected-work<=1.406e-14 relative.
-  Sixcompact1s maxPEratio1, final<=2.899e-20. Separate resolved R=-1/+1
-  at-70m/s gain1.505989/1.506029 vs1.504971 ideal; accounted mean-flow work,
+  Six compact 1s maxPEratio 1, final<=2.899e-20. Separate resolved R=-1/+1
+  at-70m/s gain 1.505989/1.506029 vs 1.504971 ideal; accounted mean-flow work,
   not hidden growth. Reservoir pressure reflections are not sealed walls.
   Weak+1mK entropy-contact and actual accepted mass-vs-volume controls pass.
-- Fullnative228/4847488 pass; test-only transit/entropy extensions then final
-  native/WASM/ASan8/5443 each. Python88/no skips, web17/build, six native/WASM
+- Full native 228/4847488 pass; test-only transit/entropy extensions then final
+  native/WASM/ASan8/5443 each. Python 88/no skips, web 17/build, six native/WASM
   trajectory CSVs exactly equal. Nine behavioral faults caught. Original
   backward-overlap miss exposed end-only observer weakness; retain it and the
   strengthened intermediate inventory check. No leak/runtime qualification.
 - Median full-correction fixture speeds atU=-70/0/+70:0.002298/0.003334/0.003262x
-  simulated/CPUtime, six interleaved20ms controls each; expensive reference,
+  simulated/CPUtime, six interleaved 20ms controls each; expensive reference,
   not an efficiency solution or preselected architecture. Optimization and
-  whole-engine choice remain052/060/062. Thermal/reversal/junctions unqualified.
-- Graphify final3126/8759/177, known rb.h415 parser/inferred-edge/semantic-label
-  limits;113-stage DAG/50 local links pass. All74 protected tracked and105
+  whole-engine choice remain 052/060/062. Thermal/reversal/junctions unqualified.
+- Graphify final 3126/8759/177, known rb.h415 parser/inferred-edge/semantic-label
+  limits; 113-stage DAG/50 local links pass. All 74 protected tracked and 105
   accepted current files exact; timestamp manifest/page updates intentional.
-- `tools/flow_checkpoint.py` registers the045/046 figure and results in one
+- `tools/flow_checkpoint.py` registers the 045/046 figure and results in one
   rebuildable RESULTS page. Existing audio/coasts/references unchanged; no new
-  full-engine renders before057/061. Stage039 and S1/S2/S4/listening stay open.
+  full-engine renders before 057/061. Stage 039 and S1/S2/S4/listening stay open.
   Preserve original videos, user skills, CLAUDE.md and .claude/. Save/sync; HOLD.
 
 ## 2026-10-25: Stage 045 coupling proof reviewed; 046 authorized
 
-- Bernardo authorizes045 then046, with predecessor review. [045](docs/stage-045.md)
+- Bernardo authorizes 045 then 046, with predecessor review. [045](docs/stage-045.md)
   couples production-EOS gas to the actual B0 two-node uniform duct. Fractional
   lengths preserve signed inventory; downstream wave/contact coordinates own
   one physical state, no independent gas/acoustic duplicate or pressure rewrite.
-- Final62 profiles pass2% waveform,1dB/10° carrier and1e-10 regional-book gates:
-  worstL2=1.9021%, Gaussian1.0549%,0.02237dB/0.007891°. Six load/partition
-  returns pass, max1.476ticks; matchedreturn0.007172Pa. Three1s cases show
-  maximumenergy/initial1 andfinal<=3.185e-20. Maxnormalizedbook8.098e-14.
-  Two adverseamplitudes.05/.1 reject; no repairs. Ten exact044 component
+- Final 62 profiles pass 2% waveform, 1dB/10° carrier and 1e-10 regional-book gates:
+  worstL2=1.9021%, Gaussian 1.0549%,0.02237dB/0.007891°. Six load/partition
+  returns pass, max 1.476 ticks; matched return 0.007172Pa. Three 1s cases show
+  maximumenergy/initial 1 andfinal<=3.185e-20. Max normalized book 8.098e-14.
+  Two adverseamplitudes.05/.1 reject; no repairs. Ten exact 044 component
   subduct controls preserve lengths/areas/IDs and reflected load; not full
   engine or component-loss qualification. Nonuniform fuel transport tested.
 - Initial diffusion, WENO-only weak-shape and diagnostic sign/harness failures
   are retained. Final weak-linear/finite-WENO, SSPRK3 acoustic / conservative
   reconstructed-residual RK2 construction passes unchanged thresholds.
-- Fullnative226/4845645, finalnew5/2268, Python87, web17/build pass; focused
-  WASM/ASan5/2268 including fractional extension. Seven compiled
+- Full native 226/4845645, final new 5/2268, Python 87, web 17/build pass; focused
+  WASM/ASan 5/2268 including fractional extension. Seven compiled
   faults caught. No leak qualification under ptrace. Expensive full correction
-  grid remains; measured0.000834–0.01138x is not an efficiency solution.
+  grid remains; measured 0.000834–0.01138x is not an efficiency solution.
 - Evidence `renders/evidence/stage-045/`, frozen measured probe outside the
-  evolving build folder, all rejected matrices preserved. Graphify3101/8655/165;
+  evolving build folder, all rejected matrices preserved. Graphify 3101/8655/165;
   known public-header/inferred-edge limits. Production core/WASM, accepted
-  audio/reference splits and Claude setup preserved. Review passes for046's
+  audio/reference splits and Claude setup preserved. Review passes for 046's
   uniform signed-flow experiment; no default sound change or production promotion.
 
 ## 2026-10-24: Stage 044 geometry checkpoint — HOLD
 
-- Bernardo authorizes043 then044 with predecessor review. [043](docs/stage-043.md)
-  is a completed rejected A2 experiment, saved78db7cf: do not promote it.
+- Bernardo authorizes 043 then 044 with predecessor review. [043](docs/stage-043.md)
+  is a completed rejected A2 experiment, saved 78db7cf: do not promote it.
   [044](docs/stage-044.md) completes bounded geometry compilation/control,
   preserving production core/WASM/presets/accepted audio and Claude setup.
 - `tools/exhaust_geometry.py` prepares immutable serialized canonical-build
-  plans:68 pipe regions,1412 gas cells,14 catalyst/baffle/packing interfaces,
-  finite collector/X/Y inventories and236 source/port-outlet paths across
+  plans:68 pipe regions, 1412 gas cells, 14 catalyst/baffle/packing interfaces,
+  finite collector/X/Y inventories and 236 source/port-outlet paths across
   five engines. Native observer supplies actual recipe dimensions/coefficients;
   unannotated dimensions remain model estimates. No hardcoded replacement
   pipe, fabricated 3D route, loss filter or production graph promotion.
 - Split ambient terminal identity per aperture: I6/flat banks do not gain a
-  zero-delay connection through their shared environment label. All42 connected
-  and14 disconnected cylinder/outlet pairs execute correctly in actual B0
+  zero-delay connection through their shared environment label. All 42 connected
+  and 14 disconnected cylinder/outlet pairs execute correctly in actual B0
   controls; gas inventory/port/cell bindings are prepared but not evolved through
   engine junctions. Matched fixture boundaries are not physical valves/radiation.
 - Work residual<=5.830e-13; all native/WASM inventories,bindings,arrival ticks
-  and peaks match exactly. Python84 pass/no skips; five end-to-end preparation
+  and peaks match exactly. Python 84 pass/no skips; five end-to-end preparation
   tests also pass under ASan/UBSan (no leak check under ptrace). Eight compiler
-  faults caught, plus043's six. Retain221/4843441 full native and web17/build
-  evidence from043 with identical production/native-test sources; no application
+  faults caught, plus 043's six. Retain 221/4843441 full native and web 17/build
+  evidence from 043 with identical production/native-test sources; no application
   worklet or runtime deadline claim. Preparation costs stay outside audio ticks.
 - First short-delay test premise was wrong; corrected native-valid5cm header
-  rejects at8kHz/4000K. WASI clock-link failure fixed with explicitly labeled
-  monotonic timing. Acoustic-header WASM dependencies and043 alias-summary
+  rejects at 8kHz/4000K. WASI clock-link failure fixed with explicitly labeled
+  monotonic timing. Acoustic-header WASM dependencies and 043 alias-summary
   classification corrected; original failure records preserved.
-- Single `renders/RESULTS.html` adds the registered043/044 section/figure and
-  rebuilds in one operation. All55 clips, five long coasts, retained8 research
-  plots and3 reference views survive; new figure passes offline checks.
-  All66 original embedded media payloads remain exact; only one figure added.
+- Single `renders/RESULTS.html` adds the registered 043/044 section/figure and
+  rebuilds in one operation. All 55 clips, five long coasts, retained 8 research
+  plots and 3 reference views survive; new figure passes offline checks.
+  All 66 original embedded media payloads remain exact; only one figure added.
   3676 prior ignored files verified unchanged; page/manifest are intentional
   exceptions. Evidence under `renders/evidence/stage-044/`.
-- Graphify queried/refreshed3003nodes/8286edges/167communities, known rb.h:415
-  parser/inferred-edge limits. Save/sync and HOLD after044. Do not start045.
-  039 acquisition, S1/S2/S4/listening/runtime remain open. Future045–059 must
+- Graphify queried/refreshed 3003 nodes/8286 edges/167 communities, known rb.h:415
+  parser/inferred-edge limits. Save/sync and HOLD after 044. Do not start 045.
+  039 acquisition, S1/S2/S4/listening/runtime remain open. Future 045–059 must
   not treat the lossless geometry capability as a full exhaust renderer;
   075/094 retain real spatial/component measurements, 061 owns public bindings.
 
@@ -322,16 +332,16 @@ CLAUDE.md and .claude/ have been preserved.
   alias controls retained; moving contacts generate 117–155 Pa false pressure
   and two fine-grid cases reject an inadmissible stage. Conservation and six
   exact shock/expansion references pass, but do not establish acoustic fidelity.
-- Native221/4843441, Python79, web17/build, focused WASM9/1212 and ASan/UBSan
+- Native 221/4843441, Python 79, web 17/build, focused WASM9/1212 and ASan/UBSan
   10/1214 pass; six faults caught. No leak check under ptrace. Production core,
   WASM, accepted sounds, reference split and Claude setup are unchanged.
 - A0 valve/tick controls retain 96kHz pumping errors ~11–12%; old uncoupled
   implicit optimization remains rejected. A2 has no qualified production valve
-  adapter. Keep its mixture/phase/cost failures in future045/047/048/057/060.
-- Graphify refreshed2963/8116/167. Proceed with044's bounded executable
+  adapter. Keep its mixture/phase/cost failures in future 045/047/048/057/060.
+- Graphify refreshed 2963/8116/167. Proceed with 044's bounded executable
   geometry compiler after this review. Do not create an ambient shortcut;
   preserve all pipes, finite volumes, restriction metadata and unresolved
-  spatial provenance. Do not start045. 039/S1/S2/listening/runtime remain open.
+  spatial provenance. Do not start 045. 039/S1/S2/listening/runtime remain open.
 
 ## 2026-10-24: Stage 042 injection source checkpoint — HOLD
 
@@ -398,8 +408,8 @@ CLAUDE.md and .claude/ have been preserved.
   and both policies. Flame-fit envelope/floors/caps are explicit flags, not
   empirical extinction thresholds or calibrated spark-state measurements.
 - ECU phasing uses the bounded distribution's conditional mean duration,
-  nonnegative mean kernel delay and normalized Wiebe heat50. Independent actual
-  heat50 means move from 9.595–9.961 to 8.023–8.369 deg ATDC in the declared
+  nonnegative mean kernel delay and normalized Wiebe heat 50. Independent actual
+  heat 50 means move from 9.595–9.961 to 8.023–8.369 deg ATDC in the declared
   held comparison; 8 degrees remains the old scheduling target, not measured
   MBT. Gross/net/pumping work shares complete cylinder-cycle windows.
 - Internal initial-only seed/policy controls and native sound options support
@@ -445,14 +455,14 @@ CLAUDE.md and .claude/ have been preserved.
   known rb.h:415 warning remains. Save/sync 041 and HOLD. Stage 039 acquisition
   stays open, six new candidates are not admitted, and no 042 work starts here.
 
-## 2026-10-24: Six supplied039 candidates assessed — HOLD
+## 2026-10-24: Six supplied 039 candidates assessed — HOLD
 
-- Bernardo asks whether six supplied BMW/Subaru videos fill039's gap. Read
+- Bernardo asks whether six supplied BMW/Subaru videos fill 039's gap. Read
   docs/stage-039-supplied-video-assessment.md and the compact supplied-candidate
   ledger before intake.125sampled frames, uploader descriptions, full unfiltered
- 48kHz stereo float decodes550.848646s and per-channel/speech-risk screens reviewed.
-- Stronger candidates: AJ Garage stock/custom muffler delete with2K/4K captions;
-  Python Don stock/twin2.25in catalyst-back pipes and stock3–4K rev caption;
+ 48kHz stereo float decodes 550.848646s and per-channel/speech-risk screens reviewed.
+- Stronger candidates: AJ Garage stock/custom muffler delete with 2K/4K captions;
+  Python Don stock/twin 2.25in catalyst-back pipes and stock 3–4K rev caption;
   Pyrenees BMW M54 hardware progression with actual OEM/Supersprint/Eisenmann
   captions. No continuous tachometer/load/coast trace or mic gain/transfer proved.
 - Python Don X-pipe comparison also adds Magnaflow muffler; never attribute the
@@ -463,49 +473,49 @@ CLAUDE.md and .claude/ have been preserved.
   engine/hardware/valve states unproved. Speech-risk flags are screening, not
   proof of narration/music-free content. Decoded overshoots do not prove clipping.
 - Originals stay unmodified/untracked at supplied paths. Generated media and
-  evidence ignored. Existing locks11sessions/34intervals, page55players, engine
+  evidence ignored. Existing locks 11 sessions/34 intervals, page 55 players, engine
   choices and Claude setup untouched; six seen candidates not admitted/held out.
   Temporary FFmpeg7.0.2 from imageio-ffmpeg0.6.0 handles AV1; no dependency change.
 -039 acquisition remains open; user needs no personal car/pro recording. Best
   next video has identified engine/exhaust, tachometer during pull/long coast
   and disclosed recording setup. No041/tuning started. Save/sync assessment, hold.
-- Nine reference tests pass without skips;194protected files, both lock
-  revisions and113stage rows preserved. Final source/raw/screen hashes pass.
-  Graphify queried/AST-refreshed2784nodes/7559edges/158communities; known rb.h
+- Nine reference tests pass without skips; 194 protected files, both lock
+  revisions and 113 stage rows preserved. Final source/raw/screen hashes pass.
+  Graphify queried/AST-refreshed2784nodes/7559 edges/158 communities; known rb.h
   warning retained. No new native/WASM/browser/render suites claimed.
 
-## 2026-10-24: Extended039 source research; matched acquisition open — HOLD
+## 2026-10-24: Extended 039 source research; matched acquisition open — HOLD
 
-- Bernardo clarified that RPM/load/microphone acquisition belongs to039; prior
+- Bernardo clarified that RPM/load/microphone acquisition belongs to 039; prior
  81c456b bounded closure was too broad. He requests extensive public research
-  before041 and says he may look for references later if necessary. PLAN now
-  restores039 to Awaiting matched references. Protocol work stays implemented;
-  no missing acquisition is moved out of039 and no041 work is authorized here.
+  before 041 and says he may look for references later if necessary. PLAN now
+  restores 039 to Awaiting matched references. Protocol work stays implemented;
+  no missing acquisition is moved out of 039 and no 041 work is authorized here.
 - docs/stage-039-reference-search.md is the current outcome/review. Twenty
-  search batches/76queries produce58selected source records across23exhaust
+  search batches/76 queries produce 58 selected source records across 23 exhaust
   brands, all five engines plus OEM/method/owner/dataset leads. Structured
   tools/reference_candidates_v2.json retains the earlier v1 catalog by hash;
-  this is a candidate/source ledger, not58acquired audio recordings. Existing
+  this is a candidate/source ledger, not 58 acquired audio recordings. Existing
   tools/reference_sessions_v1/v2.json,11sessions/34raw excerpts stay unchanged.
 - Correct engine matching: I6 is generic M54B30/E46 330i-inspired, not S54/M3.
   Existing S54 audio is useful related-family evidence only. FB20/GP7 differs
-  from FA24/FA20/EJ turbo/hybridGPE;1AZ-FE differs from1AZ-FSE/2AZ/M20A; GT,
+  from FA24/FA20/EJ turbo/hybridGPE; 1AZ-FE differs from 1AZ-FSE/2AZ/M20A; GT,
   Dark Horse, active/non-active and chassis generations stay distinct. Current
   raised rev limits and accepted exhaust selections are unchanged research builds.
 - Portfolio covers rear-only/full systems, catalysts/bypass, header sizes,
   resonated/deleted middle sections, X/H, active valves, reflective/packed/
   chambered concepts and material variants. Manufacturer dimensions are not
   proprietary impedance measurements; shipping dimensions/tip trim are not bores.
-- Strong scalar leads: HKS GP7 stock75/HKS83dB; Fujitsubo fixed-speed comparisons
-  but proximity4650rpm header conflicts with4000rpm remark; Ganador stock80/
-  modified81dB at4000rpm; Syms GP7/hybrid separated. UUC95dB is a claimed test
+- Strong scalar leads: HKS GP7 stock 75/HKS83dB; Fujitsubo fixed-speed comparisons
+  but proximity 4650rpm header conflicts with 4000rpm remark; Ganador stock 80/
+  modified 81dB at 4000rpm; Syms GP7/hybrid separated. UUC95dB is a claimed test
   limit, Corsa+16/+8dB lacks full conditions. Do not convert these into waveform
   gains, pool different makers' stock baselines or infer source mic gain.
-- General Fujitsubo warm-neutral/hold/lift,0.5m45°,A/FAST method is a future
+- General Fujitsubo warm-neutral/hold/lift, 0.5m45°,A/FAST method is a future
   fixture lead, not proof that any demo followed it. Manufacturer-specific raw
   audio/RPM/load/mic metadata still missing. Absolute SPL needs calibrated chain;
-  useful relative/timbre claims can be narrower. No source currently closes039.
-- UUC explicitly offers two330i cabin/neutral-rev MOV downloads; both404. New
+  useful relative/timbre claims can be narrower. No source currently closes 039.
+- UUC explicitly offers two 330i cabin/neutral-rev MOV downloads; both 404. New
   candidate audio acquired/auditioned/fitted=0. Some pages are index-only or
   blocked/empty. No cookie/access-control workaround, purchase or external contact.
   Two official Akrapovic-linked458 PDFs acquired/fingerprinted/visually reviewed
@@ -514,21 +524,21 @@ CLAUDE.md and .claude/ have been preserved.
 - Fresh nine reference behavior tests pass without skips. Candidate schema,
   source/claim/coverage counts, all existing protected files/raw/page, links/
   roadmap checked; no new native/WASM/render runs claimed. RESULTS remains the
-  same55-player page; original files/hardlinks and held-out partitions preserved.
+  same 55-player page; original files/hardlinks and held-out partitions preserved.
   Evidence: renders/evidence/stage-039-source-search-2026-10-24/. Graphify queried/
   AST-refreshed; save/sync notes/catalog and HOLD. User .agents/ and skills-lock
-  remain unstaged.041 stays ready by038/040 and unstarted.
+  remain unstaged.041 stays ready by 038/040 and unstarted.
 
-## 2026-10-24: Stage039 closeout reviewed; ready for041 — HOLD
+## 2026-10-24: Stage 039 closeout reviewed; ready for 041 — HOLD
 
-- Bernardo authorizes completion/review of039 and readiness for041, not041
-  implementation.039 was the sole unfinished numbered stage001–040. PLAN now
+- Bernardo authorizes completion/review of 039 and readiness for 041, not 041
+  implementation.039 was the sole unfinished numbered stage 001–040. PLAN now
   records its bounded acquisition/annotation/comparison-protocol completion;
   docs/stage-039-review.md is the exit checklist, coverage and handoff review.
-- All11 source fingerprints/34 raw stereo excerpts (488.205646s), exact sample
-  intervals, powers and claim limits checked. Nine development sessions/32clips,
-  one reserved validation session/clip, one quarantine session/clip. Parentv1's
- 8sessions/20clips and17legacy development IDs remain unchanged. Four existing
+- All 11 source fingerprints/34 raw stereo excerpts (488.205646s), exact sample
+  intervals, powers and claim limits checked. Nine development sessions/32 clips,
+  one reserved validation session/clip, one quarantine session/clip. Parent v1's
+ 8 sessions/20 clips and 17 legacy development IDs remain unchanged. Four existing
   development-only gain controls reproduce their gains/preview hashes. No
   held-out audio is used for fitting or listening-based tuning.
 - Calibration outcome stays negative: zero calibrated-SPL or matched-engine
@@ -536,210 +546,210 @@ CLAUDE.md and .claude/ have been preserved.
   RPM/load/mic gain/transfer/complete hardware remain unknown. FA24 is not FB20;
   cabin ASC and camera/mic distinction stay explicit. Rights remain local
   reference permission, not redistribution/training permission.
-- Closing039 does not waive later056/058/059/063/064/094/098 gates. The review
-  maps missing evidence to these existing owners;059/063/094/098 cards explicitly
+- Closing 039 does not waive later 056/058/059/063/064/094/098 gates. The review
+  maps missing evidence to these existing owners; 059/063/094/098 cards explicitly
   prevent a completed reference row from certifying calibrated data. Fix stale
-  protocol text that still named039 as next; correct040's browser integration
-  reference from068 to066. No new recording request pending.
+  protocol text that still named 039 as next; correct 040's browser integration
+  reference from 068 to 066. No new recording request pending.
 - Nine focused reference behavior tests pass with no skips. Fresh checks cover
   source/lock/raw/metric/preview preservation and roadmap/link consistency.
   Earlier global native/Python/web/WASM tests are not claimed as new runs. Audit
   in renders/evidence/stage-039-close-2026-10-24/ retains coverage, commands and
   hashes. No production/tool/core code, audio, source lock or Claude setup change.
-- Review040's unchanged source/fault evidence and explicit limits before041:
+- Review 040's unchanged source/fault evidence and explicit limits before 041:
   continuous mean model at variation→0, state-conditioned kernel/residual
   validity, gross/net IMEP/COV/idle statistics, mean-CA50/ECU coupling. Preserve
-  causal discharge/heat and books. I4 coast-rise remains058; injection042;
-  public event transport061; broad S1/S1e/S2/S4/full13b acceptance stays open.
-- Preserve the one55-player RESULTS page, all accepted engine/exhaust choices,
+  causal discharge/heat and books. I4 coast-rise remains 058; injection 042;
+  public event transport 061; broad S1/S1e/S2/S4/full 13b acceptance stays open.
+- Preserve the one 55-player RESULTS page, all accepted engine/exhaust choices,
   original recordings and .claude/. User .agents/ and skills-lock.json remain
   unstaged. Graphify queried/refreshed for these notes. Commit/sync, then HOLD.
- 041 is ready by038/040; no041 work or new engine sound starts in this closeout.
+ 041 is ready by 038/040; no 041 work or new engine sound starts in this closeout.
 
 ## 2026-10-24: GR86/E46 supplied-video references — HOLD
 
-- Bernardo supplied3WebM videos and requests reference intake with visual
+- Bernardo supplied 3WebM videos and requests reference intake with visual
   viewpoint review; most/all GR86 driving audio is cabin, E46 has substantial
-  presenter/non-car content. This authorizes reference curation, not041 or
-  simulator tuning. Stage040 remains the current engine checkpoint.
+  presenter/non-car content. This authorizes reference curation, not 041 or
+  simulator tuning. Stage 040 remains the current engine checkpoint.
 - docs/video-sound-references-2026-10-24.md is the intake record. Two related
   FA24 GR86 cabin sources (one uploader-reported AWE Touring) and an NA S54
-  E46 M3 source (manufacturer-reported Valvetronic Section3+headers) are added.
+  E46 M3 source (manufacturer-reported Valvetronic Section 3+headers) are added.
   GR86 is NOT the FB20 preset. ASC state, mic position/response/gain and exact
   RPM/load remain unknown; camera position is observed separately from audio.
--110sampled/coarse/closer frames cover all sources and selected windows.
- 14raw stereo excerpts:8cabin GR86,6E46 stationary rear-quarter/open/closed,
+-110 sampled/coarse/closer frames cover all sources and selected windows.
+ 14 raw stereo excerpts:8 cabin GR86,6E46 stationary rear-quarter/open/closed,
   roadside pass-bys and mounted view beside tailpipes. Exclude car washing,
   intro/cinematic and presenter sections.198–203s closed candidate shortened
-  to198–200s before a truck visible at203s; exact raw prefix equality verified.
+  to 198–200s before a truck visible at 203s; exact raw prefix equality verified.
   Music/wind/traffic and speech-detector false negatives remain possible.
-- tools/reference_sessions_v2.json keeps all8v1sessions/20intervals/partitions
-  unchanged and adds3development sessions/14intervals. Both GR86s share one
+- tools/reference_sessions_v2.json keeps all 8v1sessions/20 intervals/partitions
+  unchanged and adds 3 development sessions/14 intervals. Both GR86s share one
   conservative family. No new held-out claim; GM validation/Subaru quarantine
-  not used for tuning. Stage039 calibration stays open with useful new refs.
-- tools/reference_protocol.py now defaults tov2 and explicitly maps audio0
+  not used for tuning. Stage 039 calibration stays open with useful new refs.
+- tools/reference_protocol.py now defaults to v2 and explicitly maps audio 0
   from video containers. tools/prepare_video_references.py validates ancestry,
   source-bound per-channel VAD checks, float excerpts, preview headroom and
-  appends3compilations/images to the registered user-references section.
-  Measurements use original48kHz float L/R powers; no fold/gain/EQ/denoise.
-  Previews:10ms endpoint fades,0.7s gaps, one static gain/source,192kbpsMP3.
+  appends 3 compilations/images to the registered user-references section.
+  Measurements use original 48kHz float L/R powers; no fold/gain/EQ/denoise.
+  Previews:10ms endpoint fades, 0.7s gaps, one static gain/source, 192kbpsMP3.
 - Official pinned Silero ONNX model and temporary CPU runtime are analysis-only;
- 16kHz QA keeps separate L/R states,512sample frames+64context, threshold.35,
- .55s padding. All14pass (max probability~.001903), known E46 speech control
+ 16kHz QA keeps separate L/R states, 512 sample frames+64 context, threshold.35,
+ .55s padding. All 14 pass (max probability~.001903), known E46 speech control
   detected. No pure-stem or no-music claim; GR86 mountain uploader credits music.
-- Original3root video paths/bytes preserved; same-volume hardlinks in ignored
-  renders/video-references/sources avoid duplicating4.4GB. Exact root filenames
+- Original 3 root video paths/bytes preserved; same-volume hardlinks in ignored
+  renders/video-references/sources avoid duplicating 4.4GB. Exact root filenames
   also ignored. No media or model files staged. Do not write either link name.
   Preserve user .agents/ and skills-lock.json; Claude setup remains unchanged.
-- New3behavior tests cover lock ancestry/model mismatch, either-channel padded
+- New 3 behavior tests cover lock ancestry/model mismatch, either-channel padded
   speech risk and a multi-audio video where default-track selection is wrong.
   Four temporary mutants caught: altered parent, FA24-as-FB20, ignored right
-  speech and wrong audio program. Native206/694149,Python67,web17 pass.
+  speech and wrong audio program. Native 206/694149, Python 67, web 17 pass.
   Core/WASM/engine renders unchanged; no new physical sound acceptance claimed.
 - Newauthoritative raw/report: renders/reference-protocol-v2/. Three previews
-  total161.7s and viewpoint panels join the one55player RESULTS page. All52old
-  payloads and old20raw references preserved; current engine/Claude files stay.
+  total 161.7s and viewpoint panels join the one 55 player RESULTS page. All 52 old
+  payloads and old 20 raw references preserved; current engine/Claude files stay.
   Evidence under renders/evidence/video-references-2026-10-24/: probes, hashes,
- 110frames, model/runtime/speech QA, corrected interval proof, commands, faults,
+ 110 frames, model/runtime/speech QA, corrected interval proof, commands, faults,
   validation/browser/test logs. Graphify queried and AST-refreshed2753nodes/
- 7515edges/161communities; known rb.h parser warning retained.
+ 7515 edges/161 communities; known rb.h parser warning retained.
 - Save/sync intake and HOLD. No additional recording request is pending.
-  Stage039 matched calibration and S1/S1e/S2/S4/full13b listening/realism/runtime
-  gates remain open. Next numerical stage041 requires new instruction.
+  Stage 039 matched calibration and S1/S1e/S2/S4/full 13b listening/realism/runtime
+  gates remain open. Next numerical stage 041 requires new instruction.
 
-## 2026-10-24: Stage040 causal ignition checkpoint — HOLD
+## 2026-10-24: Stage 040 causal ignition checkpoint — HOLD
 
-- Authorized through040 only, reviewing each predecessor.038 reviewed before039;
-  qualified039 protocol reviewed before040 completion.040 is complete within its
-  declared causal/accounting scope;039 matched calibration remains awaiting
+- Authorized through 040 only, reviewing each predecessor.038 reviewed before 039;
+  qualified 039 protocol reviewed before 040 completion.040 is complete within its
+  declared causal/accounting scope; 039 matched calibration remains awaiting
   data. User has no new recordings currently and requests public online research
   first. No reference question remains pending; do not fabricate missing metadata.
 - core/src/ignition.[ch] and engine.c/h separate permitted command/discharge,
-  nonnegative kernel delay/age and bulk heat. Native optional256record tap uses
+  nonnegative kernel delay/age and bulk heat. Native optional 256 record tap uses
   engine-owned tick+fraction and cylinder-local IVC charge ID; raw/accepted delay,
   suppression/no-reactants/EVO pending/partial outcomes are explicit. No callback
-  allocation/I/O. Public event/build-generation/concurrent transport stays061.
-- Independent held3000rpm/.6/variation1/.5s oracle: all5engines0J pre-command
-  heat versus154–356J before.25short startup/idle/cut-resume/overrun/retained-fuel
+  allocation/I/O. Public event/build-generation/concurrent transport stays 061.
+- Independent held 3000rpm/.6/variation 1/.5s oracle: all 5engines0J pre-command
+  heat versus 154–356J before.25short startup/idle/cut-resume/overrun/retained-fuel
   scenarios close mass/species/fuel/energy/crank-work books. No early heat,
   invalid event or dropped record. Six compiled faults caught, including genuine
   IVC chemical heat without discharge; repeatable tools/bugs/stage040.py.
 - Delay is the nonnegative projection of the old onset surrogate, NOT a fitted
   kernel law. No empirical extinction/late chemistry/afterfire model is claimed.
   State-conditioned kernel statistics, residual validity, continuous variation→0
-  mean model and mean CA50/ECU calibration remain041/059; injector clicks042.
+  mean model and mean CA50/ECU calibration remain 041/059; injector clicks 042.
   fuel_kg semantics vary by event kind; see docs/stage-040.md. Reset/rebind/epoch
   management remains caller-owned. No full warm map or real-time guarantee.
-- Native206/694027pass; strengthened4/655335rerun =>206distinct/694149checks.
-  ASan/UBSan19/655542plusfinal4/655335; final WASM13/655645,Python64,web17pass.
+- Native 206/694027 pass; strengthened 4/655335 rerun =>206 distinct/694149 checks.
+  ASan/UBSan 19/655542plusfinal4/655335; final WASM13/655645, Python 64, web 17 pass.
   WASM169326bytes rebuilt. Final comment cleanup preserves exact native CLI
   code section and WASM bytes; refreshed source fingerprint/web tests agree.
-- Full34raw float clips337.112s vs337.248s before;33engine clips change, tone
-  identical, all finite/headroom/limiter0. Held3000 RMS−.021…+.086dB; upper
+- Full 34 raw float clips 337.112s vs 337.248s before; 33 engine clips change, tone
+  identical, all finite/headroom/limiter 0. Held 3000 RMS−.021…+.086dB; upper
   band share−.051…+.160dB. Modest spectral effect, not crispness acceptance.
-  I4 early-coast rise2.99→4.55dB stays explicit for058; I6/cross/flat changes
+  I4 early-coast rise 2.99→4.55dB stays explicit for 058; I6/cross/flat changes
   are small. No gain compensation hides it; new listening acceptance pending.
 - One renders/RESULTS.html contains all current examples/long coasts plus
   registered research/reference controls.52offline players, four jump controls,
   eight plots and exclusive playback pass.104protected audio/reference/Claude
-  files and18non-current-engine embedded payloads preserved. Remove only
+  files and 18 non-current-engine embedded payloads preserved. Remove only
   verified comparison duplicates after evidence; keep current raw originals.
 - docs/stage-040.md, source/build fingerprints, fault/scenario/raw-sound reports,
   final browser/preservation/test logs: renders/evidence/stage-040/. Graphify
-  queried/refreshed2731nodes/7428edges/158communities (AST; known rb.h
+  queried/refreshed 2731 nodes/7428 edges/158 communities (AST; known rb.h
   parse warning). No subagents used.
 - Public candidate ledger tools/reference_candidates_v1.json includes FB20
   factory-muffler YouTube, E46 Instagram, multichannel owner S54 and maker/installer
   leads. Media not acquired/auditioned/fitted; RPM/mic/gain/rights gaps explicit.
-  Existing8session lock/20raw stereo excerpts remain unchanged, including new
+  Existing 8 session lock/20 raw stereo excerpts remain unchanged, including new
   validation/quarantine groups that are not tuning auditions.
 - Preserve untracked user .agents/ and skills-lock.json; Claude setup unchanged.
-  Commit/sync this checkpoint, then HOLD.041 is next default after review040;
-  no later stage started. S1/S1e/S2/S4/full13b realism/listening/runtime stay open.
+  Commit/sync this checkpoint, then HOLD.041 is next default after review 040;
+  no later stage started. S1/S1e/S2/S4/full 13b realism/listening/runtime stay open.
 
-## 2026-10-24:039 protocol checkpoint; authorized continuation through040
+## 2026-10-24:039 protocol checkpoint; authorized continuation through 040
 
-- User: continue through040; review each predecessor before next completion.
-  Reviewed038 optional taps/books/limits; no blocking regression.039 protocol
-  implemented/qualified, but matched calibration remains unqualified and039
+- User: continue through 040; review each predecessor before next completion.
+  Reviewed 038 optional taps/books/limits; no blocking regression.039 protocol
+  implemented/qualified, but matched calibration remains unqualified and 039
   awaits targeted known NA I6/boxer data. User requests public online research
   first, has no recordings currently; no question remains pending. Do not
   fabricate geometry/RPM/load or count historically used clips as held out.
-- docs/stage-039.md; tools/reference_sessions_v1.json freezes8sessions:
-  6development,1new GM race-I6 validation,1uncertain Subaru quarantine. All17
+- docs/stage-039.md; tools/reference_sessions_v1.json freezes 8 sessions:
+  6 development, 1 new GM race-I6 validation, 1 uncertain Subaru quarantine. All 17
   old Freesound source IDs are historical development.20raw source-level stereo
   float excerpts in renders/reference-protocol/raw. Hashes/rights/intervals/
   uncertainties in lock; use per-channel powers before averaging. Never feed
   filtered copies or legacy mono averages into stereo calibration.
 - Six behavioral tests and five valid Python mutants prove channel power,
   gain modes, split/fingerprint/seen-data rejection and unclipped float storage.
-  Native202/38814,Python64,web17 pass. Four development-only gain controls in
-  one RESULTS.html;52offline players pass. Existing48payloads/116protected
+  Native 202/38814, Python 64, web 17 pass. Four development-only gain controls in
+  one RESULTS.html;52 offline players pass. Existing 48 payloads/116 protected
   files preserved. Raw validation clips are not tuning auditions.
--040 independent causality work is authorized (depends038). Baseline command-
-  angle oracle detects154–356J pre-command heat per0.5s across5presets. See
+-040 independent causality work is authorized (depends 038). Baseline command-
+  angle oracle detects 154–356J pre-command heat per 0.5s across 5 presets. See
   docs/stage-040.md frozen gates/design. Saved baseline CLI/WASM/probe under
   /tmp/rev-bench-040-*; evidence renders/evidence/stage-040/. Core unchanged
-  at039checkpoint. Do not use new validation/quarantine audio for tuning040.
+  at 039 checkpoint. Do not use new validation/quarantine audio for tuning 040.
 - Keep user .agents/ and skills-lock.json untracked; Claude setup intact.
-  Commit this checkpoint, then complete040 and stop. Parent S1/S1e/S2/S4/full13b
+  Commit this checkpoint, then complete 040 and stop. Parent S1/S1e/S2/S4/full 13b
   listening/physical/runtime requirements remain open.
 
-## 2026-10-23: Stage038 complete — numerical observation checkpoint
+## 2026-10-23: Stage 038 complete — numerical observation checkpoint
 
-- User authorizes review037, then038. docs/stage-038.md is the execution record.
+- User authorizes review 037, then 038. docs/stage-038.md is the execution record.
   Fixed fractional/negative/boolean native enum/identity-index coercion and
   preservation of annotations/transforms/centerlines during build preparation.
-  Stage039 matched references/calibration is next default;040/043/044 are Ready
+  Stage 039 matched references/calibration is next default; 040/043/044 are Ready
   by dependency only. Do not automatically execute later stages.
 - New internal core/src/diagnostics.[ch]: optional caller-owned per-component
   requested/accepted mass, species and transported enthalpy+kinetic J; foregone
   transfer and repaired quantities; staggered-column impulses N·s; semantic
   role/number/cell/face identity; junction inventories, caps/floors/fallbacks,
   requested/actual cells, effective lengths/densities and runtime CFL. No callback
-  allocation/I/O. Public rb.h/TS exports stay unchanged; WASM rebuilt167241B.
+  allocation/I/O. Public rb.h/TS exports stay unchanged; WASM rebuilt 167241B.
 - Bind only after engine preparation, quiescent; unbindNULL. Reset/reinitializing
   objects clears taps: rebind and manage generation. Insufficient slot capacity
-  preserves old binding. Max2048slots,256trace records; full trace drops new
+  preserves old binding. Max 2048 slots, 256 trace records; full trace drops new
   records with counted loss, aggregates continue. Tick is binding-relative;
   caller supplies offset for existing engines. Not a production event-clock API.
 - Do NOT claim globally conserved junction/vector momentum:0D volumes do not
   own that state. Impulses expose current face updates/caps. Invalid repair
   deltas have invalid counters, not invented finite J. R06 physical consequences
   and integrated/browser qualification remain later cross-checks.
-- Five-preset .25s held3000rpm .7→.01 throttle: closed mass/species/energy and
+- Five-preset .25s held 3000rpm .7→.01 throttle: closed mass/species/energy and
   boundary tap books, exact observed/unobserved physical state. Mass residual
-  <=2.54e-16kg, energy<=8.94e-10J; CFLmax0.510; no repairs/invalid values in these
+  <=2.54e-16kg, energy<=8.94e-10J; CFLmax 0.510; no repairs/invalid values in these
   ordinary cases. Frequent equalisation caps, scalar fallbacks and property
   extrapolations are now visible; they remain physical investigation targets.
-- Native full200tests/38789checks plus two added cases/25checks:202distinct and
-  38814checks combined. ASan/UBSan9/31051; WASM15/31227; Python58; web17. Six
+- Native full 200 tests/38789checks plus two added cases/25 checks:202 distinct and
+  38814 checks combined. ASan/UBSan 9/31051; WASM15/31227; Python 58; web 17. Six
   compiled faulty copies caught, including skipped junction inspection. Fixed
   stale test-wasm recipe to include experiment sources/headers. Native first;
   no expanded warm-engine operating-envelope or real-time claim.
-- Intel i7-1355U/GCC15.2/O3/noLTO CPU medians: aggregate engine taps1.50–1.60x,
-  bounded trace1.40–1.62x; disabled renderer vs baseline1.030–1.076x. Diagnostic
-  storage128–257KiB for these presets+26KiB trace. Optional developer monitoring
+- Intel i7-1355U/GCC15.2/O3/noLTO CPU medians: aggregate engine taps 1.50–1.60x,
+  bounded trace 1.40–1.62x; disabled renderer vs baseline 1.030–1.076x. Diagnostic
+  storage 128–257KiB for these presets+26KiB trace. Optional developer monitoring
   is costly; do not enable by default in a callback. Timings share the machine
   with development loads and are not worst-case deadline guarantees.
-- Full34float renders337.248s (long coasts/control included) are byte-identical;
-  15additional paired baseline/current held clips identical. RESULTS rebuilt;
-  all48 clips play offline, four jump buttons/eight plots and exclusive play
-  pass. All116 protected audio/reference/Claude files and48payloads preserved.
+- Full 34 float renders 337.248s (long coasts/control included) are byte-identical;
+  15 additional paired baseline/current held clips identical. RESULTS rebuilt;
+  all 48 clips play offline, four jump buttons/eight plots and exclusive play
+  pass. All 116 protected audio/reference/Claude files and 48 payloads preserved.
   Comparison duplicates cleaned after hash/log/CSV evidence; current originals
   stay. Local evidence: renders/evidence/stage-038/. Source/command hashes saved.
-- Graphify queried/refreshed2657nodes/7206edges/153communities; knownrb.h:415
+- Graphify queried/refreshed 2657 nodes/7206 edges/153 communities; knownrb.h:415
   parse warning. Preserve user .agents/ and skills-lock.json without staging.
-  Claude setup unchanged. Save/sync and checkpoint; S1/S1e/S2/S4/full13b stay open.
+  Claude setup unchanged. Save/sync and checkpoint; S1/S1e/S2/S4/full 13b stay open.
 
 ## 2026-10-23: Stage 037 complete — shared contracts checkpoint
 
-- Bernardo authorizes the next planned stage after112/113. Stage037 specifies
+- Bernardo authorizes the next planned stage after 112/113. Stage 037 specifies
   shared build/geometry/event/snapshot/rebuild contracts and proves a bounded
   native/reference implementation. docs/stage-037.md, contracts/README.md,
-  contracts/runtime-v1.md and ADR0003 are the handoff. Stage038 numerical guard
+  contracts/runtime-v1.md and ADR0003 are the handoff. Stage 038 numerical guard
   and flux observability is next Ready; do not automatically start later stages.
-- One complete SI descriptor covers84active native fields, including missing
+- One complete SI descriptor covers 84 active native fields, including missing
   exhaust/Cd/thermal/friction/starter/ECU settings. tools/build_contract_probe.c
   and its field map are native developer tools, not a production ABI. Existing
   C and TS bindings stay intact. Makefile build-contract-check performs full
@@ -758,24 +768,24 @@ CLAUDE.md and .claude/ have been preserved.
   claimed. Initial rebuild policy quiesces audio, prepares a stable-address
   handle and acknowledges reset/dyno detach/history invalidation; don't memcpy
   self-referential engines or transfer pointers between WASM instances.
-- Passed196native/7897checks;57Python(including12contract tests);17web. Native
+- Passed 196 native/7897checks;57Python(including12contract tests);17 web. Native
   five-preset matrix also passes ASan/UBSan. Five deliberate unit/identity/clock/
   generation/history faults are caught in temporary copies. Full proof wall
-  time0.393s includes subprocesses; compact builds7102–12326B and minimal
-  protocol snapshot controls561–835B. No callback throughput/concurrency claim.
-- All158protected files and48audio payloads preserved; no sound render, core,
+  time 0.393s includes subprocesses; compact builds 7102–12326B and minimal
+  protocol snapshot controls 561–835B. No callback throughput/concurrency claim.
+- All 158 protected files and 48 audio payloads preserved; no sound render, core,
   TS, WASM or Claude setup changes. Local logs/native/sanitizer/fault matrices,
   costs/source hashes/preservation: renders/evidence/stage-037/. Graphify queried
-  and AST-refreshed:2597nodes/7007edges/145communities; knownrb.h:415 warning.
+  and AST-refreshed:2597 nodes/7007 edges/145 communities; knownrb.h:415 warning.
   Preserve user-added .agents/ and skills-lock.json without staging them.
-- Save/sync then checkpoint. Parent S1/S1e/S2/S4/full13b and C01–C06 remain open;
+- Save/sync then checkpoint. Parent S1/S1e/S2/S4/full 13b and C01–C06 remain open;
   037 completes its specified-contract proof, not future physics or product gates.
 
 ## 2026-10-23: C07/C08 repairs — checkpoint and HOLD
 
 - Bernardo authorizes the necessary review fixes, then a saved checkpoint and
-  hold. Appended canonical112/113 preserve existing IDs; all six retained
-  physics/integration risk groups keep their owners. Stage037 is not started.
+  hold. Appended canonical 112/113 preserve existing IDs; all six retained
+  physics/integration risk groups keep their owners. Stage 037 is not started.
 - 112 repairs C08 with staged, hash-verified immutable section fragments;
   page-install failure restores the previous manifest. Partial fragment/page/
   manifest writes and install faults preserve rebuild/retry and other sections.
@@ -788,28 +798,28 @@ CLAUDE.md and .claude/ have been preserved.
   rather than silently invoke it. Production core/radiation/WASM unchanged.
   Scope and commands: docs/stage-113.md. No broadened physical-validity claim.
 - 48 ordinary native B0 controls have identical non-timing CSV fields versus
-  baseline fba9bf0. Median measured small-fixture CPU cost is1.215x; prototype
-  median173x real time, not a full-engine/runtime claim. Five new deliberate
+  baseline fba9bf0. Median measured small-fixture CPU cost is 1.215x; prototype
+  median 173x real time, not a full-engine/runtime claim. Five new deliberate
   faults and the updated existing extra-feedback-delay fault are caught.
-- Passed:196native/7897checks;45Python;17web;ASan/UBSan18candidate/2593checks.
-  Complete results rebuild and offline48-player playback, exclusive play,
-  four jump buttons and all eight plots pass. All158protected files and48
+- Passed:196 native/7897checks;45Python;17web;ASan/UBSan18candidate/2593checks.
+  Complete results rebuild and offline 48-player playback, exclusive play,
+  four jump buttons and all eight plots pass. All 158 protected files and 48
   embedded preview payloads preserved; no rerender or reference filtering.
 - Local logs/comparison/source hashes/preservation/browser evidence:
   renders/evidence/fixes-112-113-2026-10-23/. Graphify refreshed after code:
-  2524nodes/6770edges/151communities; knownrb.h parser limitation retained.
-  Roadmap:113unique IDs, acyclic dependencies,62legacy/27audit mappings and
-  978local links pass. Preserve user-added .agents/ and
+  2524 nodes/6770 edges/151 communities; knownrb.h parser limitation retained.
+  Roadmap:113 unique IDs, acyclic dependencies, 62 legacy/27 audit mappings and
+  978 local links pass. Preserve user-added .agents/ and
   skills-lock.json without staging. Claude setup stays active and unchanged.
 - HOLD for Bernardo's instruction after checkpoint sync. Next planned feature
-  remains037;112/113 close only the new reproduced guard/publication defects,
-  not S1/S1e/S2/S4/full13b realism or runtime acceptance.
+  remains 037;112/113 close only the new reproduced guard/publication defects,
+  not S1/S1e/S2/S4/full 13b realism or runtime acceptance.
 
 ## 2026-10-23: brief completed-stage review — HOLD
 
 - Bernardo requests review of every completed stage, then hold. Scope and all
   001–036 coverage: docs/review-completed-stages-2026-10-23.md. No core/prototype
-  source, audio, references or Claude setup changes; do not start037 or fixes.
+  source, audio, references or Claude setup changes; do not start 037 or fixes.
 - Six existing risk groups remain: causal combustion/variation/injector events;
   acoustic/thermal/guard validity; incompatible pulse/noise/listener paths;
   unmatched references/high-RPM assumptions; prototype-to-engine/runtime limits;
@@ -822,13 +832,13 @@ CLAUDE.md and .claude/ have been preserved.
 - C08 newly reproduced in a temporary folder: publisher overwrites a registered
   section before its rollback try. A partial write/exception leaves the previous
   page and manifest intact but corrupts the fragment; next hash-checked rebuild
-  fails. Stage033 needs a bounded follow-up before affected publication. No fix
+  fails. Stage 033 needs a bounded follow-up before affected publication. No fix
   or new execution stage allocated during this review.
 - Two reproduction sources/outputs, source hashes and focused tests live under
   ignored renders/evidence/completed-review-2026-10-23/. Existing global-suite
   counts are historical, not freshly rerun. Graphify queried; source topology
   unchanged. Preserve .agents/ and skills-lock.json without staging.
-- HOLD for further instructions. Stage037 remains the next planned item only;
+- HOLD for further instructions. Stage 037 remains the next planned item only;
   do not interpret Ready status as permission to resume development.
 
 ## 2026-10-23: canonical whole-project roadmap — Stage 036
@@ -838,40 +848,40 @@ CLAUDE.md and .claude/ have been preserved.
   grill-with-docs interview settles first-release scope and order: full original
   scope including turbo/knock/damage/catalog/save/share; contracts and sound
   gates before browser/3D. Learned synthesis and nine extras stay conditional.
-- PLAN.md now owns the sole current status table, Stages001-111. Thirteen
+- PLAN.md now owns the sole current status table, Stages 001-111. Thirteen
   docs/roadmap phase catalogs give every stage a deliverable, dependencies,
   exit evidence and rejection rule. docs/roadmap/README.md defines the common
   preflight/research/independent-proof/integration/runtime/user-acceptance
   protocol. Future gates are requirements, not achieved evidence or zero-rework
-  promises. Next default is037 shared build/geometry/event/snapshot contracts;
-  039 matched-reference work can progress independently after036.
-- All62 former tracker entries are preserved in docs/roadmap/legacy-map.md,
-  including partial parent acceptance and aliases. All27 D/R findings have
+  promises. Next default is 037 shared build/geometry/event/snapshot contracts;
+  039 matched-reference work can progress independently after 036.
+- All 62 former tracker entries are preserved in docs/roadmap/legacy-map.md,
+  including partial parent acceptance and aliases. All 27 D/R findings have
   primary and integration owners in docs/roadmap/audit-coverage.md. The former
   root PLAN is archived in docs/roadmap/legacy-plan.md with relocated links;
-  original unchanged text is in commit99ba54e. Historical stage docs keep their
+  original unchanged text is in commit 99ba54e. Historical stage docs keep their
   original names/claims. New execution reports use docs/stage-NNN.md, consistent
   with Claude's stage-report convention. CLAUDE.md/.claude remain unchanged.
-- Legacy S1/S1e/S2/S4/full13b remain open through their explicit new owners.
-  The old4x-native/2x-WASM goals and rejected coupled implicit-valve convergence
+- Legacy S1/S1e/S2/S4/full 13b remain open through their explicit new owners.
+  The old 4x-native/2x-WASM goals and rejected coupled implicit-valve convergence
   case are retained, not silently retired. A completed rejected-arm experiment
   supplies decision evidence; only surviving arms need qualified artifacts,
   while common physics/component gates remain mandatory.
 - Browser is still tone; core/TS already contain engine/stereo bindings, so
-  reuse them rather than rebuilding that layer. No product3D/turbo/damage is
+  reuse them rather than rebuilding that layer. No product 3D/turbo/damage is
   implemented. Current coupled duct remains a bounded separate below-real-time
   proof, not the general B0/production engine adapter. Accepted sound stays
-  I6 earlier twin8500, flat earlier9000, cross sharper rear-delete X7500.
+  I6 earlier twin 8500, flat earlier 9000, cross sharper rear-delete X7500.
 - Review closes planning gaps: actual spark versus later kernel/heat; noise
   source-work ownership; physical flight versus DSP/device delay; unwrapped
-  crank/time; no CFD flame/pathline or metal-temperature claim from0D/1D gas;
+  crank/time; no CFD flame/pathline or metal-temperature claim from 0D/1D gas;
   listener/scene/layer UI; all four camera presets; at least two generic
   inspired-by catalog builds; no unnecessary repeat deployment approval.
 - Documentation validation/provenance and scope are recorded in
   docs/stage-036.md. No simulation/test/audio-generation claim is inferred from
   this documentation-only checkpoint. Source, audio/reference and Claude
   preservation checks accompany the link/ID/dependency/coverage validation.
-  Graphify was queried and AST-refreshed:2478nodes/6655edges/140communities,
+  Graphify was queried and AST-refreshed:2478 nodes/6655 edges/140 communities,
   knownrb.h:415 warning retained; no semantic-document extraction claimed.
   Preserve user-added .agents/ and
   skills-lock.json without staging them.
@@ -881,13 +891,13 @@ CLAUDE.md and .claude/ have been preserved.
 - Bernardo authorizes completing the next step, split as needed. Three bounded
   substages are complete: S2d-R publication, S2d-0b current-tick interface and
   S2d-B1a homogeneous open gas/characteristic duct proof. Full method, evidence,
-  reproduction and limits: docs/stage-S2d-0b-B1a.md. Parent S2d-0/S2d/S1/full13b
-  remain open; stage14 remains unstarted. Accepted engine sounds are preserved.
+  reproduction and limits: docs/stage-S2d-0b-B1a.md. Parent S2d-0/S2d/S1/full 13b
+  remain open; stage 14 remains unstarted. Accepted engine sounds are preserved.
 - Publication now uses tools/checkpoint_sections.py: hashed local sections and
   diagnostic inventory in ignored renders/checkpoint/manifest.json. All three
   research/reference producers share the composer. The one-time migration
-  --adopt-current is already done. Ordinary --publish-only rebuilds all48
-  players; fresh accepted renders carry42 registered diagnostic WAVs before
+  --adopt-current is already done. Ordinary --publish-only rebuilds all 48
+  players; fresh accepted renders carry 42 registered diagnostic WAVs before
   atomic replacement. Unknown, missing or changed inputs fail before install.
 - B0 wave.[ch] exposes receive/incident/commit so current returning pressure is
   available before the caller solves its boundary; no extra tick is inserted.
@@ -908,28 +918,28 @@ CLAUDE.md and .claude/ have been preserved.
 - Fifteen physical cases pass: two interface positions plus all-FV control at
   three amplitudes, negative/matched/positive reflected-load controls and
   three one-second source-free screens. These have a matched left end, not
-  trapped closed-loop growth tests. Worst split pressure waveform error1.30%,
-  return-peak error2.5ticks, per-quantity relative region balance4.75e-12.
+  trapped closed-loop growth tests. Worst split pressure waveform error 1.30%,
+  return-peak error 2.5 ticks, per-quantity relative region balance 4.75e-12.
   Moving tagged contacts pass both directions against analytic advection.
-- Whole-fixture median costs39.4/69.8/83.7ms for2.33ms modeled time at
-  cuts168/280/560: below real time. No production speedup or higher hardware
+- Whole-fixture median costs 39.4/69.8/83.7ms for 2.33ms modeled time at
+  cuts 168/280/560: below real time. No production speedup or higher hardware
   requirement is justified. Source-free energy and conserved books are
   separate checks. An initially rejected mixed-unit absolute-balance screen
-  and80-bit roundoff control are retained, not hidden; final gate uses
+  and 80-bit roundoff control are retained, not hidden; final gate uses
   independently scaled kg/Ns/J/tagged-kg residuals.
-- Validation: native193tests/7766checks, Python42/no skips, web17,
-  ASan/UBSan18candidate/coupling tests/3294checks. All six deliberate faults
+- Validation: native 193 tests/7766checks, Python 42/no skips, web 17,
+  ASan/UBSan 18 candidate/coupling tests/3294checks. All six deliberate faults
   are caught: stale return, added delay, unmatched flux, duplicate energy,
   lost tagged advection, kinetic energy misreported as pressure. Existing
   S2d wrong-return-sign mutation anchor updated and that individual control
   is caught; the older full matrix was not rerun. No core/WASM source changed.
-- Offline result: all48players, exclusive playback, four jump buttons,
-  two new/six retained plots pass with no network or page errors. All158
-  preserved file hashes and48audio payloads match the starting snapshot.
+- Offline result: all 48 players, exclusive playback, four jump buttons,
+  two new/six retained plots pass with no network or page errors. All 158
+  preserved file hashes and 48 audio payloads match the starting snapshot.
   Ignored evidence: renders/evidence/coupling-proof-2026-10-23/, including
   raw fields/traces, source hashes, rejected screen, precision control,
   costs, validation logs and browser preview. Measurement sources match.
-- Graphify AST refreshed:2298nodes/6295edges/126communities, knownrb.h:415
+- Graphify AST refreshed:2298 nodes/6295 edges/126 communities, knownrb.h:415
   warning retained; no semantic-document extraction claimed. User-added
   .agents/ and skills-lock.json remain untouched and unstaged. Claude setup
   remains active. Next dependent work: production-mixture/graph port adapter
@@ -956,15 +966,15 @@ CLAUDE.md and .claude/ have been preserved.
   coupling/guard observability remain unimplemented. A1's current rejection
   applies to that tested configuration. Production/native stereo and browser
   mono have separate validation/runtime requirements. The browser page remains
-  the stage2 test-tone scaffold; interactive engine integration is stillstage14,
+  the stage 2 test-tone scaffold; interactive engine integration is still stage 14,
   unstarted. No learned engine exists.
 - Confirmed publication regression introduced by accumulated experiment files:
-  renders/current contains76WAVs; write_page expects34 and rejects42extra.
+  renders/current contains 76WAVs; write_page expects 34 and rejects 42 extra.
   Reproduced failure before writes; RESULTS.html unchanged. Three append
   publishers plus the replacing standard render do not provide a complete
   one-command48-player rebuild. Proposed fix: one declared checkpoint inventory
   and atomic composition; do not delete accepted/reference/evidence assets.
-- Retained S2d344rows/18exclusions, aggregate CSVs and47source hashes match.
+- Retained S2d344rows/18 exclusions, aggregate CSVs and 47 source hashes match.
   Existing test counts are historical validation; no full suites/experiments
   rerun for this documentation review. Graphify queried; AST topology unchanged.
 - GLOSSARY.md records resolved terms only. docs/adr/0001-coupled-exhaust-ownership.md
@@ -994,11 +1004,11 @@ CLAUDE.md and .claude/ have been preserved.
   clips, previous references, accepted renders, core/WASM and Claude's setup.
 - Hold for Bernardo's next instruction after this reference checkpoint.
   Do not continue acoustic development or close S1/S2d/full 13b acceptance.
-- Validation: native189/4820, Python38 without skips, web17; all48 offline
+- Validation: native 189/4820, Python38 without skips, web 17; all 48 offline
   players, exclusive playback, four original seek buttons and six prior plots
   pass. Both measurement files equal direct source decode; filtered frame counts
-  match. All108 older hashed files and46 embedded previews remain unchanged.
-  Graphify AST refreshed to2159nodes/5933edges/112communities, knownrb.h:415
+  match. All 108 older hashed files and 46 embedded previews remain unchanged.
+  Graphify AST refreshed to 2159 nodes/5933 edges/112 communities, knownrb.h:415
   limit. No semantic extraction is claimed. FFT end flushing now preserves
   fractional clip endings; the added integration check exercises this case.
 
@@ -1012,36 +1022,36 @@ CLAUDE.md and .claude/ have been preserved.
   weighted junctions/cavity compliance, sources, radiation, loss/storage/work
   books) and euler.[ch] (constant-gamma HLLC/HLLE, MC, SSP-RK2, tagged gas).
   They link only into tests/probe, not production rb_cli/public API/WASM.
-- Matrix: 124 FV rows with18 explicit setup exclusions, 220 graph rows.
+- Matrix: 124 FV rows with 18 explicit setup exclusions, 220 graph rows.
   Initial A1 conserves total quantities to~1e-15 but is too dissipative for
-  upper-band sound: at300K/zero-flow/2kHz/9.375mm only56.2% perturbation energy
-  remains after2.5ms. Reject that configuration as an acoustic upgrade.
-- B0 all-pass meets the tested quiescent1m/200–4000Hz screen: magnitude error
-  below.001dB at reporting precision, worst phase4.189deg. One-second closed
+  upper-band sound: at 300K/zero-flow/2kHz/9.375mm only 56.2% perturbation energy
+  remains after 2.5ms. Reject that configuration as an acoustic upgrade.
+- B0 all-pass meets the tested quiescent 1m/200–4000Hz screen: magnitude error
+  below.001dB at reporting precision, worst phase 4.189deg. One-second closed
   loops show no growth; linear interpolation's loss is measured/booked.
   Higher-band phase, transverse modes, mean flow, thermal fronts, real
   components and nonlinear reflected-engine coupling remain unvalidated.
 - Five engine snapshots resolve all connections. Semantic component IDs survive
   intake-runner removal; legacy pipe positions are not physical identities.
-  Historical A0 data match all41 current core C/header source hashes.
+  Historical A0 data match all 41 current core C/header source hashes.
   Snapshot is not a complete acoustic compiler/full production cap trace.
 - Production stereo baseline is still~.56x real time in this host. Separate
   instrumented profile points to gas/property/pipe costs; its overhead/self
   percentages are not a promised hybrid speedup. No engine audio is retuned.
-- Native189/4820, Python37 without skips, web17 and candidate ASan/UBSan14/348
+- Native 189/4820, Python37 without skips, web 17 and candidate ASan/UBSan 14/348
   pass. Nine deliberate physics/units faults are caught. Details and final
   publication/preservation/graph checks are in the ignored checkpoint evidence.
 - RESULTS.html retains every accepted preview and long coast and adds two
   prototype plots. No new engine render, learned model, reference processing,
-  core/WASM/preset or Claude setup changes. Do not close parent sound/full13b
-  acceptance or start stage14. Next: complete interface observability/contracts,
+  core/WASM/preset or Claude setup changes. Do not close parent sound/full 13b
+  acceptance or start stage 14. Next: complete interface observability/contracts,
   then common-clock nonlinear/load coupling and temperature/reversal controls.
-- Independent z-domain transfer checks and1025-point analytic sweeps/18 static
+- Independent z-domain transfer checks and 1025-point analytic sweeps/18 static
   configurations agree with the native responses. This does not add mean-flow
-  validation. Offline browser check passes on retry: all46clips, exclusive play,
-  four original seek buttons and two new/four previous plots. All76 current
-  WAVs and46preview payloads remain byte-identical.
-- Graphify AST refreshed:2155nodes/5918edges/112communities; known rb.h:415
+  validation. Offline browser check passes on retry: all 46 clips, exclusive play,
+  four original seek buttons and two new/four previous plots. All 76 current
+  WAVs and 46 preview payloads remain byte-identical.
+- Graphify AST refreshed:2155 nodes/5918 edges/112 communities; known rb.h:415
   limit retained. No semantic-document extraction or external training run.
 
 ## 2026-10-23: S2d implementation specification
@@ -1073,7 +1083,7 @@ CLAUDE.md and .claude/ have been preserved.
 - Current checkpoint edits documentation only. Graphify queried for coupling
   sites; source topology is unchanged, so no AST rebuild is needed. No new
   audio/model/training/core/WASM/preset/Claude changes. S2d/S2e/S6 and parent
-  sound/13b acceptance stay open; stage14 unstarted. Next entry: S2d-0.
+  sound/13b acceptance stay open; stage 14 unstarted. Next entry: S2d-0.
 - Documentation links/fences/whitespace and 1,000 static-junction equation
   checks pass; RESULTS.html hash matches S2c. These are design checks, not
   prototype acceptance. Native/web suites were not rerun for documentation.
@@ -1088,46 +1098,46 @@ CLAUDE.md and .claude/ have been preserved.
   docs/sound-generation-architecture-review.md.
 - Transport: 312 matrix configurations, 241 guarded/71 spatial exclusions.
   Fine space reduces phase/loss; time alone can worsen energy retention.
-  At zero flow 2 kHz, 37.5→9.375 mm improves phase134.65→8.30 degrees despite
+  At zero flow 2 kHz, 37.5→9.375 mm improves phase 134.65→8.30 degrees despite
   ~100% perturbation energy throughout. Independent discrete dispersion
   predicts the errors. Refined hot-flow growth is scoped to the tested
   segmented network; partition sensitivity leaves interface/bulk attribution open.
 - Source matrix: 30 trajectories/60 captures, three engines/two RPMs/five
   independent or combined rate/grid controls. Baseline mono production identity
-  is exactly0 in six checks; simultaneous stems reconstruct within ~1e-15.
+  is exactly 0 in six checks; simultaneous stems reconstruct within ~1e-15.
   Engine-rate doubling changes upper-band fraction≤.15dB; finer space at fixed
   pipe time changes I6/cross/flat by+5.93/.85/5.29dB. These are spectral changes,
-  not listening realism acceptance. All repairs/limiter counts0.
+  not listening realism acceptance. All repairs/limiter counts 0.
 - Held injection-off is not ECU overrun; residual heat and synthesized injector
   clicks are documented. Three additional ten-second actual-ECU coasts trace
-  lift .5s, fuel cut .65s, clutch8.5s. I6 early coast rises6.06dB, dominated by
-  pipe pulses while added flow noise falls. No idle checkpoint by10s is claimed.
-- Actual early-coast tail end-cell gas T drops848→319/904→312/974→316K;
+  lift .5s, fuel cut .65s, clutch 8.5s. I6 early coast rises 6.06dB, dominated by
+  pipe pulses while added flow noise falls. No idle checkpoint by 10s is claimed.
+- Actual early-coast tail end-cell gas T drops 848→319/904→312/974→316K;
   this is local near-mouth gas, not wall/whole-exhaust cooling. Boundary
   entrainment, transient thermal behavior and numerical mixing need separation;
   do not attribute the transition to mean-flow damping alone.
-- Native production-stereo cost control (cross6500,O3,LTO0,no trace output):
+- Native production-stereo cost control (cross 6500,O3,LTO0,no trace output):
   median CPU real-time factor .563 baseline/.211 combined ultra. These are not
   WASM, engine-only or callback acceptance results. Uniform refinement is costly.
-- Recommended next comparison: acoustic-preserving conservative1D vs coupled
+- Recommended next comparison: acoustic-preserving conservative 1D vs coupled
   nonlinear gas/acoustic network with reflected source loading and common
   geometry-dependent pulse/noise transfer. Recent engine-specific pulse/learned
   parameter papers are relevant benchmarks, not proof of arbitrary hardware
   physics. Neural residual remains conditional on matched data and an unmet gap.
 - Six raw stereo reference intervals retain unknown RPM/load/perspective;
-  M4 turbo/NA-I6 mismatch remains. Current33 engine WAVs/59 reference files
-  are preserved; all34 accepted examples/five full coasts stay in RESULTS.html,
+  M4 turbo/NA-I6 mismatch remains. Current 33 engine WAVs/59 reference files
+  are preserved; all 34 accepted examples/five full coasts stay in RESULTS.html,
   with appended plots/twelve common-gain diagnostic comparisons. Selected
   float diagnostics are grouped in renders/current/experiment/; temporary
   controls are cleaned after publication validation, numeric evidence retained.
-- Native175/4472,Python29,web17,transport/source ASan/UBSan and meaningful
+- Native 175/4472, Python 29, web 17, transport/source ASan/UBSan and meaningful
   analyzer/spectral self-checks pass. Offline result/graph details are in the
-  final evidence manifest: all46clips play, original34previews/59references
-  unchanged, original4jumpbuttons and4plots valid. Removed252temporary
-  controls/1.75GB; kept42selectedfloats together, republication after cleanup
-  passes. GraphifyAST2011nodes/5485edges/113communities, knownrb.h:415 limit;
+  final evidence manifest: all 46 clips play, original 34 previews/59 references
+  unchanged, original 4 jump buttons and 4 plots valid. Removed 252 temporary
+  controls/1.75GB; kept 42 selected floats together, republication after cleanup
+  passes. GraphifyAST2011nodes/5485 edges/113 communities, knownrb.h:415 limit;
   no document semantic extraction claimed. No engine/preset/WASM/Claude edits.
-  S1/S1e/S2/S4/full13b remain open; stage14 unstarted. Future stages are planned,
+  S1/S1e/S2/S4/full 13b remain open; stage 14 unstarted. Future stages are planned,
   not silently implemented by this experimental checkpoint.
 
 ## 2026-10-22: initial audio bottleneck diagnosis
@@ -1223,12 +1233,12 @@ CLAUDE.md and .claude/ have been preserved.
   rear-delete route; the separate current control is the packed rear option.
   This modified Borla-inspired route is not the catalog kit.
 - Catalyst substrate resistance is now an explicit descriptor/API field:
-  catalyst_laminar (Pa s/m), default25, selected bypasses0; effective throat
+  catalyst_laminar (Pa s/m), default 25, selected bypasses 0; effective throat
   areas still act separately. Existing public field indices are preserved.
   No pitch/EQ/extra oscillator or RPM-dependent output gain was introduced.
 - The complete native 175-test suite passes; the final strengthened six-check
-  coherence test passes separately. SIMD WASM18/2031, ASan/UBSan10/2144,
-  Python29, web17, production build, two Chromium tests in each development
+  coherence test passes separately. SIMD WASM18/2031, ASan/UBSan 10/2144,
+  Python 29, web 17, production build, two Chromium tests in each development
   and production mode pass. Five mutants caught after adding signed flow
   assertions to the initially pressure-only X-coherence test.
 - 192→384→768 kHz high-rev convergence retains the 48-kHz pipe grid. First
@@ -1236,12 +1246,12 @@ CLAUDE.md and .claude/ have been preserved.
   zero state repairs and conservation errors <2.2e-14kg/1.3e-7J. Native/WASM
   engine-only timing remains below the separate 4x/2x targets; see stage doc.
 - All five start and complete 30-second idle with zero warm stalled steps;
-  20 randomized ten-second runs pass. Flat-V8 idle COV20.59–29.49%, with135
+  20 randomized ten-second runs pass. Flat-V8 idle COV20.59–29.49%, with 135
   incomplete modeled burns. Existing S1/13b acceptance remains open.
-- All34 current clips, five long coasts and four top-end jump buttons are
+- All 34 current clips, five long coasts and four top-end jump buttons are
   embedded in renders/RESULTS.html. Actual loaded peaks:8429/7457/8957rpm.
-  I6's pull guard is20s; others retain12s. Seventeen accepted recordings,
-  including all I4/boxer examples, remain byte-identical. All59 reference
+  I6's pull guard is 20s; others retain 12s. Seventeen accepted recordings,
+  including all I4/boxer examples, remain byte-identical. All 59 reference
   library files are unchanged. Current raw float WAVs remain measurement inputs.
 - Upper harmonics are more prominent, especially both V8s; these metrics do
   not establish listening acceptance. I6 1–4kHz relative energy is not a
@@ -1252,10 +1262,10 @@ CLAUDE.md and .claude/ have been preserved.
   native/WASM binaries remain in ignored renders/evidence/13b-r/. Old/current
   comparison audio is deleted after preserving measurements. Claude's setup
   remains active and unchanged. Hold further development for listening feedback;
-  stage14 and the unresolved persistent-SoA/implicit-valve work were not resumed.
+  stage 14 and the unresolved persistent-SoA/implicit-valve work were not resumed.
 - Graphify was queried before exploration and refreshed through AST:
   1842 nodes / 5027 edges / 77 communities. Its existing rb.h extraction
-  limitation is now line415; native/WASM compilers validate the header.
+  limitation is now line 415; native/WASM compilers validate the header.
 
 ## 2026-10-22: sound accepted; consolidated results and render cleanup
 

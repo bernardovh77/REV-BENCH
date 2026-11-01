@@ -6,19 +6,24 @@ Bernardo's Personal-Projects repo, on its `rev-bench` branch; its history came a
 
 ## Bernardo's machine (Windows + WSL)
 
-- The clone is its own folder beside Personal-Projects, `/mnt/c/Users/berna/REV-BENCH`, so
-  `git pull` and `git push` there sync with this repo, and Personal-Projects with its own. (Until
-  stage 12b it sat inside Personal-Projects, which ignored it.) Claude Code runs in WSL, started
-  there, so it reads this repo's `CLAUDE.md` and `.claude/settings.json`.
+- The clone is its own folder, `/mnt/c/Users/berna/REV-BENCH`: `git pull` and `git push` there
+  sync with this repo. (Until stage 12b it sat inside the old Personal-Projects repo, which no
+  longer exists.) Claude Code runs in WSL, started there, so it reads this repo's `CLAUDE.md`
+  and `.claude/settings.json`.
+- Bernardo's reference recordings and videos of real engines are only here, in `renders/`
+  (ignored by git; docs/user-sound-references.md lists them). A cloud session can't see them.
+  To use them, either attach them to a message in the session, or start the session from WSL:
+  `claude remote-control` in this folder lets claude.ai/code start sessions that run here. The
+  Windows desktop app's Remote Control folders aren't offered to cloud sessions.
 - graphify (the code graph in `graphify-out/`) is installed in `~/.local/bin`, version 0.9.92
   (`pip install --user graphifyy==0.9.92`). After pulling, run `graphify update .`: it remakes its
   cache and manifest, which are each machine's own and not in git, and catches the graph up if a
   session couldn't.
 - Renders aren't in git (`renders/` is ignored): `make render` makes them, about four minutes.
 
-### Moving it out of Personal-Projects (once)
+### Moving it out of Personal-Projects (done, 2026-10-20)
 
-In WSL, with an empty `REV-BENCH` folder beside Personal-Projects (or none: the clone makes it):
+Kept for the record; the steps were:
 
 ```bash
 cd /mnt/c/Users/berna

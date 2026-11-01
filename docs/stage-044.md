@@ -64,8 +64,8 @@ Freeze before execution:
 
 ## Implementation and bounded results
 
-Stage043 was saved as `78db7cf` before implementing this stage. No production
-source or accepted audio change is part of044. `tools/exhaust_geometry.py`
+Stage 043 was saved as `78db7cf` before implementing this stage. No production
+source or accepted audio change is part of 044. `tools/exhaust_geometry.py`
 validates through native full-descriptor preparation, compiles fresh physical
 regions/cells/port incidence and emits immutable serialized plans. Every
 consumer gets an independent decoded copy. Schema/generation/revision and the
@@ -80,7 +80,7 @@ packing resistance/settling time and chambered-muffler baffles. No extra
 substrate length/volume is invented when the current description lacks it.
 Collectors/X/Y remain finite lumped volumes with unresolved internal axial
 geometry, not fabricated cones with a made-up transit time. Those model limits
-belong to049/050 and actual installation geometry to075/094.
+belong to 049/050 and actual installation geometry to 075/094.
 
 `tools/exhaust_geometry_probe.c` allocates actual production-EOS gas states
 for all requested cells and retains each finite gas node's inventory. It
@@ -99,33 +99,33 @@ fixture, not production valves/radiation loads or additional engine reservoirs.
 | Flat V8 | 14 | 16 | 304 | 15.458143820 | 8/16 | 36 |
 | Boxer | 11 | 12 | 239 | 9.429849422 | 8/8 | 52 |
 
-All68 pipe regions,1412 gas cells,14 explicit catalyst/baffle/packing interfaces
-and236 loop-free port/source paths survive compilation. Independent descriptor
+All 68 pipe regions, 1412 gas cells, 14 explicit catalyst/baffle/packing interfaces
+and 236 loop-free port/source paths survive compilation. Independent descriptor
 length sums agree for every cylinder path; native pipe/collector/junction
 volumes and areas agree within the frozen tolerances. Port signs, cell indices,
 source cylinder slots and individual outlet identities are checked. The source
 array is separate from the runtime event API; located-jet paths are prepared
 possibilities, not newly implemented noise sources.
 
-For30 independent cylinder impulses, each network runs0.15s at192kHz and300K.
-All42 connected pairs respond; all14 disconnected I6/flat-bank pairs remain
+For 30 independent cylinder impulses, each network runs 0.15s at 192kHz and 300K.
+All 42 connected pairs respond; all 14 disconnected I6/flat-bank pairs remain
 exactly zero. Every observed first response respects the summed integer-edge
-travel bound. Max source/storage/terminal work residual is5.830e-13 relative;
+travel bound. Max source/storage/terminal work residual is 5.830e-13 relative;
 no B0 failures. This is complete connectivity/ownership evidence, not magnitude/
 phase calibration of a hot real exhaust. Multiple reflections and a finite
 junction's frequency response cannot be replaced by a scalar path-length sum.
 
 Every base build explicitly remains spatially unresolved. Spatial requests
 reject rather than invent paths. Synthetic connected bent polylines pass
-the 1e-8relative/1e-10m arc-length contract and shared-endpoint consistency;
+the 1e-8 relative/1e-10m arc-length contract and shared-endpoint consistency;
 perturbed length and individually translated-but-disconnected header fixtures
-reject. The engine/vehicle transform and frame rules remain those of037.
+reject. The engine/vehicle transform and frame rules remain those of 037.
 No production mesh, animation, surveyed route or fabrication drawing is claimed.
 
 Capacity, unsupported full-loss capability, incomplete native topology,
 wrong-port/cell binding, insufficient B0 delay and invalid frozen-state controls
 fail preparation. The first short-delay test used pipes still long enough to
-pass at8kHz/4000K; retain that failed *test premise*. The corrected fixture
+pass at 8kHz/4000K; retain that failed *test premise*. The corrected fixture
 uses a native-valid5cm header, observes actual rejection, and changes no
 solver threshold or real preset. The compiler refines to the requested maximum
 cell size or rejects total capacity; it never enlarges physical lengths or
@@ -137,8 +137,8 @@ silently drops a branch.
   networks, descriptor edits, runner omission, uint64 generation, immutable
   plan copies, provenance, synthetic spatial routes and adverse preparation.
 - Full Python: **84 tests pass, no skips**. The unchanged production/native
-  test sources retain043's **221/4,843,441** passing full-suite evidence;
-  044 changes preparation tools, not core/test stepping. Existing web17,
+  test sources retain 043's **221/4,843,441** passing full-suite evidence;
+  044 changes preparation tools, not core/test stepping. Existing web 17,
   typecheck and build also remain passing with identical production sources.
 - Final ASan/UBSan repeats all five compiler tests through the actual native
   observer and graph consumer; all pass. Leak detection is disabled under
@@ -146,7 +146,7 @@ silently drops a branch.
 - Actual WASM geometry consumer executes all five plans/56 pairs. Gas volume,
   mass, sensible energy, node/cell bindings, first-arrival ticks and every
   response peak agree **exactly** with native. Work residuals agree and remain
-  below5.830e-13. This is a standalone WASI experiment; no browser AudioWorklet
+  below 5.830e-13. This is a standalone WASI experiment; no browser AudioWorklet
   engine integration or callback deadline result follows from it.
 - Eight isolated compiler mutations are caught: ambient shortcut, omitted
   second link, altered length/area, lost collector volume, reversed port normal,
@@ -155,14 +155,14 @@ silently drops a branch.
 The first WASI link rejected libc `clock`. The final consumer reports native
 process-CPU versus WASI monotonic-wall timing explicitly. Diagnostic-control
 timings include response observation/reset/output overhead, not a no-trace
-engine benchmark. Native preparation was about28–39ms in the first host
-matrix; one0.15s network per source costs roughly0.03–0.20process-CPU seconds
+engine benchmark. Native preparation was about 28–39ms in the first host
+matrix; one 0.15s network per source costs roughly 0.03–0.20 process-CPU seconds
 per engine in that diagnostic run. These short host measurements establish
 neither real-time production cost nor an A2-versus-B0 architecture winner.
 No unsupported speedup claim is made from different physical fixtures.
 
 Predecessor-review repairs also add acoustic headers to WASM build dependencies
-and correct043's summary classifier to keep alias controls separate from
+and correct 043's summary classifier to keep alias controls separate from
 representable acoustic failures. The original classifier record remains saved;
 no waveform, underlying result or rejection decision changes.
 
@@ -185,17 +185,17 @@ is a developer test build; it does not replace the browser production module.
 
 ## Results page and final review
 
-`tools/geometry_checkpoint.py` publishes a registered, hashed043/044 section
+`tools/geometry_checkpoint.py` publishes a registered, hashed 043/044 section
 and scientific figure to the existing single `renders/RESULTS.html`. The
 standard publisher rebuilds the whole page without rerendering. Accepted engine
-audio and all five long coasts remain the042 checkpoint; no new audio is
+audio and all five long coasts remain the 042 checkpoint; no new audio is
 justified by these isolated experiments.
 
-Final offline Chromium check plays all55 clips, preserves exclusive playback
-and all4 seek buttons, loads the8 retained research plots/3 reference views
-and the new figure, with zero page errors and zero network requests. All66
+Final offline Chromium check plays all 55 clips, preserves exclusive playback
+and all 4 seek buttons, loads the 8 retained research plots/3 reference views
+and the new figure, with zero page errors and zero network requests. All 66
 previous embedded media payloads are byte-identical; one figure is added.
-All3676 protected prior ignored files remain unchanged; intentional exceptions
+All 3676 protected prior ignored files remain unchanged; intentional exceptions
 are the page and its section registry. No measurement audio is regenerated,
 deleted or filtered. Rebuilt page SHA256:
 `1ffc849f22b6be3949439dcf701ddc38e2247e3c5cf000657e81ed16ed9b626d`.
@@ -203,15 +203,15 @@ deleted or filtered. Rebuilt page SHA256:
 Graphify is queried before exploration and refreshed after the code/test work:
 3003 nodes/8286 edges/167 communities. Known rb.h:415 parser and inferred-edge
 limits remain; no tool package or Claude hooks are replaced. Documentation
-checks find113 unique contiguous stages, an acyclic dependency graph and193
-valid relative links in the changed handoff documents. All69 tracked production/
+checks find 113 unique contiguous stages, an acyclic dependency graph and 193
+valid relative links in the changed handoff documents. All 69 tracked production/
 web/Claude files in the baseline protection set remain byte-identical. Save
 and sync this reviewed checkpoint, then hold.
 
 Review decision: the bounded **executable geometry preparation/control stage**
 is complete within those checks. Full component physics, shared live
 engine interface, changing thermal/flow backgrounds and real installation
-dimensions remain045–059/075/094. Never use the lossless-control capability as
-a production full-exhaust renderer. Do not start045 until further instruction.
+dimensions remain 045–059/075/094. Never use the lossless-control capability as
+a production full-exhaust renderer. Do not start 045 until further instruction.
 039 acquisition, S1/S2/S4 acceptance, listening checkpoints and runtime goals
 remain open.

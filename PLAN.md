@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-11-01. **One sequence: Stages 001–116.** This file is the only
+Updated 2026-11-01. **One sequence: Stages 001–117.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,7 +28,14 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Latest: Stage 116 complete (2026-11-01).** After listening to Stage 115 ("the
+**Latest: Stage 117 complete (2026-11-01).** [Stage 117](docs/stage-117.md)
+made the docs readable and current:
+- the spaces Codex's docs had lost between words and numbers are back (1,164 places);
+- CLAUDE.md, the README and docs/workspace.md describe the project as it is now;
+- the glossary spells out the research stages' abbreviations;
+- `rb_cli`'s help reads properly.
+
+**Stage 116 (2026-11-01).** After listening to Stage 115 ("the
 renders are decent so keep going"), [Stage 116](docs/stage-116.md) tightened the
 tests that had been loosened until they couldn't catch what they were written
 for: the junction's energy books, the wild cam's burn length, the coast's fuel
@@ -52,26 +59,26 @@ remaining gaps are in the stage record. Nothing after 115 is authorized: wait fo
 Bernardo's listening and instructions.
 
 **Before that, Codex's checkpoint: Stages 114 and 049 complete within their research scope;
-reviewed in order; HOLD before 050.** Bernardo authorized114 then049, with a
+reviewed in order; HOLD before 050.** Bernardo authorized 114 then 049, with a
 predecessor review before the next completion. [114](docs/stage-114.md) proves
 bounded conservative fixed-port thermal transport. After reviewing it,
 [049](docs/stage-049.md) extends that physical flux to finite vector-Euler
 Y/X/H/area junctions and checks every connected source, return and outlet.
-Thirty source runs /441 complex responses pass independent refined-reference
-gates; the worst response-matrix difference is2.87743%. Six coarse hot-flow
+Thirty source runs / 441 complex responses pass independent refined-reference
+gates; the worst response-matrix difference is 2.87743%. Six coarse hot-flow
 misses require retained finer controls; all selected signed-flow/reversal,
 clock, conservation and stability gates pass. Failed candidates remain recorded.
 This costly inviscid planar reference is not a selected real-time renderer or
-whole-engine adapter.200–990K/two-constituent/weak-flow limits remain active.
+whole-engine adapter. The 200–990 K, two-constituent and weak-flow limits remain active.
 
-Full native248tests/4951907checks, focused native/WASM/sanitizer11/96653,
-95Python,17web/build, sixteen physical faults and eight raw parity trajectories
-pass. The single RESULTS page adds the049numerical figure; all55players,
-four seeks and16images pass offline. All70previous embedded payloads,
-105current media/diagnostic files,76protected files (including reference locks)
+Full native 248 tests / 4,951,907 checks, focused native/WASM/sanitizer 11 / 96,653,
+95 Python, 17 web/build, sixteen physical faults and eight raw parity trajectories
+pass. The single RESULTS page adds the 049 numerical figure; all 55 players,
+four seeks and 16 images pass offline. All 70 previous embedded payloads,
+105 current media/diagnostic files, 76 protected files (including reference locks)
 and Claude's setup are preserved. Graphify's code graph is refreshed; its
-known semantic/parser limitations remain.039, hot EOS, real-hardware losses,
-whole-engine/listening and runtime qualification stay open. No050work has
+known semantic/parser limitations remain. 039, hot EOS, real-hardware losses,
+whole-engine/listening and runtime qualification stay open. No 050 work has
 started or is authorized at this checkpoint. Wait for Bernardo's instruction.
 
 **Latest reference assessment: two supplied dashboard videos.**
@@ -80,47 +87,47 @@ adds useful independently visible RPM/road-speed evidence: Subaru acceleration
 and slowing/downshifts, BMW high-rev road pulls. The BMW has no sustained coast;
 both exhaust builds and actual microphone setups remain unknown. These are
 inspected candidates for approximate state/timbre review, not new calibrated
-or locked sessions.039 remains open. This reference assessment changed no
+or locked sessions. 039 remains open. This reference assessment changed no
 accepted clips/RESULTS and did not authorize later development; the subsequent
 114/049 authorization is recorded above.
 
-**Previous checkpoint: Stages047/048 reviewed; held after048.**
+**Previous checkpoint: Stages 047/048 reviewed; held after 048.**
 [047](docs/stage-047.md) characterizes inherited gas properties/fixed walls and
 proves a finite-capacity wall element. [048](docs/stage-048.md) completes bounded
 material-coordinate thermal/contact, reversal, wall and acoustic-work fixtures.
-Native237/4855254, focused native/WASM/sanitizer, regression and eleven fault
-checks pass. High-resolution4kHz packet errors fall to1.40% after a geometric
-work precision fix; primary768-cell carrier passes alone conceal20.65% packet
+Native 237 / 4,855,254, focused native/WASM/sanitizer, regression and eleven fault
+checks pass. High-resolution 4 kHz packet errors fall to 1.40% after a geometric
+work precision fix; primary 768-cell carrier passes alone conceal 20.65% packet
 error. The research reference is far below real time, not a promoted renderer.
 
-**The prerequisite introduced after048:** [114](docs/roadmap/04-propagation.md#stage-114)
-must prove fixed-geometry thermal transport/port exchange.048's moving material
-reference does not supply that engine/remap interface. At that checkpoint114
-was unimplemented and049 blocked;114's later proof/review is recorded above.
-Execution order remains048 →114 →049 with stable IDs.
+**The prerequisite introduced after 048:** [114](docs/roadmap/04-propagation.md#stage-114)
+must prove fixed-geometry thermal transport/port exchange. 048's moving material
+reference does not supply that engine/remap interface. At that checkpoint 114
+was unimplemented and 049 blocked; 114's later proof/review is recorded above.
+Execution order remains 048 →114 →049 with stable IDs.
 The >990K gas closure, actual wall calibration and efficiency/whole-engine
 acceptance remain open. Accepted clips, Claude setup and references are
-preserved. The single RESULTS page includes the new047/048 figure;039 and
+preserved. The single RESULTS page includes the new 047/048 figure; 039 and
 S1/S2/S4/listening/runtime gates stay open. No further development is authorized
-by that earlier checkpoint; the later114/049 authorization supersedes its hold.
+by that earlier checkpoint; the later 114/049 authorization supersedes its hold.
 
 **Previous checkpoint:045/046 reviewed.**
 Their uniform gas/B0 coupling and signed-flow gates pass within their declared
 scope, with preserved accepted clips and a new numerical section in RESULTS.
 The expensive full correction grid remains far below real time; no production
-renderer is selected. Thermal fronts/reversal remain048. Their raw evidence,
+renderer is selected. Thermal fronts/reversal remain 048. Their raw evidence,
 carrier-envelope limit and mean-flow energy accounting remain valid.
 
-**Previous checkpoint: Stages043 and044 reviewed.**
+**Previous checkpoint: Stages 043 and 044 reviewed.**
 [043](docs/stage-043.md) preserves mass/species/energy but fails the declared
 moving-contact, acoustic-bandwidth and cost gates. A0/A1 remain controls; no
 A2 production promotion. After that review, [044](docs/stage-044.md) compiles
 all five exhausts into physical region/port/cell plans and actual lossless B0
-geometry controls:42 connected and14 disconnected cylinder/outlet pairs agree
+geometry controls:42 connected and 14 disconnected cylinder/outlet pairs agree
 in native/WASM, with preserved storage and no ambient shortcut. Full component
 physics and engine coupling remain later gates. The single results page adds
 the numerical checkpoint and preserves all accepted audio/coasts/references.
-039 stays open. Subsequent045/046 authorization is recorded above.
+039 stays open. Subsequent 045/046 authorization is recorded above.
 
 **Previous checkpoint: Stage 042 complete within its source-event scope.**
 After reviewing 041, [042](docs/stage-042.md) binds injector excitation to actual
@@ -128,8 +135,8 @@ delivered fuel, records skipped fueling and proves one-to-one mass/event/sound
 behavior through startup, cut/resume, restart and retained fuel. Native, WASM,
 fault, 105 seeded scenario and complete listening-page checks pass. Recorded
 engine trajectories are unchanged. The current instantaneous fueling/modal
-surrogate is not calibrated real PFI/GDI hardware. The subsequent043/044
-review and experiment outcomes are documented above. Stage039 stays open.
+surrogate is not calibrated real PFI/GDI hardware. The subsequent 043/044
+review and experiment outcomes are documented above. Stage 039 stays open.
 
 **Previous checkpoint: Stage 041 complete within its numerical scope.**
 After reviewing 040, [041](docs/stage-041.md) separates mean charge physics
@@ -141,28 +148,28 @@ and listening acceptance remain open; see the explicit V8 idle, I4/boxer
 repetition and I4 coast-rise findings. Stage 039 remains open for matched
 references. Stage 042's later source correction is documented above.
 
-**Previous checkpoint: Six supplied039 video candidates reviewed.**
+**Previous checkpoint: Six supplied 039 video candidates reviewed.**
 The [new video assessment](docs/stage-039-supplied-video-assessment.md) finds
 useful stock/modified comparisons, approximate RPM captions and better named
 hardware for the M54/FB20-family gaps. Those six clips establish no continuous
 RPM-visible loaded pull/long-coast trace or measured microphone transfer. These
 are inspected candidates, not six newly qualified calibration sessions; existing
-eleven locked sessions/34 excerpts and the55-player RESULTS page are unchanged.
+eleven locked sessions/34 excerpts and the 55-player RESULTS page are unchanged.
 That assessment did not include engine tuning or close 039; the later 041
 implementation is documented separately above.
 
-Bernardo clarified that matched-reference acquisition belongs to039; the
+Bernardo clarified that matched-reference acquisition belongs to 039; the
 earlier bounded protocol closeout did not finish the whole stage. The
 [new source-search review](docs/stage-039-reference-search.md) supersedes that
 completion decision. The existing protocol and eleven sessions/34 raw stereo
-excerpts remain valid. Stages001–038 and040 retain their documented completions.
+excerpts remain valid. Stages 001–038 and 040 retain their documented completions.
 
 The expanded [candidate catalog](tools/reference_candidates_v2.json) records
-58 references across23 exhaust manufacturers/brands, five engine configurations,
+58 references across 23 exhaust manufacturers/brands, five engine configurations,
 OEM identity sources, owner examples and measurement/dataset leads. This adds
 manufacturer-reported FB20 stationary noise comparisons and more documented
-exhaust variants. It does not add58 acquired recordings or qualify the public
-videos as calibrated audio. Original sources,34 excerpts and session splits
+exhaust variants. It does not add 58 acquired recordings or qualify the public
+videos as calibrated audio. Original sources, 34 excerpts and session splits
 remain unchanged; that public search acquired no candidate audio or tuning data.
 The later six supplied files and two dashboard videos are assessed separately
 above, without fitting. The two dashboard sources materially improve visible
@@ -174,14 +181,14 @@ SPL additionally needs a calibrated recording chain. Product scalar levels,
 dyno curves, general test methods and video titles cannot supply missing
 time-aligned recording metadata. Our I6 is M54B30/330i-inspired; E46 M3/S54 is
 a related engine, not the exact preset. GR86 FA24 remains distinct from FB20.
-Missing acquisition stays in039; its later qualification consumers still retain
+Missing acquisition stays in 039; its later qualification consumers still retain
 their own gates. Bernardo may look for additional references later; no new
 recording request is pending now.
 
 [Stage040](docs/stage-040.md) separates commanded/permitted discharge,
 nonnegative kernel development and bulk heat. Independent controls show zero
 pre-command heat across all five engines; mass/species/energy/work, deliberate
-faults, native/WASM, complete34clip sound and offline page checks pass. This
+faults, native/WASM, complete 34 clip sound and offline page checks pass. This
 fix does not establish a calibrated kernel law or solve propagation realism.
 The I4 early-coast level rise is retained as a058 diagnosis target. The rebuilt
 one-page examples are a new listening checkpoint, not pre-accepted sound.
@@ -190,7 +197,7 @@ one-page examples are a new listening checkpoint, not pre-accepted sound.
 Its results do not validate a new kernel-failure or late-chemistry law, high
 dilution extrapolation, real-engine COV, acoustic transport or real-time delivery.
 043/044 subsequently execute in the agreed review order. Their bounded
-outcomes do not retire041's unqualified findings; preserve them in later work.
+outcomes do not retire 041's unqualified findings; preserve them in later work.
 
 The physical native engine and five presets already exist. The browser still
 plays the stage-2 tone; low-level TS/WASM engine bindings already exist, but the
@@ -460,6 +467,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic derived-state and numerical failure guards — C07 | Complete | 032, 034, 036 |
 | [115](docs/roadmap/14-review-fixes.md#stage-115) | Valve jet noise (D02–D05) and the cycles' variation back to 1–3 % | Complete: native 250 tests / 4950073 checks, 11 planted bugs caught, sanitizers, WASM and web green; A/B renders for listening | 040, 041, 042, 113 |
 | [116](docs/roadmap/14-review-fixes.md#stage-116) | Loosened tests tightened; the make 4.3 Python test failure fixed | Complete: native 250 tests and Python 95 of 95 green, 4 planted bugs caught; no core change | 115 |
+| [117](docs/roadmap/14-review-fixes.md#stage-117) | Docs readable and current: spaces restored, CLAUDE.md/README/workspace/glossary updated, rb_cli help | Complete: native 250 tests, Python 95 of 95, web green; links checked | 116 |
 
 ## Release gates and unresolved legacy obligations
 

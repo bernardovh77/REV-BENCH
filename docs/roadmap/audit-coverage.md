@@ -10,9 +10,9 @@ and C08 (interrupted results-fragment write; bounded publication follow-up
 needed before the next affected checkpoint). Those are additional findings,
 not replacements for D01–D09/R01–R18. The bounded repairs are recorded in
 [112](../stage-112.md)/[113](../stage-113.md). [040](../stage-040.md) supplies the
-native spark/kernel/heat correction and independent D01 controls;057/059 still
+native spark/kernel/heat correction and independent D01 controls; 057/059 still
 own affected integration and operating-envelope cross-checks. R03's uncalibrated
-kernel/extinction and late-chemistry limits remain explicit and open through041.
+kernel/extinction and late-chemistry limits remain explicit and open through 041.
 
 | Finding | Issue | Primary owner | Required cross-checks | Evidence needed for closure |
 | --- | --- | --- | --- | --- |
@@ -64,17 +64,17 @@ These do not close any broader D/R physics, realism or runtime obligation.
 
 Every realism-changing stage also checks whether it reopens a previously accepted finding. Turbo, knock/damage, new layouts, learned integration and final tuning repeat affected physics, listening and runtime checks; base-engine acceptance is not inherited outside its envelope.
 
-Stage038 supplies the [bounded native D08/R06 observation evidence](../stage-038.md):
+Stage 038 supplies the [bounded native D08/R06 observation evidence](../stage-038.md):
 junction inspection/repair counts, requested/accepted transfers and staggered
 impulses, component geometry/CFL and explicitly costly optional monitoring.
 Later integrated/browser/realism cross-checks in the table remain required;
 observing an equalisation cap or property extrapolation does not remove its
-physical limitation. C07/C08 bounded repairs remain112/113.
+physical limitation. C07/C08 bounded repairs remain 112/113.
 
 
 048's material-coordinate experiment exposes an additional implementation
 prerequisite: [114 fixed-geometry transport](04-propagation.md#stage-114) now
-precedes049. It carries stationary port/remap acceptance for the new reference
+precedes 049. It carries stationary port/remap acceptance for the new reference
 path under D03/R05/R09, without closing those original audit obligations or
-changing the historical27-finding count. Moving-domain/global-book success is
+changing the historical 27-finding count. Moving-domain/global-book success is
 not fixed-port/component qualification.

@@ -1,7 +1,7 @@
-# Stage041 — continuous combustion variation and residual validity
+# Stage 041 — continuous combustion variation and residual validity
 
-Execution begins2026-10-24 atf8def2326870433433a0d04e4d8a82030358697e.
-Bernardo authorizes041.039 remains open;041 depends on038/040 and can use
+Execution begins 2026-10-24 at f8def2326870433433a0d04e4d8a82030358697e.
+Bernardo authorizes 041.039 remains open; 041 depends on 038/040 and can use
 independent numerical evidence. No042 or later implementation is authorized.
 Original supplied media, user skills, accepted exhausts/rev limits and Claude
 setup are preserved. Evidence stays in ignored`renders/evidence/stage-041/`.
@@ -13,8 +13,8 @@ heat. Its independent pre-command oracle, accounting and six deliberate faults
 are reviewed. Retain that causal lifecycle. The kernel-delay distribution is
 still a bounded surrogate; the previous ECU ignores its mean delay.
 
-Current`variation==0` selects requested AFR, a capped burn and180deg ceiling;
-any positive value selects actual trapped AFR, uncapped demand and720deg
+Current`variation==0` selects requested AFR, a capped burn and 180deg ceiling;
+any positive value selects actual trapped AFR, uncapped demand and 720deg
 ceiling. This changes the mean physical model discontinuously. A stochastic
 amplitude control must not select deterministic physics. The current flame
 fit also silently floors out-of-domain mixtures/dilution, and idle net-work
@@ -22,10 +22,10 @@ COV alone cannot distinguish combustion fluctuations from pumping/low mean.
 
 ## Research and intended contract
 
-[Metghalchi and Keck1982](https://james-keck-memorial-collection.unibs.it/JCKeck-papers/MetghalchiKeck-CombustionFlame-48-191-1982.pdf)
+[Metghalchi and Keck 1982](https://james-keck-memorial-collection.unibs.it/JCKeck-papers/MetghalchiKeck-CombustionFlame-48-191-1982.pdf)
 provides the existing indolene coefficients and temperature/pressure exponents.
-Use the conservative0.8–1.4 equivalence range,0.4–50atm and350–700K envelope
-for the power-law screen; the paper's tested diluent fraction stops at0.2 and
+Use the conservative 0.8–1.4 equivalence range, 0.4–50 atm and 350–700K envelope
+for the power-law screen; the paper's tested diluent fraction stops at 0.2 and
 its dilution experiments use stoichiometric isooctane. Applying this to our
 surrogate and IVC-state proxy remains a modeling assumption, even inside those
 numeric ranges. No extrapolation flag is an empirical extinction threshold.
@@ -44,7 +44,7 @@ amplitude; pure, observable charge-fit evaluation with preserved safe bounds;
 expected-duration/kernel-delay phasing for the ECU; per-cylinder gross/net/
 pumping books. Internal model/seed controls are native research controls,
 not new persisted build parameters or a public browser feature. Preserve the
-existing84-field build contract and public parameter IDs.
+existing 84-field build contract and public parameter IDs.
 
 The engine owns charge, event, species, heat and work. Diagnostics allocate
 nothing or perform I/O in stepping. Keep no-reactants, suppressed discharge,
@@ -53,16 +53,16 @@ Out-of-fit states are recorded, not converted into universal misfire claims.
 
 ## Frozen evidence gates before candidate evaluation
 
-- Independent same-charge controls at variation0,1e-9,1e-6,1e-3 approach one
+- Independent same-charge controls at variation 0,1e-9,1e-6,1e-3 approach one
   deterministic duration/AFR/model in each explicit mode. Same-state tiny
   variation deviations scale with amplitude, without an O(1) jump; use relative
-  duration/heat/work differences at1e-9 no greater than1e-6 in short fixtures.
+  duration/heat/work differences at 1e-9 no greater than 1e-6 in short fixtures.
 - Fit coefficients match independent equations at in-range points; each
   out-of-range input, numerical floor/cap and invalid-state fallback is visible.
   Range membership never certifies the IVC proxy or a true ignition limit.
-- Retain040 zero pre-discharge heat1e-12J, suppression/kernel/EVO ordering,
-  mass/species at2e-11 of initial inventory, energy2e-9 of accounted energy and
-  crank work1e-9 of accounted work. Gross=net+pumping at existing floating
+- Retain 040 zero pre-discharge heat 1e-12J, suppression/kernel/EVO ordering,
+  mass/species at 2e-11 of initial inventory, energy 2e-9 of accounted energy and
+  crank work 1e-9 of accounted work. Gross=net+pumping at existing floating
   tolerances; seeded repeats and passive diagnostic taps preserve physics.
 - Five presets, three positive independent engine seeds:30s free idles with
  6s warmup, plus held low/mid/high-speed low/high-load maps. Record per-cylinder
@@ -70,13 +70,13 @@ Out-of-fit states are recorded, not converted into universal misfire claims.
   outcomes, retained fuel and guard interventions. No warm stalls or nonfinite
   observations in the declared canonical idle envelope.
 - For complete zero-variation, unrestricted held burns, model CA50 and actual
-  integrated heat50 agree within0.2deg at192kHz. Finite-sample nominal variation
-  statistics and the legacy1% mean-torque control are reported explicitly;
+  integrated heat 50 agree within 0.2deg at 192kHz. Finite-sample nominal variation
+  statistics and the legacy 1% mean-torque control are reported explicitly;
   unmatched real COV/low-band repetition targets remain qualification gates,
   not grounds for arbitrary randomization or relaxed thresholds.
 - Plant actual continuity/state/CA50/work/causality faults in isolated copies.
   Run native/Python/web suites, focused sanitizers and WASM parity; rebuild
-  WASM after core changes. Compare complete34 float clips, all five long
+  WASM after core changes. Compare complete 34 float clips, all five long
   coasts and raw-channel metrics; atomically rebuild the single RESULTS page,
   preserving research/reference sections and their audio payloads.
 
@@ -86,9 +86,9 @@ separate claims. No041 completion is recorded before executing its gates.
 
 ## Execution
 
-The baseline controlled rich/dilute charge has actualphi1.5 and burned-product
-mass fraction0.44 at360K/122kPa. At variation0 it demands255.84deg but selects
-120deg; at1e-9 it demands397.880024841deg and selects397.880024854deg. The
+The baseline controlled rich/dilute charge has actual phi 1.5 and burned-product
+mass fraction 0.44 at 360K/122kPa. At variation 0 it demands 255.84deg but selects
+120deg; at 1e-9 it demands 397.880024841deg and selects 397.880024854deg. The
 discontinuity changes both mixture conditioning and duration policy. The
 baseline-compatible fixture/source, output and executable are retained locally.
 
@@ -99,29 +99,29 @@ actual trapped mixture and selects its mean policy independently of stochastic
 amplitude. Charge is the default; capped is an explicit native research control.
 Both approach the same chosen model continuously at zero variation.
 
-The ECU now uses the normalized Wiebe heat50 quantile and conditional mean
+The ECU now uses the normalized Wiebe heat 50 quantile and conditional mean
 duration plus mean nonnegative kernel delay. The duration mean integrates the
 bounded lognormal distribution, including its tails, cylinder trim and both
 duration bounds. Underlying normal draws are correlated before each marginal
 is bounded, so the marginal used by this calculation matches the actual draw.
 No variance coefficient is increased to meet a target. The ECU uses expected
 statistics, not advance knowledge of this cycle's random outcome. Idle reserve,
-cranking spark, overrun retard and the90deg scheduling limit remain explicit.
+cranking spark, overrun retard and the 90deg scheduling limit remain explicit.
 
 Per-cylinder gross/net/pumping work now shares the same complete overlap-TDC
 window. Internal initial-only seed/model controls reject mid-run changes and
 invalid values. `rb_cli sound` exposes these controls for research. Seeds change
 engine cycle/valve variation, not the independent mechanical-noise stream. No
-public field ID, persisted descriptor,84-field contract, engine geometry,
+public field ID, persisted descriptor, 84-field contract, engine geometry,
 accepted rev limit, exhaust choice or browser control is changed.
 
-The observer reports actual eligible-fuel heat50, conditional phasing, complete
+The observer reports actual eligible-fuel heat 50, conditional phasing, complete
 work windows, mixture/dilution, finite-burn outcomes, reverse valve flow, fuel
 transport, temperature screens and all numerical guard counts. Its
 `residual_fraction` is the legacy **burned-product mass fraction**, not a
 measured total fraction of gas retained from the preceding cycle. Retained
 unburned fuel/air stays in the conservative species inventories and affects
-actualphi; no gas-origin tracer, stratification, fuel film or detailed chemistry
+actual phi; no gas-origin tracer, stratification, fuel film or detailed chemistry
 is claimed. Published isooctane dilution data do not validate this IVC proxy.
 
 Initial full-suite results are retained: five tests reject obsolete expectations
@@ -129,13 +129,13 @@ or changed phasing sensitivity. The capped partial-burn control is now selected
 explicitly; trapped-mixture tests require actual mixture even at zero amplitude;
 the independent spark oracle includes the normalized Wiebe curve. Partial burns
 still have to match the independent available-angle/Wiebe calculation at EVO;
-improved mean advance can increase completion above the historical0.85 bound.
+improved mean advance can increase completion above the historical 0.85 bound.
 
-One loaded-cylinder COV falls below the historical0.8% unit lower bound after
+One loaded-cylinder COV falls below the historical 0.8% unit lower bound after
 correcting mean phasing. This is retained as a target miss, not repaired by extra
 randomness or called real-engine agreement. The unit assay now checks numerical
 dose response/repeatability, its existing upper regression budget and mean-work
-penalty; the original1–3% loaded/4–8% idle/repetition goals remain reported
+penalty; the original 1–3% loaded/4–8% idle/repetition goals remain reported
 qualification targets with their engine/state/reference applicability unresolved.
 No S1 or listening acceptance is implied by a green consistency test.
 
@@ -204,7 +204,7 @@ An independent observer built against each revision measures actual integrated
 heat reaching half the eligible charge, rather than reading the ECU's prediction.
 For a 2-second held 3,000 rpm/throttle-0.6/default-seed comparison after 0.2 s:
 
-| Engine | Before mean heat50, deg ATDC | After | Samples per revision |
+| Engine | Before mean heat 50, deg ATDC | After | Samples per revision |
 | --- | --- | --- | --- |
 | I4 | 9.953 | 8.368 | 180 |
 | I6 | 9.681 | 8.092 | 270 |

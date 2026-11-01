@@ -41,7 +41,7 @@ must re-pass these gates; B0/B1 work remains independent.
 
 **Execution record:** [044](../stage-044.md): canonical description compiles into
 gas region/port/cell preparation and actual B0 lossless geometry controls for
-all five builds. Full topology/storage/provenance,42 connected/14 disconnected
+all five builds. Full topology/storage/provenance, 42 connected/14 disconnected
 pairs, spatial consistency, native/WASM and eight compiler faults pass.
 Full component impedance, engine coupling and real installation routes remain
 later gates; unsupported physical-exhaust execution explicitly rejects.
@@ -85,7 +85,7 @@ thermal fronts and efficient scheduling remain later work.
 **Executed:** [Stage046](../stage-046.md) passes its frozen uniform-flow
 matrix with separate c±U delays, conservative composition/weak-entropy advection,
 current reflected feedback and signed convected work. Gaussian shape, carrier
-transfer, directional travel, separate regional books and six1s cases pass;
+transfer, directional travel, separate regional books and six 1s cases pass;
 resolved reflection energy gain is accounted. Full correction is far below
 real time; thermal fronts, flowing junctions and production integration remain
 later gates. Weak-carrier envelope error and all limits are retained.
@@ -122,22 +122,22 @@ later gates. Weak-carrier envelope error and all limits are retained.
 
 **Starting evidence/specification:** [docs/stage-S2c.md](../../docs/stage-S2c.md), [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Executed bounded fixtures:** [048](../stage-048.md) tests the material-coordinate thermal/contact, wall, reversal and current-pressure work reference. It does not qualify a changing B0 delay adapter or stationary engine-port/remap interface; that fixed-geometry continuation is explicitly114 before049. High-temperature EOS, high-band packet convergence and cost limits remain active.
+**Executed bounded fixtures:** [048](../stage-048.md) tests the material-coordinate thermal/contact, wall, reversal and current-pressure work reference. It does not qualify a changing B0 delay adapter or stationary engine-port/remap interface; that fixed-geometry continuation is explicitly 114 before 049. High-temperature EOS, high-band packet convergence and cost limits remain active.
 
 <a id="stage-114"></a>
 ## Stage 114 — Fixed-geometry thermal transport bridge
 
-**Execution order:** appended after048; must run before049. Existing IDs stay stable.
+**Execution order:** appended after 048; must run before 049. Existing IDs stay stable.
 
 **Dependencies:** [044](04-propagation.md#stage-044), [046](04-propagation.md#stage-046), [047](04-propagation.md#stage-047), [048](04-propagation.md#stage-048)
 
 **Deliverable:** Prove a fixed physical-domain interface for a surviving thermal-capable transport candidate.048's moving-material research reference has no production remap or mass exchange at stationary engine ports. Either construct a conservative contact-aware material/ALE bridge, or independently qualify an evolving gas/acoustic adapter against that reference. Do not preselect the runtime renderer.
 
-**Required exit evidence:** Fixed canonical lengths/port identities and bounded storage through sustained throughflow and reversal; single accepted mass/species/momentum/enthalpy transfer at stationary partitions; strong thermal/species fronts, pressure equilibrium and coherent reflected feedback; global AND regional books; independent full-packet waveform reference/convergence, source-free coefficient work and fixed wall identity. Include packet shape as well as carrier transfer, including048's high-band failure cases. Report remap/creation/removal work, domain rejection, positivity/mesh interventions and full cost. Recheck native/WASM, faults and geometry/source contracts.
+**Required exit evidence:** Fixed canonical lengths/port identities and bounded storage through sustained throughflow and reversal; single accepted mass/species/momentum/enthalpy transfer at stationary partitions; strong thermal/species fronts, pressure equilibrium and coherent reflected feedback; global AND regional books; independent full-packet waveform reference/convergence, source-free coefficient work and fixed wall identity. Include packet shape as well as carrier transfer, including 048's high-band failure cases. Report remap/creation/removal work, domain rejection, positivity/mesh interventions and full cost. Recheck native/WASM, faults and geometry/source contracts.
 
 **Stop/reject rule:** A moving observation plane, unchanged global inventory, correct carrier bin or pressure overwrite does not qualify fixed-port transport. Uniform brute-force refinement is a correctness reference, not an efficiency solution. Unqualified >990K closure stays explicit before engine promotion.
 
-**Coverage:** newly discovered material-reference integration gap; original D03/R05/R09 ownership remains active. This is a prerequisite split, not an exemption from048/049's physical goals.
+**Coverage:** newly discovered material-reference integration gap; original D03/R05/R09 ownership remains active. This is a prerequisite split, not an exemption from 048/049's physical goals.
 
 **Starting evidence:** [048](../stage-048.md), [047](../stage-047.md), [ownership ADR](../adr/0001-coupled-exhaust-ownership.md).
 
@@ -163,7 +163,7 @@ This is not an engine/variable-area adapter or a runtime renderer promotion.
 
 **Starting evidence/specification:** [docs/stage-13b-p.md](../../docs/stage-13b-p.md), [docs/stage-S2d-design.md](../../docs/stage-S2d-design.md).
 
-**Executed bounded reference:** [049](../stage-049.md) follows review of114 and
+**Executed bounded reference:** [049](../stage-049.md) follows review of 114 and
 validates finite prism Y/X/H/area geometry, all-port complex response, current
 reflected load, signed hot fronts/reversal and conservative regional exchange.
 Six primary material-resolution misses require retained finer controls; the
@@ -171,7 +171,7 @@ final v3 numerical/fault/parity/cost/preservation gates pass. Fine meshes remain
 far below real time. Two-constituent/200–990K/weak-flow, planar inviscid and
 matched-port limits do not certify hardware losses, hotter chemistry or actual
 engine breathing. Whole-engine integration/runtime/promotion remain later gates.
-Reviewed and held after049;050 requires Bernardo's next instruction.
+Reviewed and held after 049;050 requires Bernardo's next instruction.
 
 <a id="stage-050"></a>
 ## Stage 050 — Catalysts, mufflers, perforates and packing

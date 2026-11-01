@@ -7,8 +7,8 @@ collection; the simulator still generates its own audio from the physics.
 Source audio is kept local in ignored renders/.
 
 **2026-10-24 update:** [Three supplied videos](video-sound-references-2026-10-24.md)
-add14selected stereo entries. There are now nine user-supplied recordings and
-32user reference entries; the v2 protocol additionally includes the two separate
+add 14 selected stereo entries. There are now nine user-supplied recordings and
+32 user reference entries; the v2 protocol additionally includes the two separate
 public preview sources. The original MP3 processing history below is preserved.
 
 ## What the references represent
@@ -308,14 +308,14 @@ research plots. Graphify's AST graph was refreshed to 2159 nodes / 5933 edges /
 112 communities; the existing `rb.h:415` extraction limitation remains. No
 semantic extraction of these documentation/data additions is claimed.
 
-## Stage039 canonical reference protocol
+## Stage 039 canonical reference protocol
 
 [The session lock and measurement protocol](stage-039.md) now decode selected
 source-level stereo float excerpts separately in `renders/reference-protocol/raw`.
-Use those per-channel powers for future quantitative work. The16 legacy mono
+Use those per-channel powers for future quantitative work. The 16 legacy mono
 files above stay preserved for historical reproduction; they cannot recover
 stereo cancellation and are not stereo calibration authority. Existing supplied
-recordings and all17 previously used Freesound sources are development data.
+recordings and all 17 previously used Freesound sources are development data.
 The new GM-I6 session is reserved validation; the sparse Subaru candidate stays
 quarantined. Neither provides calibrated SPL or a measured RPM/load trace.
 Four common-gain/equal-RMS development controls are in the same RESULTS page.
@@ -323,8 +323,8 @@ Four common-gain/equal-RMS development controls are in the same RESULTS page.
 
 ## 2026-10-24 supplied-video update
 
-[Three reviewed videos](video-sound-references-2026-10-24.md) add14selected
-stereo excerpts:8GR86 cabin passages and6E46 exterior passages. Workshop
+[Three reviewed videos](video-sound-references-2026-10-24.md) add 14 selected
+stereo excerpts:8GR86 cabin passages and 6E46 exterior passages. Workshop
 presentation, car washing and intro/cinematic material are excluded from the
 selected excerpts. E46 stationary open/closed captions, roadside pass-bys and
 near-tailpipe camera views are separate source classes. Microphone placement
@@ -336,7 +336,7 @@ Unfiltered stereo float measurements live in `renders/reference-protocol-v2/`;
 three source compilations and viewpoint images join the same RESULTS page.
 The GR86 ASC setting, exact RPM/load and calibrated microphone data remain
 unknown. These references are useful now for texture/dynamics/cabin observations;
-Stage039's [extended source search](stage-039-reference-search.md) keeps the
-missing matched-recording acquisition in039; its processing protocol is complete.
-No simulator tuning or041 work
+Stage 039's [extended source search](stage-039-reference-search.md) keeps the
+missing matched-recording acquisition in 039; its processing protocol is complete.
+No simulator tuning or 041 work
 is part of this intake.

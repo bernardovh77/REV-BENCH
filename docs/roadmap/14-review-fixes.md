@@ -95,3 +95,22 @@ old limit passed and the new one catches; native and Python suites green.
 behaviour and the design's intent, not from what happens to pass.
 
 **Execution record:** [Stage 116](../stage-116.md).
+
+<a id="stage-117"></a>
+## Stage 117 — Docs you can read, and up to date
+
+**Dependencies:** [116](#stage-116)
+
+**Deliverable:**
+- restore the spaces Codex's docs lost between words and numbers, in prose only;
+- bring CLAUDE.md, the README and docs/workspace.md up to date with the project as it is;
+- add the research stages' abbreviations to the glossary;
+- fix `rb_cli`'s help text and its over-long string literal.
+
+**Required exit evidence:** a before/after count of the missing spaces; no code, link or
+identifier changed by the pass; links checked; native, Python and web suites green.
+
+**Stop/reject rule:** No `core/` change. Don't rewrite Codex's historical records beyond the
+spacing; the cases a script can't decide safely stay listed.
+
+**Execution record:** [Stage 117](../stage-117.md).

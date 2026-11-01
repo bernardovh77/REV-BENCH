@@ -8,14 +8,14 @@ the evidence used to judge them.
 
 **Prepared exhaust geometry**:
 A validated, immutable description compiled into physical regions, port and
-cell bindings, finite volumes and source/outlet paths. Stage044 executes a
+cell bindings, finite volumes and source/outlet paths. Stage 044 executes a
 lossless geometry control; preparation does not qualify complete muffler,
 catalyst, hot-flow or radiation behavior.
 
 **Pressure-equilibrium preservation**:
 Keeping initially uniform pressure and velocity uniform while a source-free
 gas-mixture contact moves. Conserving mass and total energy alone does not
-guarantee it; Stage043's rejected candidate demonstrates the distinction.
+guarantee it; Stage 043's rejected candidate demonstrates the distinction.
 
 **Ambient terminal identity**:
 The identity of one physical aperture into the environment. Two outlets may
@@ -38,7 +38,7 @@ _Avoid_: ignition when that would conflate the command, discharge and flame
 
 **Kernel development**:
 The interval after actual spark discharge before the modeled bulk flame release.
-The current Stage040 engine gives it a nonnegative development clock; its delay
+The current Stage 040 engine gives it a nonnegative development clock; its delay
 surrogate is not an experimentally fitted extinction or misfire law.
 _Avoid_: spark jitter when referring to post-discharge flame development
 
@@ -152,7 +152,7 @@ Component interfaces and their semantic connections, distinct from a solver's
 cells/faces and from the spatial centerline used to depict the physical route.
 _Avoid_: mesh when referring to logical component connectivity
 
-## Numerical observation (Stage038)
+## Numerical observation (Stage 038)
 
 - **Requested/accepted transfer:** signed kg, species kg and transported total
   enthalpy J before/after an existing transport limit. Foregone transfer is
@@ -182,7 +182,7 @@ reason. It distinguishes fuel already in the cylinder from new injected fuel.
 A spark suppression event is a separate decision and can occur after a real dose.
 
 
-## Uniform-flow acoustic coupling (Stages045–046)
+## Uniform-flow acoustic coupling (Stages 045–046)
 
 - **Acoustic mass flow:** the perturbation in transported mass, including both
   density times volume-flow change and mean velocity times density change.
@@ -196,7 +196,7 @@ A spark suppression event is a separate decision and can occur after a real dose
   It does not establish evolving hot/cold fronts or time-dependent reversal.
 
 
-## Thermal/material reference (Stages047–048)
+## Thermal/material reference (Stages 047–048)
 
 - **Finite wall capacity:** solid energy Cw*Tw in joules, separate from the gas.
   Its spatial interval stays fixed as gas moves; gas refinement does not add metal.
@@ -211,3 +211,41 @@ A spark suppression event is a separate decision and can occur after a real dose
   not proof that cold ambient composition entered.
 - **Packet fidelity:** accuracy of the complete transient waveform/envelope,
   beyond magnitude/phase at a single carrier frequency.
+
+## Abbreviations in the research stages (043–049, 114)
+
+Codex's stage records and handoff log use these without spelling them out.
+
+**A0**:
+The production pipes (`core/src/pipe.c`): the 1D staggered-grid gas the engine
+runs on.
+
+**A1**:
+A constant-γ finite-volume pipe solver with MUSCL reconstruction and a
+second-order Runge–Kutta step (`experiments/acoustics/euler.c`). It was a
+research candidate and was rejected.
+
+**A2**:
+A1 with the production gas's mixture and properties
+(`experiments/acoustics/mixture.c`, Stage 043). It was rejected for production.
+
+**B0**:
+A lossless delay-line network on a frozen, uniform background: sound waves
+carried along each duct and scattered at its ends and junctions
+(`experiments/acoustics/wave.c`). The fast "sound only" arm, set against A0/A1/A2.
+
+**CFL number**:
+How far a wave travels in one time step, in cells (Courant–Friedrichs–Lewy).
+Explicit solvers need it at most about 1, less with some reconstructions.
+
+**EOS**:
+Equation of state: how a gas's pressure follows from its density, energy and
+composition.
+
+**GCL**:
+Geometric conservation law: a solver whose cells move must keep a uniform flow
+exactly uniform as they move. Stage 048's material coordinates check it.
+
+**SSPRK2**:
+The strong-stability-preserving second-order Runge–Kutta step: two Euler steps
+averaged, which keeps a limited scheme from making new extremes.

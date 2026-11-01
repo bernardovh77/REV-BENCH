@@ -1,13 +1,13 @@
 # Stage 038 — Numerical guard and flux observability
 
-Date: 2026-10-23. Dependency: 037. Execution authorized by Bernardo: review037,
-then038. Scope: observe the existing native gas solver after successful preparation and detect hidden
+Date: 2026-10-23. Dependency: 037. Execution authorized by Bernardo: review 037,
+then 038. Scope: observe the existing native gas solver after successful preparation and detect hidden
 interventions. No acoustic retuning, new propagation model, production browser
-controls or completion of S1/S1e/S2/S4/full13b is claimed.
+controls or completion of S1/S1e/S2/S4/full 13b is claimed.
 
 ## Predecessor review
 
-Stage037's bounded contracts are suitable for this step. Two errors were fixed:
+Stage 037's bounded contracts are suitable for this step. Two errors were fixed:
 negative/fractional native kind/place codes could be coerced into valid enums;
 `prepare_build` discarded accepted annotations, transforms and centerlines.
 Native enum codes now require exact nonnegative integers in range; preparation
@@ -40,13 +40,13 @@ accepted. Δmdot×effectiveLength supplies that impulse. Radiation correction is
 an additional incremental impulse relative to the preceding push. The existing
 0D junction stores mass/species/internal energy, not vector momentum; it has no
 invented globally conservative momentum account. This exposes that architectural
-limit for043. Global total energy includes pipe kinetic energy, piston work,
+limit for 043. Global total energy includes pipe kinetic energy, piston work,
 chemical heat, fuel sensible energy, wall heat and radiation work.
 
 Requested/accepted movement, numerical caps, physical nozzle choking, donor/
 limited reconstruction, density/length floors, invalid flow/heat/radiation resets,
 mass/energy repairs, temperature floors, property-range excursions and scalar/
-Newton fallbacks are separate reasons. Property extrapolation outside200–4000K
+Newton fallbacks are separate reasons. Property extrapolation outside 200–4000K
 is the existing gas model's extension, not newly calibrated chemistry. Nonfinite
 repair deltas increment `invalid`; they cannot truthfully be assigned finite J.
 Temperature floors retain the existing stored-energy policy; a counted floor
@@ -63,14 +63,14 @@ an engine/chamber/radiation object clears its taps: rebind and advance the
 caller's generation. Do not copy a self-referential engine or mutate/bind taps
 concurrently with stepping. NULL unbinds all taps.
 
-At most2048slots and256trace records; all events accumulate counters even when
+At most 2048 slots and 256 trace records; all events accumulate counters even when
 trace capacity is zero/full. A full trace drops new records and increments
-`dropped`, never overwrites old evidence or blocks stepping. Stride0 captures
+`dropped`, never overwrites old evidence or blocks stepping. Stride 0 captures
 guard events; N also samples ordinary events. Callers must drain/rearm between
 bounded stepping blocks for a long trace. Aggregate counters remain authoritative
 when the initial trace saturates. Records use binding-relative physics tick and slot index; the caller must
 record the bind-time offset for an engine already running. This is not yet the
-actual-event clock producer planned in040–042.
+actual-event clock producer planned in 040–042.
 Context generation and pipe phase belong to the enclosing report. A zero-valued
 trace field after a nonfinite input is invalid data if its slot's invalid counter
 is positive; it is not evidence of zero physical impact.
@@ -127,7 +127,7 @@ source hashes, fault results and preservation/render comparisons live in ignored
 
 ## Measured numerical results
 
-Five cold held-crank stress cases:0.25s at3000rpm, throttle .7→.01 halfway;
+Five cold held-crank stress cases:0.25s at 3000rpm, throttle .7→.01 halfway;
 three CPU repetitions per monitoring mode. All mass/species and energy gates
 pass. External diagnostic face books independently match the engine's books.
 No unquantifiable values, species/energy repairs, invalid flow/heat/radiation
@@ -154,7 +154,7 @@ Zero repairs does hide substantial intervention in these fixtures:
 
 These are call/event counts, not independent engine cycles or probabilities.
 Scalar fallback restarts the existing gas inversion; it is not necessarily a
-repair. The counts expose where040/043/047 and qualification must investigate;
+repair. The counts expose where 040/043/047 and qualification must investigate;
 this stage does not abolish protective caps or certify their acoustic neutrality.
 Native paired runs preserve theta/heat/random cycle state at every tick and
 all pipe p/U plus junction U at the endpoint. Cross-mode probe final states are
@@ -178,23 +178,23 @@ case guarantees. Median of three repetitions:
 Trace ratios below aggregate ratios reflect timing variability, not a claim
 tracing improves performance. An earlier concurrent sample had greater jitter;
 the final three-repeat runs and all raw costs are retained. Default renderer
-comparisons alternate old/new order over three1s held3000rpm recordings per
-preset; all15 old/new float pairs are byte-identical. Default-path overhead was
-3.0–7.6% in this test. Aggregate monitoring adds roughly50–60% engine CPU cost;
+comparisons alternate old/new order over three 1s held 3000rpm recordings per
+preset; all 15 old/new float pairs are byte-identical. Default-path overhead was
+3.0–7.6% in this test. Aggregate monitoring adds roughly 50–60% engine CPU cost;
 keep it opt-in and batch/drain diagnostic work off the audio callback. No
 real-time promotion or hardware tier is established here.
 
-Actual slot storage128–257KiB plus88B context; trace payload max26KiB. The
-caller can allocate exactly the prepared slot count; the declared2048-slot
-maximum is976KiB. All traces saturate at256 records while dropped-record counts
+Actual slot storage 128–257KiB plus 88B context; trace payload max 26KiB. The
+caller can allocate exactly the prepared slot count; the declared 2048-slot
+maximum is 976KiB. All traces saturate at 256 records while dropped-record counts
 continue; they retain the earliest events, not an unbiased whole-run sample.
 
 ## Qualification and handoff
 
 **Outcome: complete for the stated numerical-observation scope.** Successful
-coverage: complete native suite200tests/38789checks
-plus two added cases/25checks (202distinct tests/38814checks combined); affected
-sanitizer9tests/31051checks; WASM15tests/31227checks; Python58 and web17. The
+coverage: complete native suite 200 tests/38789checks
+plus two added cases/25 checks (202 distinct tests/38814checks combined); affected
+sanitizer 9 tests/31051checks; WASM15tests/31227 checks; Python 58 and web 17. The
 WASM test target now includes experiment sources/headers needed by the complete
 native test runner, repairing its stale build recipe. The public WASM core is
 rebuilt with unchanged exported API; its source fingerprint matches.
@@ -206,22 +206,22 @@ sources are never mutated. No all-fault or full operating-envelope claim.
 
 Accepted audio/reference originals and Claude setup remain protected. The
 single `renders/RESULTS.html` stays the listening checkpoint, including all long
-coasts/research sections. Stage039 matched-reference work is the next default
-after038; no later stage starts automatically. Undoing this checkpoint should
+coasts/research sections. Stage 039 matched-reference work is the next default
+after 038; no later stage starts automatically. Undoing this checkpoint should
 remove the diagnostic hooks as a unit and rebuild native/WASM artifacts; do not
 mix objects compiled against different internal structure layouts.
 
-The complete34-recording float checkpoint (337.248s), including all five long
+The complete 34-recording float checkpoint (337.248s), including all five long
 coasts and the packed cross-V8 control, is byte-identical to accepted originals.
 All engine renders report zero limited/nonfinite samples. The rebuilt single
-results page passes offline playback for48players, exclusive playback, four
-jump buttons and eight plots; all48 embedded audio payloads remain identical.
-All116 protected audio/reference/Claude files match the prior checkpoint.
+results page passes offline playback for 48 players, exclusive playback, four
+jump buttons and eight plots; all 48 embedded audio payloads remain identical.
+All 116 protected audio/reference/Claude files match the prior checkpoint.
 Verified duplicate comparison WAVs are removed after preserving hashes, logs,
 CSV traces and reports; accepted measurement originals remain in `renders/current`.
 
 Graphify was queried before exploration and refreshed after implementation:
-2657nodes/7206edges/153communities. The known rb.h:415 parse warning remains;
+2657 nodes/7206 edges/153 communities. The known rb.h:415 parse warning remains;
 AST updates do not claim semantic paper/document extraction. Native build has
 the existing CLI long-string portability warning. An initial scratch link ran
 while a new test file was still being created; the complete rebuild includes it
@@ -229,7 +229,7 @@ and passes. The first sandboxed Windows compiler invocation could not access
 interop; the existing compiler succeeded through the approved execution path.
 Neither event is a failed physics acceptance result or a relaxed tolerance.
 
-Checkpoint after commit/sync. Parent S1/S1e/S2/S4/full13b, physical model
+Checkpoint after commit/sync. Parent S1/S1e/S2/S4/full 13b, physical model
 qualification, source causality and actual browser-engine/3D integration remain
 open at their canonical stages. No listening retune or reference reprocessing
 was needed for these byte-identical results.
