@@ -230,12 +230,14 @@ void test_exhaust_junction_scattering_conservation(void)
     }
     const double c = rb_chamber_sound_speed(&cell[0][0]);
     const double gamma = rb_chamber_gamma(&cell[0][0]);
+    double wave = 0.0;   /* J: the pulse's acoustic energy, p^2 / (rho c^2) + rho u^2 */
     for (int k = 0; k < 64; k++) {
         const double x = (k + 0.5) * arm[0].dx;
         const double bump = 10.0 * exp(-pow((x - 1.5) / 0.22, 2.0));
         const double pressure = 101325.0 + bump;
         rb_chamber_init(&cell[0][k], area * arm[0].dx, pressure,
             300.0 * pow(pressure / 101325.0, (gamma - 1.0) / gamma), y);
+        wave += 2.0 * bump * bump / (cell[0][k].rho * c * c) * area * arm[0].dx;
     }
     for (int k = 0; k < 63; k++) {
         const double x = (k + 1.0) * arm[0].dx;
@@ -279,6 +281,11 @@ void test_exhaust_junction_scattering_conservation(void)
         for (int s = 0; s < 3; s++) s1[s] += sp[s];
     }
     CHECK_NEAR(m1, m0, m0 * 1e-11);
-    CHECK_NEAR(u1, u0, fabs(u0) * 2e-7); /* initial kinetic-energy bookkeeping */
+    /* The energy's books close to rounding (1e-14 J of the gas's 25 J).
+     * The pulse itself carries only about 8e-7 J, so a junction that made
+     * or lost a hundred-thousandth of the wave's energy fails (stage 116:
+     * the tolerance was 5e-6 J, six times the whole wave). */
+    CHECK(wave > 5e-7 && wave < 1e-6);
+    CHECK_NEAR(u1, u0, 1e-5 * wave);
     for (int s = 0; s < 3; s++) CHECK_NEAR(s1[s], s0[s], m0 * 1e-11);
 }

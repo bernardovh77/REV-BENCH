@@ -31,8 +31,10 @@ void test_radiation_causal_impedance(void)
         const double zr=(nr*dr+ni*di)/den,zi=(ni*dr-nr*di)/den;
         CHECK_NEAR(real,rho*c*zr,1e-6*rho*c);
         CHECK_NEAR(imag,rho*c*zi,1e-6*rho*c);
-        CHECK(work>0.0 && zr>0.0);
-        CHECK(((zr-1)*(zr-1)+zi*zi)/((zr+1)*(zr+1)+zi*zi) <= 1.0);
+        CHECK(work>0.0 && zr>0.0);   /* it absorbs: |R| < 1 follows from zr > 0 */
+        /* A check of this test's own reference, not of the core: at low
+         * frequency its load is the end correction of an unflanged pipe,
+         * 0.6133 times the radius (Levine and Schwinger 1948). */
         if (j==0) CHECK_NEAR(zi/x,0.6133,0.004);
         for (int n=0;n<4096;n++) {
             double direct,history;

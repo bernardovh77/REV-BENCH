@@ -213,7 +213,9 @@ def render_checkpoint(cli, build, renders):
         staged = Path(workspace) / "next"
         staged.mkdir()
         print("Recording standard examples…", flush=True)
-        run = subprocess.run(["make", "render-standard", f"BUILD={build}",
+        # make render built the CLI already: -o keeps make from remaking it
+        # (GNU make 4.3 ignores -o in MAKEFLAGS, so it goes on the command line).
+        run = subprocess.run(["make", "render-standard", f"BUILD={build}", f"--assume-old={cli}",
                               f"RENDER_DIR={staged/'standard'}", "RENDER_FLAGS=--float"],
                              cwd=ROOT, capture_output=True, text=True)
         log = run.stdout + run.stderr

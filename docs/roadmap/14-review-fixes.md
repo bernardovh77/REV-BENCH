@@ -72,3 +72,26 @@ test's floor.
 test's limit unless the corrected physics explains it, and say so where it moves.
 
 **Execution record:** [Stage 115](../stage-115.md).
+
+<a id="stage-116"></a>
+## Stage 116 — Tests that can fail again
+
+**Dependencies:** [115](#stage-115)
+
+**Deliverable:** Tighten the tests whose limits had been loosened until they
+couldn't catch what they were written for:
+- the junction's energy books;
+- the wild cam's burn length;
+- the coast's fuel cut;
+- the rev limiter's top;
+- two checks in the radiation test that couldn't fail.
+
+Fix `test_render_results`, which fails under GNU make 4.3.
+
+**Required exit evidence:** a planted bug for each tightened test that the
+old limit passed and the new one catches; native and Python suites green.
+
+**Stop/reject rule:** No `core/` change. Set a new limit from the measured
+behaviour and the design's intent, not from what happens to pass.
+
+**Execution record:** [Stage 116](../stage-116.md).

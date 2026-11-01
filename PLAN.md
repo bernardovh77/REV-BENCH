@@ -1,6 +1,6 @@
 # REV-BENCH — canonical project roadmap
 
-Updated 2026-10-31. **One sequence: Stages 001–115.** This file is the only
+Updated 2026-11-01. **One sequence: Stages 001–116.** This file is the only
 authority for stage status and scheduling. It replaces the overlapping numeric,
 lettered and sound-track numbering. Historical evidence stays at its existing
 paths; [every old ID is mapped](docs/roadmap/legacy-map.md), including open parent
@@ -28,7 +28,15 @@ Bernardo confirmed on 2026-10-23:
 
 ## Current state and next action
 
-**Latest: Stage 115 complete (2026-10-31); paused for Bernardo.** Claude reviewed
+**Latest: Stage 116 complete (2026-11-01).** After listening to Stage 115 ("the
+renders are decent so keep going"), [Stage 116](docs/stage-116.md) tightened the
+tests that had been loosened until they couldn't catch what they were written
+for: the junction's energy books, the wild cam's burn length, the coast's fuel
+cut and the rev limiter's top. Each one now catches a planted bug that passed
+the old limit. It also fixed the Python test that failed under GNU make 4.3. No
+`core/` change.
+
+**Stage 115 (2026-10-31).** Claude reviewed
 Codex's stages 037–049 and 114, and Bernardo asked for the first repair and a
 pause. [Stage 115](docs/stage-115.md) fixes the audit's D02–D05 in `noise.c`:
 - the jets' Mach number is now the gap's, recalibrated against the real engines;
@@ -451,6 +459,7 @@ historical rows are not a claim that all current audio goals have passed.
 | [112](docs/roadmap/14-review-fixes.md#stage-112) | Recoverable checkpoint section publication — C08 | Complete | 033, 036 |
 | [113](docs/roadmap/14-review-fixes.md#stage-113) | Acoustic derived-state and numerical failure guards — C07 | Complete | 032, 034, 036 |
 | [115](docs/roadmap/14-review-fixes.md#stage-115) | Valve jet noise (D02–D05) and the cycles' variation back to 1–3 % | Complete: native 250 tests / 4950073 checks, 11 planted bugs caught, sanitizers, WASM and web green; A/B renders for listening | 040, 041, 042, 113 |
+| [116](docs/roadmap/14-review-fixes.md#stage-116) | Loosened tests tightened; the make 4.3 Python test failure fixed | Complete: native 250 tests and Python 95 of 95 green, 4 planted bugs caught; no core change | 115 |
 
 ## Release gates and unresolved legacy obligations
 

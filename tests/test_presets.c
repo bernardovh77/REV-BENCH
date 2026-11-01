@@ -336,9 +336,12 @@ void test_presets_run_on_their_own(void)
             cut |= e.spark_cut;
         }
         /* A low-acceleration engine may settle on the soft cut without
-         * crossing the hard cut. Both enforce the same configured limit. */
+         * crossing the hard cut. Both enforce the same configured limit:
+         * the presets reach from 6 rpm under it (the six, on the soft cut
+         * alone) to 22 over, so the top is within 50 rpm under it (stage
+         * 116: the whole soft band, 150 rpm, passed before). */
         CHECK(cut || e.limiter_cuts > cuts0);
-        CHECK(top > d.rev_limit - 150.0 && top < d.rev_limit + 250.0);
+        CHECK(top > d.rev_limit - 50.0 && top < d.rev_limit + 250.0);
 
         e.throttle_pos = 0.0;   /* about 3 s down from the limiter, fuel cut */
         double low = INFINITY;

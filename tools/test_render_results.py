@@ -108,8 +108,9 @@ class RenderResultsTests(unittest.TestCase):
                 f"import sys;sys.path.insert(0,{str(script.parent)!r});"
                 "from pathlib import Path;from render_results import render_checkpoint;"
                 f"render_checkpoint(Path({str(cli)!r}),{str(build)!r},Path({str(renders)!r}))"]
+            # render_checkpoint tells make not to remake the CLI (--assume-old on
+            # its command line), so the fake one above is what runs.
             env = {k:v for k,v in os.environ.items() if k not in ("PYTHONPATH", "MAKEFLAGS", "MFLAGS")}
-            env["MAKEFLAGS"] = f"--assume-old={cli}"
             result = subprocess.run(command, capture_output=True, text=True, timeout=60, env=env)
             self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
             self.assertEqual(len(list((renders/"current").rglob("*.wav"))), 34)

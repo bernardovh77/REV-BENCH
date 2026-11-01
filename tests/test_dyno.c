@@ -360,7 +360,17 @@ void test_calibration_burn_and_spark(void)
     d.intake.duration = d.exhaust.duration = 320.0;
     run_held(&e, &d, 3000.0, 0.0);
     CHECK(e.result.residual > 0.5);
-    CHECK(e.result.burn_duration>2.0*d.burn_duration && e.result.burn_duration<=720);
+    /* The burn's length is the charge model's for the charge each cylinder
+     * trapped (stage 041), to rounding: 2.83 times the reference here, so
+     * between 2.5 and 3.3 times (stage 116: anything from 2 times to the
+     * whole cycle passed before). */
+    for (int i = 0; i < d.cylinders; i++) {
+        const rb_burn *trapped = &e.burn[i];
+        const rb_charge_burn q = rb_charge_burn_evaluate(trapped->T_ivc, trapped->p_ivc,
+            trapped->residual, trapped->phi_ivc, 3000.0, d.burn_duration);
+        CHECK_NEAR(trapped->demand_duration, q.demand_deg, 1e-9 * q.demand_deg);
+    }
+    CHECK(e.result.burn_duration > 2.5 * d.burn_duration && e.result.burn_duration < 3.3 * d.burn_duration);
     CHECK((e.burn[0].flame_flags&RB_FLAME_DILUTION_RANGE)!=0);
 }
 

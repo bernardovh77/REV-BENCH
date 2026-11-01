@@ -4,6 +4,20 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-01: Stage 116, tests that can fail again
+
+- [Stage 116](docs/stage-116.md) tightened four loosened tests:
+  - the junction's energy now closes to 1e-5 of the wave, not six times it;
+  - the wild cam's burn is the charge model's, 2.5–3.3 times the reference;
+  - the coast's fuel cut comes on 0.15 s after the lift and holds to 400 rpm
+    above idle;
+  - the limiter's top is within 50 rpm under the limit.
+- Each one catches a planted bug (`tools/bugs/stage116.py`).
+- `render_checkpoint` now passes `--assume-old` on make's command line. GNU
+  make 4.3 ignores it in `MAKEFLAGS`, so `test_render_results` hung. Python 95
+  of 95 pass.
+- No `core/` change.
+
 ## 2026-10-31: Claude's review and Stage 115; paused for Bernardo
 
 - Claude reviewed stages 037–049 and 114 for Bernardo. At his request it then

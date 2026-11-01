@@ -901,18 +901,29 @@ void test_engine_drives_itself(void)
     run_for(0.3, NULL, &hi);
     CHECK(hi > 2500.0);
     e.throttle_pos = 0.0;
-    int fuel_cut = 0;
+    /* Coasting down, foot off, well above idle: the engine computer retards
+     * the spark for e.overrun_transition (0.15 s), then cuts the fuel, and
+     * keeps it cut, with no fuel injected, until the engine is back below
+     * 400 rpm above idle (stage 116: before, a cut that let go after a step
+     * passed; and so did no cut at all, the coast's fuel being as small as
+     * it is with the throttle shut). */
+    CHECK(e.rpm_smooth > e.desc.idle_rpm + 700.0);
+    long first = -1, held = 1;
     double fuel_during_cut = 0.0;
     for (long k = 0; k < 96000; k++) {                         /* coasting down, */
         const double before_fuel = e.fuel_in;
         rb_engine_step(&e);
         if (e.fuel_cut) {
-            fuel_cut = 1;
+            if (first < 0) first = k;
             fuel_during_cut += e.fuel_in - before_fuel;
+        } else if (first >= 0 && e.rpm_smooth > e.desc.idle_rpm + 400.0) {
+            held = 0;                                          /* let go too soon */
         }
     }
-    CHECK(fuel_cut);
-    CHECK_NEAR(fuel_during_cut, 0.0, 1e-14); /* after timed entry, injectors are off */
+    CHECK(first >= 0);
+    CHECK_NEAR(first * e.dt, e.overrun_transition, 2.0 * e.dt);
+    CHECK(held);
+    CHECK_NEAR(fuel_during_cut, 0.0, 1e-14);                   /* the injectors are off */
     run_for(2.5, &lo, NULL);
     CHECK(lo > 600.0);                                         /* back down without stalling */
     run_for(0.5, NULL, NULL);
