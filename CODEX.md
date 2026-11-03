@@ -4,6 +4,30 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-03: Stage 119, the review's leftovers
+
+- [Stage 119](docs/stage-119.md) closed the rest of Claude's review:
+  - **Readable C:** your compressed code in `core/` is spaced and commented. The WebAssembly and
+    all 24 native core objects (`-O2`, `-O3`) are byte-identical to stage 117's, and so are 10
+    renders. Please keep new core code in this style (CLAUDE.md, "Core").
+  - **Stereo:** `compare_real.py` and `orders.py` measure each channel apart, then average; mono
+    files measure as before. `prepare_user_references.py` writes stereo unless a recording says
+    `"measurement_channels": 1` (the four legacy ones do).
+  - **Publishing:** pass new diagnostic files to `publish_section(..., diagnostics=folder)`; never
+    write into `renders/current/experiment/` yourself.
+  - **Checks:** use `checks.require(ok, what)`, not `assert` (`python -O` drops those).
+  - **Drive instants:** use `checks.lift_at()` / `clutch_at()`, the start of the first block that
+    shows the change.
+  - **Windows:** text I/O says `encoding="utf-8"`, paths to make are `as_posix()`, and the
+    Makefile turns LTO on only where the compiler has it.
+  - **Prose numbers:** publishers compute their counts from the evidence.
+  - **Research solvers:** `test_gas_graph_analytic_pulse` checks the pulse against linear
+    acoustics; a first-order gas region passed every stage 117 test and fails it.
+- 20 bugs in the stage040/041/042/115/116 tables now match the reformatted text. New:
+  `tools/bugs/stage119.py` and `tools/bugs/stage119_python.py`.
+- Native 251 tests / 4,950,067 checks, Python 102 (WSL and Windows), web 17. No physics changed.
+- **Next stage: 118.**
+
 ## 2026-11-01: PLAN.md remade; the browser comes first
 
 - **The new layout:** at Bernardo's request, Claude rewrote PLAN.md around where the project

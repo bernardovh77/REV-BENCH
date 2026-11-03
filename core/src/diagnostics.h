@@ -9,17 +9,37 @@
 #include <stddef.h>
 #include <stdint.h>
 
-enum { RB_D_BAD_FLOW, RB_D_EMPTY, RB_D_MASS_CAP, RB_D_SONIC_CAP,
-       RB_D_DENSITY_FLOOR, RB_D_LENGTH_FLOOR, RB_D_CHOKED, RB_D_EQUALISE,
-       RB_D_DONOR, RB_D_RECONSTRUCT, RB_D_MASS_REPAIR, RB_D_ENERGY_REPAIR,
-       RB_D_TEMP_FLOOR, RB_D_PROPERTY_RANGE, RB_D_NEWTON_FALLBACK,
-       RB_D_NEWTON_LIMIT, RB_D_RADIATION_RESET, RB_D_HEAT_RESET,
-       RB_D_CFL, RB_D_REASONS };
+/* Why a solver reports (rb_diag_reason_name gives each one's name). */
+enum {
+    RB_D_BAD_FLOW,          /* a NaN or infinite flow, set to 0 */
+    RB_D_EMPTY,             /* the donor cell was empty */
+    RB_D_MASS_CAP,          /* a step would take over half a cell's gas */
+    RB_D_SONIC_CAP,         /* the pipes' sonic guard (RB_PIPE_MOST_SONIC) */
+    RB_D_DENSITY_FLOOR,
+    RB_D_LENGTH_FLOOR,
+    RB_D_CHOKED,            /* a nozzle choked: physics, not a guard */
+    RB_D_EQUALISE,          /* an orifice's equalisation limit */
+    RB_D_DONOR,             /* donor-cell transport */
+    RB_D_RECONSTRUCT,       /* limited reconstruction */
+    RB_D_MASS_REPAIR,       /* a negative species mass set to 0 */
+    RB_D_ENERGY_REPAIR,
+    RB_D_TEMP_FLOOR,
+    RB_D_PROPERTY_RANGE,    /* T outside the gas fits' range */
+    RB_D_NEWTON_FALLBACK,   /* T(u) fell back to the scalar method */
+    RB_D_NEWTON_LIMIT,      /* ... or ran out of iterations */
+    RB_D_RADIATION_RESET,   /* a non-finite velocity at an outlet's radiation */
+    RB_D_HEAT_RESET,        /* a non-finite wall heat, set to 0 */
+    RB_D_CFL,               /* a pipe's Courant number above 1 */
+    RB_D_REASONS
+};
 #define RB_D_BIT(reason) (UINT64_C(1) << (reason))
+/* A slot's quantities: mass, each species' mass, energy. */
 #define RB_D_QUANTITIES (RB_NSPECIES+2)
 #define RB_D_MAX_SLOTS 2048
 #define RB_D_MAX_TRACE 256
+/* What a slot watches ... */
 enum { RB_D_VOLUME, RB_D_PIPE, RB_D_CELL, RB_D_FACE, RB_D_ORIFICE };
+/* ... and its place in the engine (rb_diag_role_name gives the names). */
 enum { RB_D_AMBIENT_IN, RB_D_AMBIENT_OUT, RB_D_AIRBOX, RB_D_PLENUM,
        RB_D_CYLINDER, RB_D_COLLECTOR, RB_D_JUNCTION, RB_D_THROTTLE,
        RB_D_IDLE_AIR, RB_D_INTAKE_VALVE, RB_D_EXHAUST_VALVE,
@@ -31,18 +51,21 @@ typedef struct rb_diag_slot {
     struct rb_diagnostics *owner;
     int role, number, kind, part; /* face part -1/-2 = end0/end1 */
     uint64_t reason[RB_D_REASONS], transfers, inventories, invalid;
+    /* each quantity's running totals */
     double requested[RB_D_QUANTITIES], accepted[RB_D_QUANTITIES];
     double rejected_abs[RB_D_QUANTITIES], repaired[RB_D_QUANTITIES];
     double impulse_requested, impulse_accepted;
     double max_cfl, length, area, dx, effective_length_max, density_min;
-    double inventory[RB_D_QUANTITIES], pressure, temperature;
+    double inventory[RB_D_QUANTITIES], pressure, temperature;   /* the last inventory */
     int requested_cells, actual_cells;
 } rb_diag_slot;
+
 typedef struct rb_diag_record {
     uint64_t tick, reasons;
     size_t slot;
     double requested[RB_D_QUANTITIES], accepted[RB_D_QUANTITIES];
 } rb_diag_record;
+
 typedef struct rb_diagnostics {
     rb_diag_slot *slots;
     size_t capacity, count;
@@ -51,6 +74,7 @@ typedef struct rb_diagnostics {
     uint64_t tick, generation, dropped, events;
     unsigned trace_stride; /* 0: numerical guard events only; N: every Nth event too */
 } rb_diagnostics;
+
 struct rb_engine;
 int rb_diag_init(rb_diagnostics *d, rb_diag_slot *slots, size_t capacity,
                  rb_diag_record *trace, size_t trace_capacity, uint64_t generation);

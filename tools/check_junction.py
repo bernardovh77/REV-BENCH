@@ -11,12 +11,12 @@ def run(probe,out,name,mesh,mode='pulse',rate=2000000,T=300,source=0,amplitude=1
     text=native_input(mesh,mode,rate,T,source,amplitude,duration,U)
     input_hash=hashlib.sha256(text.encode()).hexdigest();raw=None
     if reuse and all((out/(name+s)).exists() for s in ['.input','.csv','.stderr','.json']):
-        old=json.loads((out/(name+'.json')).read_text())
+        old=json.loads((out/(name+'.json')).read_text(encoding="utf-8"))
         if old.get('probe_sha256')==binary_hash and old.get('input_sha256')==input_hash and hashlib.sha256((out/(name+'.input')).read_bytes()).hexdigest()==input_hash:
-            raw=SimpleNamespace(returncode=0,stdout=(out/(name+'.csv')).read_text(),stderr=(out/(name+'.stderr')).read_text())
-    (out/(name+'.input')).write_text(text)
+            raw=SimpleNamespace(returncode=0,stdout=(out/(name+'.csv')).read_text(encoding="utf-8"),stderr=(out/(name+'.stderr')).read_text(encoding="utf-8"))
+    (out/(name+'.input')).write_text(text, encoding="utf-8")
     if raw is None:raw=subprocess.run([str(probe)],input=text,capture_output=True,text=True,timeout=7200)
-    (out/(name+'.csv')).write_text(raw.stdout);(out/(name+'.stderr')).write_text(raw.stderr)
+    (out/(name+'.csv')).write_text(raw.stdout, encoding="utf-8");(out/(name+'.stderr')).write_text(raw.stderr, encoding="utf-8")
     if raw.returncode:raise ValueError((name,raw.returncode,raw.stderr[-600:]))
     lines=[x[len('RB_JV_RESULT '):] for x in raw.stderr.splitlines() if x.startswith('RB_JV_RESULT ')]
     if len(lines)!=1:raise ValueError((name,'missing result'))
@@ -33,7 +33,7 @@ def run(probe,out,name,mesh,mode='pulse',rate=2000000,T=300,source=0,amplitude=1
         r['book_pass']=max(r['mass_relative'],r['momentum_relative'],r['energy_relative'])<=1e-10
     rows=list(csv.DictReader(io.StringIO(raw.stdout))) if raw.stdout.strip() else []
     data={k:np.array([float(v[k]) for v in rows]) for k in rows[0]} if rows else {}
-    (out/(name+'.json')).write_text(json.dumps(r,indent=2)+'\n');return r,data
+    (out/(name+'.json')).write_text(json.dumps(r,indent=2)+'\n', encoding="utf-8");return r,data
 
 def transfer(r,data,frequencies):
     if r['status']:raise ValueError('Rejected propagation')
@@ -53,7 +53,7 @@ def compare(candidate,reference):
                 pass_=bool(error<=.05 and magnitude.max(initial=0)<=1 and phase.max(initial=0)<=10 and small<=.01))
 
 def acoustic_case(probe,out,kind,n,T,frequencies,reference,rate=2000000,duration=.003,sources=None,reuse=False):
-    mesh=fixture(kind,n);(out/f'{kind}-{n}-geometry.json').write_text(json.dumps(mesh,indent=2)+'\n')
+    mesh=fixture(kind,n);(out/f'{kind}-{n}-geometry.json').write_text(json.dumps(mesh,indent=2)+'\n', encoding="utf-8")
     sources=list(range(len(mesh['ports']))) if sources is None else list(sources)
     columns=[];rows=[]
     for source in sources:
@@ -66,7 +66,7 @@ def acoustic_case(probe,out,kind,n,T,frequencies,reference,rate=2000000,duration
     result=dict(kind=kind,n=n,T=T,frequencies=frequencies,rows=rows,**comparison)
     result['pass']=bool(comparison['pass_'] and all(r['book_pass'] and r['calibration_error']<=.001 for r in rows))
     np.savez_compressed(out/f'{kind}-{n}-{T}-{rate}-matrix.npz',candidate=matrix,reference=selected,frequencies=frequencies)
-    (out/f'{kind}-{n}-{T}-{rate}-summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/f'{kind}-{n}-{T}-{rate}-summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--kind',default='x');p.add_argument('--n',type=int,default=8);p.add_argument('--temperature',type=int,default=300);a=p.parse_args()

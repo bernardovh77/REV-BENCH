@@ -41,7 +41,7 @@ def prepare_build(probe, build):
 
 
 def check(probe):
-    examples = loads((ROOT/'contracts/examples/builds-v1.json').read_text())
+    examples = loads((ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8"))
     records = []
     for build in examples:
         raw = native(probe, 'export', build['build_id'])
@@ -82,7 +82,7 @@ def main():
     report = check(args.probe.resolve())
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(json.dumps(report, indent=2)+'\n')
+        args.output.write_text(json.dumps(report, indent=2)+'\n', encoding="utf-8")
     print(json.dumps(report, indent=2))
 
 

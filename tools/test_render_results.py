@@ -29,9 +29,12 @@ def checkpoint(folder, samples=(0.1, -0.2, 0.05, -0.1)):
         float_wav(path, samples*3000 if scenario in ("long-coast", "packed-control") else samples)
         if scenario in ("long-coast", "packed-control"):
             limit = REV_LIMITS.get(engine, 6500)
+            # rb_cli's rows, a 128-frame block apart around the lift at 1 s
+            # and the clutch at 9 s (each shows in the next block's row)
             path.with_suffix(".csv").write_text(
                 f"t_s,throttle,crank_inertia_kgm2,rpm\n0,1,3,1000\n0.5,1,3,{limit-500}\n"
-                f"1,0,3,{limit-80}\n9,0,0.2,2000\n")
+                f"1,1,3,{limit-80}\n1.002667,0,3,{limit-80}\n9,0,3,2000\n9.002667,0,0.2,2000\n",
+                encoding="utf-8")
 
 
 class Players(HTMLParser):
@@ -56,21 +59,21 @@ class RenderResultsTests(unittest.TestCase):
             float_wav(diagnostic)
             original = diagnostic.read_bytes()
             page = root/"RESULTS.html"
-            page.write_text(page.read_text().replace('</main>',
+            page.write_text(page.read_text(encoding="utf-8").replace('</main>',
                 '<!-- AUDIO EXPERIMENT BEGIN --><section id="audio-experiment"><audio controls '
                 'src="data:audio/wav;base64,UklGRg=="></audio></section>'
-                '<!-- AUDIO EXPERIMENT END --></main>'))
+                '<!-- AUDIO EXPERIMENT END --></main>'), encoding="utf-8")
             adopt_current(root)
             write_page(current, page)
-            first = Players(); first.feed(page.read_text())
+            first = Players(); first.feed(page.read_text(encoding="utf-8"))
             self.assertEqual(len(first.sources), 35)
             write_page(current, page)
-            again = Players(); again.feed(page.read_text())
+            again = Players(); again.feed(page.read_text(encoding="utf-8"))
             self.assertEqual(again.sources, first.sources)
             staged = root/"pending/next"
             checkpoint(staged)
             replace_current(staged, root)
-            rebuilt = Players(); rebuilt.feed(page.read_text())
+            rebuilt = Players(); rebuilt.feed(page.read_text(encoding="utf-8"))
             self.assertEqual(rebuilt.sources, first.sources)
             self.assertEqual(diagnostic.read_bytes(), original)
             before = page.read_bytes()
@@ -79,6 +82,30 @@ class RenderResultsTests(unittest.TestCase):
                 write_page(current, page)
             self.assertEqual(page.read_bytes(), before)
 
+    def test_make_gets_forward_slashes(self):
+        """Stage 119: make's targets are spelled $(BUILD)/..., and its shell eats
+        a Windows path's backslashes, so render_checkpoint hands make every path
+        with forward slashes (a backslashed --assume-old remade the CLI)."""
+        from unittest.mock import patch
+        import render_results
+        calls = []
+
+        def fake_run(command, **kwargs):
+            calls.append(command)
+            raise RuntimeError("stop after make's command")
+
+        with tempfile.TemporaryDirectory() as tmp, \
+                patch.object(render_results.subprocess, "run", fake_run):
+            renders = Path(tmp)
+            with self.assertRaisesRegex(RuntimeError, "stop after"):
+                render_results.render_checkpoint(renders / "build" / "rb_cli", str(renders / "build"), renders)
+        make = calls[0]
+        self.assertEqual(make[:2], ["make", "render-standard"])
+        for argument in make[2:]:
+            self.assertNotIn("\\", argument)
+        self.assertIn(f"--assume-old={(renders / 'build' / 'rb_cli').as_posix()}", make)
+
+    @unittest.skipIf(os.name == "nt", "its fake CLI is a POSIX script, which Windows can't run directly")
     def test_full_makefile_and_scenario_pipeline_without_site_packages(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -98,8 +125,8 @@ class RenderResultsTests(unittest.TestCase):
                 "limit={'i6':8500,'v8-cross':7500,'v8-flat':9000}.get(preset,6500)\n"
                 f"Path(args[args.index('--out')+1]).write_bytes(Path({str(fixture)!r}).read_bytes())\n"
                 "if '--csv' in args:\n"
-                " Path(args[args.index('--csv')+1]).write_text(f't_s,throttle,crank_inertia_kgm2,rpm\\n0,1,3,1000\\n0.5,1,3,{limit-500}\\n1,0,3,{limit-80}\\n9,0,0.2,2000\\n')\n"
-                "if args[1]=='sound': print('soft-limited samples 0, non-finite 0')\n")
+                " Path(args[args.index('--csv')+1]).write_text(f't_s,throttle,crank_inertia_kgm2,rpm\\n0,1,3,1000\\n0.5,1,3,{limit-500}\\n1,1,3,{limit-80}\\n1.002667,0,3,{limit-80}\\n9,0,3,2000\\n9.002667,0,0.2,2000\\n')\n"
+                "if args[1]=='sound': print('soft-limited samples 0, non-finite 0')\n", encoding="utf-8")
             cli.chmod(0o755)
             script = Path(__file__).with_name("render_results.py").resolve()
             # -S on the orchestrator and fake simulation also proves the complete
@@ -114,7 +141,7 @@ class RenderResultsTests(unittest.TestCase):
             result = subprocess.run(command, capture_output=True, text=True, timeout=60, env=env)
             self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
             self.assertEqual(len(list((renders/"current").rglob("*.wav"))), 34)
-            recordings = json.loads((renders/"current/feedback/recordings.json").read_text())
+            recordings = json.loads((renders/"current/feedback/recordings.json").read_text(encoding="utf-8"))
             self.assertEqual(len(recordings), 11)
             self.assertIn("straight", recordings["v8-cross-packed-control"]["command"])
             self.assertFalse(list(renders.glob(".pending-results-*")))
@@ -148,13 +175,14 @@ class RenderResultsTests(unittest.TestCase):
             self.assertEqual((root/"RESULTS.html").read_bytes(), before)
             float_wav(coast, (0.1, -0.2, 0.05, -0.1)*3000)
             coast.with_suffix(".csv").write_text(
-                "t_s,throttle,crank_inertia_kgm2\n1,0,3\n5,0,0.2\n")
+                "t_s,throttle,crank_inertia_kgm2\n1,0,3\n5,0,0.2\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "eight-second"):
                 replace_current(staged, root)
             self.assertEqual((root/"RESULTS.html").read_bytes(), before)
             self.assertTrue((current/"feedback/i6-long-coast.wav").exists())
             coast.with_suffix(".csv").write_text(
-                "t_s,throttle,crank_inertia_kgm2,rpm\n0,1,3,1000\n1,0,3,7000\n9,0,0.2,2000\n")
+                "t_s,throttle,crank_inertia_kgm2,rpm\n0,1,3,1000\n1,1,3,1000\n1.002667,0,3,7000\n"
+                "9,0,3,2000\n9.002667,0,0.2,2000\n", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "limiter region"):
                 replace_current(staged, root)
             self.assertEqual((root/"RESULTS.html").read_bytes(), before)
@@ -175,7 +203,7 @@ class RenderResultsTests(unittest.TestCase):
             self.assertEqual(references.read_bytes(), reference_bytes)
             self.assertFalse((current/"old-generated.mp3").exists())
             self.assertFalse((root/"pending/previous").exists())
-            page = (root/"RESULTS.html").read_text()
+            page = (root/"RESULTS.html").read_text(encoding="utf-8")
             parser = Players()
             parser.feed(page)
             self.assertEqual(len(parser.sources), 34)
@@ -183,7 +211,7 @@ class RenderResultsTests(unittest.TestCase):
                 self.assertTrue(src.startswith("data:audio/wav;base64,"))
                 audio = base64.b64decode(src.split(",", 1)[1], validate=True)
                 self.assertEqual(audio[:4], b"RIFF")
-            self.assertEqual(len(json.loads((current/"results.json").read_text())["clips"]), 34)
+            self.assertEqual(len(json.loads((current/"results.json").read_text(encoding="utf-8"))["clips"]), 34)
 
     def test_page_install_failure_rolls_back_current(self):
         with tempfile.TemporaryDirectory() as tmp:

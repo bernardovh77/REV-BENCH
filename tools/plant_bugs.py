@@ -47,17 +47,19 @@ def run(bugs, work, name):
         "__pycache__", "graphify-out", ".agents", "skills-lock.json",
         "*.mkv", "*.webm", "*.mp3", "*.mp4", "*.mov", "*.wav"))
     target = os.path.join(work, path)
-    with open(target) as f:
+    with open(target, encoding="utf-8") as f:
         text = f.read()
     pairs = list(zip(old, new)) if isinstance(old, tuple) else [(old, new)]
     for o, n in pairs:   # several replacements in one file make one bug
         if text.count(o) != 1:
             return f"{name}: NOT APPLIED ({text.count(o)} matches in {path})"
         text = text.replace(o, n)
-    with open(target, "w") as f:
+    with open(target, "w", encoding="utf-8") as f:
         f.write(text)
     build = os.path.join(work, "b")
-    r = subprocess.run(["make", "-s", "-C", work, f"BUILD={build}", f"{build}/rb_tests"],
+    # forward slashes: make's shell would eat a Windows path's backslashes
+    posix = build.replace(os.sep, "/")
+    r = subprocess.run(["make", "-s", "-C", work, f"BUILD={posix}", f"{posix}/rb_tests"],
                        capture_output=True, text=True)
     if r.returncode != 0:
         return f"{name}: BUILD FAILED\n{r.stderr[-2000:]}"

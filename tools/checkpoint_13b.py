@@ -15,6 +15,8 @@ from pathlib import Path
 import struct
 import subprocess
 
+from checks import clutch_at, lift_at
+
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i6", "v8-cross", "v8-flat")
 SCENES = ("asphalt", "grass", "wall", "garage", "dyno", "iso", "passby", "cabin")
@@ -49,7 +51,7 @@ def record(args, folder, name, options):
                str(folder / (name+".wav")), "--csv", str(folder / (name+".csv"))]
     print("Recording", name, flush=True)
     r = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=900)
-    (folder / (name+".log")).write_text(r.stdout+r.stderr)
+    (folder / (name+".log")).write_text(r.stdout+r.stderr, encoding="utf-8")
     r.check_returncode()
     if "soft-limited samples 0, non-finite 0" not in r.stdout:
         raise ValueError(f"{name}: inspect limiter/non-finite diagnostics before listening")
@@ -74,7 +76,7 @@ def render(args):
     rows["high"] = record(args, args.output/"quality", "v8-cross-high",
                           ["--preset", "v8-cross", "--hold", "--rpm", "3000",
                            "--seconds", "4", "--quality", "high", "--gain", "0.2"])
-    (args.output/"recordings.json").write_text(json.dumps(rows, indent=2)+"\n")
+    (args.output/"recordings.json").write_text(json.dumps(rows, indent=2)+"\n", encoding="utf-8")
 
 
 def analyze(args):
@@ -110,7 +112,7 @@ def analyze(args):
             clips.append(clip)
             # Numerical inputs remain unfiltered and at the render/source gain.
             m = measure(path,a,b,repeats=False)
-            metrics.append({"path":str(path.relative_to(ROOT)),"sha256":sha(path),
+            metrics.append({"path":path.relative_to(ROOT).as_posix(),"sha256":sha(path),
                             "interval_s":[a,b],"above_2k_db":float(m["above"][1]),
                             "slope_db_oct":float(m["slope"]),"crest_db":float(m["crest"])})
             axes[row,col].specgram(clip[:,0],NFFT=2048,Fs=fs,noverlap=1536,cmap="magma")
@@ -135,11 +137,11 @@ def analyze(args):
             "order":"real reference, 0.5 s gap, S1d, 0.5 s gap, current",
             "listening_only_processing":"10 ms fades, static gain; no pitch/EQ/denoising",
             "listening_gains":gains,"measurement_inputs":metrics,
-            "wav":str(output.relative_to(ROOT)),"sha256":sha(output)})
+            "wav":output.relative_to(ROOT).as_posix(),"sha256":sha(output)})
     fig.suptitle("Qualitative references and neutral revs: operating conditions are not matched")
     fig.tight_layout()
     fig.savefig(args.output/"deceleration-comparison.png",dpi=140)
-    (args.output/"comparison.json").write_text(json.dumps(report,indent=2,allow_nan=False)+"\n")
+    (args.output/"comparison.json").write_text(json.dumps(report,indent=2,allow_nan=False)+"\n", encoding="utf-8")
     print("Wrote listening pairs and comparison.json; no listening approval is implied.")
 
 
@@ -152,11 +154,11 @@ def long_coast(args):
                      ["--preset",preset,"--sweep","--coast-seconds","8",
                       "--pull-seconds","12","--seconds","45","--scene","asphalt",
                       "--inertia","3","--gain","0.15"])
-        with (args.output/"long-coast"/(name+".csv")).open() as stream:
+        with (args.output/"long-coast"/(name+".csv")).open(encoding="utf-8") as stream:
             telemetry = list(csv.DictReader(stream))
-        lift = next(r for r in telemetry if float(r["throttle"])==0.0)
-        clutch = next(r for r in telemetry if float(r["crank_inertia_kgm2"])<2.9)
-        row.update(preset=preset,lift_s=float(lift["t_s"]),clutch_s=float(clutch["t_s"]),
+        lift_s, lift = lift_at(telemetry)
+        clutch_s, clutch = clutch_at(telemetry)
+        row.update(preset=preset,lift_s=lift_s,clutch_s=clutch_s,
                    final_s=float(telemetry[-1]["t_s"]),lift_rpm=float(lift["rpm"]),
                    clutch_rpm=float(clutch["rpm"]),
                    processing="Stereo asphalt scene; standard float output at gain 0.15; "
@@ -164,7 +166,7 @@ def long_coast(args):
         if not 7.98 < row["clutch_s"]-row["lift_s"] < 8.02:
             raise ValueError("long coast did not retain the requested vehicle inertia interval")
         rows.append(row)
-    (args.output/"long-coast/manifest.json").write_text(json.dumps(rows,indent=2)+"\n")
+    (args.output/"long-coast/manifest.json").write_text(json.dumps(rows,indent=2)+"\n", encoding="utf-8")
 
 
 def main():

@@ -11,6 +11,8 @@ import hashlib
 import json
 from pathlib import Path
 
+from checks import lift_instant
+
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ('i6', 'v8-cross', 'v8-flat')
 
@@ -35,12 +37,10 @@ def spectral_metrics(samples, rate):
 
 
 def telemetry(path):
-    with path.open() as stream:
+    with path.open(encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
-    index = next(i for i, row in enumerate(rows) if float(row['throttle']) == 0)
     # Pedal changes at the start of the first closed block, not its CSV end.
-    lift = float(rows[index - 1]['t_s']) if index else 0.0
-    return rows, lift
+    return rows, lift_instant(rows)
 
 
 def excerpt(x, rate, a, b):
@@ -86,7 +86,7 @@ def main():
             for name, (a,b) in {'pre_lift': (-.8,-.2), 'first_200ms': (0,.2),
                                'early_coast': (.2,.8), 'later_coast': (.8,1.4)}.items():
                 windows[name] = spectral_metrics(excerpt(x,rate,lift+a,lift+b), rate)
-            item = {'variant': variant, 'path': str(path.relative_to(ROOT)),
+            item = {'variant': variant, 'path': path.relative_to(ROOT).as_posix(),
                     'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
                     'lift_s': lift, 'measurement_windows': windows,
                     'band_step_db': windows['early_coast']['overrun_band_dbfs']
@@ -122,11 +122,11 @@ def main():
         reference,a,b,source_a,source_b = REFERENCES[preset]
         refpath = ROOT/'renders/real'/reference
         ref,ref_rate = read_wav(refpath)
-        record['reference'] = {'path': str(refpath.relative_to(ROOT)),
+        record['reference'] = {'path': refpath.relative_to(ROOT).as_posix(),
             'source_interval_s': [source_a,source_b], 'local_interval_s': [a,b],
             'conditions': 'Falling pitch candidate only; RPM/load and cabin/exterior/flyby unverified.',
             **spectral_metrics(excerpt(ref,ref_rate,a,b),ref_rate)}
-        record['listening'] = {'path': str(output.relative_to(ROOT)), 'order': 'before, after',
+        record['listening'] = {'path': output.relative_to(ROOT).as_posix(), 'order': 'before, after',
             'processing': 'One shared static gain, 10 ms edge fades, 0.5 s silence; listening only.',
             'shared_gain': gain}
         report['engines'].append(record)
@@ -142,7 +142,7 @@ def main():
                  'Cross-plane V8 also changes from packed to unfilled exhaust; listening approval pending')
     fig.tight_layout()
     fig.savefig(args.output/'lift-feedback.png',dpi=140)
-    (args.output/'measurements.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
+    (args.output/'measurements.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n', encoding="utf-8")
     print('Wrote measurements.json, lift-feedback.png and separate listening comparisons.')
 
 

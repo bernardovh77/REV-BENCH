@@ -56,7 +56,7 @@ class S1AuditTests(unittest.TestCase):
             cli.write_bytes(b"test renderer")
             argv = ["--cli", str(cli), "--output", directory, "--preset", "i4", "--check"]
             self.assertEqual(audit_s1.main(argv), 1)
-            self.assertIn('"s1_complete": false', (Path(directory) / "sound.json").read_text())
+            self.assertIn('"s1_complete": false', (Path(directory) / "sound.json").read_text(encoding="utf-8"))
 
     def test_rejects_bad_gain_before_recording(self):
         for gain in ("0", "-1", "2", "nan", "inf"):

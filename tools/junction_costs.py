@@ -18,6 +18,6 @@ def main():
             median=statistics.median(r['elapsed_s'] for r in rows)
             result=dict(kind=kind,n=n,U=U,rows=rows,median_cpu_s=median,simulated_per_cpu=.0005/median,bytes=rows[0]['bytes'])
             results.append(result);print(kind,n,U,result['simulated_per_cpu'],result['bytes'],flush=True)
-    (a.out/'summary.json').write_text(json.dumps(dict(cases=results,pass_=True,scope='single uniform-gas research fixture; preparation/allocation and diagnostic I/O excluded; not an engine benchmark'),indent=2)+'\n')
+    (a.out/'summary.json').write_text(json.dumps(dict(cases=results,pass_=True,scope='single uniform-gas research fixture; preparation/allocation and diagnostic I/O excluded; not an engine benchmark'),indent=2)+'\n', encoding="utf-8")
 
 if __name__=='__main__':main()

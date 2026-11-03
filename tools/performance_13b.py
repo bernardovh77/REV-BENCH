@@ -40,7 +40,7 @@ def bench(args):
             run = subprocess.run(command, cwd=ROOT, capture_output=True, text=True,
                                  timeout=300, check=True)
             log = args.output / f"bench-{round_number+1}-{name}.txt"
-            log.write_text(run.stdout + run.stderr)
+            log.write_text(run.stdout + run.stderr, encoding="utf-8")
             for line in run.stdout.splitlines():
                 fields = line.split()
                 if len(fields) == 5 and fields[0] in PRESETS:
@@ -67,7 +67,7 @@ def bench(args):
                   caveat="Engine-only throughput; shared-host timings vary. Not an AudioWorklet deadline test.",
                   binary_sha256={name: sha(path) for name, path in binaries.items()},
                   commands=commands, rows=rows, summary=summary)
-    (args.output / "benchmarks.json").write_text(json.dumps(result, indent=2)+"\n")
+    (args.output / "benchmarks.json").write_text(json.dumps(result, indent=2)+"\n", encoding="utf-8")
 
 
 def compare(args):
@@ -85,7 +85,7 @@ def compare(args):
     result = dict(before=str(args.before_audio.resolve()), after=str(args.output.resolve()),
                   processing="Original unfiltered float WAVs, no gain, alignment or spectral transforms.",
                   all_identical=all(row["identical"] for row in rows), rows=rows)
-    (args.output / "audio-identity.json").write_text(json.dumps(result, indent=2)+"\n")
+    (args.output / "audio-identity.json").write_text(json.dumps(result, indent=2)+"\n", encoding="utf-8")
     print(f"{sum(r['identical'] for r in rows)}/{len(rows)} WAVs byte-identical")
     if not result["all_identical"]:
         raise SystemExit("Audio differs: inspect numerical and listening comparisons before acceptance")

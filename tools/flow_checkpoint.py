@@ -42,9 +42,16 @@ def fragment(zero,flow,gain,figure=None):
     payload=io.BytesIO();fig.savefig(payload,format='png',dpi=150);plt.close(fig)
     if figure:figure.write_bytes(payload.getvalue())
     profiles=flow['profiles'];gaussians=[r for r in profiles if not r['frequency']];carriers=[r for r in profiles if r['frequency']]
+    # The prose's numbers, from the evidence (stage 119).
+    stable=flow['stability'];seconds=sorted({r['time_s'] for r in stable})
+    temperatures='/'.join(f'{t:g}' for t in sorted({r['temperature'] for r in profiles}))
+    speed=max(abs(r['mean_flow']) for r in profiles)
+    hertz=' / '.join(f'{f:,}' for f in sorted({r['frequency'] for r in carriers}))
+    count=['No','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten'][len(stable)] if len(stable)<=10 else str(len(stable))
+    duration=f'{seconds[0]:g}-second' if len(seconds)==1 else 'moving-flow'
     rows=[('045 · Quiescent coupling',f'{len(zero["profiles"])} independent profiles',f'{100*max(r["waveform_l2"] for r in zero["profiles"]):.3f}% worst shape error'),
-          ('046 · Signed flow',f'{len(profiles)} profiles; −70 / 0 / +70 m/s',f'{100*max(r["waveform_l2"] for r in gaussians):.3f}% worst Gaussian error'),
-          ('046 · Carrier transfer','200 / 2,000 / 4,000 Hz',f'{max(abs(r["magnitude_db"]) for r in carriers):.4f} dB / {max(abs(r["phase_deg"]) for r in carriers):.4f}°'),
+          ('046 · Signed flow',f'{len(profiles)} profiles; '+' / '.join(f'{u:+}'.replace('-','−') if u else '0' for u in sorted({r['mean_flow'] for r in profiles}))+' m/s',f'{100*max(r["waveform_l2"] for r in gaussians):.3f}% worst Gaussian error'),
+          ('046 · Carrier transfer',f'{hertz} Hz',f'{max(abs(r["magnitude_db"]) for r in carriers):.4f} dB / {max(abs(r["phase_deg"]) for r in carriers):.4f}°'),
           ('046 · Contacts',f'{len(flow["contacts"])} moving-composition cases',f'{max(r["pressure_drift_Pa"] for r in flow["contacts"]):.3g} Pa false pressure; {100*max(r["contrast_transfer_relative_error"] for r in flow["contacts"]):.3f}% transfer error')]
     table=''.join('<tr>'+''.join('<td>'+escape(str(v))+'</td>' for v in row)+'</tr>' for row in rows)
     return f'''<!-- FLOW CHECKPOINT BEGIN -->
@@ -53,8 +60,8 @@ def fragment(zero,flow,gain,figure=None):
 <img style="width:100%;height:auto" alt="Pulse error, forward and reflected travel, transported composition and one-second energy checks" src="data:image/png;base64,{base64.b64encode(payload.getvalue()).decode()}">
 <table><thead><tr><th>Test</th><th>Coverage</th><th>Measured result</th></tr></thead><tbody>{table}</tbody></table>
 <p>Returning pressure acts on the retained gas on the current tick. One shared transfer accounts for each species, momentum and total energy on both sides. With moving gas, acoustic mass flow includes the density change; waves travel at different speeds with and against that flow. Composition is transported rather than held behind an acoustic boundary.</p>
-<p>Six one-second moving-flow cases pass their energy-growth and final-decay limits. Separate resolved-return controls show a {max(r["maximum_ratio"] for r in gain):.3f}× energy peak, close to the {gain[0]["expected_full_reflection_ratio"]:.3f}× ideal flow-dependent reflection ratio; that accounted increase is not numerical instability. A specified pressure reflection on a flowing reservoir can exchange energy with the mean flow; it is not a solid closed wall. Physical gas energy and the acoustic diagnostic are separate accounts of the same state.</p>
-<p>Limits: one uniform duct; tested at 300/900 K and ±70 m/s, with weak carriers and bounded finite pulses. Weak-carrier envelope error reaches {100*max(r['waveform_l2'] for r in carriers):.3f}%; carrier magnitude/phase pass their separate frozen gates. Hot/cold fronts, evolving reversal, branches, component losses, engine integration and real-time performance remain unqualified. This full correction grid is an expensive reference, not the finished efficient renderer.</p>
+<p>{count} {duration} moving-flow cases pass their energy-growth and final-decay limits. Separate resolved-return controls show a {max(r["maximum_ratio"] for r in gain):.3f}× energy peak, close to the {gain[0]["expected_full_reflection_ratio"]:.3f}× ideal flow-dependent reflection ratio; that accounted increase is not numerical instability. A specified pressure reflection on a flowing reservoir can exchange energy with the mean flow; it is not a solid closed wall. Physical gas energy and the acoustic diagnostic are separate accounts of the same state.</p>
+<p>Limits: one uniform duct; tested at {temperatures} K and ±{speed:g} m/s, with weak carriers and bounded finite pulses. Weak-carrier envelope error reaches {100*max(r['waveform_l2'] for r in carriers):.3f}%; carrier magnitude/phase pass their separate frozen gates. Hot/cold fronts, evolving reversal, branches, component losses, engine integration and real-time performance remain unqualified. This full correction grid is an expensive reference, not the finished efficient renderer.</p>
 <p>Stages 45–46 are complete within this scope. Stage 39 recording matching and realism/listening gates remain open. Whole-engine comparisons with the new system are planned at Stage 57; production promotion remains a later decision. Development is on hold before Stage 47.</p>
 </section>
 <!-- FLOW CHECKPOINT END -->'''
@@ -62,4 +69,4 @@ def fragment(zero,flow,gain,figure=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--zero',type=Path,required=True);p.add_argument('--flow',type=Path,required=True)
     p.add_argument('--results',type=Path,required=True);p.add_argument('--figure',type=Path);p.add_argument('--gain',type=Path,required=True);a=p.parse_args()
-    publish_section(a.results,'flow-checkpoint',fragment(json.loads(a.zero.read_text()),json.loads(a.flow.read_text()),json.loads(a.gain.read_text()),a.figure))
+    publish_section(a.results,'flow-checkpoint',fragment(json.loads(a.zero.read_text(encoding="utf-8")),json.loads(a.flow.read_text(encoding="utf-8")),json.loads(a.gain.read_text(encoding="utf-8")),a.figure))

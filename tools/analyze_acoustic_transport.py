@@ -9,10 +9,11 @@ from pathlib import Path
 import statistics
 import tempfile
 import shutil
+from checks import CheckFailed, require
 
 
 def read(path):
-    with path.open(newline="") as stream:
+    with path.open(newline="", encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
     for row in rows:
         if None in row:
@@ -166,7 +167,7 @@ def analyze(directory, plot=False):
                "max_base_pressure_error_Pa":max(row["base_pressure_error_Pa"] for row in nonmutant),
                "csv_sha256":{path.name:hashlib.sha256(path.read_bytes()).hexdigest()
                               for path in (directory/"transport.csv",directory/"controls.csv") if path.exists()}}
-    (directory/"summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+    (directory/"summary.json").write_text(json.dumps(summary,indent=2)+"\n", encoding="utf-8")
     if not summary["self_checks_pass"]:
         raise SystemExit("transport harness self-check failed; inspect summary.json")
     if plot:
@@ -179,12 +180,12 @@ def self_test(directory):
     """A corrupted evidence row must fail acceptance even with other rows good."""
     with tempfile.TemporaryDirectory(prefix="revbench-transport-fault-") as temporary:
         target = Path(temporary)
-        with (directory/"transport.csv").open(newline="") as stream:
+        with (directory/"transport.csv").open(newline="", encoding="utf-8") as stream:
             reader = csv.DictReader(stream)
             fields, rows = reader.fieldnames, list(reader)
         row = next(row for row in rows if row["group"] == "matrix" and row["status"] == "ok")
         row["status"], row["repairs"] = "state_failure", "1"
-        with (target/"transport.csv").open("w",newline="") as stream:
+        with (target/"transport.csv").open("w",newline="", encoding="utf-8") as stream:
             writer = csv.DictWriter(stream,fields)
             writer.writeheader()
             writer.writerows(rows)
@@ -192,12 +193,15 @@ def self_test(directory):
         try:
             analyze(target)
         except SystemExit:
-            result = json.loads((target/"summary.json").read_text())
-            assert not result["self_checks_pass"] and result["solver_state_failures"] == 1
-            assert not result["self_checks"]["no_state_repairs_nonfinite_or_caps"]
-            assert not result["self_checks"]["no_solver_state_failures"]
+            result = json.loads((target/"summary.json").read_text(encoding="utf-8"))
+            require(not result["self_checks_pass"] and result["solver_state_failures"] == 1,
+                    "the injected row fails the self-checks, counted once")
+            require(not result["self_checks"]["no_state_repairs_nonfinite_or_caps"],
+                    "the injected repair is seen")
+            require(not result["self_checks"]["no_solver_state_failures"],
+                    "the injected state failure is seen")
         else:
-            raise AssertionError("injected failed/repair evidence row was accepted")
+            raise CheckFailed("injected failed/repair evidence row was accepted")
     print("Self-test passed: one injected state-failure/repair row rejects the experiment.")
 
 

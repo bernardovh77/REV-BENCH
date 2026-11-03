@@ -24,6 +24,7 @@ import sys
 import tempfile
 
 from audio_wav import read_wav_bytes
+from checks import clutch_instant, lift_instant
 from checkpoint_sections import adopt_current, carry_diagnostics, compose, diagnostic_names
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,10 +103,9 @@ def listening_wav(path):
 
 
 def coast_markers(path, seconds, engine):
-    with path.with_suffix(".csv").open() as stream:
+    with path.with_suffix(".csv").open(encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
-    lift = next(float(r["t_s"]) for r in rows if float(r["throttle"]) == 0)
-    clutch = next(float(r["t_s"]) for r in rows if float(r["crank_inertia_kgm2"]) < 2.9)
+    lift, clutch = lift_instant(rows), clutch_instant(rows)
     if not (0 < lift < clutch < seconds and 7.98 < clutch-lift < 8.02):
         raise ValueError(f"{path}: missing the eight-second loaded coast")
     markers = {"lift_s": lift, "clutch_s": clutch}
@@ -123,13 +123,13 @@ def write_page(current, destination, renders=None):
     """Validate the complete inventory before atomically replacing the single file."""
     renders = current.parent if renders is None else renders
     expected = {name for _, _, name in expected_clips()} | diagnostic_names(current, renders)
-    actual = {str(p.relative_to(current)) for p in current.rglob("*.wav")}
+    actual = {p.relative_to(current).as_posix() for p in current.rglob("*.wav")}
     if actual != expected:
         raise ValueError(f"Incomplete checkpoint: missing {sorted(expected-actual)}; "
                          f"unexpected {sorted(actual-expected)}")
     if any(p.is_symlink() for p in current.rglob("*")):
         raise ValueError("Symlinks are not allowed inside a generated checkpoint")
-    template = Path(__file__).with_name("results_template.html").read_text()
+    template = Path(__file__).with_name("results_template.html").read_text(encoding="utf-8")
     inventory = []
     sections = {engine: [] for engine in (*ENGINES, "test")}
     for engine, scenario, name in expected_clips():
@@ -178,7 +178,7 @@ def write_page(current, destination, renders=None):
         temporary.replace(destination)
     finally:
         temporary.unlink(missing_ok=True)
-    (current / "results.json").write_text(json.dumps(manifest, indent=2)+"\n")
+    (current / "results.json").write_text(json.dumps(manifest, indent=2)+"\n", encoding="utf-8")
     return manifest
 
 
@@ -215,14 +215,17 @@ def render_checkpoint(cli, build, renders):
         print("Recording standard examples…", flush=True)
         # make render built the CLI already: -o keeps make from remaking it
         # (GNU make 4.3 ignores -o in MAKEFLAGS, so it goes on the command line).
-        run = subprocess.run(["make", "render-standard", f"BUILD={build}", f"--assume-old={cli}",
-                              f"RENDER_DIR={staged/'standard'}", "RENDER_FLAGS=--float"],
+        # Paths with forward slashes: make's targets spell them so, and its
+        # shell would eat a Windows path's backslashes.
+        run = subprocess.run(["make", "render-standard", f"BUILD={Path(build).as_posix()}",
+                              f"--assume-old={Path(cli).as_posix()}",
+                              f"RENDER_DIR={(staged/'standard').as_posix()}", "RENDER_FLAGS=--float"],
                              cwd=ROOT, capture_output=True, text=True)
         log = run.stdout + run.stderr
         if run.returncode:
             print(log, file=sys.stderr)
         run.check_returncode()
-        (staged/"standard/render.log").write_text(log)
+        (staged/"standard/render.log").write_text(log, encoding="utf-8")
         diagnostics = re.findall(r"soft-limited samples (\d+), non-finite (\d+)", log)
         if len(diagnostics) != 22 or any(a != "0" or b != "0" for a, b in diagnostics):
             raise ValueError("Standard recordings: inspect limiter/non-finite diagnostics before publishing")

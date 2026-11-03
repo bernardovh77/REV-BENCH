@@ -381,7 +381,7 @@ static void new_pipe(rb_engine *e, rb_pipe *p, int *used, double length, double 
     const int n = 1 + (rb_pipe_cells_for(length, cell, e->pipe_dt) - 1) * room / over;
     rb_pipe_init(p, &e->cell_pool[*used], &e->face_pool[*used], n, length, diameter,
                  e->desc.p_ambient, e->desc.T_ambient, AIR, wall, friction);
-    p->requested_cells=rb_pipe_cells_for(length,cell,e->pipe_dt);
+    p->requested_cells = rb_pipe_cells_for(length, cell, e->pipe_dt);
     *used += n;
 }
 
@@ -448,10 +448,10 @@ static void vary_init(rb_engine *e, uint64_t seed)
 {
     const int n = e->desc.cylinders;
     double fuel = 0.0, burn = 0.0;
-    e->variation_seed=seed;
+    e->variation_seed = seed;
     e->rand_cycles = seed;
     e->rand_flicker = seed ^ 0xF11C4E5ULL;
-    if(!e->rand_flicker) e->rand_flicker=RB_ENGINE_SEED;
+    if (!e->rand_flicker) e->rand_flicker = RB_ENGINE_SEED;
     for (int i = 0; i < n; i++) {
         e->trim_fuel[i] = vary_normal(&e->rand_cycles);
         e->trim_burn[i] = vary_normal(&e->rand_cycles);
@@ -466,17 +466,20 @@ static void vary_init(rb_engine *e, uint64_t seed)
     e->flicker_norm = sqrt((2.0 - e->flicker_a) / e->flicker_a);   /* a one-pole's RMS */
 }
 
-int rb_engine_seed(rb_engine *e,uint64_t seed)
+int rb_engine_seed(rb_engine *e, uint64_t seed)
 {
-    if(!e || e->physics_tick || !seed || !(e->dt>0)) return -1;
-    vary_init(e,seed);return 0;
+    if (!e || e->physics_tick || !seed || !(e->dt > 0)) return -1;
+    vary_init(e, seed);
+    return 0;
 }
 
-int rb_engine_combustion_model(rb_engine *e,int model)
+int rb_engine_combustion_model(rb_engine *e, int model)
 {
-    if(!e || e->physics_tick || !(e->dt>0)
-       || (model!=RB_BURN_CHARGE && model!=RB_BURN_CAPPED)) return -1;
-    e->combustion_model=model;return 0;
+    if (!e || e->physics_tick || !(e->dt > 0) ||
+        (model != RB_BURN_CHARGE && model != RB_BURN_CAPPED))
+        return -1;
+    e->combustion_model = model;
+    return 0;
 }
 
 int rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt)
@@ -666,7 +669,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         if (d->outlet_radiation)
             rb_pipe_radiate(t, 1, e->exhaust_air.rho, rb_chamber_sound_speed(&e->exhaust_air));
     }
-    vary_init(e,RB_ENGINE_SEED);
+    vary_init(e, RB_ENGINE_SEED);
     start_cycle(e);
     return 0;
 }
@@ -755,18 +758,32 @@ static double cycle_angle(double a)   /* any angle into 0..720 */
     return a < 0.0 ? a + 720.0 : a;
 }
 
-static double event_fraction(double angle,double step,double event)
+/* Where in a step of `step` degrees from `angle` the crank passes `event`:
+ * the share of the step, 0..1. */
+static double event_fraction(double angle, double step, double event)
 {
-    return cycle_angle(event-angle)/step;
+    return cycle_angle(event - angle) / step;
 }
 
-static void ignition_event(rb_engine *e,int i,int kind,double fraction,double angle,double fuel)
+/* Cylinder i's spark event of this kind (ignition.h), at `fraction` of the
+ * step and crank angle `angle`, for the probes' trace: nothing without one. */
+static void ignition_event(rb_engine *e, int i, int kind, double fraction, double angle,
+                           double fuel)
 {
-    if(!e->ignition_trace) return;
-    const rb_burn *b=&e->burn[i];
-    const rb_ignition_event event={e->physics_tick,b->charge_sequence,i,kind,
-        fraction,angle,b->kernel_raw_delay_deg,b->kernel_delay_deg,fuel};
-    rb_ignition_emit(e->ignition_trace,&event);
+    if (!e->ignition_trace) return;
+    const rb_burn *b = &e->burn[i];
+    const rb_ignition_event event = {
+        .tick = e->physics_tick,
+        .charge = b->charge_sequence,
+        .cylinder = i,
+        .kind = kind,
+        .fraction = fraction,
+        .angle_deg = angle,
+        .kernel_raw_delay_deg = b->kernel_raw_delay_deg,
+        .kernel_delay_deg = b->kernel_delay_deg,
+        .fuel_kg = fuel,
+    };
+    rb_ignition_emit(e->ignition_trace, &event);
 }
 
 /* Degrees after firing TDC, -360..360 (negative = before). */
@@ -899,13 +916,14 @@ static double spark_advance(double s)
  * historical capped duration only as the kernel surrogate's scale. */
 static double burn_duration(const rb_engine *e, rb_burn *b, double rpm)
 {
-    const rb_charge_burn q=rb_charge_burn_evaluate(b->T_ivc,b->p_ivc,b->residual,
-                                                 b->phi_ivc,rpm,e->desc.burn_duration);
-    b->combustion_model=e->combustion_model;
-    b->flame_flags=q.flags;
-    if(b->combustion_model==RB_BURN_CAPPED) b->flame_flags|=RB_FLAME_CAPPED_MODEL;
-    b->flame_speed_m_s=q.speed_m_s;b->raw_demand_duration=q.raw_demand_deg;
-    b->demand_duration=q.demand_deg;
+    const rb_charge_burn q = rb_charge_burn_evaluate(b->T_ivc, b->p_ivc, b->residual, b->phi_ivc,
+                                                     rpm, e->desc.burn_duration);
+    b->combustion_model = e->combustion_model;
+    b->flame_flags = q.flags;
+    if (b->combustion_model == RB_BURN_CAPPED) b->flame_flags |= RB_FLAME_CAPPED_MODEL;
+    b->flame_speed_m_s = q.speed_m_s;
+    b->raw_demand_duration = q.raw_demand_deg;
+    b->demand_duration = q.demand_deg;
     return q.capped_deg;
 }
 
@@ -914,7 +932,7 @@ static double burn_duration(const rb_engine *e, rb_burn *b, double rpm)
 static double mbt_advance(const rb_engine *e, double duration, double kernel_delay)
 {
     const rb_engine_desc *d = &e->desc;
-    return kernel_delay+duration*rb_wiebe_quantile(.5,d->wiebe_a,d->wiebe_m)-MBT_CA50;
+    return kernel_delay + duration * rb_wiebe_quantile(.5, d->wiebe_a, d->wiebe_m) - MBT_CA50;
 }
 
 /* At idle the engine computer acts on the speed the engine is heading for:
@@ -979,20 +997,26 @@ static void close_intake(rb_engine *e, int i, double fraction)
     rb_burn *b = &e->burn[i];
     const double v = variation(e);
     b->charge_sequence++;
-    b->discharged=b->discharged_this_step=b->kernel_pending=b->kernel_started=0;
-    b->kernel_clock=0;
-    const double retained=g->m[RB_FUEL];
-    const double target=(e->afr>0.0 && isfinite(e->afr))
-        ? g->m[RB_AIR]/e->afr*(1.0+v*CYL_FUEL*e->trim_fuel[i]) : 0.0;
-    int kind=RB_INJ_DELIVERED;
-    if (!e->ignition) kind=RB_INJ_OFF;
-    else if (!(e->afr>0.0 && isfinite(e->afr))) kind=RB_INJ_AFR_DISABLED;
-    else if (e->fuel_cut) kind=RB_INJ_DFCO;
-    else if (!(g->m[RB_AIR]>0.0)) kind=RB_INJ_NO_AIR;
-    if (!isfinite(target) || !isfinite(retained) || retained<0.0
-        || !isfinite(g->T) || !(g->T>0.0)) kind=RB_INJ_INVALID;
-    double fuel=kind==RB_INJ_DELIVERED ? target-retained : 0.0, energy=0.0;
-    if (kind==RB_INJ_DELIVERED && !(fuel>0.0)) kind=RB_INJ_RETAINED;
+    b->discharged = b->discharged_this_step = b->kernel_pending = b->kernel_started = 0;
+    b->kernel_clock = 0;
+    const double retained = g->m[RB_FUEL];
+    const double target = (e->afr > 0.0 && isfinite(e->afr))
+                              ? g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i])
+                              : 0.0;
+    int kind = RB_INJ_DELIVERED;
+    if (!e->ignition)
+        kind = RB_INJ_OFF;
+    else if (!(e->afr > 0.0 && isfinite(e->afr)))
+        kind = RB_INJ_AFR_DISABLED;
+    else if (e->fuel_cut)
+        kind = RB_INJ_DFCO;
+    else if (!(g->m[RB_AIR] > 0.0))
+        kind = RB_INJ_NO_AIR;
+    if (!isfinite(target) || !isfinite(retained) || retained < 0.0 || !isfinite(g->T) ||
+        !(g->T > 0.0))
+        kind = RB_INJ_INVALID;
+    double fuel = kind == RB_INJ_DELIVERED ? target - retained : 0.0, energy = 0.0;
+    if (kind == RB_INJ_DELIVERED && !(fuel > 0.0)) kind = RB_INJ_RETAINED;
     if (kind==RB_INJ_DELIVERED) {
         const double u_fuel = rb_gas_u(&e->fuel_gas, g->T);
         g->m[RB_FUEL] += fuel;
@@ -1001,15 +1025,24 @@ static void close_intake(rb_engine *e, int i, double fraction)
         e->fuel_in += fuel;
         e->fuel_energy_in += fuel * u_fuel;
         e->acc_fuel += fuel;
-        energy=fuel*u_fuel;
+        energy = fuel * u_fuel;
     }
     /* This transfer owns its source event. Skips carry zero delivery even
      * when combustible fuel remains in the cylinder. */
-    const rb_injection_event event={e->physics_tick,b->charge_sequence,i,kind,
-        fraction,rb_valve_closes(&e->desc.intake),retained,target,
-        kind==RB_INJ_DELIVERED ? fuel:0.0,energy};
-    e->injection[e->injection_count++]=event;
-    rb_injection_emit(e->injection_trace,&event);
+    const rb_injection_event event = {
+        .tick = e->physics_tick,
+        .charge = b->charge_sequence,
+        .cylinder = i,
+        .kind = kind,
+        .fraction = fraction,
+        .angle_deg = rb_valve_closes(&e->desc.intake),
+        .retained_fuel_kg = retained,
+        .target_fuel_kg = target,
+        .fuel_kg = kind == RB_INJ_DELIVERED ? fuel : 0.0,
+        .sensible_energy_J = energy,
+    };
+    e->injection[e->injection_count++] = event;
+    rb_injection_emit(e->injection_trace, &event);
     b->p_ivc = g->p;
     b->V_ivc = g->V;
     b->T_ivc = g->T;
@@ -1019,17 +1052,18 @@ static void close_intake(rb_engine *e, int i, double fraction)
     b->phi_ivc = isfinite(phi) ? phi : 0.0;
     const double rpm = e->hold_speed ? e->rpm : e->omega * 30.0 / PI;
     const double expected = burn_duration(e, b, rpm);
-    const int capped=b->combustion_model==RB_BURN_CAPPED;
-    const double base=capped ? expected:b->demand_duration;
-    const double ceiling=capped ? 180.0:720.0;
-    const double trim=1.0+v*CYL_BURN*e->trim_burn[i];
-    b->mean_duration=rb_burn_mean_duration(base,v*VARY_LENGTH,trim,ceiling);
-    b->mean_kernel_delay=v*VARY_START*expected*rb_kernel_delay_mean();
-    const double requested=computer_spark(e,b->mean_duration,b->mean_kernel_delay,rpm);
+    const int capped = b->combustion_model == RB_BURN_CAPPED;
+    const double base = capped ? expected : b->demand_duration;
+    const double ceiling = capped ? 180.0 : 720.0;
+    const double trim = 1.0 + v * CYL_BURN * e->trim_burn[i];
+    b->mean_duration = rb_burn_mean_duration(base, v * VARY_LENGTH, trim, ceiling);
+    b->mean_kernel_delay = v * VARY_START * expected * rb_kernel_delay_mean();
+    const double requested = computer_spark(e, b->mean_duration, b->mean_kernel_delay, rpm);
     const double advance = spark_advance(requested);
-    if(advance!=requested) b->flame_flags|=RB_FLAME_SPARK_LIMIT;
-    b->expected_ca50=b->mean_kernel_delay+b->mean_duration*
-        rb_wiebe_quantile(.5,e->desc.wiebe_a,e->desc.wiebe_m)-advance;
+    if (advance != requested) b->flame_flags |= RB_FLAME_SPARK_LIMIT;
+    b->expected_ca50 = b->mean_kernel_delay +
+                       b->mean_duration * rb_wiebe_quantile(.5, e->desc.wiebe_a, e->desc.wiebe_m) -
+                       advance;
     b->spark_angle = cycle_angle(720.0 - advance);
 
     /* This cycle's own burn (stage 12c): its start and length, and the
@@ -1037,11 +1071,11 @@ static void close_intake(rb_engine *e, int i, double fraction)
     /* Correlate the underlying normal draws, then bound each marginal.
      * Clipping before mixing changes the length distribution and makes the
      * ECU's conditional-mean calculation a different stochastic model. */
-    const double start_raw=rb_rand_normal(&e->rand_cycles);
-    const double length_raw=VARY_ALIKE*start_raw
-        +sqrt(1.0-VARY_ALIKE*VARY_ALIKE)*rb_rand_normal(&e->rand_cycles);
-    const double start=fmax(-VARY_MOST,fmin(VARY_MOST,start_raw));
-    const double length=fmax(-VARY_MOST,fmin(VARY_MOST,length_raw));
+    const double start_raw = rb_rand_normal(&e->rand_cycles);
+    const double length_raw = VARY_ALIKE * start_raw +
+                              sqrt(1.0 - VARY_ALIKE * VARY_ALIKE) * rb_rand_normal(&e->rand_cycles);
+    const double start = fmax(-VARY_MOST, fmin(VARY_MOST, start_raw));
+    const double length = fmax(-VARY_MOST, fmin(VARY_MOST, length_raw));
     double duration = base * exp(v * VARY_LENGTH * length) * trim;
     if (!(duration >= 0.25 * base)) duration = 0.25 * base;
     b->duration = (duration < ceiling) ? duration : ceiling;
@@ -1049,10 +1083,10 @@ static void close_intake(rb_engine *e, int i, double fraction)
      * flame can't start before the spark, stage 040), its own every cycle,
      * spread as stage 12c's start was (combustion.c,
      * rb_kernel_delay_unit). The computer's spark allows for its mean. */
-    const double delay=v * VARY_START * expected * rb_kernel_delay_unit(start);
-    b->kernel_raw_delay_deg=delay;
-    b->kernel_delay_deg=isfinite(delay) ? delay : 0.0;   /* a NaN starts with the spark */
-    b->start_angle=cycle_angle(b->spark_angle+b->kernel_delay_deg);
+    const double delay = v * VARY_START * expected * rb_kernel_delay_unit(start);
+    b->kernel_raw_delay_deg = delay;
+    b->kernel_delay_deg = isfinite(delay) ? delay : 0.0; /* a NaN starts with the spark */
+    b->start_angle = cycle_angle(b->spark_angle + b->kernel_delay_deg);
     b->spark_due = 1;
 }
 
@@ -1077,30 +1111,32 @@ static int soft_cut(rb_engine *e)
 
 /* The spark: what can burn is the fuel, or as much of it as the air can burn,
  * times the combustion efficiency. */
-static void spark(rb_engine *e, int i,double fraction,double angle)
+static void spark(rb_engine *e, int i, double fraction, double angle)
 {
     const rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     b->burning = 0;
-    b->kernel_pending=b->kernel_started=b->discharged=b->after_spark=0;
+    b->kernel_pending = b->kernel_started = b->discharged = b->after_spark = 0;
     if (!e->ignition) {
-        ignition_event(e,i,RB_IGN_OFF,fraction,angle,g->m[RB_FUEL]);return;
-    }
-    const int cut=e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT:-1);
-    if (cut>=0) {   /* suppression is not an actual discharge */
-        e->limiter_cuts++;
-        ignition_event(e,i,cut,fraction,angle,g->m[RB_FUEL]);
+        ignition_event(e, i, RB_IGN_OFF, fraction, angle, g->m[RB_FUEL]);
         return;
     }
-    ignition_event(e,i,RB_IGN_COMMAND,fraction,angle,g->m[RB_FUEL]);
-    ignition_event(e,i,RB_IGN_DISCHARGE,fraction,angle,g->m[RB_FUEL]);
-    b->discharged=b->discharged_this_step=b->after_spark=1;
-    b->discharge_fraction=fraction;b->kernel_clock=0;
+    const int cut = e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT : -1);
+    if (cut >= 0) { /* suppression is not an actual discharge */
+        e->limiter_cuts++;
+        ignition_event(e, i, cut, fraction, angle, g->m[RB_FUEL]);
+        return;
+    }
+    ignition_event(e, i, RB_IGN_COMMAND, fraction, angle, g->m[RB_FUEL]);
+    ignition_event(e, i, RB_IGN_DISCHARGE, fraction, angle, g->m[RB_FUEL]);
+    b->discharged = b->discharged_this_step = b->after_spark = 1;
+    b->discharge_fraction = fraction;
+    b->kernel_clock = 0;
     b->burnable = rb_burnable_fuel(g->m[RB_FUEL], g->m[RB_AIR], e->desc.mixture_spread,
                                    e->desc.combustion_efficiency);
     b->fraction = 0.0;
     b->kernel_pending = (b->burnable > 0.0);
-    if(!b->kernel_pending) ignition_event(e,i,RB_IGN_NO_REACTANTS,fraction,angle,0);
+    if (!b->kernel_pending) ignition_event(e, i, RB_IGN_NO_REACTANTS, fraction, angle, 0);
     b->burn_angle = 0.0;
 }
 
@@ -1112,19 +1148,21 @@ static void burn_step(rb_engine *e, int i, double angle, double step, double q_f
     rb_chamber *g = &e->cyl[i].gas;
     rb_burn *b = &e->burn[i];
     const rb_engine_desc *d = &e->desc;
-    if(!b->discharged) return; /* chemical heat requires an actual discharge */
+    if (!b->discharged) return; /* chemical heat requires an actual discharge */
     const double pace = 6.0 * RB_GAS_PACE_RPM * e->dt;   /* degrees per step */
-    const double advance=(step>pace)?step:pace;
-    const double first=b->discharged_this_step ? b->discharge_fraction:0;
-    const double previous=b->kernel_clock;
-    b->kernel_clock+=advance*(1-first);
-    if(b->kernel_pending) {
-        if(b->kernel_clock<b->kernel_delay_deg) return;
-        const double fraction=first+(b->kernel_delay_deg-previous)/advance;
-        ignition_event(e,i,RB_IGN_KERNEL,fraction,cycle_angle(angle+step*fraction),b->burnable);
-        b->kernel_pending=0;b->kernel_started=b->burning=1;
+    const double advance = (step > pace) ? step : pace;
+    const double first = b->discharged_this_step ? b->discharge_fraction : 0;
+    const double previous = b->kernel_clock;
+    b->kernel_clock += advance * (1 - first);
+    if (b->kernel_pending) {
+        if (b->kernel_clock < b->kernel_delay_deg) return;
+        const double fraction = first + (b->kernel_delay_deg - previous) / advance;
+        ignition_event(e, i, RB_IGN_KERNEL, fraction, cycle_angle(angle + step * fraction),
+                       b->burnable);
+        b->kernel_pending = 0;
+        b->kernel_started = b->burning = 1;
     }
-    b->burn_angle=b->kernel_clock-b->kernel_delay_deg;
+    b->burn_angle = b->kernel_clock - b->kernel_delay_deg;
     const double x = rb_wiebe(b->burn_angle, b->duration, d->wiebe_a, d->wiebe_m);
     double fuel = (x - b->fraction) * b->burnable;
     b->fraction = x;
@@ -1378,8 +1416,8 @@ static void slow_step(rb_engine *e, step_share *share)
 
 void rb_engine_step(rb_engine *e)
 {
-    e->injection_count=0;
-    if(e->diag) e->diag->tick++;
+    e->injection_count = 0;
+    if (e->diag) e->diag->tick++;
     const rb_engine_desc *d = &e->desc;
     const int n = d->cylinders;
     const double dt = e->dt;
@@ -1418,34 +1456,35 @@ void rb_engine_step(rb_engine *e)
         const double angle = rb_engine_cylinder_angle(e, i);
         rb_burn *b = &e->burn[i];
         b->heat = b->wall_heat = 0.0;
-        b->discharged_this_step=0;
+        b->discharged_this_step = 0;
         if (passes(angle, step_deg, 360.0)) {   /* overlap TDC: the last cycle's peak is known */
             b->last_p_max = b->p_max;
             b->last_angle_p_max = b->angle_p_max;
             b->p_max = 0.0;
             b->last_work = b->work;
-            b->last_pumping_work=b->pumping_work;
-            b->last_gross_work=b->last_work+b->last_pumping_work;
+            b->last_pumping_work = b->pumping_work;
+            b->last_gross_work = b->last_work + b->last_pumping_work;
             b->work = 0.0;
-            b->pumping_work=0.0;
+            b->pumping_work = 0.0;
         }
         if (passes(angle, step_deg, ivc)) {
-            close_intake(e, i, event_fraction(angle,step_deg,ivc));
-            ignition_event(e,i,RB_IGN_SCHEDULED,event_fraction(angle,step_deg,ivc),ivc,0);
+            close_intake(e, i, event_fraction(angle, step_deg, ivc));
+            ignition_event(e, i, RB_IGN_SCHEDULED, event_fraction(angle, step_deg, ivc), ivc, 0);
         }
         if (b->spark_due && passes(angle, step_deg, b->spark_angle)) {
             b->spark_due = 0;
-            const double fraction=event_fraction(angle,step_deg,b->spark_angle);
-            spark(e,i,fraction,cycle_angle(angle+step_deg*fraction));
+            const double fraction = event_fraction(angle, step_deg, b->spark_angle);
+            spark(e, i, fraction, cycle_angle(angle + step_deg * fraction));
         }
         if (passes(angle, step_deg, evo)) {
-            if(b->kernel_pending || b->burning)
-                ignition_event(e,i,b->kernel_pending ? RB_IGN_EVO_PENDING:RB_IGN_EVO_PARTIAL,
-                    event_fraction(angle,step_deg,evo),evo,b->burnable*(1-b->fraction));
+            if (b->kernel_pending || b->burning)
+                ignition_event(e, i, b->kernel_pending ? RB_IGN_EVO_PENDING : RB_IGN_EVO_PARTIAL,
+                               event_fraction(angle, step_deg, evo), evo,
+                               b->burnable * (1 - b->fraction));
             b->spark_due = 0;
             b->after_spark = 0;
             b->burning = 0;        /* whatever hasn't burned by now leaves unburned */
-            b->kernel_pending=0;
+            b->kernel_pending = 0;
         }
     }
 
@@ -1548,7 +1587,7 @@ void rb_engine_step(rb_engine *e)
         if (angle >= 180.0 && angle < 540.0) share.pump += w;
         rb_burn *b = &e->burn[i];
         b->work -= w;
-        if(angle>=180.0 && angle<540.0) b->pumping_work+=w;
+        if (angle >= 180.0 && angle < 540.0) b->pumping_work += w;
         if (e->cyl[i].gas.p > b->p_max) {
             b->p_max = e->cyl[i].gas.p;
             b->angle_p_max = after_firing_tdc(cycle_angle(angle + step_deg));

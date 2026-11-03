@@ -75,10 +75,10 @@ class CandidateEvidence(unittest.TestCase):
     def test_nonfinite_and_malformed_csv_rejected(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/"bad.csv"
-            path.write_text("kind,status,carrier_magnitude\nA1,ok,nan\n")
+            path.write_text("kind,status,carrier_magnitude\nA1,ok,nan\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 analysis.read(path)
-            path.write_text("kind,status,carrier_magnitude\nA1,ok\n")
+            path.write_text("kind,status,carrier_magnitude\nA1,ok\n", encoding="utf-8")
             with self.assertRaises(ValueError):
                 analysis.read(path)
         with self.assertRaises(ValueError):
@@ -90,11 +90,11 @@ class CandidateEvidence(unittest.TestCase):
             path = Path(folder)/"RESULTS.html"
             audio = '<audio controls src="data:audio/wav;base64,UNCHANGED"></audio>'
             original = f"<html><nav></nav><main>{audio}</main></html>"
-            path.write_text(original)
+            path.write_text(original, encoding="utf-8")
             analysis.publish(path, summary, [])
-            first = path.read_text()
+            first = path.read_text(encoding="utf-8")
             analysis.publish(path, summary, [])
-            self.assertEqual(path.read_text(), first)
+            self.assertEqual(path.read_text(encoding="utf-8"), first)
             self.assertEqual(first.count(audio), 1)
             self.assertEqual(first.count(analysis.BEGIN), 1)
             self.assertEqual(first.count('href="#transport-candidates"'), 1)
@@ -104,10 +104,10 @@ class CandidateEvidence(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/"RESULTS.html"
             original = "<main>"+analysis.BEGIN+"</main>"
-            path.write_text(original)
+            path.write_text(original, encoding="utf-8")
             with self.assertRaises(ValueError):
                 analysis.publish(path, summary, [])
-            self.assertEqual(path.read_text(), original)
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
 
 
 if __name__ == "__main__":

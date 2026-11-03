@@ -5,6 +5,7 @@ Writes exact commands, source hashes, rejected cases and numeric evidence below
 ignored renders/. No training, automatic promotion, or production parameter edits.
 """
 import argparse
+import tempfile
 import csv
 import hashlib
 import io
@@ -22,7 +23,7 @@ def digest(path):
 
 
 def run(command, log):
-    with log.open("w") as stream:
+    with log.open("w", encoding="utf-8") as stream:
         subprocess.run([str(x) for x in command], cwd=ROOT, stdout=stream,
                        stderr=subprocess.STDOUT, check=True)
 
@@ -67,7 +68,7 @@ def cases(quick=False):
 def write_csv(path, rows):
     if not rows:
         raise ValueError("empty experiment")
-    with path.open("w", newline="") as stream:
+    with path.open("w", newline="", encoding="utf-8") as stream:
         writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
@@ -94,7 +95,7 @@ def check_topology_identity(original, changed):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--build-dir", type=Path, default=Path("/tmp/rev-bench-s2d"))
+    parser.add_argument("--build-dir", type=Path, default=Path(tempfile.gettempdir()) / "rev-bench-s2d")
     parser.add_argument("--output", type=Path, default=DEFAULT)
     parser.add_argument("--quick", action="store_true")
     parser.add_argument("--reuse", action="store_true", help="Reuse exact-source/command cases only")
@@ -102,30 +103,30 @@ def main():
     build, out = args.build_dir.resolve(), args.output.resolve()
     build.mkdir(parents=True, exist_ok=True)
     (out / "cases").mkdir(parents=True, exist_ok=True)
-    run(["make", "-j2", f"BUILD={build}", "LTO=0", "acoustic-probe"], out / "build.log")
+    run(["make", "-j2", f"BUILD={build.as_posix()}", "LTO=0", "acoustic-probe"], out / "build.log")
     binary = build / "acoustic_candidate_probe"
     sources = sorted(list((ROOT / "core").rglob("*.c")) + list((ROOT / "core").rglob("*.h"))
                      + list((ROOT / "experiments/acoustics").glob("*.[ch]"))
                      + [ROOT / "tools/acoustic_candidate_probe.c", ROOT / "Makefile"])
-    hashes = {str(p.relative_to(ROOT)): digest(p) for p in sources}
+    hashes = {p.relative_to(ROOT).as_posix(): digest(p) for p in sources}
     run([binary, "topology"], out / "production-topology.json")
-    topology = json.loads((out / "production-topology.json").read_text())
+    topology = json.loads((out / "production-topology.json").read_text(encoding="utf-8"))
     if topology["unknown_connections"] or len(topology["engines"]) != 5:
         raise RuntimeError("production topology snapshot failed")
     run([binary, "topology-no-runners"], out / "identity-topology-no-runners.json")
-    check_topology_identity(topology, json.loads((out / "identity-topology-no-runners.json").read_text()))
+    check_topology_identity(topology, json.loads((out / "identity-topology-no-runners.json").read_text(encoding="utf-8")))
     old = ROOT / "renders/evidence/audio-experiment-2026-10-22"
     commands = sorted((old / "engine").rglob("command.json"))
     baseline = {"available": False}
     if commands and (old / "transport/transport.csv").exists():
-        stamp = json.loads(commands[0].read_text())
+        stamp = json.loads(commands[0].read_text(encoding="utf-8"))
         original = {k: v for k, v in stamp["source_hashes"].items() if k.startswith("core/")}
         if not original or any(hashes.get(k) != v for k, v in original.items()):
             raise RuntimeError("historical A0 core differs: recapture transport controls")
         target = out / "a0-transport.csv"
         target.write_bytes((old / "transport/transport.csv").read_bytes())
         baseline = dict(available=True, csv_sha256=digest(target),
-                        identity_source=str(commands[0].relative_to(ROOT)),
+                        identity_source=commands[0].relative_to(ROOT).as_posix(),
                         verified_core_files=len(original),
                         timing_scope="historical paired base/packet wall times; not a candidate speedup benchmark")
     families = cases(args.quick)
@@ -139,16 +140,16 @@ def main():
             stamp, log = out / "cases" / f"{name}.json", out / "cases" / f"{name}.csv"
             start = time.monotonic()
             reused = (args.reuse and stamp.exists() and log.exists()
-                      and json.loads(stamp.read_text()) == identity)
+                      and json.loads(stamp.read_text(encoding="utf-8")) == identity)
             if not reused:
                 result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
-                (out / "cases" / f"{name}.stderr").write_text(result.stderr)
+                (out / "cases" / f"{name}.stderr").write_text(result.stderr, encoding="utf-8")
                 row = read_row(result.stdout)
                 if result.returncode and row["status"] != "failed":
                     raise RuntimeError(f"{name}: unexpected exit {result.returncode}")
-                log.write_text(result.stdout)
-                stamp.write_text(json.dumps(identity, indent=2) + "\n")
-            row = read_row(log.read_text())
+                log.write_text(result.stdout, encoding="utf-8")
+                stamp.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8")
+            row = read_row(log.read_text(encoding="utf-8"))
             rows.append(dict(case=name, group=group, **row))
             records.append(dict(case=name, group=group, status=row["status"],
                                 wall_seconds=time.monotonic()-start, reused=reused))
@@ -166,7 +167,7 @@ def main():
                                  "transverse modes and real component material losses not validated",
                                  "candidate timings are fixture timings, not complete-engine or browser speedups",
                                  "production snapshot is not an acoustic compiler or complete production cap trace"])
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     print(f"Completed {len(records)} cases in {out}", flush=True)
 
 

@@ -19,7 +19,7 @@ def main():
                 np.savez_compressed(a.out/f'{kind}-{T}-{finite}.npz',frequencies=frequencies,reference=reference,compact=compact)
             print(kind,T,rows[-1]['tested_valid_frequencies'],flush=True)
     summary=dict(cases=rows,low_frequency_limit_pass=all(r['comparisons'][0]['matrix_relative_error']<=.02 for r in rows))
-    (a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     if not summary['low_frequency_limit_pass']:raise SystemExit('Compact reference fails its analytic low-frequency limit')
 
 if __name__=='__main__':main()

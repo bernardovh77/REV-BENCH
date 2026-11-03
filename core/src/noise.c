@@ -161,7 +161,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     n->detail_state = n->state ^ 0x52324149524ULL;
     if (!n->detail_state) n->detail_state = 1;
     n->dt = e->dt;
-    n->injection_tick=e->physics_tick; /* no replay when attached after delivery */
+    n->injection_tick = e->physics_tick; /* no replay when attached after delivery */
 
     /* The flow. The tailpipes' jets; the exhaust valves' noise, each
      * cylinder's on its way to its system's tailpipe; the throttle's. */
@@ -400,12 +400,16 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
     const double seat_ex = K_VALVE * rpm / 1000.0 * sqrt((double)d->exhaust.count);
     /* Consume actual doses, independently of the optional trace's capacity.
      * Existing modal sampling places onset at the interval's end, never early. */
-    if (n->injection_tick!=e->physics_tick) for (int j=0;j<e->injection_count;j++) {
-        const rb_injection_event *event=&e->injection[j];
-        if (event->tick+1==e->physics_tick && event->kind==RB_INJ_DELIVERED
-            && event->fuel_kg>0.0 && isfinite(event->fuel_kg)) {
-            impact(n,in,BY_INJECTOR,RB_IMPACT_INJECTOR,K_INJECTOR);
-            n->injected_fuel_kg+=event->fuel_kg;
+    if (n->injection_tick != e->physics_tick) {
+        /* each dose of the engine's last step clicks once: injection_tick
+         * marks that step as heard */
+        for (int j = 0; j < e->injection_count; j++) {
+            const rb_injection_event *event = &e->injection[j];
+            if (event->tick + 1 == e->physics_tick && event->kind == RB_INJ_DELIVERED &&
+                event->fuel_kg > 0.0 && isfinite(event->fuel_kg)) {
+                impact(n, in, BY_INJECTOR, RB_IMPACT_INJECTOR, K_INJECTOR);
+                n->injected_fuel_kg += event->fuel_kg;
+            }
         }
     }
     for (int i = 0; i < d->cylinders; i++) {
@@ -457,7 +461,7 @@ void rb_noise_step(rb_noise *n, const rb_engine *e, int what)
     for (int k = 0; k < RB_NOISE_OUTPUTS; k++) n->out[k] = 0.0;
     if (what & RB_NOISE_FLOW) flow_noise(n, e);
     if (what & RB_NOISE_ENGINE) engine_noise(n, e);
-    n->injection_tick=e->physics_tick; /* discard disabled/stale source intervals */
+    n->injection_tick = e->physics_tick; /* discard disabled/stale source intervals */
 
     /* A broken state upstream mustn't stay in the filters: anything that
      * isn't a number now starts the noise over, quiet. */

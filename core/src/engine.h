@@ -447,9 +447,14 @@ int    rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt);
  * keeps it within RB_PIPE_RATE_MIN..RB_PIPE_RATE_MAX (rb_config). */
 int    rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double pipe_rate);
 
-/* Native research controls before the first physics step only. These are not
- * persisted build fields or new public/WASM parameter IDs. Reject invalid
- * policy, zero seed and reseeding/reselection after stepping; leave e unchanged. */
+/* Two research controls for the native probes, set before the engine's
+ * first physics step (they aren't engine fields or public parameters):
+ * - rb_engine_combustion_model: RB_BURN_CHARGE (the default: each charge's
+ *   own burn length) or RB_BURN_CAPPED (stage 9's capped length, a control);
+ * - rb_engine_seed: the variation's draws from another seed (not 0), each
+ *   cylinder's trims included.
+ * Each returns -1, leaving e unchanged, for a bad value or once the engine
+ * has stepped. */
 int    rb_engine_combustion_model(rb_engine *e, int model);
 int    rb_engine_seed(rb_engine *e, uint64_t seed);
 

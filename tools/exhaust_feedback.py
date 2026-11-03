@@ -12,6 +12,8 @@ import json
 from pathlib import Path
 import subprocess
 
+from checks import lift_at
+
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i4", "i6", "v8-cross", "v8-flat", "boxer4")
 
@@ -28,7 +30,7 @@ def record(cli, output, name, options):
                "--out", str(wav), "--csv", str(csv)]
     run = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=900)
     log = run.stdout + run.stderr
-    (output / (name + ".log")).write_text(log)
+    (output / (name + ".log")).write_text(log, encoding="utf-8")
     run.check_returncode()
     if "soft-limited samples 0, non-finite 0" not in log:
         raise ValueError(f"{name}: inspect limiter/non-finite diagnostics")
@@ -61,10 +63,9 @@ def deceleration_report(output, previous_coasts=None, constant_coasts=None):
             audio, rate = read_wav(path)
             if not np.all(np.isfinite(audio)):
                 raise ValueError(f"nonfinite {path}")
-            with path.with_suffix('.csv').open() as stream:
+            with path.with_suffix('.csv').open(encoding="utf-8") as stream:
                 rows = list(csv.DictReader(stream))
-            lifted = next(r for r in rows if float(r['throttle']) == 0.0)
-            lift = float(lifted['t_s'])
+            lift, lifted = lift_at(rows)
             windows = {}
             for name, (a,b) in {"pre_lift": (-.8,-.2), "first_200ms": (0,.2),
                                "early_coast": (.2,.8), "later_coast": (.8,1.4)}.items():
@@ -104,7 +105,7 @@ def deceleration_report(output, previous_coasts=None, constant_coasts=None):
         axes[row,1].set(title=preset+' — spectral brightness',ylabel='centroid, Hz')
         report['engines'].append(item)
     fig.savefig(output/'deceleration.png',dpi=150)
-    (output/'deceleration.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
+    (output/'deceleration.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n', encoding="utf-8")
 
 
 def main():
@@ -120,7 +121,7 @@ def main():
     args.output.mkdir(parents=True, exist_ok=True)
     if not args.analyze:
         manifest = args.output / "recordings.json"
-        rows = json.loads(manifest.read_text()) if manifest.exists() else {}
+        rows = json.loads(manifest.read_text(encoding="utf-8")) if manifest.exists() else {}
         for preset in args.presets:
             for side, cli in (("before", args.before_cli), ("after", args.cli)):
                 if cli is None:
@@ -134,14 +135,14 @@ def main():
             rows[name] = record(args.cli, args.output, name,
                 ["--preset", preset, "--sweep", "--pull-seconds", "20" if preset == "i6" else "12", "--coast-seconds", "8",
                  "--seconds", "45", "--scene", "asphalt", "--inertia", "3"])
-            manifest.write_text(json.dumps(rows, indent=2) + "\n")
+            manifest.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
         if "v8-cross" in args.presets:
             name = "v8-cross-packed-control"
             print("Recording", name, flush=True)
             rows[name] = record(args.cli, args.output, name,
                 ["--preset", "v8-cross", "--sweep", "--pull-seconds", "12", "--coast-seconds", "8",
                  "--seconds", "45", "--scene", "asphalt", "--inertia", "3", "--muffler", "straight"])
-            manifest.write_text(json.dumps(rows, indent=2) + "\n")
+            manifest.write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
         return
 
     import numpy as np
@@ -188,7 +189,7 @@ def main():
             pair["rms_change_db"] = float(20*np.log10(pair["after"]["rms"]/pair["before"]["rms"]))
         rows.append({"preset": preset, **pair})
     fig.savefig(args.output / "spectra.png", dpi=160)
-    (args.output / "measurements.json").write_text(json.dumps(rows, indent=2) + "\n")
+    (args.output / "measurements.json").write_text(json.dumps(rows, indent=2) + "\n", encoding="utf-8")
     deceleration_report(args.output, args.previous_coasts, args.constant_coasts)
 
 

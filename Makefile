@@ -58,7 +58,9 @@ CFLAGS   ?= -O3 -g
 CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
 # Strict double arithmetic: keep NaN checks and each cell's operation order.
 # Disable LTO with LTO=0 for tools/profilers that require separate objects.
-LTO ?= 1
+# It is on by default where the compiler has it: w64devkit's gcc on Windows
+# doesn't (stage 119), and compiling with -flto there fails.
+LTO ?= $(if $(shell echo 'int x;' | $(CC) -flto -x c -S -o - - >/dev/null 2>&1 && echo yes),1,0)
 ifneq ($(SAN),1)
 ifeq ($(LTO),1)
   CFLAGS  += -flto

@@ -8,6 +8,7 @@ import unittest
 
 
 class CheckpointRenderTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "its fake CLI is a POSIX script, which Windows can't run directly")
     def test_render_without_site_packages(self):
         script = Path(__file__).with_name("checkpoint_13b.py").resolve()
         with tempfile.TemporaryDirectory() as directory:
@@ -16,7 +17,7 @@ class CheckpointRenderTests(unittest.TestCase):
             fake = Path(directory) / "renderer"
             fake.write_text("#!/usr/bin/env python3\nimport pathlib,sys\n"
                             "pathlib.Path(sys.argv[sys.argv.index('--out')+1]).write_bytes(b'wave')\n"
-                            "print('soft-limited samples 0, non-finite 0')\n")
+                            "print('soft-limited samples 0, non-finite 0')\n", encoding="utf-8")
             fake.chmod(0o755)
             result = subprocess.run([sys.executable, "-S", str(script), "--render",
                                      "--cli", str(fake), "--output", directory],

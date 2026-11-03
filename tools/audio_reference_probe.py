@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+from checks import require
 
 ROOT = Path(__file__).resolve().parents[1]
 SELECTIONS = {
@@ -34,7 +35,7 @@ def main():
     parser.add_argument("--out", type=Path, default=ROOT / "renders/evidence/audio-experiment-2026-10-22/references")
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
-    config = json.loads((ROOT / "tools/user_engine_reference_sources.json").read_text())
+    config = json.loads((ROOT / "tools/user_engine_reference_sources.json").read_text(encoding="utf-8"))
     rows = []
     for recording in config["recordings"]:
         key = recording["key"]
@@ -47,7 +48,8 @@ def main():
         before = digest(source)
         for start, end, kind in SELECTIONS[key]:
             # Every selection must lie inside an existing documented excerpt.
-            assert any(s["start"] <= start < end <= s["end"] for s in recording["segments"])
+            require(any(s["start"] <= start < end <= s["end"] for s in recording["segments"]),
+                    f"{key} {start}-{end} s lies outside every documented excerpt")
             out = args.out / f"{key}-{kind}-{start}.wav"
             command = [args.ffmpeg, "-hide_banner", "-nostdin", "-v", "error", "-y",
                        "-ss", str(start), "-i", str(source), "-t", str(end-start),
@@ -59,11 +61,11 @@ def main():
                              processing="MP3 decoded to 48-kHz stereo float32; no EQ, gain, fade, gate or denoising",
                              uncertainty="No verified RPM, load, pedal lift, DFCO, microphone position or perspective transitions. "
                              "Falling pitch does not establish loaded overrun; rev window does not establish a pull."))
-        assert digest(source) == before
+        require(digest(source) == before, f"{source} changed while it was read")
     (args.out / "reference-intervals.json").write_text(json.dumps(dict(
         purpose="Observational texture/dynamic comparisons only; no synchronized simulation ground truth. "
                 "BMW is turbocharged, whereas the current I6 is naturally aspirated.",
-        intervals=rows), indent=2) + "\n")
+        intervals=rows), indent=2) + "\n", encoding="utf-8")
     print(f"Decoded {len(rows)} documented stereo reference intervals; originals unchanged.")
 
 

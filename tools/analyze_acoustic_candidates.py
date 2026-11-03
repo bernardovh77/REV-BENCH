@@ -6,6 +6,7 @@ different. An acoustically inaccurate but conservative candidate is a result,
 not a reason to conceal its rows or change the measurement tolerance.
 """
 import argparse
+import tempfile
 from checkpoint_sections import publish_section
 import base64
 import cmath
@@ -25,7 +26,7 @@ STRINGS = {"case", "group", "kind", "status", "interpolation"}
 
 
 def read(path):
-    with path.open(newline="") as stream:
+    with path.open(newline="", encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
     if not rows:
         raise ValueError(f"empty evidence: {path}")
@@ -157,7 +158,7 @@ def summarize(fv, wave, topology, manifest=None):
 
 
 def plots(directory, fv, wave, a0):
-    os.environ.setdefault("MPLCONFIGDIR", "/tmp/rev-bench-mpl")
+    os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "rev-bench-mpl"))
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -213,7 +214,7 @@ def plots(directory, fv, wave, a0):
 
 
 def publish(target, summary, figures):
-    html = target.read_text()
+    html = target.read_text(encoding="utf-8")
     if html.count(BEGIN) != html.count(END) or html.count(BEGIN) > 1:
         raise ValueError("incomplete/duplicate prior candidate section")
     if BEGIN in html:
@@ -254,8 +255,8 @@ def main():
     args = parser.parse_args()
     directory = args.evidence.resolve()
     fv, wave = read(directory/"fv.csv"), read(directory/"wave.csv")
-    topology = json.loads((directory/"production-topology.json").read_text())
-    manifest = json.loads((directory/"manifest.json").read_text())
+    topology = json.loads((directory/"production-topology.json").read_text(encoding="utf-8"))
+    manifest = json.loads((directory/"manifest.json").read_text(encoding="utf-8"))
     summary = summarize(fv, wave, topology, manifest)
     summary["independent_transfer_reference"] = verify_transfer(wave)
     summary["harness_checks"]["independent_transfer_response"] = summary["independent_transfer_reference"]["compiled_matches_independent_reference"]
@@ -263,7 +264,7 @@ def main():
     summary["source_manifest_sha256"] = hashlib.sha256((directory/"manifest.json").read_bytes()).hexdigest()
     summary["csv_sha256"] = {p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                              for p in (directory/"fv.csv", directory/"wave.csv")}
-    (directory/"summary.json").write_text(json.dumps(summary, indent=2)+"\n")
+    (directory/"summary.json").write_text(json.dumps(summary, indent=2)+"\n", encoding="utf-8")
     if not summary["harness_pass"]:
         raise SystemExit("candidate harness failed; inspect summary.json before interpreting results")
     figures = []

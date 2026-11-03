@@ -114,9 +114,9 @@ def main():
     args = parser.parse_args()
     data = report(args.input, args.baseline)
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(data, indent=2, allow_nan=False)+'\n')
+    args.output.write_text(json.dumps(data, indent=2, allow_nan=False)+'\n', encoding="utf-8")
     if args.compare:
-        comparison(json.loads(args.compare.read_text()), data, args.output.with_suffix('.png'))
+        comparison(json.loads(args.compare.read_text(encoding="utf-8")), data, args.output.with_suffix('.png'))
 
 
 if __name__ == '__main__':

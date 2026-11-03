@@ -20,21 +20,22 @@ firing frequency's harmonics, then the energy of each engine order (0.5, 1,
            idling before stage 12c.
   strongest the seven strongest orders, and their level against the strongest
 
-PCM16 or float32 WAVs, as compare_real.py. Needs numpy.
+PCM16 or float32 WAVs, as compare_real.py: a stereo one's power is each
+channel's, averaged. Needs numpy.
 """
 import os
 import sys
 
 import numpy as np
 
-from compare_real import REAL_DIR, read_wav
+from compare_real import REAL_DIR, read_wav, spectrum
 
 
 def orders(path, cyl, t0, t1, rpm_lo, rpm_hi):
     x, fs = read_wav(path)
     x = x[int(t0 * fs):int(t1 * fs)]
-    x = x - x.mean()
-    power = np.abs(np.fft.rfft(x * np.hanning(len(x)))) ** 2
+    x = x - x.mean(axis=0)   # each channel's own DC
+    power = spectrum(x)
     f = np.fft.rfftfreq(len(x), 1.0 / fs)
 
     def comb(f0, n=8):   # the firing frequency's first n harmonics, within 1 % each

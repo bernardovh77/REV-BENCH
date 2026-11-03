@@ -47,22 +47,22 @@ def execute(cli,out,workers):
         preset,seed=job;key=f'{preset}-seed{seed}';wav=out/(key+'.wav');report=out/(key+'.json')
         cmd=[str(cli),'sound','--preset',preset,'--idle','--seconds','30','--quality','high',
              '--seed',str(seed),'--variation','1','--scene','asphalt','--gain','.5','--float','--out',str(wav)]
-        old=json.loads(report.read_text()) if report.exists() else {}
+        old=json.loads(report.read_text(encoding="utf-8")) if report.exists() else {}
         if not (old.get('cli_sha256')==cli_hash and old.get('command')==cmd and wav.exists()
                 and old['analysis']['raw_sha256']==digest(wav)):
             run=subprocess.run(cmd,capture_output=True,text=True,timeout=600)
-            log=run.stdout+run.stderr;(out/(key+'.log')).write_text(log)
+            log=run.stdout+run.stderr;(out/(key+'.log')).write_text(log, encoding="utf-8")
             counts=re.findall(r'soft-limited samples (\d+), non-finite (\d+)',log)
             if run.returncode or counts!=[('0','0')]:raise ValueError('Audio render rejected: '+key)
             row=dict(preset=preset,seed=seed,cli_sha256=cli_hash,command=cmd,analysis=analyze(wav))
-            report.write_text(json.dumps(row,indent=2)+'\n')
+            report.write_text(json.dumps(row,indent=2)+'\n', encoding="utf-8")
         else:row=old
         print(key,'repetition measured',flush=True);return row
     with ThreadPoolExecutor(max_workers=workers) as pool:rows=list(pool.map(one,jobs))
     result=dict(runs=len(rows),same_gain=.5,scene='asphalt',core_variation=1,window_s=[6,30],
         scope='Seeded per-channel descriptive engine-audio metrics; no real-engine calibration or S1 completion.',
         rows=rows,s1_complete=False)
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 
 def main():

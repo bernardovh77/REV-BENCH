@@ -24,16 +24,16 @@ FAULTS={
 
 
 def faults(contract,probe,out):
-    source=(ROOT/'tools/exhaust_geometry.py').read_text();results=[]
+    source=(ROOT/'tools/exhaust_geometry.py').read_text(encoding="utf-8");results=[]
     for name,(before,after,test) in FAULTS.items():
         if source.count(before)!=1:raise ValueError(f'{name}: expected one mutation location')
         with tempfile.TemporaryDirectory(prefix='rev-bench-geometry-fault-') as temp:
-            (Path(temp)/'exhaust_geometry.py').write_text(source.replace(before,after))
+            (Path(temp)/'exhaust_geometry.py').write_text(source.replace(before,after), encoding="utf-8")
             env=dict(os.environ,RB_GEOMETRY_CONTRACT_PROBE=str(contract),RB_GEOMETRY_PROBE=str(probe))
             code='import sys,unittest;sys.path[:0]=sys.argv[1:3];result=unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromName(sys.argv[3]));sys.exit(not result.wasSuccessful())'
             result=subprocess.run([str(Path(os.sys.executable)), '-c',code,temp,str(ROOT/'tools'),
                 'test_exhaust_geometry.ExhaustGeometryTests.'+test],capture_output=True,text=True,env=env,timeout=180)
-            (out/(name+'.log')).write_text(result.stdout+result.stderr)
+            (out/(name+'.log')).write_text(result.stdout+result.stderr, encoding="utf-8")
             # An import/build failure cannot masquerade as caught behavior.
             caught=result.returncode!=0 and 'Ran 1 test' in result.stderr and 'FAILED' in result.stderr
             results.append(dict(fault=name,caught=caught,returncode=result.returncode))
@@ -43,13 +43,13 @@ def faults(contract,probe,out):
 
 def check(contract,probe,out,mutations=False):
     out.mkdir(parents=True,exist_ok=True);records=[]
-    for build in loads((ROOT/'contracts/examples/builds-v1.json').read_text()):
+    for build in loads((ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8")):
         start=time.perf_counter();prepared=compile_exhaust(build,contract);prepare_s=time.perf_counter()-start
         plan=prepared.manifest();result=execute(prepared,probe)
         folder=out/build['build_id'];folder.mkdir(exist_ok=True)
-        (folder/'geometry.json').write_text(prepared.payload+'\n')
-        (folder/'native-plan.txt').write_text(native_input(prepared))
-        (folder/'native-control.json').write_text(json.dumps(result,indent=2)+'\n')
+        (folder/'geometry.json').write_text(prepared.payload+'\n', encoding="utf-8")
+        (folder/'native-plan.txt').write_text(native_input(prepared), encoding="utf-8")
+        (folder/'native-control.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8")
         records.append(dict(engine=build['build_id'],components=len(plan['components']),nodes=len(plan['nodes']),
             gas_cells=plan['gas_cells'],volume_m3=plan['volume_m3'],interfaces=len(plan['interfaces']),
             cylinder_pairs=len(plan['source_outlet_pairs']),connected_pairs=sum(p['connected'] for p in plan['source_outlet_pairs']),
@@ -58,7 +58,7 @@ def check(contract,probe,out,mutations=False):
             diagnostic_control_s=result['elapsed_s'],timing_kind=result['timing_kind'],plan_sha256=hashlib.sha256(prepared.payload.encode()).hexdigest()))
     report=dict(schema=1,scope='bounded lossless geometry control, not production component qualification',engines=records)
     if mutations:report['mutations']=faults(contract,probe,out)
-    (out/'summary.json').write_text(json.dumps(report,indent=2)+'\n');return report
+    (out/'summary.json').write_text(json.dumps(report,indent=2)+'\n', encoding="utf-8");return report
 
 
 if __name__=='__main__':

@@ -136,7 +136,7 @@ def prepare(lock,source_dir,out,ffmpeg,publish=False):
         decoder_version=decoder_version,decoder_sha256=digest(ffmpeg),
         measurement_rate_hz=RATE,source_count=len(sources),clips=rows,audition_controls=controls,
         calibration_qualified=False,reason='No matched exhaust/RPM/load/calibrated microphone set; per-source unknowns stay in lock')
-    (out/'report.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n')
+    (out/'report.json').write_text(json.dumps(report,indent=2,allow_nan=False)+'\n', encoding="utf-8")
     if publish:
         fragment='<!-- REFERENCE PROTOCOL BEGIN --><section id="reference-protocol"><h2>Reference comparison controls</h2><p>Same gain preserves recorded level differences. Matched average level compares texture and removes those differences. These examples were used earlier. New recordings reserved for later checks stay separate. Recording levels do not establish real-world loudness; background sounds may remain.</p>'+''.join(cards)+'</section><!-- REFERENCE PROTOCOL END -->'
         publish_section(ROOT/'renders/RESULTS.html','reference-protocol',fragment)
@@ -145,5 +145,5 @@ def prepare(lock,source_dir,out,ffmpeg,publish=False):
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--lock',type=Path,default=ROOT/'tools/reference_sessions_v2.json');p.add_argument('--source-dir',type=Path,required=True);p.add_argument('--out',type=Path,default=ROOT/'renders/reference-protocol');p.add_argument('--ffmpeg',type=Path,required=True);p.add_argument('--publish',action='store_true');args=p.parse_args()
-    result=prepare(json.loads(args.lock.read_text()),args.source_dir,args.out,args.ffmpeg,args.publish)
+    result=prepare(json.loads(args.lock.read_text(encoding="utf-8")),args.source_dir,args.out,args.ffmpeg,args.publish)
     print(len(result['clips']),'raw float references prepared; calibration remains unqualified')

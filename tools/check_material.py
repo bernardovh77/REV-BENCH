@@ -4,6 +4,7 @@ import argparse,csv,hashlib,io,itertools,json,math,re,subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import numpy as np
+from checks import require
 
 
 def run(probe,out,name,mode='profile',n=768,rate=768000,U=0,kind=1,front=.7,length=2,amplitude=1,frequency=0,duration=None):
@@ -11,7 +12,7 @@ def run(probe,out,name,mode='profile',n=768,rate=768000,U=0,kind=1,front=.7,leng
     if duration is None:duration=.002
     command=[str(probe),mode,*map(str,(n,rate,U,kind,front,length,amplitude,frequency,duration))]
     r=subprocess.run(command,capture_output=True,text=True,timeout=300)
-    (out/(name+'.csv')).write_text(r.stdout);(out/(name+'.stderr')).write_text(r.stderr)
+    (out/(name+'.csv')).write_text(r.stdout, encoding="utf-8");(out/(name+'.stderr')).write_text(r.stderr, encoding="utf-8")
     lines=[x[13:] for x in r.stderr.splitlines() if x.startswith('RB_MT_RESULT ')]
     if r.returncode or len(lines)!=1:raise ValueError((name,r.returncode,r.stderr[-300:]))
     report=json.loads(re.sub(r'\b(?:-?nan|-?inf)\b','null',lines[0]))
@@ -22,7 +23,7 @@ def run(probe,out,name,mode='profile',n=768,rate=768000,U=0,kind=1,front=.7,leng
         report['energy_relative']=abs(report['energy_balance_J'])/scale
         report['momentum_relative']=abs(report['momentum_balance'])/(max(report['rho_left'],report['rho_right'])*.003*length*max(report['c_left'],report['c_right']))
         report['book_pass']=report['energy_relative']<=1e-10 and report['momentum_relative']<=1e-10
-    (out/(name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+    (out/(name+'.json')).write_text(json.dumps(report,indent=2)+'\n', encoding="utf-8")
     rows=list(csv.DictReader(io.StringIO(r.stdout))) if r.stdout.strip() else []
     data={k:np.array([float(x[k]) for x in rows]) for k in rows[0]} if rows else {}
     return report,data
@@ -44,11 +45,12 @@ def experiment(probe,out):
     out.mkdir(parents=True,exist_ok=True);speeds={}
     for kind in (0,1):
         r,_=run(probe,out,f'base-{kind}',mode='contact',n=32,kind=kind,duration=.00001)
-        assert not r['status'];speeds[kind]=r['c_left']
+        require(not r['status'], f'the base contact run {kind} fails');speeds[kind]=r['c_left']
     tasks=[]
     for kind,U,front,f in itertools.product((0,1),(-70,0,70),(.7,1.1),(0,200,1000,2000,4000)):
         duration=(front-.2)/speeds[kind]+.0006
         tasks.append((f'wave-{kind}-{U}-{front}-{f}',dict(kind=kind,U=U,front=front,frequency=f,duration=duration)))
+    primary_count=len(tasks)   # the profiles above; the grids below are refinement controls
     for n,rate in ((192,192000),(384,384000),(384,768000),(768,1536000)):
         for kind in (0,1):
             tasks.append((f'grid-{n}-{rate}-{kind}',dict(n=n,rate=rate,kind=kind,U=70,front=.7,frequency=2000,duration=(.7-.2)/speeds[kind]+.0006)))
@@ -89,7 +91,7 @@ def experiment(probe,out):
                 # final invariant T and composition coefficients in047 reference.
                 from gas_graph_reference import SimpleWave
                 coeff_path=out.parent.parent/'stage-047/matrix-final/coefficients.csv'
-                rows=list(csv.DictReader(coeff_path.open()));row=rows[0 if which==0 else 3]
+                rows=list(csv.DictReader(coeff_path.open(encoding="utf-8")));row=rows[0 if which==0 else 3]
                 eos=dict(R=float(row['R']),k_lo=float(row['k_lo']),k_hi=float(row['k_hi']),lo=[float(row['l'+str(j)]) for j in range(5)],hi=[float(row['h'+str(j)]) for j in range(5)])
                 initial_e=float(SimpleWave(eos,300 if which==0 else 900).energy(np.array(300 if which==0 else 900)))
             Rgas=101325/(density*(300 if which==0 else 900));h=initial_e+Rgas*(300 if which==0 else 900)
@@ -119,14 +121,14 @@ def experiment(probe,out):
             r['stability_pass']=r['maximum_ratio']<=1.02 and r['final_ratio']<.001
         stable.append(r)
     unsupported,_=run(probe,out,'unsupported-clock',n=768,rate=192000,duration=.00001)
-    primary=profiles[:60];allrows=profiles+contacts+specials+walls+stable+[positive]
+    primary=profiles[:primary_count];allrows=profiles+contacts+specials+walls+stable+[positive]
     result=dict(schema=1,profiles=profiles,contacts=contacts,reversals=specials,walls=walls,stability=stable,unsupported=unsupported,positive_outlet_control=positive)
     result.update(primary_pass=all(not r['status'] and (r.get('carrier_pass',False) if r['frequency'] else r.get('gaussian_pass',False)) for r in primary),
                   contact_pass=all(r.get('contact_pass',False) for r in contacts),reversal_pass=all(r.get('reversal_pass',False) for r in specials),
                   wall_pass=all(not r['status'] and r['book_pass'] for r in walls) and len({r['wall_capacity'] for r in walls})==1,
                   stability_pass=all(r.get('stability_pass',False) for r in stable),
                   conservation_pass=all(not r['status'] and r['book_pass'] for r in allrows),guard_pass=unsupported['status']!=0)
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()

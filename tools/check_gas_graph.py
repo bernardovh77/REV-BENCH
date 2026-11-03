@@ -20,13 +20,13 @@ def run(probe,out,name,*,mode='profile',rate=192000,T=300,mix=0,length=1.50317,
     args.append(str(area))
     if mean_flow is not None:args.append(str(mean_flow))
     r=subprocess.run(args,text=True,capture_output=True,timeout=300)
-    (out/(name+'.csv')).write_text(r.stdout)
+    (out/(name+'.csv')).write_text(r.stdout, encoding="utf-8")
     records=[line.removeprefix('RB_GG_RESULT ') for line in r.stderr.splitlines() if line.startswith('RB_GG_RESULT ')]
     if r.returncode or len(records)!=1:raise ValueError(f'Probe execution failed {args}: {r.stderr[-600:]}')
     report=json.loads(records[0]);report.update(command=args,mode=mode,temperature=T,mixture=mix,
         length=length,cut=cut,amplitude=amplitude,frequency=frequency,rate=rate,reflection=reflection)
     report['probe_sha256']=hashlib.sha256(Path(probe).read_bytes()).hexdigest()
-    (out/(name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+    (out/(name+'.json')).write_text(json.dumps(report,indent=2)+'\n', encoding="utf-8")
     values=list(csv.DictReader(io.StringIO(r.stdout))) if r.stdout.strip() else []
     data={key:np.array([float(row[key]) for row in values]) for key in values[0]} if values else {}
     return report,data
@@ -103,7 +103,7 @@ def experiment(probe,out,long=True,native_contract=None):
     if native_contract:
         from build_contract import ROOT,loads
         from exhaust_geometry import compile_exhaust
-        for build in loads((ROOT/'contracts/examples/builds-v1.json').read_text()):
+        for build in loads((ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8")):
             plan=compile_exhaust(build,native_contract).manifest()
             for kind in ('exhaust','tailpipe'):
                 component=next(c for c in plan['components'] if c['kind']==kind)
@@ -122,7 +122,7 @@ def experiment(probe,out,long=True,native_contract=None):
     summary['return_pass']=all(r.get('return_pass',False) for r in returns)
     summary['stability_pass']=long and all(r.get('stability_pass',False) for r in stable)
     summary['component_pass']=bool(components) and all(not r['status'] and r['relative_balance']<=1e-10 and r['return_seen'] for r in components)
-    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');return summary
+    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8");return summary
 
 
 if __name__=='__main__':

@@ -28,7 +28,7 @@ def qualify(probe,out,kind,T,reuse=False):
     result=dict(kind=kind,T=T,frequencies=frequencies,reference_refinement_relative=uncertainty,
                 fully_collapsed_zero_volume_relative_errors=compact_errors,candidates=candidates,
                 selected_n=candidates[-1]['n'],pass_=bool(candidates[-1]['pass']))
-    (target/'qualification.json').write_text(json.dumps(result,indent=2)+'\n')
+    (target/'qualification.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8")
     return result
 
 def main():
@@ -41,7 +41,7 @@ def main():
         results=[f.result() for f in futures]
     summary=dict(probe_sha256=hashlib.sha256(a.probe.read_bytes()).hexdigest(),cases=results,
                  pass_=all(r['pass_'] for r in results))
-    (a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     if not summary['pass_']:raise SystemExit('049 matrix has failed gates')
 
 if __name__=='__main__':main()

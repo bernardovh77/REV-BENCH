@@ -23,6 +23,22 @@ import prepare_user_references as references
 
 
 class ReferenceFilteringTests(unittest.TestCase):
+    def test_measurements_are_stereo_unless_pinned_to_the_legacy_fold(self):
+        """Stage 119: a recording's measurement excerpt keeps both channels
+        unless its configuration asks for the mono fold; only the four legacy
+        recordings do, so their 16 excerpts reproduce."""
+        self.assertEqual(references.measurement_channel_args({}), ["-ac", "2"])
+        self.assertEqual(references.measurement_channel_args({"measurement_channels": 2}), ["-ac", "2"])
+        self.assertEqual(references.measurement_channel_args({"measurement_channels": 1}),
+                         ["-af", "pan=mono|c0=0.5*c0+0.5*c1"])
+        with self.assertRaises(ValueError):
+            references.measurement_channel_args({"measurement_channels": 3})
+        legacy = json.loads(references.CONFIG.read_text(encoding="utf-8"))["recordings"]
+        self.assertEqual(sorted(r["key"] for r in legacy), ["bmw-m4", "ferrari458", "golf-gti", "mustang-gt"])
+        self.assertTrue(all(r["measurement_channels"] == 1 for r in legacy))
+        rear = json.loads((references.ROOT / "tools/rear_v8_reference_sources.json").read_text(encoding="utf-8"))
+        self.assertTrue(all(r.get("measurement_channels", 2) == 2 for r in rear["recordings"]))
+
     def test_stereo_append_preserves_old_catalog_and_rejects_changed_source(self):
         ffmpeg = os.environ.get("RB_REFERENCE_FFMPEG") or shutil.which("ffmpeg")
         if not ffmpeg or subprocess.run([ffmpeg, "-version"], capture_output=True).returncode:
@@ -46,7 +62,7 @@ class ReferenceFilteringTests(unittest.TestCase):
                 "title": "Rear reference", "preset": "v8-cross", "cylinders": 8,
                 "source_url": "", "source_sha256": digest, "measurement_channels": 2,
                 "segments": [{"start": 0, "end": 0.8, "acoustic_group": "rear-3m",
-                              "place": "user-reported-rear-3m"}]}]}))
+                              "place": "user-reported-rear-3m"}]}]}), encoding="utf-8")
             catalog = root / "catalog.csv"
             original_catalog = ("id,preview,author,engine,cylinders,place,licence,kind,t0,t1,label,source_start,source_end,source_url\r\n"
                                 "existing,,User,i4,4,unknown,local,rev,0,1,keep,0,1,\r\n").encode()
@@ -60,7 +76,7 @@ class ReferenceFilteringTests(unittest.TestCase):
                 references.prepare(args)
                 self.assertEqual(catalog.read_bytes(), once)  # no duplicate IDs on rerun
                 self.assertTrue(once.startswith(original_catalog))
-                with catalog.open(newline="") as stream:
+                with catalog.open(newline="", encoding="utf-8") as stream:
                     rows = list(csv.DictReader(stream))
                 self.assertEqual(len(rows), 2)
                 self.assertEqual(rows[-1]["source_url"], "")  # do not invent a hosting platform
@@ -105,7 +121,7 @@ class ReferenceFilteringTests(unittest.TestCase):
             config.write_text(json.dumps({"recordings": [{"key": "test", "video_id": "test-video",
                 "title": "Synthetic reference", "preset": "i4", "viewpoint_status": "unverified",
                 "segments": [{"start": 0.5, "end": 2.512708, "acoustic_group": "brighter"},
-                             {"start": 2.512708, "end": 4.5, "acoustic_group": "darker"}]}]}))
+                             {"start": 2.512708, "end": 4.5, "acoustic_group": "darker"}]}]}), encoding="utf-8")
             catalog = root / "catalog.csv"
             catalog.write_bytes(b"unfiltered measurement catalog\n")
             ordinary_preview = root / "ordinary" / "keep.mp3"
@@ -118,7 +134,7 @@ class ReferenceFilteringTests(unittest.TestCase):
             self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), digest)
             self.assertEqual(catalog.read_bytes(), b"unfiltered measurement catalog\n")
             self.assertEqual(ordinary_preview.read_bytes(), b"existing unfiltered preview")
-            manifest = json.loads((args.filtered_dir / "filtered-listening-manifest.json").read_text())
+            manifest = json.loads((args.filtered_dir / "filtered-listening-manifest.json").read_text(encoding="utf-8"))
             recording = manifest["recordings"][0]
             self.assertEqual(recording["source_sha256"], digest)
             self.assertEqual(recording["viewpoint_status"], "unverified")

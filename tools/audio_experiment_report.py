@@ -13,8 +13,9 @@ import json
 import os
 from pathlib import Path
 import struct
+import tempfile
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/rev-bench-mpl")
+os.environ.setdefault("MPLCONFIGDIR", os.path.join(tempfile.gettempdir(), "rev-bench-mpl"))
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -23,6 +24,7 @@ import numpy as np
 from audio_wav import read_wav
 from checkpoint_sections import publish_section
 from analyze_audio_source_probe import powers, signal_metrics
+from checks import require
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT = ROOT / "renders/evidence/audio-experiment-2026-10-22"
@@ -44,10 +46,11 @@ def self_test():
     # Antiphase stereo must preserve power under per-channel measurement.
     p = powers(np.column_stack((signal, -signal)), rate)
     total = sum(p.values())
-    assert np.allclose(total, .625, atol=1e-4)
+    require(np.allclose(total, .625, atol=1e-4), 'the two tones carry 0.625 of power')
     fraction = p["2000_5000_Hz"]/total
-    assert np.allclose(fraction, .2, atol=1e-4)
-    assert np.mean(np.mean(np.column_stack((signal, -signal)), axis=1)**2) == 0
+    require(np.allclose(fraction, .2, atol=1e-4), 'the 4 kHz tone is 0.2 of the power')
+    require(np.mean(np.mean(np.column_stack((signal, -signal)), axis=1)**2) == 0,
+            'a mono fold cancels antiphase channels')
     print("Analytic two-tone band-power and antiphase-channel checks passed.")
 
 
@@ -57,7 +60,7 @@ def finish_plot(fig, path):
 
 
 def transport_plot(evidence):
-    with (evidence/"transport/transport.csv").open() as stream:
+    with (evidence/"transport/transport.csv").open(encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
     fig, axes = plt.subplots(1, 2, figsize=(11, 4), layout="constrained")
     series = [(0.075, 48000, "75 mm / 48 kHz"), (0.075, 192000, "75 mm / 192 kHz"),
@@ -111,7 +114,7 @@ def source_plot(evidence, reports):
 
 
 def reference_features(evidence):
-    manifest = json.loads((evidence/"references/reference-intervals.json").read_text())
+    manifest = json.loads((evidence/"references/reference-intervals.json").read_text(encoding="utf-8"))
     results = []
     for row in manifest["intervals"]:
         samples, rate = read_wav(evidence/"references"/row["file"])
@@ -120,7 +123,7 @@ def reference_features(evidence):
         results.append(dict(**row, above_2k_to_20_20k_dB=float(db(high/sum(p.values()))),
                             crest_dB=float(db(np.max(samples*samples)/np.mean(samples*samples))),
                             band_mean_square=p))
-    (evidence/"reference-features.json").write_text(json.dumps(results, indent=2)+"\n")
+    (evidence/"reference-features.json").write_text(json.dumps(results, indent=2)+"\n", encoding="utf-8")
     return results
 
 
@@ -129,7 +132,7 @@ def coast_features_and_plot(evidence):
     records = []
     for axis, preset in zip(axes, LABELS):
         directory = evidence/"engine/coast"/preset
-        metadata = json.loads((directory/"metadata.json").read_text())
+        metadata = json.loads((directory/"metadata.json").read_text(encoding="utf-8"))
         source = directory/"coast-filtered.wav"
         samples, rate = read_wav(source if source.exists() else RETAINED/f"{preset}-coast-filtered-stems.wav")
         if (directory/"coast-trace.f64").exists():
@@ -149,7 +152,7 @@ def coast_features_and_plot(evidence):
                     heat_released_J=float(column("heat_released_J")[b-1]-column("heat_released_J")[a]),
                     signals=signal_metrics(samples[a:b], rate, metadata["stems"]))
         else:
-            saved = json.loads((evidence/"coast-features.json").read_text())
+            saved = json.loads((evidence/"coast-features.json").read_text(encoding="utf-8"))
             phases = next(r["phases"] for r in saved if r["preset"] == preset)
         record = dict(preset=preset, markers=metadata["markers"], phases=phases,
                       repairs=metadata["repairs_total"], limited=metadata["samples_above_limiter_knee_all_stems"],
@@ -172,15 +175,21 @@ def coast_features_and_plot(evidence):
     fig.suptitle("Actual ECU lift and eight-second road coast · same-trajectory sources")
     path = evidence/"coast-layers.png"
     finish_plot(fig, path)
-    (evidence/"coast-features.json").write_text(json.dumps(records, indent=2)+"\n")
+    (evidence/"coast-features.json").write_text(json.dumps(records, indent=2)+"\n", encoding="utf-8")
     return path
 
 
-def listening_comparisons(evidence, reports):
-    """Concatenate full/tail/intake/jet/mechanical from one capture, at one gain."""
+def listening_comparisons(evidence, reports, staged):
+    """Concatenate full/tail/intake/jet/mechanical from one capture, at one gain.
+
+    The diagnostic sources it keeps are written to `staged`, not into
+    renders/current/experiment: publish() hands them to publish_section, which
+    swaps them in with the page and manifest (a failure leaves the retained
+    files as the manifest knows them). It reads the retained ones where the
+    evidence no longer has a source."""
     files = []
     retained = RETAINED
-    retained.mkdir(exist_ok=True)
+    staged.mkdir(parents=True, exist_ok=True)
     def audition_segment(x, rate):
         x = x.copy()
         length = min(int(.005*rate), len(x)//2)
@@ -198,12 +207,13 @@ def listening_comparisons(evidence, reports):
             # Keep selected raw float controls as well as their normal output chain.
             for suffix in ("raw", "after-aa", "filtered"):
                 if (directory/f"{state}-{suffix}.wav").exists():
-                    (retained/f"{preset}-{state}-{suffix}-stems.wav").write_bytes(
+                    (staged/f"{preset}-{state}-{suffix}-stems.wav").write_bytes(
                         (directory/f"{state}-{suffix}.wav").read_bytes())
             clips = [samples[:, 0], samples[:, 1], samples[:, 2], samples[:, 3]+samples[:, 4], samples[:, 5]]
             gap = np.zeros(int(.35*rate))
             combined = np.concatenate([part for clip in clips for part in (audition_segment(clip, rate), gap)])
             files.append(dict(preset=preset, state=state, rate=rate, samples=combined,
+                              segment_seconds=len(clips[0])/rate,
                               kind="layers", title=f'{LABELS[preset]} · {"Loaded" if state == "loaded" else "Injector cut"}'))
     for preset in LABELS:
         upper = max(r["rpm"] for r in reports if r["preset"] == preset)
@@ -217,7 +227,7 @@ def listening_comparisons(evidence, reports):
                 samples, rate = read_wav(source)
                 payload = samples[:, 0].astype("<f4").tobytes()
                 fmt = struct.pack("<HHIIHH", 3, 1, rate, rate*4, 4, 32)
-                saved.write_bytes(b"RIFF"+struct.pack("<I", 36+len(payload))+b"WAVEfmt "+struct.pack("<I", 16)+fmt+b"data"+struct.pack("<I", len(payload))+payload)
+                (staged/saved.name).write_bytes(b"RIFF"+struct.pack("<I", 36+len(payload))+b"WAVEfmt "+struct.pack("<I", 16)+fmt+b"data"+struct.pack("<I", len(payload))+payload)
             else:
                 samples, rate = read_wav(saved)
             clips.extend((audition_segment(samples[:, 0], rate), np.zeros(int(.35*rate))))
@@ -228,20 +238,24 @@ def listening_comparisons(evidence, reports):
         source = directory/"coast-filtered.wav"
         samples, rate = read_wav(source if source.exists() else retained/f"{preset}-coast-filtered-stems.wav")
         if source.exists():
-            (retained/f"{preset}-coast-filtered-stems.wav").write_bytes(source.read_bytes())
+            (staged/f"{preset}-coast-filtered-stems.wav").write_bytes(source.read_bytes())
         # Preserve compact float32 full-mix raw/output sources for the selected coasts.
         for suffix in ("raw", "filtered"):
             if not (directory/f"coast-{suffix}.wav").exists():
-                assert (retained/f"{preset}-coast-{suffix}-full.wav").exists()
+                require((retained/f"{preset}-coast-{suffix}-full.wav").exists(),
+                        f"no {preset} coast-{suffix} source, rendered or retained")
                 continue
             source, source_rate = read_wav(directory/f"coast-{suffix}.wav")
             payload = source[:, 0].astype("<f4").tobytes()
             fmt = struct.pack("<HHIIHH", 3, 1, source_rate, source_rate*4, 4, 32)
             wav = b"RIFF"+struct.pack("<I", 36+len(payload))+b"WAVEfmt "+struct.pack("<I", 16)+fmt+b"data"+struct.pack("<I", len(payload))+payload
-            (retained/f"{preset}-coast-{suffix}-full.wav").write_bytes(wav)
+            (staged/f"{preset}-coast-{suffix}-full.wav").write_bytes(wav)
+        markers = json.loads((directory/"metadata.json").read_text(encoding="utf-8"))["markers"]
+        coast = markers["clutch_s"] - markers["lift_s"]
         files.append(dict(preset=preset, state="coast", rate=rate,
                           samples=audition_segment(samples[:, 0], rate), kind="coast",
-                          title=f'{LABELS[preset]} · actual lift + eight-second coast'))
+                          lift_s=markers["lift_s"], coast_s=coast,
+                          title=f'{LABELS[preset]} · actual lift + {coast:g}-second coast'))
     # Single gain across all comparisons, including quiet source stems.
     maximum = max(float(np.max(np.abs(row["samples"]))) for row in files)
     shared_gain = .6/maximum if maximum else 1
@@ -256,17 +270,17 @@ def listening_comparisons(evidence, reports):
         row["seconds"] = len(samples)/row["rate"]
         row["preview_sha256"] = hashlib.sha256(wav).hexdigest()
         output.append(row)
-    (retained/"manifest.json").write_text(json.dumps(dict(
+    (staged/"manifest.json").write_text(json.dumps(dict(
         processing="All experiment comparisons share one scalar gain, PCM16 preview conversion, "
                    "5-ms edge fades on individual listening segments, .35-s gaps in strips. "
                    "Float measurement sources are unchanged. Standard34 previews use their original gains.",
-        clips=[{key:value for key,value in row.items() if key != "wav_base64"} for row in output]), indent=2)+"\n")
+        clips=[{key:value for key,value in row.items() if key != "wav_base64"} for row in output]), indent=2)+"\n", encoding="utf-8")
     return output
 
 
-def publish(evidence, figures, comparisons):
+def publish(evidence, figures, comparisons, staged):
     target = ROOT/"renders/RESULTS.html"
-    html = target.read_text()
+    html = target.read_text(encoding="utf-8")
     if BEGIN in html:
         start, rest = html.split(BEGIN, 1)
         _, end = rest.split(END, 1)
@@ -278,12 +292,19 @@ def publish(evidence, figures, comparisons):
     for path in figures:
         data = base64.b64encode(path.read_bytes()).decode()
         parts.append(f'<img style="width:100%;height:auto" alt="{escape(path.stem)}" src="data:image/png;base64,{data}">')
-    parts.append('<h3>Listen to the separate layers at 3,000 rpm</h3><p>Each layer recording plays: full mix → tailpipe pulses → intake pulses → flow noise → mechanical sound. Every segment lasts 0.75 seconds, with short gaps and 5 ms edge fades on these listening copies. All experiment comparisons share one fixed gain; quiet layers stay quiet. Compare their levels with each other; standard clips above have independent listening-volume adjustment.</p><p>“Injector cut” is a held-speed test with injectors disabled and throttle closed. It is not a road coast; residual fuel and a known synthesized injector-click limitation are documented in the report.</p>')
+    # The prose's numbers, from the clips themselves (stage 119).
+    def span(values, unit):
+        values = sorted({round(v, 3) for v in values})
+        return f"{values[0]:g} {unit}" if len(values) == 1 else f"{values[0]:g}–{values[-1]:g} {unit}"
+    segments = span((r["segment_seconds"] for r in comparisons if r["kind"] == "layers"), "seconds")
+    lifts = span((r["lift_s"] for r in comparisons if r["kind"] == "coast"), "seconds")
+    coasts = span((r["coast_s"] for r in comparisons if r["kind"] == "coast"), "seconds")
+    parts.append('<h3>Listen to the separate layers at 3,000 rpm</h3><p>Each layer recording plays: full mix → tailpipe pulses → intake pulses → flow noise → mechanical sound. Every segment lasts ' + segments + ', with short gaps and 5 ms edge fades on these listening copies. All experiment comparisons share one fixed gain; quiet layers stay quiet. Compare their levels with each other; standard clips above have independent listening-volume adjustment.</p><p>“Injector cut” is a held-speed test with injectors disabled and throttle closed. It is not a road coast; residual fuel and a known synthesized injector-click limitation are documented in the report.</p>')
     for row in comparisons:
         if row["kind"] == "resolution" and row["preset"] == "i6":
             parts.append('<h3>Resolution controls near the top of the rev range</h3><p>Order: baseline → engine timestep only → pipe timestep at the old grid → finer grid at that same pipe rate → combined ultra control. These short loaded captures are diagnostic; their random-noise sequences differ when simulation rate changes.</p>')
         if row["kind"] == "coast" and row["preset"] == "i6":
-            parts.append('<h3>Actual lift-off and long coast</h3><p>These diagnostic clips start near the upper rev range, lift at 0.5 seconds, coast in gear for eight seconds, then disengage the clutch. They use the real engine controller and the same fixed experiment gain. The complete pulls and long coasts remain above.</p>')
+            parts.append('<h3>Actual lift-off and long coast</h3><p>These diagnostic clips start near the upper rev range, lift at ' + lifts + ', coast in gear for ' + coasts + ', then disengage the clutch. They use the real engine controller and the same fixed experiment gain. The complete pulls and long coasts remain above.</p>')
         parts.append(f'<article><h3>{escape(row["title"])}</h3><audio controls preload="none" data-experiment="{row["preset"]}-{row["state"]}" src="data:audio/wav;base64,{row["wav_base64"]}"></audio></article>')
     parts.extend(['<p>Real recordings were measured separately without EQ, denoising or mono folding. Their RPM, load and microphone geometry are unknown, so they remain observational references rather than calibrated targets.</p>', '</section>', END])
     html = html.replace('</main>', '\n'.join(parts)+'</main>', 1)
@@ -291,7 +312,7 @@ def publish(evidence, figures, comparisons):
     link = '<a href="#audio-experiment">Research results</a>'
     if link not in html:
         html = html.replace('</nav>', link+'</nav>', 1)
-    publish_section(target, 'audio-experiment', '\n'.join(parts))
+    publish_section(target, 'audio-experiment', '\n'.join(parts), diagnostics=staged)
 
 
 def main():
@@ -304,12 +325,15 @@ def main():
         self_test()
         return
     plt.style.use("dark_background")
-    reports = json.loads((args.evidence/"engine/source-summary.json").read_text())
+    reports = json.loads((args.evidence/"engine/source-summary.json").read_text(encoding="utf-8"))
     figures = [args.evidence/"transport/transport-summary.png", transport_plot(args.evidence),
                source_plot(args.evidence, reports), coast_features_and_plot(args.evidence)]
     reference_features(args.evidence)
     if args.publish:
-        publish(args.evidence, figures, listening_comparisons(args.evidence, reports))
+        with tempfile.TemporaryDirectory(prefix="rb-experiment-") as staged:
+            staged = Path(staged)
+            publish(args.evidence, figures, listening_comparisons(args.evidence, reports, staged),
+                    staged)
     print("Experiment plots/reference features complete" + ("; single RESULTS.html updated." if args.publish else "."))
 
 

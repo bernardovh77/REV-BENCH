@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import numpy as np
 from audio_wav import read_wav, read_wav_bytes
+from checks import lift_at
 from reference_protocol import digest, measurements
 from render_results import expected_clips
 
@@ -44,10 +45,9 @@ def compare(before, after):
         if scenario == 'long-coast':
             item['lift_windows'] = {}
             for label, folder, audio in (('before', before, a), ('after', after, b)):
-                with (folder/name).with_suffix('.csv').open() as stream:
+                with (folder/name).with_suffix('.csv').open(encoding="utf-8") as stream:
                     csv_rows = list(csv.DictReader(stream))
-                lifted = next(r for r in csv_rows if float(r['throttle']) == 0)
-                lift = float(lifted['t_s'])
+                lift, lifted = lift_at(csv_rows)
                 windows = {}
                 for title, (start, end) in {'pre_lift':(-.8,-.2), 'first_200ms':(0,.2),
                                           'early_coast':(.2,.8), 'later_coast':(.8,1.4)}.items():
@@ -72,7 +72,7 @@ def main():
     p.add_argument('--out', type=Path, required=True)
     args = p.parse_args()
     result = compare(args.before, args.after)
-    args.out.write_text(json.dumps(result, indent=2)+'\n')
+    args.out.write_text(json.dumps(result, indent=2)+'\n', encoding="utf-8")
     if not result['all_below_full_scale']:
         raise ValueError('Checkpoint requires headroom inspection before publication')
     print(f"Compared{result['count']} raw clips; {result['identical']} identical; "

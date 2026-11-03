@@ -9,7 +9,7 @@ from check_material import reference
 def run(probe,out,name,mode='profile',n=2048,rate=2000000,U=0,kind=0,front=.7,length=2,amplitude=1,frequency=0,duration=.002):
     command=[str(probe),mode,*map(str,(n,rate,U,kind,front,length,amplitude,frequency,duration))]
     raw=subprocess.run(command,capture_output=True,text=True,timeout=600)
-    (out/(name+'.csv')).write_text(raw.stdout);(out/(name+'.stderr')).write_text(raw.stderr)
+    (out/(name+'.csv')).write_text(raw.stdout, encoding="utf-8");(out/(name+'.stderr')).write_text(raw.stderr, encoding="utf-8")
     lines=[x[len('RB_FT_RESULT '):] for x in raw.stderr.splitlines() if x.startswith('RB_FT_RESULT ')]
     if raw.returncode or len(lines)!=1:raise ValueError((name,raw.returncode,raw.stderr[-500:]))
     r=json.loads(re.sub(r'\b(?:-?nan|-?inf)\b','null',lines[0]))
@@ -44,11 +44,11 @@ def wave(probe,out,name,args):
             r['packets']=packets;r['carrier_pass']=all(abs(p['magnitude_db'])<=1 and abs(p['phase_deg'])<=10 for p in packets)
         else:r['carrier_pass']=True
         np.savez_compressed(out/(name+'-reference.npz'),x=d['x_m'],reference=expected,measured=actual)
-    (out/(name+'.json')).write_text(json.dumps(r,indent=2)+'\n');return r
+    (out/(name+'.json')).write_text(json.dumps(r,indent=2)+'\n', encoding="utf-8");return r
 
 def qualify_enthalpy(result,properties):
     """Use the independently audited047 property export, not observed flux."""
-    rows=list(csv.DictReader(properties.open()))
+    rows=list(csv.DictReader(properties.open(encoding="utf-8")))
     h=[next(float(r['h']) for r in rows if int(r['mixture'])==k and float(r['T_K'])==T) for k,T in [(0,300),(3,900)]]
     for r in result['transport']:
         if r['status']:continue
@@ -119,7 +119,7 @@ def evaluate(probe,out,properties):
     result={'profiles':profiles,'grids':grids,'fine':fine,'contacts':contacts,'transport':transport,'extras':extras,'costs':costs,'unsupported':bad,'wave_gate':selected,'contact_gate':all(r['contact_pass'] for r in contacts),'transport_gate':all(r.get('transport_pass',False) for r in transport),'extras_gate':all(r.get('extra_pass',False) for r in extras),'unsupported_gate':bad['status']!=0}
     result['pass']=all(result[k] for k in ['wave_gate','contact_gate','transport_gate','extras_gate','unsupported_gate'])
     qualify_enthalpy(result,properties)
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--properties',type=Path,required=True);a=p.parse_args()

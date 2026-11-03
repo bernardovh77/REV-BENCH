@@ -68,14 +68,40 @@ def save(renders, manifest):
         temporary.unlink(missing_ok=True)
 
 
-def retained_diagnostics(renders):
-    result=[]
-    for path in sorted((renders / 'current/experiment').rglob('*')):
+def retained_diagnostics(renders, folder=None):
+    """The fingerprints of the retained diagnostic files: renders/current/
+    experiment's, or those of `folder` as they will be once it takes its place.
+    Names are relative to renders/current, with forward slashes on every
+    system."""
+    current = renders / 'current'
+    folder = current / 'experiment' if folder is None else folder
+    result = []
+    for path in sorted(folder.rglob('*')):
         if path.is_file():
-            name=str(path.relative_to(renders/'current'))
-            relative_file(renders/'current',name)
-            result.append(dict(path=name,sha256=fingerprint(path)))
+            name = 'experiment/' + path.relative_to(folder).as_posix()
+            if path.is_symlink():
+                raise ValueError("Checkpoint asset must be a local regular file")
+            result.append(dict(path=name, sha256=fingerprint(path)))
     return result
+
+
+def staged_experiment(renders, staged):
+    """The next renders/current/experiment, built beside it: the retained files
+    with the staged ones added or replacing them. Nothing retained changes."""
+    current = renders / 'current'
+    target = current / '.experiment-next'
+    if target.exists():
+        shutil.rmtree(target)
+    if (current / 'experiment').exists():
+        shutil.copytree(current / 'experiment', target)
+    else:
+        target.mkdir(parents=True)
+    for path in sorted(staged.rglob('*')):
+        if path.is_file():
+            destination = target / path.relative_to(staged)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, destination)
+    return target
 
 
 def adopt_current(renders):
@@ -95,7 +121,7 @@ def adopt_current(renders):
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_text(fragment, encoding='utf-8', newline='')
         manifest['sections'].append(dict(id=key, marker=marker, label=label,
-            path=str(destination.relative_to(renders)), sha256=fingerprint(destination)))
+            path=destination.relative_to(renders).as_posix(), sha256=fingerprint(destination)))
     manifest['diagnostics']=retained_diagnostics(renders)
     save(renders, manifest)
     return manifest
@@ -141,12 +167,20 @@ def carry_diagnostics(current, staged, renders):
             shutil.copyfile(source, target)
 
 
-def publish_section(target, key, fragment):
+def publish_section(target, key, fragment, diagnostics=None):
     """Publish immutable fragments; serialize calls from section producers.
 
     Ordinary write failures preserve the previous rebuildable checkpoint. The
     page and manifest are separate atomic replacements, not a crash transaction.
+
+    diagnostics (audio-experiment only): a folder of new diagnostic files for
+    renders/current/experiment. They join or replace the retained ones only
+    together with the page and the manifest: until then the retained files
+    keep the fingerprints the manifest has, and a failure puts back both, so
+    a failed publish never blocks make results or make render (stage 119).
     """
+    if diagnostics is not None and key != 'audio-experiment':
+        raise ValueError("Only the audio experiment retains diagnostic files")
     renders = target.parent
     if not (renders / 'checkpoint/manifest.json').exists():
         adopt_current(renders)
@@ -157,7 +191,7 @@ def publish_section(target, key, fragment):
     destination = renders / f'checkpoint/sections/{key}-{digest}.html'
     destination.parent.mkdir(parents=True, exist_ok=True)
     entry = dict(id=key, marker=marker, label=label,
-                 path=str(destination.relative_to(renders)), sha256=digest)
+                 path=destination.relative_to(renders).as_posix(), sha256=digest)
     if destination.exists():
         checked(renders, entry)
     else:
@@ -167,17 +201,41 @@ def publish_section(target, key, fragment):
             checked(staged.parent, dict(path=staged.name, sha256=digest))
             staged.replace(destination)
     manifest['sections'] = [row for row in manifest['sections'] if row['id'] != key] + [entry]
-    if key=='audio-experiment':
-        manifest['diagnostics']=retained_diagnostics(renders)
+    experiment = renders / 'current/experiment'
+    following = previous = None
+    if diagnostics is not None:
+        following = staged_experiment(renders, Path(diagnostics))
+        previous = renders / 'current/.experiment-previous'
+        if previous.exists():
+            shutil.rmtree(previous)
+        manifest['diagnostics'] = retained_diagnostics(renders, following)
+    elif key == 'audio-experiment':
+        manifest['diagnostics'] = retained_diagnostics(renders)
     temporary = target.with_suffix('.checkpoint.pending.html')
+    swapped = False
     try:
         temporary.write_text(compose(target.read_text(encoding='utf-8'), renders, manifest),
                              encoding='utf-8', newline='')
+        if following is not None:
+            # The files, then the manifest that names them, then the page.
+            if experiment.exists():
+                experiment.rename(previous)
+            following.rename(experiment)
+            swapped = True
         save(renders, manifest)
         try:
             temporary.replace(target)
         except BaseException:
             save(renders, previous_manifest)
             raise
+    except BaseException:
+        if swapped:
+            experiment.rename(following)
+            if previous.exists():
+                previous.rename(experiment)
+        raise
     finally:
         temporary.unlink(missing_ok=True)
+        for leftover in (following, previous):
+            if leftover is not None and leftover.exists():
+                shutil.rmtree(leftover)

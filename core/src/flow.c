@@ -92,7 +92,7 @@ double rb_orifice_flow(rb_orifice *o, double dt)
     if (up->mass > 0.0 && up->p > down->p) {
         mdot = rb_nozzle_mdot(o->cd * o->area, up->p, up->T, up->gas.R, rb_chamber_gamma(up), down->p);
         requested = mdot;
-        if(o->diag && down->p/up->p <= rb_nozzle_critical_ratio(rb_chamber_gamma(up)))
+        if (o->diag && down->p / up->p <= rb_nozzle_critical_ratio(rb_chamber_gamma(up)))
             reasons |= RB_D_BIT(RB_D_CHOKED);
 
         /* Explicit time steps overshoot when a big opening joins small volumes:
@@ -113,7 +113,8 @@ double rb_orifice_flow(rb_orifice *o, double dt)
     rb_chamber_add_flow(up, -mdot, up->y, up->h);
     rb_chamber_add_flow(down, mdot, up->y, up->h);
     o->mdot = sign * mdot;
-    if(o->diag) rb_diag_transfer(o->diag,reasons,sign*requested*dt,sign*mdot*dt,up->y,up->h);
+    if (o->diag)
+        rb_diag_transfer(o->diag, reasons, sign * requested * dt, sign * mdot * dt, up->y, up->h);
     return o->mdot;
 }
 

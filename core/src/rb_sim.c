@@ -153,19 +153,27 @@ void rb_sim_listen(rb_sim *sim)
     if (sim->scene_active) rb_set_scene(sim, sim->scene.kind);
 }
 
+/* Hears the engine through a stereo scene (RB_SCENE_*, stage 024) from now
+ * on: sound travels at the outside air's speed, the tailpipes are the
+ * engine's own, and each source's anti-alias filter and each ear's DC
+ * blocker start afresh. */
 int rb_set_scene(rb_sim *sim, int scene)
 {
     if (!sim) return RB_ERR_ARG;
     const rb_engine *e = &sim->engine;
     const rb_chamber *air = &e->exhaust_air;
     const double cv = rb_gas_cv(&air->gas, air->T);
-    const double c = sqrt((cv+air->gas.R)/cv*air->gas.R*air->T);
-    if (rb_scene_init(&sim->scene,scene,sim->cfg.sample_rate,c,e->systems,e->desc.tailpipe_diameter))
+    const double c = sqrt((cv + air->gas.R) / cv * air->gas.R * air->T);
+    if (rb_scene_init(&sim->scene, scene, sim->cfg.sample_rate, c, e->systems,
+                      e->desc.tailpipe_diameter))
         return RB_ERR_ARG;
-    for (int j=0;j<RB_SCENE_SOURCES;j++) rb_decimator_init(&sim->scene_aa[j],sim->cfg.oversample);
-    for (int k=0;k<2;k++) rb_dc_blocker_init(&sim->scene_dc[k],10.0,sim->cfg.sample_rate);
-    sim->scene_flow[0]=e->tail_flow[0]; sim->scene_flow[1]=e->tail_flow[1]; sim->scene_flow[2]=e->mouth_flow;
-    sim->scene_active=1;
+    for (int j = 0; j < RB_SCENE_SOURCES; j++)
+        rb_decimator_init(&sim->scene_aa[j], sim->cfg.oversample);
+    for (int k = 0; k < 2; k++) rb_dc_blocker_init(&sim->scene_dc[k], 10.0, sim->cfg.sample_rate);
+    sim->scene_flow[0] = e->tail_flow[0];
+    sim->scene_flow[1] = e->tail_flow[1];
+    sim->scene_flow[2] = e->mouth_flow;
+    sim->scene_active = 1;
     return RB_OK;
 }
 
@@ -189,16 +197,24 @@ static inline void model_step(rb_sim *sim)
                        | ((sim->layers & RB_LAYER_ENGINE) ? RB_NOISE_ENGINE : 0);
         rb_noise_step(&sim->noise, e, what);
         if (sim->scene_active) {
-            const double q[3]={e->tail_flow[0],e->tail_flow[1],e->mouth_flow};
-            for(int j=0;j<RB_SCENE_SOURCES;j++) {
-                double pressure=sim->noise.out[j];
-                if (j<3) {
-                    if(sim->layers & RB_LAYER_PIPES)
-                        pressure+=e->exhaust_air.rho/(4.0*RB_PI)*(q[j]-sim->scene_flow[j])/sim->dt;
-                    sim->scene_flow[j]=q[j];
+            /* A stereo scene (stage 024): each source's pressure 1 m away,
+             * at the physics rate, into its own anti-alias decimator. The
+             * tailpipes and the mouth add their flows' monopoles,
+             * rho / (4 pi) dq/dt, to their noise. */
+            const double q[3] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            for (int j = 0; j < RB_SCENE_SOURCES; j++) {
+                double pressure = sim->noise.out[j];
+                if (j < 3) {
+                    if (sim->layers & RB_LAYER_PIPES)
+                        pressure += e->exhaust_air.rho / (4.0 * RB_PI)
+                                  * (q[j] - sim->scene_flow[j]) / sim->dt;
+                    sim->scene_flow[j] = q[j];
                 }
-                if (!isfinite(pressure)) {pressure=0;sim->nonfinite++;}
-                rb_decimator_push(&sim->scene_aa[j],fmax(-RB_MIC_MAX,fmin(RB_MIC_MAX,pressure)));
+                if (!isfinite(pressure)) {
+                    pressure = 0;
+                    sim->nonfinite++;
+                }
+                rb_decimator_push(&sim->scene_aa[j], fmax(-RB_MIC_MAX, fmin(RB_MIC_MAX, pressure)));
             }
         }
         rb_listener_push_noise(&sim->listener, sim->noise.out, sim->noise.out[RB_NOISE_MOUNT]);
@@ -268,28 +284,36 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
             sim->nonfinite++;
         }
 
-        double frame_power=y*y, frame_peak=fabs(y);
+        /* 4. With a scene, the ears instead: the sources at the audio rate
+         *    through the scene, each ear through its own DC blocker, the gain
+         *    and the limiter. A mono render takes their mean. */
+        double frame_power = y * y, frame_peak = fabs(y);
         if (sim->scene_active && sim->source == RB_SOURCE_ENGINE) {
             double source[RB_SCENE_SOURCES], stereo[2];
-            for(int j=0;j<RB_SCENE_SOURCES;j++) source[j]=rb_decimator_out(&sim->scene_aa[j]);
-            rb_scene_step(&sim->scene,source,stereo);
-            double mono=0;
-            frame_power=frame_peak=0;
-            for(int k=0;k<2;k++) {
-                double v=rb_dc_blocker_step(&sim->scene_dc[k],stereo[k]/RB_FULL_SCALE_PA)*sim->gain_s;
-                if (fabs(v)>RB_LIMIT_KNEE) sim->limited++;
-                v=rb_soft_limit(v);
-                if(!isfinite(v)) {v=0;sim->nonfinite++;}
-                if(channels==2) out[2*i+k]=(float)v;
-                mono+=0.5*v;
-                frame_power+=0.5*v*v;
-                frame_peak=fmax(frame_peak,fabs(v));
+            for (int j = 0; j < RB_SCENE_SOURCES; j++)
+                source[j] = rb_decimator_out(&sim->scene_aa[j]);
+            rb_scene_step(&sim->scene, source, stereo);
+            double mono = 0;
+            frame_power = frame_peak = 0;
+            for (int k = 0; k < 2; k++) {
+                double v = rb_dc_blocker_step(&sim->scene_dc[k], stereo[k] / RB_FULL_SCALE_PA)
+                         * sim->gain_s;
+                if (fabs(v) > RB_LIMIT_KNEE) sim->limited++;
+                v = rb_soft_limit(v);
+                if (!isfinite(v)) {
+                    v = 0;
+                    sim->nonfinite++;
+                }
+                if (channels == 2) out[2 * i + k] = (float)v;
+                mono += 0.5 * v;
+                frame_power += 0.5 * v * v;
+                frame_peak = fmax(frame_peak, fabs(v));
             }
-            if(channels==1) out[i]=(float)mono;
-            y=mono;
+            if (channels == 1) out[i] = (float)mono;
+            y = mono;
         } else {
-            out[channels*i]=(float)y;
-            if(channels==2) out[2*i+1]=(float)y;
+            out[channels * i] = (float)y;
+            if (channels == 2) out[2 * i + 1] = (float)y;
         }
         if (frame_peak > peak) peak = frame_peak;
         sumsq += frame_power;
@@ -300,12 +324,15 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
     return frames;
 }
 
-int rb_render_block(rb_sim *sim,float *out,int frames) {return render(sim,out,frames,1);}
+int rb_render_block(rb_sim *sim, float *out, int frames)
+{
+    return render(sim, out, frames, 1);
+}
 
-int rb_render_stereo(rb_sim *sim,float *out,int frames)
+int rb_render_stereo(rb_sim *sim, float *out, int frames)
 {
     if (!sim || !sim->scene_active) return RB_ERR_ARG;
-    return render(sim,out,frames,2);
+    return render(sim, out, frames, 2);
 }
 
 double rb_get_telemetry(const rb_sim *sim, int id)

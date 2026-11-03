@@ -51,22 +51,22 @@ def execute(probe,out,workers):
     identity=hashlib.sha256(probe.read_bytes()).hexdigest()
     def one(job):
         key,cmd=job;path=out/(key+'.json')
-        old=json.loads(path.read_text()) if path.exists() else {}
+        old=json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
         if old.get('probe_sha256')==identity and old.get('command')==cmd:
             validate(old['result']);return old
         run=subprocess.run(cmd,capture_output=True,text=True,timeout=180)
-        (out/(key+'.log')).write_text(run.stderr)
+        (out/(key+'.log')).write_text(run.stderr, encoding="utf-8")
         try:row=json.loads(run.stdout)
         except ValueError:
-            path.with_suffix('.failed-output.txt').write_text(run.stdout);raise
+            path.with_suffix('.failed-output.txt').write_text(run.stdout, encoding="utf-8");raise
         record=dict(probe_sha256=identity,command=cmd,returncode=run.returncode,result=row)
-        path.write_text(json.dumps(record,indent=2)+'\n')
+        path.write_text(json.dumps(record,indent=2)+'\n', encoding="utf-8")
         if run.returncode:raise ValueError('Probe rejected '+key)
         validate(row);print(key,'pass',flush=True);return record
     with ThreadPoolExecutor(max_workers=workers) as pool:records=list(pool.map(one,commands(probe)))
     result=dict(runs=len(records),presets=PRESETS,seeds=SEEDS,scenarios=SCENARIOS,
         all_native_checks_pass=True,real_injector_calibrated=False,s1_complete=False,records=records)
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 
 def main():

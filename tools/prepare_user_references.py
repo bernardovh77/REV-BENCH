@@ -3,8 +3,10 @@
 
 python tools/prepare_user_references.py --source-dir C:/Users/berna --ffmpeg PATH
 
-Writes unfiltered float32 comparison excerpts to renders/real (mono by default,
-stereo when the source configuration requests it), a separate
+Writes unfiltered float32 comparison excerpts to renders/real (stereo, as the
+recordings are, unless a recording's "measurement_channels" is 1: the four
+legacy recordings of user_engine_reference_sources.json keep their mono
+excerpts, an L/R average, so they reproduce), a separate
 CSV catalog to tools/user_engine_references.csv, and stereo listening compilations
 to renders/user-reference-previews (or --preview-dir). Requires FFmpeg only.
 Selected source intervals and acoustic groups live in user_engine_reference_sources.json.
@@ -29,12 +31,14 @@ import re
 import shutil
 import subprocess
 import tempfile
+from checks import require
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "tools/user_engine_reference_sources.json"
 # A listening aid, never an input to compare_real.py or calibration. Keep the
 # reduction modest because engine broadband noise can resemble ambient noise.
 FILTERED_CHAIN = "highpass=f=20:p=2,afftdn=nr=6:nf=-50:tn=1"
+GAP_S = 0.7   # the silence between excerpts in every listening compilation, s
 
 
 def sha256(path):
@@ -43,6 +47,16 @@ def sha256(path):
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def measurement_channel_args(recording):
+    """FFmpeg's channel arguments for a recording's measurement excerpt: stereo
+    (each channel's power is measured before averaging), unless the
+    configuration asks for the legacy mono fold with "measurement_channels": 1."""
+    channels = recording.get("measurement_channels", 2)
+    if channels not in (1, 2):
+        raise ValueError("Measurement channels must be 1 or 2")
+    return ["-af", "pan=mono|c0=0.5*c0+0.5*c1"] if channels == 1 else ["-ac", "2"]
 
 
 def run(ffmpeg, *args):
@@ -71,7 +85,7 @@ def prepare_filtered(ffmpeg, recordings, inputs, directory):
                 "isolation": "Engine-dominant audio, not isolated engine stems",
                 "filter_chain": FILTERED_CHAIN,
                 "processing": "48 kHz stereo float excerpts; 10 ms end fades; compilation only: "
-                              "0.7 s gaps, one static gain targeting -3 dBFS, 192 kbit/s MP3",
+                              f"{GAP_S:g} s gaps, one static gain targeting -3 dBFS, 192 kbit/s MP3",
                 "limitations": "Filtering can remove engine texture too. Overlapping road, wind, "
                                "intake and turbo sounds remain inseparable; cabin filtering and "
                                "pass-by Doppler are retained. Viewpoint evidence is recorded per source; "
@@ -83,7 +97,7 @@ def prepare_filtered(ffmpeg, recordings, inputs, directory):
         with tempfile.TemporaryDirectory(prefix="rb-filtered-", dir=directory) as temporary:
             scratch = Path(temporary)
             run(ffmpeg, "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
-                "-t", "0.7", "-c:a", "pcm_f32le", scratch / "silence.wav")
+                "-t", str(GAP_S), "-c:a", "pcm_f32le", scratch / "silence.wav")
             concat, position = [], 0.0
             for index, segment in enumerate(recording["segments"]):
                 start, end = segment["start"], segment["end"]
@@ -101,7 +115,7 @@ def prepare_filtered(ffmpeg, recordings, inputs, directory):
                 shutil.copyfile(excerpt, scratch / f"{index}.wav")
                 if index:
                     concat.append("file 'silence.wav'")
-                    position += 0.7
+                    position += GAP_S
                 concat.append(f"file '{index}.wav'")
                 result["segments"].append({**segment, "filtered_listening_file": str(excerpt),
                     "filter_chain": filters, "preview_start": round(position, 3),
@@ -128,7 +142,7 @@ def prepare_filtered(ffmpeg, recordings, inputs, directory):
                                           recording["title"] + " - raw then filtered")
             result["paired_comparison"] = {"preview_file": str(paired_preview), "gain_db": paired_gain,
                 "source_start": first["start"], "source_end": first["end"], "raw_start": 0,
-                "raw_end": duration, "filtered_start": duration + 0.7, "filtered_end": 2 * duration + 0.7,
+                "raw_end": duration, "filtered_start": duration + GAP_S, "filtered_end": 2 * duration + GAP_S,
                 "raw_processing": "48 kHz stereo, 10 ms end fades only; shared static compilation gain"}
         manifest["recordings"].append(result)
         print(f"Filtered listening copy {key}: {len(result['segments'])} excerpts, {position:.1f}s", flush=True)
@@ -137,7 +151,11 @@ def prepare_filtered(ffmpeg, recordings, inputs, directory):
 
 def publish_filtered(directory):
     """Append matched listening pairs without regenerating accepted engine audio."""
-    manifest = json.loads((directory / "filtered-listening-manifest.json").read_text())
+    manifest = json.loads((directory / "filtered-listening-manifest.json").read_text(encoding="utf-8"))
+    # The gap the pairs actually have, for the prose (stage 119: numbers from the evidence).
+    gaps = {round(r["paired_comparison"]["filtered_start"] - r["paired_comparison"]["raw_end"], 3)
+            for r in manifest["recordings"]}
+    gap = "/".join(f"{g:g}" for g in sorted(gaps))
     target = ROOT / "renders/RESULTS.html"
     page = target.read_text(encoding="utf-8")
     begin, end = "<!-- USER REFERENCES BEGIN -->", "<!-- USER REFERENCES END -->"
@@ -149,7 +167,7 @@ def publish_filtered(directory):
              '<p>Position and distance evidence are recorded below. Microphone response, '
              'recording gain and exact motion remain uncalibrated. '
              'No distance compensation or pitch correction is applied.</p>',
-             '<p>Each player contains the original audio first, a 0.7-second gap, then the lightly '
+             '<p>Each player contains the original audio first, a ' + gap + '-second gap, then the lightly '
              'filtered copy. Both halves share one fixed listening gain; different recordings '
              'have independent gains. Filtering reduces rumble and background noise modestly, '
              'and may also reduce engine texture. Unfiltered stereo float WAVs remain the measurement sources.</p>']
@@ -200,9 +218,9 @@ def prepare(args):
         result = {**recording, "source_file": str(source), "source_sha256": sha256(source), "segments": []}
         with tempfile.TemporaryDirectory(prefix="rb-refs-", dir=previews) as temporary:
             scratch = Path(temporary).resolve()
-            assert scratch.is_relative_to(previews)  # cleanup is confined to this created folder
+            require(scratch.is_relative_to(previews), 'cleanup is confined to this created folder')
             run(ffmpeg, "-v", "error", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
-                "-t", "0.7", "-c:a", "pcm_f32le", scratch / "silence.wav")
+                "-t", str(GAP_S), "-c:a", "pcm_f32le", scratch / "silence.wav")
             concat, preview_position = [], 0.0
             for index, segment in enumerate(recording["segments"]):
                 start, end, group = segment["start"], segment["end"], segment["acoustic_group"]
@@ -210,11 +228,7 @@ def prepare(args):
                 identifier = f"user-{key}-{group}-{start}"
                 reference = out / (identifier + ".wav")
                 # Measurement copy: no EQ, gain normalisation, denoising, gate or fade.
-                channels = recording.get("measurement_channels", 1)
-                if channels not in (1, 2):
-                    raise ValueError("Measurement channels must be 1 or 2")
-                channel_args = (["-af", "pan=mono|c0=0.5*c0+0.5*c1"] if channels == 1
-                                else ["-ac", "2"])
+                channel_args = measurement_channel_args(recording)
                 run(ffmpeg, "-v", "error", "-ss", start, "-i", source, "-t", duration,
                     "-map", "0:a:0", "-ar", "48000", *channel_args,
                     "-c:a", "pcm_f32le", reference)
@@ -225,7 +239,7 @@ def prepare(args):
                     "-c:a", "pcm_f32le", scratch / f"{index}.wav")
                 if index:
                     concat.append("file 'silence.wav'")
-                    preview_position += 0.7
+                    preview_position += GAP_S
                 concat.append(f"file '{index}.wav'")
                 result["segments"].append({**segment, "reference_file": str(reference),
                     "preview_start": round(preview_position, 3), "preview_end": round(preview_position + duration, 3)})

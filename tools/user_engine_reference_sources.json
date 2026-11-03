@@ -3,6 +3,7 @@
   "recordings": [
     {
       "key": "ferrari458",
+      "measurement_channels": 1,
       "video_id": "AimvjNzNCwk",
       "title": "Ferrari 458 Italia exhaust",
       "preset": "v8-flat",
@@ -43,6 +44,7 @@
     },
     {
       "key": "bmw-m4",
+      "measurement_channels": 1,
       "video_id": "udiPG_FwG0E",
       "title": "620 HP BMW M4 Akrapovic POV",
       "preset": "i6",
@@ -83,6 +85,7 @@
     },
     {
       "key": "golf-gti",
+      "measurement_channels": 1,
       "video_id": "Ws0IlDinQes",
       "title": "Straight-piped Golf 7 GTI",
       "preset": "i4",
@@ -123,6 +126,7 @@
     },
     {
       "key": "mustang-gt",
+      "measurement_channels": 1,
       "video_id": "oz7Kbh7kZbE",
       "title": "Straight-piped 2024 Mustang GT",
       "preset": "v8-cross",

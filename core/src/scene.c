@@ -7,9 +7,15 @@
 #define PI 3.14159265358979323846
 #define GEOMETRY_BLOCK 64
 
+/* Where the sources are (m): x to the car's right, y forward from its rear
+ * bumper, z up from the ground. The two tailpipes, the intake's mouth and
+ * the engine bay. */
 static const double SOURCE[4][3] = {
     {0.5, -0.05, 0.35}, {-0.5, -0.05, 0.35}, {-0.3, 3.7, 0.75}, {0, 3.3, 0.6}};
 
+/* The time (s) sound takes from a source at r (m, relative to the ear) that
+ * moves along y at v (m/s) to reach the ear now: the root of
+ * |r - v tau e_y| = c tau. */
 double rb_scene_flight_time(const double r[3], double v, double c)
 {
     const double r2 = r[0] * r[0] + r[1] * r[1] + r[2] * r[2];
@@ -65,6 +71,11 @@ static void geometry(const rb_scene *s, int ear, int j, int k, double time, doub
     *shadow = fmax(0.0, fmin(1.0, (ear ? -1.0 : 1.0) * r[0] / distance));
 }
 
+/* Every path's delay, gain, spread and shadow now, and how much each
+ * changes per sample until the next block of GEOMETRY_BLOCK samples (a
+ * moving source's paths are worked out again every block, and followed
+ * linearly in between). The paths: each ear, each source, and each way
+ * there (direct, off the ground, off the wall). */
 static void paths(rb_scene *s)
 {
     for (int e = 0; e < 2; e++)
@@ -118,6 +129,13 @@ static double read_source(const rb_scene *s, int j, double delay)
     return (1 - part) * s->source[j][a] + part * s->source[j][b];
 }
 
+/* One sample: the sources' pressures 1 m away (Pa) in, each ear's out.
+ * Each path reads its source's history at its own fractional delay; a
+ * tailpipe's opening, seen from the side, spreads it over a range of delays
+ * (8 Gauss-Chebyshev nodes across the Rayleigh disk). The far ear hears it
+ * through the head's shadow, a one-pole low-pass. In the cabin the car's
+ * body filters what's behind and in front (rb_cabin); in the garage and on
+ * the dyno a four-line feedback delay network adds the room. */
 void rb_scene_step(rb_scene *s, const double source[RB_SCENE_SOURCES], double out[2])
 {
     static const double node[8] = {.9396926208,  .7660444431, .5,           .1736481777,

@@ -41,10 +41,10 @@ def main():
             for item in files:
                 target = root/item; target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(ROOT/item, target)
-            target = root/file; source = target.read_text()
+            target = root/file; source = target.read_text(encoding="utf-8")
             if source.count(before) != 1: raise ValueError(f'{name}: fault anchor not unique')
-            target.write_text(source.replace(before, after))
-            if target.suffix == '.py': compile(target.read_text(), str(target), 'exec')
+            target.write_text(source.replace(before, after), encoding="utf-8")
+            if target.suffix == '.py': compile(target.read_text(encoding="utf-8"), str(target), 'exec')
             probe = args.probe.resolve()
             if mode == 'c':
                 mutated = root/'probe'
@@ -58,10 +58,10 @@ def main():
                        else [sys.executable, 'tools/check_build_contract.py', '--probe', str(probe)])
             result = subprocess.run(command, cwd=root, env=dict(os.environ, PYTHONPATH=str(root/'tools')),
                                     text=True, capture_output=True, timeout=60)
-            (args.output/f'{name}.log').write_text(result.stdout+result.stderr)
+            (args.output/f'{name}.log').write_text(result.stdout+result.stderr, encoding="utf-8")
             if result.returncode == 0: raise ValueError(f'{name}: MISSED')
             records.append(dict(fault=name, caught=True, mode=mode, returncode=result.returncode))
-    (args.output/'summary.json').write_text(json.dumps(records, indent=2)+'\n')
+    (args.output/'summary.json').write_text(json.dumps(records, indent=2)+'\n', encoding="utf-8")
     print(json.dumps(records, indent=2))
 
 

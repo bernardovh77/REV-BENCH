@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from checkpoint_sections import compose, load, publish_section
+from checkpoint_sections import carry_diagnostics, compose, diagnostic_names, load, publish_section
 
 
 def section(label):
@@ -18,7 +18,7 @@ class CheckpointSectionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             page = root / 'RESULTS.html'
-            page.write_text('<html><nav></nav><main></main></html>')
+            page.write_text('<html><nav></nav><main></main></html>', encoding="utf-8")
             original = Path.write_text
 
             def windows_text_defaults(path, text, *args, **kwargs):
@@ -37,7 +37,7 @@ class CheckpointSectionTests(unittest.TestCase):
             with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 page = root / 'RESULTS.html'
-                page.write_text('<html><nav></nav><main></main></html>')
+                page.write_text('<html><nav></nav><main></main></html>', encoding="utf-8")
                 publish_section(page, 'audio-experiment', section('accepted'))
                 other = '<!-- COUPLING PROOF BEGIN --><section id="coupling-proof">proof</section><!-- COUPLING PROOF END -->'
                 publish_section(page, 'coupling-proof', other)
@@ -63,17 +63,66 @@ class CheckpointSectionTests(unittest.TestCase):
                         publish_section(page, 'audio-experiment', section('replacement'))
                 self.assertEqual(page.read_bytes(), before)
                 self.assertEqual(load(root), manifest_before)
-                self.assertEqual(compose(page.read_text(), root), before.decode())
+                self.assertEqual(compose(page.read_text(encoding="utf-8"), root), before.decode())
                 self.assertFalse(list(root.rglob('*.pending.*')))
                 publish_section(page, 'audio-experiment', section('replacement'))
-                self.assertIn(other, page.read_text())
-                self.assertIn('replacement', page.read_text())
+                self.assertIn(other, page.read_text(encoding="utf-8"))
+                self.assertIn('replacement', page.read_text(encoding="utf-8"))
+
+    def test_failed_experiment_publish_keeps_its_diagnostics(self):
+        """Stage 119: an audio-experiment publish that fails leaves the retained
+        diagnostic files and their fingerprints as they were, so make results
+        (diagnostic_names) and make render (carry_diagnostics) keep working;
+        the new files join only with the page and the manifest."""
+        for failure in ('page-write', 'manifest-install', 'page-install'):
+            with self.subTest(failure=failure), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                page = root / 'RESULTS.html'
+                page.write_text('<html><nav></nav><main></main></html>', encoding="utf-8")
+                retained = root / 'current/experiment'
+                retained.mkdir(parents=True)
+                (retained / 'kept.wav').write_bytes(b'old')
+                publish_section(page, 'audio-experiment', section('accepted'))
+                staged = root / 'staged'
+                staged.mkdir()
+                (staged / 'kept.wav').write_bytes(b'new')
+                (staged / 'added.wav').write_bytes(b'added')
+                write, replace = Path.write_text, Path.replace
+
+                def failing_write(path, text, *args, **kwargs):
+                    if failure == 'page-write' and path.name.endswith('.checkpoint.pending.html'):
+                        raise OSError('publication failure')
+                    return write(path, text, *args, **kwargs)
+
+                def failing_replace(path, target):
+                    name = 'RESULTS.html' if failure == 'page-install' else 'manifest.json'
+                    if failure.endswith('install') and Path(target).name == name:
+                        raise OSError('publication failure')
+                    return replace(path, target)
+
+                with patch.object(Path, 'write_text', failing_write), \
+                        patch.object(Path, 'replace', failing_replace):
+                    with self.assertRaisesRegex(OSError, 'publication failure'):
+                        publish_section(page, 'audio-experiment', section('replacement'),
+                                        diagnostics=staged)
+                self.assertEqual((retained / 'kept.wav').read_bytes(), b'old')
+                self.assertFalse((retained / 'added.wav').exists())
+                self.assertEqual(diagnostic_names(root / 'current', root), {'experiment/kept.wav'})
+                carry_diagnostics(root / 'current', root / 'next', root)
+                self.assertEqual((root / 'next/experiment/kept.wav').read_bytes(), b'old')
+                self.assertEqual(sorted(p.name for p in (root / 'current').iterdir()), ['experiment'])
+                self.assertNotIn('replacement', page.read_text(encoding="utf-8"))
+                publish_section(page, 'audio-experiment', section('replacement'), diagnostics=staged)
+                self.assertEqual((retained / 'kept.wav').read_bytes(), b'new')
+                self.assertEqual(diagnostic_names(root / 'current', root),
+                                 {'experiment/added.wav', 'experiment/kept.wav'})
+                self.assertIn('replacement', page.read_text(encoding="utf-8"))
 
     def test_interrupted_section_write_preserves_rebuild_and_retry(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             page = root/'RESULTS.html'
-            page.write_text('<html><nav></nav><main></main></html>')
+            page.write_text('<html><nav></nav><main></main></html>', encoding="utf-8")
             publish_section(page, 'audio-experiment', section('accepted'))
             previous = page.read_bytes()
             original = Path.write_text
@@ -89,11 +138,11 @@ class CheckpointSectionTests(unittest.TestCase):
                     publish_section(page, 'audio-experiment', section('replacement'))
 
             self.assertEqual(page.read_bytes(), previous)
-            self.assertEqual(compose(page.read_text(), root), previous.decode())
+            self.assertEqual(compose(page.read_text(encoding="utf-8"), root), previous.decode())
             publish_section(page, 'audio-experiment', section('replacement'))
-            self.assertIn('replacement', page.read_text())
-            self.assertNotIn('accepted', page.read_text())
-            self.assertEqual(page.read_text().count('id="audio-experiment"'), 1)
+            self.assertIn('replacement', page.read_text(encoding="utf-8"))
+            self.assertNotIn('accepted', page.read_text(encoding="utf-8"))
+            self.assertEqual(page.read_text(encoding="utf-8").count('id="audio-experiment"'), 1)
 
 
 if __name__ == '__main__':

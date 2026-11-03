@@ -30,7 +30,7 @@ def control(probe,out,name,kind,n,**kw):
         result['calibration_error']=float(np.max(abs(calibration-1)))
         result['pass_']=bool(physical and (result['accuracy_pass'] or not result['accuracy_required']) and result['calibration_error']<=.001)
         np.savez_compressed(target/'transfer.npz',measured=measured,reference=reference,frequencies=frequencies)
-    (target/'summary.json').write_text(json.dumps(result,indent=2)+'\n')
+    (target/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8")
     print(name,'PASS' if result['pass_'] else 'FAIL',r['steps'],flush=True);return result
 
 def main():
@@ -49,7 +49,7 @@ def main():
                  ('flow-clock-area-reversal-fine','area',16,dict(mode='reversal',rate=8000000,T=900,amplitude=1000,duration=.006))])
     with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
         futures=[pool.submit(control,a.probe,a.out,name,k,n,reuse=a.resume,**kw) for name,k,n,kw in jobs];results=[f.result() for f in futures]
-    summary=dict(cases=results,pass_=all(r['pass_'] for r in results));(a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    summary=dict(cases=results,pass_=all(r['pass_'] for r in results));(a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     if not summary['pass_']:raise SystemExit('049 additional control gates failed; retain and inspect')
 
 if __name__=='__main__':main()

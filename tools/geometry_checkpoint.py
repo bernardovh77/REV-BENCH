@@ -13,7 +13,13 @@ from build_contract import require
 from checkpoint_sections import publish_section
 
 
-def fragment(waves,mixture,geometry):
+def caught(logs):
+    """How many planted faults the given plant_bugs logs say were caught."""
+    return sum(line.split(': ', 1)[1].startswith('caught') for log in logs
+               for line in Path(log).read_text(encoding='utf-8').splitlines() if ': ' in line)
+
+
+def fragment(waves,mixture,geometry,faults=()):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -36,6 +42,14 @@ def fragment(waves,mixture,geometry):
                      arrowprops=dict(arrowstyle='->'),fontsize=9)
     axes[1].legend(loc='lower left');axes[1].grid(alpha=.2)
     payload=io.BytesIO();fig.savefig(payload,format='png',dpi=140);plt.close(fig)
+    # The prose's numbers, from the evidence (stage 119).
+    representable=[r for r in waves if r['representation_pass']]
+    passing=sum(r['acoustic_pass'] for r in representable)
+    drift=[r['pressure_drift_Pa'] for r in contacts]
+    connected=sum(r['connected_pairs'] for r in geometry['engines'])
+    apart=sum(r['cylinder_pairs']-r['connected_pairs'] for r in geometry['engines'])
+    planted=(f'<p>{caught(faults)} deliberately planted solver/geometry faults were caught. '
+             if faults else '<p>')
     rows=''.join('<tr>'+''.join(f'<td>{escape(str(v))}</td>' for v in (
         r['engine'],r['components'],r['gas_cells'],f'{1000*r["volume_m3"]:.3f}',
         f'{r["connected_pairs"]}/{r["cylinder_pairs"]}'))+'</tr>' for r in geometry['engines'])
@@ -45,19 +59,19 @@ def fragment(waves,mixture,geometry):
 It remains a research prototype. The accepted engine audio and all long coasts above are unchanged.</p>
 <img style="width:100%;height:auto" alt="Solver wave accuracy and moving-mixture pressure failures"
 src="data:image/png;base64,{base64.b64encode(payload.getvalue()).decode()}">
-<p>Stage 43: 128 of 248 representable wave cases pass; 40 additional grids are retained as
-aliasing controls. Moving mixtures create 117–155 Pa false pressure changes. This candidate
+<p>Stage 43: {passing} of {len(representable)} representable wave cases pass; {len(waves)-len(representable)} additional grids are retained as
+aliasing controls. Moving mixtures create {min(drift):.0f}–{max(drift):.0f} Pa false pressure changes. This candidate
 is rejected for production. Conservation alone does not establish realistic sound.</p>
 <p>Stage 44: shared exhaust descriptions now compile into complete branch/port plans,
-gas storage and an executable lossless geometry test. All 42 connected cylinder/outlet pairs
-respond; all 14 independent-bank pairs stay silent. Dimensions remain modeled estimates
+gas storage and an executable lossless geometry test. All {connected} connected cylinder/outlet pairs
+respond; all {apart} independent-bank pairs stay silent. Dimensions remain modeled estimates
 where measurements are unavailable.</p>
 <table><thead><tr><th>Engine</th><th>Pipe regions</th><th>Gas cells</th><th>Modeled volume (L)</th><th>Connected pairs</th></tr></thead><tbody>{rows}</tbody></table>
 <p>Catalyst, muffler, packing, junction and outlet identities are retained. Their full losses,
 hot-flow behavior, engine feedback and real installation routes need later qualification.
 Missing 3D centerlines fail spatial preparation; synthetic bent routes pass length and connection
 checks. This checkpoint adds no invented exhaust tone or measured-hardware claim.</p>
-<p>14 deliberately planted solver/geometry faults were caught. Stage 39 reference matching,
+{planted}Stage 39 reference matching,
 listening acceptance and real-time engine delivery remain open. Stage 45 has not started.</p>
 </section>
 <!-- GEOMETRY CHECKPOINT END -->'''
@@ -67,5 +81,7 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--waves',type=Path,required=True);parser.add_argument('--mixture',type=Path,required=True)
     parser.add_argument('--geometry',type=Path,required=True);parser.add_argument('--results',type=Path,required=True)
+    parser.add_argument('--faults',type=Path,nargs='*',default=(),
+                        help='plant_bugs.py logs whose caught faults the page counts')
     a=parser.parse_args();publish_section(a.results,'geometry-checkpoint',fragment(*(
-        json.loads(p.read_text()) for p in (a.waves,a.mixture,a.geometry))))
+        json.loads(p.read_text(encoding='utf-8')) for p in (a.waves,a.mixture,a.geometry)),faults=a.faults))

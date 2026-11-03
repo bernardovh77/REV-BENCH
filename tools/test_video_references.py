@@ -28,7 +28,7 @@ class VideoReferenceTests(unittest.TestCase):
             elif fault=='engine-identity':bad['sessions'][-3]['metadata']['preset_relationship']='exact-fb20'
             else:bad['sessions'][-1]['partition']='validation'
             with self.subTest(fault=fault),tempfile.TemporaryDirectory() as tmp:
-                p=Path(tmp)/'lock.json';p.write_text(json.dumps(bad))
+                p=Path(tmp)/'lock.json';p.write_text(json.dumps(bad), encoding="utf-8")
                 with self.assertRaises(ValueError):video.checked_lock(p)
 
     def test_speech_in_either_channel_and_padding_excludes_candidate(self):
@@ -36,11 +36,11 @@ class VideoReferenceTests(unittest.TestCase):
             out=Path(tmp);session=dict(source_sha256='2'*64,source_page='https://example.invalid/?v=test',intervals=[dict(id='clip',start_frame=48000,end_frame=52800)])
             p=np.zeros((100,2));p[20,1]=.9  # at0.64s: inside the pre-window padding
             np.save(out/'test-vad.npy',p)
-            (out/'speech-screen.json').write_text(json.dumps([dict(video='test',source_sha256='2'*64,model_sha256='1'*64,probabilities_sha256=protocol.digest(out/'test-vad.npy'))]))
+            (out/'speech-screen.json').write_text(json.dumps([dict(video='test',source_sha256='2'*64,model_sha256='1'*64,probabilities_sha256=protocol.digest(out/'test-vad.npy'))]), encoding="utf-8")
             with self.assertRaises(ValueError):video.screen([session],out)
             p[20,1]=0;p[10,0]=.9  # at0.32s: outside the padded window
             np.save(out/'test-vad.npy',p)
-            (out/'speech-screen.json').write_text(json.dumps([dict(video='test',source_sha256='2'*64,model_sha256='1'*64,probabilities_sha256=protocol.digest(out/'test-vad.npy'))]))
+            (out/'speech-screen.json').write_text(json.dumps([dict(video='test',source_sha256='2'*64,model_sha256='1'*64,probabilities_sha256=protocol.digest(out/'test-vad.npy'))]), encoding="utf-8")
             self.assertEqual(video.screen([session],out)[0]['peak_speech_probability'],0)
 
     def test_video_decode_selects_first_audio_track_and_preserves_antiphase(self):

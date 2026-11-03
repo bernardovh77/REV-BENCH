@@ -201,6 +201,6 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('build',type=Path);parser.add_argument('--native-contract',type=Path,required=True)
     parser.add_argument('--native-geometry',type=Path,required=True);parser.add_argument('--out',type=Path,required=True)
-    args=parser.parse_args();prepared=compile_exhaust(loads(args.build.read_text()),args.native_contract)
+    args=parser.parse_args();prepared=compile_exhaust(loads(args.build.read_text(encoding="utf-8")),args.native_contract)
     report=execute(prepared,args.native_geometry);args.out.mkdir(parents=True,exist_ok=True)
-    (args.out/'geometry.json').write_text(prepared.payload+'\n');(args.out/'control.json').write_text(json.dumps(report,indent=2)+'\n')
+    (args.out/'geometry.json').write_text(prepared.payload+'\n', encoding="utf-8");(args.out/'control.json').write_text(json.dumps(report,indent=2)+'\n', encoding="utf-8")

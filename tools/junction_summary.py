@@ -6,7 +6,7 @@ import numpy as np
 from refine_junction_flow import compare_rows,load_trace
 from junction_mesh import fixture,helmholtz
 
-def load(p):return json.loads(p.read_text())
+def load(p):return json.loads(p.read_text(encoding="utf-8"))
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--evidence',type=Path,required=True);p.add_argument('--candidate',choices=['v2','v3'],default='v3');a=p.parse_args();root=a.evidence
@@ -66,7 +66,7 @@ def main():
                  maximum_trace_face_predictions=max(r['trace_face_limits'] for r in rows),
                  maximum_normalized_book=max(max(r.get('mass_relative',float('inf')),r.get('energy_relative',float('inf')),r.get('momentum_relative',float('inf'))) for r in rows),
                  pass_=bool(source_match and trajectory_binding and physical_gate and acoustic['pass_'] and controls['pass_'] and parity['pass_'] and parity.get('native_sha256')==probe and costs['pass_'] and compact['low_frequency_limit_pass'] and all(c['pass_'] for c in flow) and all(c['pass_'] for c in checks.values())))
-    (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (root/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     print(json.dumps(dict(pass_=summary['pass_'],physical_books=summary['maximum_normalized_book'],checks=checks,selected_grids={f"{c['kind']}-{c['mode']}-{c['amplitude']}":c['selected_n'] for c in flow}),indent=2))
     if not summary['pass_']:raise SystemExit('049 retains unresolved qualification gates')
 

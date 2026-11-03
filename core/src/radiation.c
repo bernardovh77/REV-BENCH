@@ -1,8 +1,18 @@
+/* radiation.c - the load the outside air puts on a pipe's open end.
+ *
+ * Sound radiated from an open end pushes back on the gas in the pipe: a
+ * pressure that depends on how the end's velocity changes (radiation.h has
+ * the source). As a filter from velocity to pressure it is a second-order
+ * section, made discrete with the bilinear transform, so the pipe's face can
+ * take its pressure implicitly in the step (pipe.c, push_end). */
 #include "radiation.h"
 #include "diagnostics.h"
 #include <math.h>
 #include <string.h>
 
+/* An end of this radius (m) into air of density rho (kg/m3) and sound speed
+ * c (m/s). Values out of any sane range leave it off (enabled 0), which
+ * takes no pressure. */
 void rb_radiation_init(rb_radiation *r, double radius, double rho, double c)
 {
     memset(r, 0, sizeof *r);
@@ -13,6 +23,9 @@ void rb_radiation_init(rb_radiation *r, double radius, double rho, double c)
     r->impedance = rho * c;
 }
 
+/* The pressure the end will have after a step of dt as
+ * direct * v_new + history, v_new the velocity at the end then: the filter's
+ * coefficients (worked out again only when dt changes) and its memory. */
 void rb_radiation_linear(rb_radiation *r, double dt, double *direct, double *history)
 {
     *direct = *history = 0.0;
@@ -34,11 +47,13 @@ void rb_radiation_linear(rb_radiation *r, double dt, double *direct, double *his
     *history = r->impedance * (r->b1*r->v1 + r->b2*r->v2 - r->a1*r->z1 - r->a2*r->z2);
 }
 
+/* Takes the step's velocity at the end (m/s, signed) into the filter and
+ * returns the pressure (Pa). A NaN or impossible velocity counts as 0. */
 double rb_radiation_step(rb_radiation *r, double velocity)
 {
     if (!r->enabled || !(r->dt > 0.0)) return 0.0;
     if (!isfinite(velocity) || fabs(velocity) > 1e6) {
-        if(r->diag) rb_diag_note(r->diag,RB_D_BIT(RB_D_RADIATION_RESET));
+        if (r->diag) rb_diag_note(r->diag, RB_D_BIT(RB_D_RADIATION_RESET));
         velocity = 0.0;
     }
     const double z = r->b0*velocity + r->b1*r->v1 + r->b2*r->v2 - r->a1*r->z1 - r->a2*r->z2;

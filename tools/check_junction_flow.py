@@ -27,7 +27,7 @@ def flow_case(probe,out,kind,mode,amplitude,reuse=False):
         result=dict(kind=kind,mode=mode,amplitude=amplitude,rows=results,pressure_l2=errors,transported_mass_relative=mass_error,
                     pass_=bool(all(r['book_pass'] and r['max_mach']<=.05 for r in results) and max(errors)<=.05 and mass_error<=.05))
     else:result=dict(kind=kind,mode=mode,amplitude=amplitude,rows=results,pass_=False)
-    (folder/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (folder/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--workers',type=int,default=2);p.add_argument('--refine',action='store_true');p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
@@ -40,7 +40,7 @@ def main():
         return dict(primary=r,refinement=followup,pass_=bool(r['pass_'] or (followup and followup['pass_'])))
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:
         futures=[pool.submit(execute,job) for job in jobs];results=[f.result() for f in futures]
-    summary=dict(cases=results,pass_=all(r['pass_'] for r in results));(a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    summary=dict(cases=results,pass_=all(r['pass_'] for r in results));(a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     if not summary['pass_']:raise SystemExit('Hot-flow refinement gate failed; retain and inspect')
 
 if __name__=='__main__':main()

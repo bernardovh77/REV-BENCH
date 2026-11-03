@@ -147,4 +147,4 @@ spacing; the cases a script can't decide safely stay listed.
 **Stop/reject rule:** No physics change. Reformatting that changes a single rendered sample is
 a bug.
 
-**Execution record:** `docs/stage-119.md`.
+**Execution record:** [Stage 119](../stage-119.md).

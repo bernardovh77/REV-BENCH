@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Measure the bounded open-port coupling proof; never changes engine sound."""
 import argparse
+import tempfile
 import csv
 import hashlib
 import json
@@ -14,7 +15,7 @@ P0 = RHO*C*C/GAMMA
 
 
 def read(path):
-    with path.open() as stream:
+    with path.open(encoding="utf-8") as stream:
         rows = list(csv.DictReader(stream))
     if not rows:
         raise ValueError(f"Empty measurement: {path}")
@@ -124,7 +125,7 @@ def run(args):
                     *ROOT.joinpath('experiments/acoustics').glob('*.[ch]')]
     manifest = dict(source_revision=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         working_tree_status=subprocess.check_output(['git','status','--short'],cwd=ROOT,text=True),
-        sources={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths},
+        sources={p.relative_to(ROOT).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in source_paths},
         method='One conserved spatial state; retained MC/RK2 gas region; downstream characteristic streaming plus distributed nonlinear/entropy correction. No added acoustic energy reservoir.',
         initial_background=dict(rate_Hz=RATE,c_m_s=C,rho_kg_m3=RHO,gamma=GAMMA,pressure_Pa=P0),cases=[])
     rows=[]
@@ -136,7 +137,7 @@ def run(args):
         command=[str(args.probe.resolve()),'560',str(cut),str(amplitude),str(steps),str(reflection),str(prefix)]
         result=subprocess.run(command,capture_output=True,text=True,check=True)
         row=dict(json.loads(result.stdout),id=key,group=group)
-        (directory/f'{key}.json').write_text(json.dumps(row,indent=2)+'\n')
+        (directory/f'{key}.json').write_text(json.dumps(row,indent=2)+'\n', encoding="utf-8")
         manifest['cases'].append(dict(id=key,command=command,stderr=result.stderr))
         if group=='simple-wave':
             field=read(Path(str(prefix)+'.field.csv'))
@@ -161,10 +162,10 @@ def run(args):
     summary=assess(rows)
     summary['fixture_cost_median_seconds']={str(cut):float(np.median([r['seconds'] for r in costs if r['cut']==cut])) for cut in (168,280,560)}
     summary['fixture_cost_note']='Entire 560-cell coupling fixture, not graph-only, production engine, WASM or callback real-time acceptance; downstream correction grid remains.'
-    (directory/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
-    (directory/'measurements.json').write_text(json.dumps(rows,indent=2)+'\n')
-    (directory/'costs.json').write_text(json.dumps(costs,indent=2)+'\n')
-    (directory/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (directory/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n', encoding="utf-8")
+    (directory/'measurements.json').write_text(json.dumps(rows,indent=2)+'\n', encoding="utf-8")
+    (directory/'costs.json').write_text(json.dumps(costs,indent=2)+'\n', encoding="utf-8")
+    (directory/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     print(json.dumps(summary,indent=2))
     if not summary['proof_pass']:
         raise SystemExit('Coupled proof rejected: inspect each gate')
@@ -172,6 +173,6 @@ def run(args):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--probe',type=Path,default=Path('/tmp/rev-bench-s2d-next/coupled_duct_probe'))
+    parser.add_argument('--probe',type=Path,default=Path(tempfile.gettempdir())/'rev-bench-s2d-next/coupled_duct_probe')
     parser.add_argument('--output',type=Path,default=ROOT/'renders/evidence/coupling-proof-2026-10-23')
     run(parser.parse_args())

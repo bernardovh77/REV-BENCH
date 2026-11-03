@@ -7,8 +7,16 @@
  * needle schedule or the public event ABI. One attempt at IVC; only positive
  * actual delivery can excite its collapsed injector source. Tick names the
  * engine interval [tick,tick+1); fraction is in [0,1). All quantities SI. */
-enum { RB_INJ_DELIVERED, RB_INJ_OFF, RB_INJ_AFR_DISABLED, RB_INJ_DFCO,
-       RB_INJ_NO_AIR, RB_INJ_RETAINED, RB_INJ_INVALID, RB_INJ_KINDS };
+enum {
+    RB_INJ_DELIVERED,      /* fuel injected */
+    RB_INJ_OFF,            /* none: the ignition is off */
+    RB_INJ_AFR_DISABLED,   /* none: no air-fuel ratio set (afr 0 or NaN) */
+    RB_INJ_DFCO,           /* none: the overrun fuel cut */
+    RB_INJ_NO_AIR,         /* none: no air trapped */
+    RB_INJ_RETAINED,       /* none: the fuel already there meets the target */
+    RB_INJ_INVALID,        /* none: a NaN or impossible state */
+    RB_INJ_KINDS
+};
 typedef struct rb_injection_event {
     uint64_t tick, charge;
     int cylinder, kind;
@@ -18,9 +26,9 @@ typedef struct rb_injection_event {
 
 #define RB_INJ_MAX_RECORDS 256
 typedef struct rb_injection_trace {
-    rb_injection_event *records;
+    rb_injection_event *records;          /* caller-owned, `capacity` long */
     size_t capacity, count;
-    uint64_t dropped, totals[RB_INJ_KINDS];
+    uint64_t dropped, totals[RB_INJ_KINDS];   /* totals count dropped ones too */
 } rb_injection_trace;
 int rb_injection_trace_init(rb_injection_trace *t, rb_injection_event *records, size_t capacity);
 const char *rb_injection_kind_name(int kind);

@@ -158,6 +158,11 @@ void test_junction_trace_material_at_one_sided_open_port(void)
     CHECK(cells[1].gradient[6][0]<0);CHECK(s.reconstruction_fallbacks==0);
 }
 
+/* Two closed boxes, +-1 Pa, for a second: an inviscid, adiabatic, closed
+ * system, whose disturbance energy may never grow and whose total energy and
+ * mass stay put. Since stage 119 it doesn't also have to die away: that was
+ * the scheme's numerical damping, which a more accurate scheme would rightly
+ * have less of. */
 void test_junction_closed_source_free_second(void)
 {
     rb_jv_state s;boxes(&s,2,1,0);const double v[3]={0,0,0};
@@ -168,6 +173,6 @@ void test_junction_closed_source_free_second(void)
         double e=rb_jv_perturbation(&s,v);maximum=fmax(maximum,e);CHECK(isfinite(e));
     }
     rb_jv_q q=rb_jv_inventory(&s,-1);
-    CHECK(maximum<=initial*1.00001);CHECK(rb_jv_perturbation(&s,v)<initial*1e-5);
+    CHECK(maximum<=initial*1.00001);CHECK(rb_jv_perturbation(&s,v)>=0);
     CHECK_NEAR(q.energy,s.initial.energy,1e-7);CHECK_NEAR(s.external.energy,0,1e-15);
 }

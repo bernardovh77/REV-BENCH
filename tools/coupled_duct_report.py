@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Publish measured coupling fixtures in the existing single results page."""
 import argparse
+import tempfile
 import base64
 import json
 import os
 from pathlib import Path
-os.environ.setdefault('MPLCONFIGDIR','/tmp/rev-bench-mpl')
+os.environ.setdefault('MPLCONFIGDIR',os.path.join(tempfile.gettempdir(),'rev-bench-mpl'))
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -15,8 +16,8 @@ from run_coupled_duct import ROOT, read, exact_pressure, assess, P0
 
 
 def publish(directory):
-    rows=json.loads((directory/'measurements.json').read_text())
-    summary=json.loads((directory/'summary.json').read_text())
+    rows=json.loads((directory/'measurements.json').read_text(encoding="utf-8"))
+    summary=json.loads((directory/'summary.json').read_text(encoding="utf-8"))
     if not assess(rows)['proof_pass'] or not summary['proof_pass']:
         raise ValueError('Do not publish a failed or incomplete coupling proof')
     plt.style.use('dark_background')

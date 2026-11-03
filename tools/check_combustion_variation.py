@@ -52,7 +52,7 @@ def validate(row):
 
 def commands(probe):
     jobs=[]
-    builds=json.loads((ROOT/'contracts/examples/builds-v1.json').read_text())
+    builds=json.loads((ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8"))
     limits={b['build_id']:b['parameters']['rev_limit'][0]*30/math.pi for b in builds}
     limits.update({'i6':8500,'v8-cross':7500,'v8-flat':9000})
     for preset,limit in limits.items():
@@ -73,19 +73,19 @@ def execute(probe,out,workers=2):
     def one(job):
         key,command=job;path=out/(key+'.json')
         if path.exists():
-            old=json.loads(path.read_text())
+            old=json.loads(path.read_text(encoding="utf-8"))
             if old.get('probe_sha256')==identity and old.get('command')==command:
                 validate(old['result']);return old
         start=time.monotonic()
         run=subprocess.run(command,text=True,capture_output=True,timeout=600)
-        (out/(key+'.log')).write_text(run.stderr)
+        (out/(key+'.log')).write_text(run.stderr, encoding="utf-8")
         try:row=json.loads(run.stdout)
         except ValueError:
-            path.with_suffix('.failed-output.txt').write_text(run.stdout)
+            path.with_suffix('.failed-output.txt').write_text(run.stdout, encoding="utf-8")
             raise ValueError(f'Probe output failed for {key}: {run.returncode}')
         record=dict(key=key,command=command,probe_sha256=identity,elapsed_s=time.monotonic()-start,
                     returncode=run.returncode,result=row)
-        path.write_text(json.dumps(record,indent=2)+'\n')
+        path.write_text(json.dumps(record,indent=2)+'\n', encoding="utf-8")
         if run.returncode:raise ValueError('Probe rejected '+key)
         validate(row);print(key,'pass',flush=True);return record
     with ThreadPoolExecutor(max_workers=workers) as pool:records=list(pool.map(one,jobs))
@@ -106,7 +106,7 @@ def execute(probe,out,workers=2):
         mean_torque_controls=controls,
         all_mean_torque_controls_under_one_pct=all(c['legacy_under_one_pct'] for c in controls),
         real_engine_cov_qualified=False,s1_complete=False,records=records)
-    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     return summary
 
 

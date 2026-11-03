@@ -30,7 +30,7 @@ MINUS = "−"
 def read_csv(path, need, tool):
     """The CSV as a dict of columns (lists of floats); exits if columns are missing."""
     try:
-        with open(path, newline="") as f:
+        with open(path, newline="", encoding="utf-8") as f:
             rows = list(csv.DictReader(f))
     except OSError as e:
         sys.exit(f"{tool}: cannot read {path}: {e.strerror}")

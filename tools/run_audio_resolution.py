@@ -5,6 +5,7 @@ Production sources remain unchanged. A fixed-grid control is compiled from an
 exactly checked, isolated copy of engine.c. Measurement files stay in renders/.
 """
 import argparse
+import tempfile
 import hashlib
 import json
 from pathlib import Path
@@ -25,26 +26,26 @@ CASES = {
 
 
 def run(command, log):
-    with log.open("w") as stream:
+    with log.open("w", encoding="utf-8") as stream:
         subprocess.run([str(c) for c in command], cwd=ROOT, stdout=stream,
                        stderr=subprocess.STDOUT, check=True)
 
 
 def build(directory):
     directory.mkdir(parents=True, exist_ok=True)
-    run(["make", "-j2", f"BUILD={directory}", "LTO=0", "all"], directory / "build.log")
+    run(["make", "-j2", f"BUILD={directory.as_posix()}", "LTO=0", "all"], directory / "build.log")
     includes = ["-Icore/include", "-Icore/src", "-Inative"]
     flags = ["-O3", "-std=c11", "-Wall", "-Wextra", "-ffp-contract=off"]
     core = sorted((directory / "core/src").glob("*.o"))
     if not core:
         raise RuntimeError("No core objects were built")
     original = ROOT / "core/src/engine.c"
-    text = original.read_text()
+    text = original.read_text(encoding="utf-8")
     if text.count(GRID_LINE) != 1:
         raise RuntimeError("Grid fixture needs review against the current engine source")
     isolated = directory / "engine-fixed-grid.c"
     isolated.write_text(text.replace(GRID_LINE,
-        "const double grid_scale = 1.0; /* diagnostic fixed-grid control only */"))
+        "const double grid_scale = 1.0; /* diagnostic fixed-grid control only */"), encoding="utf-8")
     fixed_object = directory / "engine-fixed-grid.o"
     run(["cc", *flags, *includes, "-c", isolated, "-o", fixed_object], directory / "grid-build.log")
     executables = {}
@@ -60,7 +61,7 @@ def build(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--build-dir", type=Path, default=Path("/tmp/rev-bench-audio-experiment"))
+    parser.add_argument("--build-dir", type=Path, default=Path(tempfile.gettempdir()) / "rev-bench-audio-experiment")
     parser.add_argument("--output", type=Path, default=EVIDENCE / "engine")
     parser.add_argument("--cases", nargs="+", choices=CASES, default=list(CASES))
     parser.add_argument("--presets", nargs="+", choices=UPPER_RPM, default=list(UPPER_RPM))
@@ -75,7 +76,7 @@ def main():
     executables = build(args.build_dir)
     sources = list((ROOT / "core").rglob("*.c")) + list((ROOT / "core").rglob("*.h"))
     sources += [ROOT / "tools/audio_source_probe.c", Path(__file__).resolve()]
-    source_hashes = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
+    source_hashes = {p.relative_to(ROOT).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
                      for p in sorted(sources)}
     records = []
     for case in args.cases:
@@ -98,12 +99,12 @@ def main():
                 artifacts = [out/"metadata.json"] + [out/f"{state}-{suffix}" for state in ("loaded", "cut")
                     for suffix in ("raw.wav", "after-aa.wav", "filtered.wav", "trace.f64")]
                 if (args.reuse and stamp.exists() and all(p.exists() for p in artifacts)
-                        and json.loads(stamp.read_text()) == identity):
+                        and json.loads(stamp.read_text(encoding="utf-8")) == identity):
                     records.append(dict(case=case, preset=preset, rpm=rpm, reused=True))
                     continue
                 start = time.monotonic()
                 run(command, out / "probe.log")
-                stamp.write_text(json.dumps(identity, indent=2) + "\n")
+                stamp.write_text(json.dumps(identity, indent=2) + "\n", encoding="utf-8")
                 record = dict(case=case, preset=preset, rpm=rpm, physics_rate=physics,
                               pipe_rate=pipe, fixed_grid=fixed, wall_seconds=time.monotonic()-start)
                 records.append(record)
@@ -113,7 +114,7 @@ def main():
         method="Independent engine timestep; pipe timestep at fixed grid; grid at fixed pipe timestep. "
                "The ultra screen combines refinements. Noise sequences can differ with rate: compare "
                "statistics, not sample-wise residuals. See source metadata for actual grids.",
-        source_hashes=source_hashes, runs=records), indent=2) + "\n")
+        source_hashes=source_hashes, runs=records), indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

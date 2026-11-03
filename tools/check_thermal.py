@@ -4,10 +4,11 @@ import argparse,csv,io,json,math,subprocess,hashlib
 from pathlib import Path
 import numpy as np
 from gas_graph_reference import SimpleWave
+from checks import require
 
 
 def nasa(T,mix):
-    data=json.loads(Path(__file__).with_name('thermal_reference.json').read_text())['species']
+    data=json.loads(Path(__file__).with_name('thermal_reference.json').read_text(encoding="utf-8"))['species']
     air={'O2':.2095,'N2':.7808,'Ar':.0093}
     fuel={'C8H18,isooctane':.4785,'C7H16,n-heptane':.15,'C7H8':.3715}
     oxygen=7.4785+13.985/4
@@ -26,14 +27,14 @@ def evaluate(probe,out):
     out.mkdir(parents=True,exist_ok=True)
     def run(name,args):
         r=subprocess.run([str(probe),*map(str,args)],capture_output=True,text=True,check=True)
-        (out/(name+'.csv')).write_text(r.stdout)
+        (out/(name+'.csv')).write_text(r.stdout, encoding="utf-8")
         return [{k:float(v) for k,v in row.items()} for row in csv.DictReader(io.StringIO(r.stdout))]
     props=run('properties',['properties']);coeff=run('coefficients',['coefficients']);fixed=run('fixed-wall',['fixed'])
     errors=[];comparisons=[];jumps=[]
     for r in props:
-        cp,cv,R,T=r['cp'],r['cv'],r['R'],r['T_K'];assert cv>0
-        assert abs(cp-cv-R)<1e-10 and abs(r['h']-r['u']-R*T)<1e-8
-        err=max(abs(r[k]/T-1) for k in ('T_back_20','T_back_600','T_back_4000'));errors.append(err);assert err<=1e-8
+        cp,cv,R,T=r['cp'],r['cv'],r['R'],r['T_K'];require(cv>0, 'cv must be positive')
+        require(abs(cp-cv-R)<1e-10 and abs(r['h']-r['u']-R*T)<1e-8, 'cp - cv = R and h - u = R T')
+        err=max(abs(r[k]/T-1) for k in ('T_back_20','T_back_600','T_back_4000'));errors.append(err);require(err<=1e-8, 'T(u) inverts u(T) to 1e-8')
         if 200<=T<=4000 and r['mixture']<3:
             ncp,nc=nasa(T,int(r['mixture']));comparisons.append(dict(mixture=int(r['mixture']),T=T,cp_error=cp/ncp-1,c_error=r['c']/nc-1))
     sound_errors=[]
@@ -46,10 +47,11 @@ def evaluate(probe,out):
             # Independently integrated constant-composition entropy curve.
             p,temperature,u=wave.initial(np.array([.1]));rho=p/(R*temperature);rho0=101325/(R*T)
             c=math.sqrt(float((p[0]-101325)/(rho[0]-rho0)))
-            expected=float(wave.c0);sound_errors.append(abs(c/expected-1));assert sound_errors[-1]<=1e-5
+            expected=float(wave.c0);sound_errors.append(abs(c/expected-1));require(sound_errors[-1]<=1e-5, 'the isentropic sound speed is c0 to 1e-5')
     for r in fixed:
-        assert abs(r['heat_J']-r['expected_heat_J'])<=1e-10*max(1,abs(r['heat_J']))
-        assert abs(r['energy_residual_J'])<=1e-10*max(1,abs(r['heat_J'])) and r['wall_after_K']==r['wall_K']
+        require(abs(r['heat_J']-r['expected_heat_J'])<=1e-10*max(1,abs(r['heat_J'])), "the fixed wall's heat is the expected heat")
+        require(abs(r['energy_residual_J'])<=1e-10*max(1,abs(r['heat_J'])) and r['wall_after_K']==r['wall_K'],
+                "the fixed wall's energy closes and its temperature stays fixed")
     pairs=[];reference_errors=[]
     # Independent RK4 integration of Tg/Tw with exported polynomial cv.
     def cv_at(T,mix):
@@ -68,7 +70,8 @@ def evaluate(probe,out):
             name=f'pair-reference-{mix}-{dt}';d=run(name,['pair',900,650,C,Hi,Ho,dt,.005,mix]);last=d[-1]
             err=max(abs(last['gas_K']-ref[0]),abs(last['wall_K']-ref[1]));reference_errors.append(err)
             pairs.append(dict(name=name,error_K=err,dt=dt,max_balance=max(abs(r['balance_J']) for r in d)))
-        assert pairs[-1]['error_K']<=.001 and pairs[-3]['error_K']>pairs[-2]['error_K']>pairs[-1]['error_K']
+        require(pairs[-1]['error_K']<=.001 and pairs[-3]['error_K']>pairs[-2]['error_K']>pairs[-1]['error_K'],
+                'the gas/wall pair converges to 1 mK as dt falls')
     sensitivities=[]
     for thickness in (.001,.002):
         for hi in (50,200):
@@ -76,13 +79,13 @@ def evaluate(probe,out):
                 C=math.pi*thickness*(.06+thickness)*7800*500;Hi=hi*math.pi*.06;Ho=ho*math.pi*(.06+2*thickness)
                 d=run(f'wall-{thickness}-{hi}-{ho}',['pair',900,650,C,Hi,Ho,.01,10,1])
                 sensitivities.append(dict(thickness_m=thickness,h_inner=hi,h_outer=ho,capacity_J_K=C,Bi=max(hi,ho)*thickness/16,gas_time_s=.003*cv_at(900,1)/Hi,wall_time_s=C/(Hi+Ho),final=d[-1],max_balance=max(abs(r['balance_J']) for r in d)))
-                assert max(abs(r['balance_J']) for r in d)<=1e-10*C*900
+                require(max(abs(r['balance_J']) for r in d)<=1e-10*C*900, "a wall run's energy balance closes")
     air=[r for r in comparisons if r['mixture']==0];burned=[r for r in comparisons if r['mixture']==2 and r['T']<=1000]
     result=dict(schema=1,property_rows=len(props),max_inversion_relative=max(errors),max_isentropic_speed_relative=max(sound_errors),joins=jumps,nasa=comparisons,fixed_wall_rows=len(fixed),pairs=pairs,sensitivities=sensitivities,
                 air_reference_pass=max(abs(r['cp_error']) for r in air)<=.005 and max(abs(r['c_error']) for r in air)<=.002,
                 low_burned_reference_pass=max(abs(r['cp_error']) for r in burned)<=.01 and max(abs(r['c_error']) for r in burned)<=.005,
                 internal_pass=True,wall_pass=True,probe_sha256=hashlib.sha256(probe.read_bytes()).hexdigest())
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()

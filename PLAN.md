@@ -1,6 +1,6 @@
 # REV-BENCH — the plan
 
-Updated 2026-11-01. This file is the only place that says which stages are done and what comes
+Updated 2026-11-03. This file is the only place that says which stages are done and what comes
 next. Each stage's full specification (deliverable, dependencies, evidence, rejection rule) is in
 `docs/roadmap/`, and each finished stage has its record in `docs/stage-NNN.md`.
 
@@ -24,12 +24,12 @@ evidence and Bernardo's ears. The first full release includes:
 - saving and sharing builds;
 - polish and public deployment.
 
-## Where the project is (2026-11-01)
+## Where the project is (2026-11-03)
 
-- **Done: stages 001–049 and 112–117.** Five preset engines (I4, I6, cross-plane V8, flat-plane
+- **Done: stages 001–049, 112–117 and 119.** Five preset engines (I4, I6, cross-plane V8, flat-plane
   V8, boxer-4) with their own researched exhausts, all running natively in C. Their sound is
   rendered to WAV files as a listener around the car hears it, in mono or in eight stereo
-  scenes. Native tests: 250 tests, 4,950,077 checks.
+  scenes. Native tests: 251 tests, 4,950,067 checks.
 - **The sound now:**
   - **Under load:** the exhaust's rasp above 2 kHz is in the range of recordings of real engines
     (stage 115).
@@ -60,7 +60,7 @@ live, not only in WAV files. Nothing is dropped. The sound stages still all come
 turbo and the rest, as agreed.
 
 1. **Phase A, clean-up and play:**
-   - [ ] **119:** the review's leftovers;
+   - [x] **119:** the review's leftovers;
    - [ ] **118:** a real-time tier for today's engine;
    - [ ] **066 → 067 → 068 → 069:** the playable browser.
 2. **Phase B, real sound:**
@@ -77,7 +77,7 @@ turbo and the rest, as agreed.
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 (optional extras).
 
-**Next stage: 119.**
+**Next stage: 118.**
 
 ## The stages, in the order they'll be done
 
@@ -87,7 +87,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
+| ✅ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
 | ⬜ | [118](docs/roadmap/07-browser.md#stage-118) | A real-time tier for today's engine: profile and speed up the production engine until a declared quality runs at least 1.5× real time as WebAssembly for all five presets, with what that tier changes measured | 119 |
 | ⬜ | [066](docs/roadmap/07-browser.md#stage-066) | Playable browser engine and audio lifecycle: start, idle, rev, stop, presets, stereo, in dev and production builds | 037, 118 |
 | ⬜ | [067](docs/roadmap/07-browser.md#stage-067) | Engine, intake and exhaust control panel, from the core's metadata | 037, 066 |
@@ -266,7 +266,7 @@ anything, goes into the engine.
 | ✅ | [114](docs/roadmap/04-propagation.md#stage-114) | Fixed-geometry thermal transport bridge |
 | ✅ | [049](docs/roadmap/04-propagation.md#stage-049) | Branches, finite junctions and all-port transfer |
 
-### Review repairs (112–117)
+### Review repairs (112–117, 119)
 
 | | Stage | What |
 | --- | --- | --- |
@@ -275,10 +275,11 @@ anything, goes into the engine.
 | ✅ | [115](docs/roadmap/14-review-fixes.md#stage-115) | The valves' jet noise fixed (the audit's D02–D05) and the cycles' variation back to real engines' |
 | ✅ | [116](docs/roadmap/14-review-fixes.md#stage-116) | The loosened tests tightened, the make 4.3 Python test fixed |
 | ✅ | [117](docs/roadmap/14-review-fixes.md#stage-117) | The docs readable and current |
+| ✅ | [119](docs/stage-119.md) | The review's leftovers: Codex's C readable (byte-identical WebAssembly and objects, identical renders), stereo measurement, safe experiment publish, explicit checks, Windows, evidence-derived prose, solver tests that can fail |
 
 ## How a stage is done
 
-1. Say "do stage 119" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
+1. Say "do stage 118" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
    entry, then the stage's specification in `docs/roadmap/`.
 2. Do only that stage. Follow its dependencies, not just the row above it.
 3. End with all tests green:

@@ -9,7 +9,7 @@ import build_contract as contract
 
 
 def examples():
-    return json.loads((contract.ROOT/'contracts/examples/builds-v1.json').read_text())
+    return json.loads((contract.ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8"))
 
 
 def snapshot(build):

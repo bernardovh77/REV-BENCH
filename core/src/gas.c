@@ -173,7 +173,7 @@ double rb_gas_T_cv_from_u_diag(const rb_gas *g, double u, double T_guess, double
      * engine temperatures. From a good guess (a chamber's update makes one,
      * chamber.c) that's usually a single step. */
     double T = (T_guess > 0.0 && T_guess < INFINITY) ? T_guess : RB_T_REF;
-    if(diag && T!=T_guess) rb_diag_note(diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+    if (diag && T != T_guess) rb_diag_note(diag, RB_D_BIT(RB_D_TEMP_FLOOR));
     if (!isfinite(u)) {
         *cv = rb_gas_cv(g, T);
         return NAN;
@@ -182,16 +182,16 @@ double rb_gas_T_cv_from_u_diag(const rb_gas *g, double u, double T_guess, double
         const double dT = (u_and_cv(g, T, cv) - u) / *cv;
         T -= dT;
         if (T < 1.0) {
-            if(diag) rb_diag_note(diag,RB_D_BIT(RB_D_TEMP_FLOOR));
+            if (diag) rb_diag_note(diag, RB_D_BIT(RB_D_TEMP_FLOOR));
             T = 1.0;
         }
         if (fabs(dT) <= 1e-6 * T) break;
-        if(diag && i==49) rb_diag_note(diag,RB_D_BIT(RB_D_NEWTON_LIMIT));
+        if (diag && i == 49) rb_diag_note(diag, RB_D_BIT(RB_D_NEWTON_LIMIT));
     }
     return T;
 }
 
-double rb_gas_T_cv_from_u(const rb_gas *g,double u,double guess,double *cv)
+double rb_gas_T_cv_from_u(const rb_gas *g, double u, double guess, double *cv)
 {
-    return rb_gas_T_cv_from_u_diag(g,u,guess,cv,NULL);
+    return rb_gas_T_cv_from_u_diag(g, u, guess, cv, NULL);
 }

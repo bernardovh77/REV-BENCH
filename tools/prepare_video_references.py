@@ -24,11 +24,11 @@ NEW_IDS = ('user-gr86-mountain', 'user-gr86-awe', 'user-e46-valvetronic')
 
 
 def checked_lock(path):
-    lock = validate(json.loads(path.read_text()))
+    lock = validate(json.loads(path.read_text(encoding="utf-8")))
     parent = lock['parent_lock']
     if digest(ROOT/parent['path']) != parent['sha256']:
         raise ValueError('Frozen parent lock changed')
-    original = json.loads((ROOT/parent['path']).read_text())
+    original = json.loads((ROOT/parent['path']).read_text(encoding="utf-8"))
     if lock['sessions'][:len(original['sessions'])] != original['sessions']:
         raise ValueError('Earlier source assignments/intervals changed')
     added = lock['sessions'][len(original['sessions']):]
@@ -42,7 +42,7 @@ def checked_lock(path):
 
 def screen(added, evidence):
     """Check each selected interval against both channels of the recorded screen."""
-    reports = {r['video']:r for r in json.loads((evidence/'speech-screen.json').read_text())}
+    reports = {r['video']:r for r in json.loads((evidence/'speech-screen.json').read_text(encoding="utf-8"))}
     rows=[]
     for s in added:
         vid=s['source_page'].split('v=')[-1]
@@ -102,7 +102,7 @@ def auditions(added, out, ffmpeg):
 def publish(added, rows):
     target=ROOT/'renders/RESULTS.html';renders=target.parent;manifest=load(renders)
     old=next(e for e in manifest['sections'] if e['id']=='user-references')
-    fragment=checked(renders,old).read_text()
+    fragment=checked(renders,old).read_text(encoding="utf-8")
     if BEGIN in fragment:
         before,rest=fragment.split(BEGIN,1);fragment=before+rest.split(END,1)[1]
     cards=[]
@@ -140,7 +140,7 @@ def main():
     if any(digest(ROOT/s['source']['path'])!=s['source_sha256'] for s in added):
         raise ValueError('Source changed during preparation')
     (args.out/'video-reference-report.json').write_text(json.dumps(dict(lock_revision=2,clips=rows,speech_checks=screens,
-        source_originals_unchanged=True,calibration_qualified=False,source_count=report['source_count']),indent=2)+'\n')
+        source_originals_unchanged=True,calibration_qualified=False,source_count=report['source_count']),indent=2)+'\n', encoding="utf-8")
     if args.publish:
         publish(added,rows)
     print(f"Prepared{len(screens)} screened stereo excerpts from3videos; prior sessions preserved; calibration remains open")

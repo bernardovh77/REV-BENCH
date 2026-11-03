@@ -17,11 +17,11 @@ def compare_rows(a,b,da,db):
                 pass_=bool(a['book_pass'] and b['book_pass'] and max(errors)<=.05 and error<=.05 and max(a['max_mach'],b['max_mach'])<=.05))
 
 def load_trace(path):
-    with path.open() as stream:rows=list(csv.DictReader(stream))
+    with path.open(encoding="utf-8") as stream:rows=list(csv.DictReader(stream))
     return {k:np.array([float(r[k]) for r in rows]) for k in rows[0]}
 
 def refine(probe,case):
-    initial=json.loads((case/'summary.json').read_text());kind=initial['kind'];mode=initial['mode'];A=initial['amplitude']
+    initial=json.loads((case/'summary.json').read_text(encoding="utf-8"));kind=initial['kind'];mode=initial['mode'];A=initial['amplitude']
     name=f'{kind}-{mode}-{A}';previous=initial['rows'][-1];trace=load_trace(case/(name+'-16.csv'));refinements=[]
     previous_error=initial.get('transported_mass_relative',float('inf'))
     trials=[(24,4000000,None),(32,4000000,None)]
@@ -38,7 +38,7 @@ def refine(probe,case):
         if result['pass_'] or r['status']:break
         previous,trace,previous_error=r,d,result.get('transported_mass_relative',float('inf'))
     final=dict(primary=initial,refinements=refinements,selected_n=refinements[-1]['n'],selected_transport_n=refinements[-1]['transport_n'],pass_=refinements[-1]['pass_'])
-    (case/'refinement.json').write_text(json.dumps(final,indent=2)+'\n');return final
+    (case/'refinement.json').write_text(json.dumps(final,indent=2)+'\n', encoding="utf-8");return final
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--case',type=Path,required=True);a=p.parse_args()

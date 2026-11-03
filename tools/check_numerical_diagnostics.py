@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import statistics
 import subprocess
+from checks import require
 
 
 def check(probe, ticks=48000, repeats=3):
@@ -17,16 +18,16 @@ def check(probe, ticks=48000, repeats=3):
         control = runs[0][0]
         for mode in range(3):
             for row in runs[mode]:
-                assert row['state'] == control['state'], (preset, mode, 'trajectory')
-                assert abs(row['mass_error_kg']) < 2e-11*row['mass_scale_kg'], row
-                assert max(map(abs, row['species_error_kg'])) < 2e-11*row['mass_scale_kg'], row
-                assert abs(row['energy_error_J']) < 2e-9*row['energy_scale_J'], row
+                require(row['state'] == control['state'], (preset, mode, 'trajectory'))
+                require(abs(row['mass_error_kg']) < 2e-11*row['mass_scale_kg'], row)
+                require(max(map(abs, row['species_error_kg'])) < 2e-11*row['mass_scale_kg'], row)
+                require(abs(row['energy_error_J']) < 2e-9*row['energy_scale_J'], row)
                 if mode:
-                    assert not row['invalid'], row
-                    assert abs(row['tap_boundary_mass_error_kg']) < 2e-11*row['mass_scale_kg'], row
-                    assert max(map(abs,row['tap_boundary_species_error_kg'])) < 2e-11*row['mass_scale_kg'], row
-                    assert abs(row['tap_boundary_energy_error_J']) < 2e-9*row['energy_scale_J'], row
-                    assert 0 < row['slots'] <= 2048 and row['trace_records'] <= 256, row
+                    require(not row['invalid'], row)
+                    require(abs(row['tap_boundary_mass_error_kg']) < 2e-11*row['mass_scale_kg'], row)
+                    require(max(map(abs,row['tap_boundary_species_error_kg'])) < 2e-11*row['mass_scale_kg'], row)
+                    require(abs(row['tap_boundary_energy_error_J']) < 2e-9*row['energy_scale_J'], row)
+                    require(0 < row['slots'] <= 2048 and row['trace_records'] <= 256, row)
         record = runs[1][0]
         record['cost_cpu_s_median'] = {str(mode): statistics.median(x['cpu_s'] for x in runs[mode]) for mode in runs}
         record['cost_ratio_to_off'] = {str(mode): record['cost_cpu_s_median'][str(mode)]/record['cost_cpu_s_median']['0'] for mode in runs}
@@ -48,5 +49,5 @@ if __name__ == '__main__':
         parser.error('ticks 4..1920000, repeats 1..10')
     result=check(args.probe.resolve(), args.ticks, args.repeats)
     args.output.parent.mkdir(parents=True,exist_ok=True)
-    args.output.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n')
+    args.output.write_text(json.dumps(result,indent=2,allow_nan=False)+'\n', encoding="utf-8")
     print('Five engines: conservation, boundary taps, trajectory and capacities passed')

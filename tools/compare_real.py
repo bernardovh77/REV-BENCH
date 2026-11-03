@@ -31,6 +31,11 @@ The numbers, all independent of the microphone's level:
                  17-80 ms, 1500-7000 rpm) only: revving changes the cycle's
                  length.
 
+A stereo file is measured channel by channel, as the reference protocol asks
+(docs/user-sound-references.md): each channel's powers and correlations, then
+their mean, never a mono fold (a fold cancels whatever is in antiphase). A
+mono file's numbers are the same as before stage 119.
+
 -o FILE writes the chart somewhere else. Needs numpy and matplotlib.
 """
 import argparse
@@ -79,12 +84,12 @@ def fetch(_args):
 
 
 def read_wav(path):
-    """PCM16 or float32 samples (full scale 1), mixed to mono, and rate."""
+    """PCM16 or float32 samples (full scale 1), frames x channels, and rate."""
     try:
         x, rate = read_audio_wav(path)
     except (OSError, ValueError) as error:
         sys.exit(f"compare_real: cannot read {path}: {error}")
-    return x.mean(axis=1), rate
+    return x, rate
 
 
 def band(x, fs, lo, hi):
@@ -130,9 +135,16 @@ def as_db(r):
     return 10.0 * np.log10(r / (1.0 - r))
 
 
+def spectrum(x):
+    """The power spectrum (Hann window) of frames x channels, the channels'
+    powers averaged."""
+    window = np.hanning(len(x))
+    return np.mean([np.abs(np.fft.rfft(x[:, c] * window)) ** 2 for c in range(x.shape[1])], axis=0)
+
+
 def thirds(x, fs):
     """Third-octave band centres (25 Hz to 16 kHz) and each band's share of the energy."""
-    power = np.abs(np.fft.rfft(x * np.hanning(len(x)))) ** 2
+    power = spectrum(x)
     f = np.fft.rfftfreq(len(x), 1.0 / fs)
     centres = 1000.0 * 2.0 ** (np.arange(-16, 13) / 3.0)
     total = power[(f > 20.0) & (f < 18000.0)].sum()
@@ -140,11 +152,19 @@ def thirds(x, fs):
     return centres, np.array(share)
 
 
+def channel_repeats(x, fs, rpm):
+    """One channel's repeat r in each band: the low band's at its best lag,
+    the others at that lag."""
+    r_lo, cycle = repeat(band(x, fs, *BANDS[0]), fs, 120.0 / rpm[1], 120.0 / rpm[0])
+    return [r_lo] + [repeat(band(x, fs, *b), fs, 0.97 * cycle, 1.03 * cycle)[0] for b in BANDS[1:]]
+
+
 def measure(path, t0, t1, repeats=True, rpm=(450.0, 1600.0)):
     x, fs = read_wav(path)
     x = x[int(t0 * fs):int(t1 * fs)]
-    x = x - x.mean()
-    power = np.abs(np.fft.rfft(x * np.hanning(len(x)))) ** 2
+    x = x - x.mean(axis=0)   # each channel's own DC
+    channels = [x[:, c] for c in range(x.shape[1])]
+    power = spectrum(x)
     f = np.fft.rfftfreq(len(x), 1.0 / fs)
     audible = (f > 20.0) & (f < 18000.0)
 
@@ -154,14 +174,14 @@ def measure(path, t0, t1, repeats=True, rpm=(450.0, 1600.0)):
     centres, share = thirds(x, fs)
     mid = (centres >= 500.0) & (centres <= 8000.0)
     slope = np.polyfit(np.log2(centres[mid]), 10.0 * np.log10(share[mid] + 1e-30), 1)[0]
-    weighted = np.fft.irfft(np.fft.rfft(x) * a_weighting(f), len(x))
-    a_loss = 10.0 * np.log10(np.mean(x * x) / np.mean(weighted * weighted))
-    crest = 20.0 * np.log10(np.max(np.abs(x)) / np.sqrt(np.mean(x * x)))
+    mean_square = np.mean([np.mean(c * c) for c in channels])
+    weighted = [np.fft.irfft(np.fft.rfft(c) * a_weighting(f), len(c)) for c in channels]
+    a_loss = 10.0 * np.log10(mean_square / np.mean([np.mean(w * w) for w in weighted]))
+    crest = 20.0 * np.log10(max(np.max(np.abs(c)) for c in channels) / np.sqrt(mean_square))
     reps = []
     if repeats:
-        r_lo, cycle = repeat(band(x, fs, *BANDS[0]), fs, 120.0 / rpm[1], 120.0 / rpm[0])
-        reps = [as_db(r_lo)] + [as_db(repeat(band(x, fs, *b), fs, 0.97 * cycle, 1.03 * cycle)[0])
-                                for b in BANDS[1:]]
+        rs = np.mean([channel_repeats(c, fs, rpm) for c in channels], axis=0)
+        reps = [as_db(r) for r in rs]
     return {"above": [above(1000.0), above(2000.0), above(4000.0)], "slope": slope,
             "a_loss": a_loss, "crest": crest, "repeat": reps, "centres": centres, "share": share}
 

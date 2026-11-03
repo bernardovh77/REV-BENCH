@@ -18,8 +18,8 @@ BUGS = {
         ['test_engine_drives_itself'], 600),
     # test_calibration_burn_and_spark: the burn is the charge model's
     'burn-doubled-reference': ("core/src/engine.c",
-        "const double base=capped ? expected:b->demand_duration;",
-        "const double base=capped ? expected:fmin(b->demand_duration, 2.0 * e->desc.burn_duration + 1.0);",
+        "const double base = capped ? expected : b->demand_duration;",
+        "const double base = capped ? expected : fmin(b->demand_duration, 2.0 * e->desc.burn_duration + 1.0);",
         ['test_calibration_burn_and_spark'], 600),
     # test_presets_run_on_their_own: the soft cut keeps the engine at its limit
     'soft-cut-too-early': ("core/src/engine.c",

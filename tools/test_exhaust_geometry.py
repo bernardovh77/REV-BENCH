@@ -19,9 +19,11 @@ class ExhaustGeometryTests(unittest.TestCase):
         cls.contract=Path(os.environ.get('RB_GEOMETRY_CONTRACT_PROBE',Path(cls.temp.name)/'build_contract_probe'))
         cls.probe=Path(os.environ.get('RB_GEOMETRY_PROBE',Path(cls.temp.name)/'exhaust_geometry_probe'))
         if not cls.contract.is_file() or not cls.probe.is_file():
-            subprocess.run(['make','-s','-j2',f'BUILD={cls.temp.name}','LTO=0',str(cls.contract),str(cls.probe)],
+            # make's targets with forward slashes, as $(BUILD)/... spells them on Windows too
+            subprocess.run(['make','-s','-j2',f'BUILD={Path(cls.temp.name).as_posix()}','LTO=0',
+                            cls.contract.as_posix(),cls.probe.as_posix()],
                            cwd=ROOT,check=True,capture_output=True,text=True,timeout=300)
-        cls.builds=loads((ROOT/'contracts/examples/builds-v1.json').read_text())
+        cls.builds=loads((ROOT/'contracts/examples/builds-v1.json').read_text(encoding="utf-8"))
 
     @classmethod
     def tearDownClass(cls): cls.temp.cleanup()

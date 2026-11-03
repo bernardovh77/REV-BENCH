@@ -83,7 +83,7 @@ def experiment(probe,out):
         tasks.append(dict(n=n,rate=rate,temperature=T,flow=U,frequency=f,mixture=mix))
     with ThreadPoolExecutor(max_workers=2) as pool:
         rows=list(pool.map(lambda args:run(probe,**args),tasks))
-    (out/'waves.json').write_text(json.dumps(rows,indent=2)+'\n')
+    (out/'waves.json').write_text(json.dumps(rows,indent=2)+'\n', encoding="utf-8")
     contacts=[run(probe,mode='contact',n=n,rate=384000,temperature=300,flow=u,duration=.002,mixture=0)
               for n,u in itertools.product((80,160,320),(0,70,-70))]
     finite=[run(probe,n=128,rate=384000,frequency=2000,amplitude=a,duration=t)
@@ -101,7 +101,7 @@ def experiment(probe,out):
         right=(.125*left[0],0,10000) if mode=='sod' else (left[0],70,100000)
         for n in (200,400,800):
             cells=run(probe,mode=mode,n=n,rate=384000,duration=.001,boundary=1)
-            (out/f'{mode}-{n}.csv').write_text('x,rho,u,p,T,c\n'+''.join(','.join(c.values())+'\n' for c in cells))
+            (out/f'{mode}-{n}.csv').write_text('x,rho,u,p,T,c\n'+''.join(','.join(c.values())+'\n' for c in cells), encoding="utf-8")
             errors=[0.,0.,0.]
             for cell in cells:
                 exact=exact_riemann(float(cell['x']),.001,left,right,gamma)
@@ -118,7 +118,7 @@ def experiment(probe,out):
                  contacts=contacts,finite_amplitude=finite,boundaries=boundary,nonlinear=nonlinear,nonlinear_pass=nonlinear_pass,
                  full_screen_pass=all(r['acoustic_pass'] for r in rows) and all(r['pressure_drift_Pa']<=1 for r in contacts) and nonlinear_pass,
                  decision='Do not promote unless every declared physical/acoustic gate passes; retain failures.')
-    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     return summary
 
 

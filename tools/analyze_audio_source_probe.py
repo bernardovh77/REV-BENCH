@@ -83,7 +83,7 @@ def signal_metrics(samples, rate, names, line_metrics=True):
 
 
 def analyze(directory):
-    metadata = json.loads((directory / "metadata.json").read_text())
+    metadata = json.loads((directory / "metadata.json").read_text(encoding="utf-8"))
     result = {
         "preset": metadata["preset"], "rpm": metadata["rpm"],
         "physics_rate_hz": metadata["physics_rate_hz"],
@@ -142,7 +142,7 @@ def analyze(directory):
         result["captures"]["cut"]["heat_released_J"] / loaded_heat if loaded_heat else None
     )
     result["cut_injection_zero"] = result["captures"]["cut"]["injected_fuel_kg"] == 0
-    (directory / "metrics.json").write_text(json.dumps(result, indent=2) + "\n")
+    (directory / "metrics.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     return result
 
 
@@ -152,13 +152,13 @@ def main():
     args = parser.parse_args()
     reports = []
     for path in sorted(args.directory.rglob("metadata.json")):
-        if not {"stems", "captures", "trace_columns"} <= json.loads(path.read_text()).keys():
+        if not {"stems", "captures", "trace_columns"} <= json.loads(path.read_text(encoding="utf-8")).keys():
             continue
         report = analyze(path.parent)
         report["directory"] = str(path.parent)
         reports.append(report)
         print(json.dumps({key: report[key] for key in ("directory", "preset", "rpm", "physics_rate_hz", "total_cells")}))
-    (args.directory / "source-summary.json").write_text(json.dumps(reports, indent=2) + "\n")
+    (args.directory / "source-summary.json").write_text(json.dumps(reports, indent=2) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":

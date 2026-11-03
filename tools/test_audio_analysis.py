@@ -75,8 +75,8 @@ class AudioAnalysisTests(unittest.TestCase):
 
     def test_existing_tools_use_float_and_channel_policy(self):
         path = self.write(wav_bytes([0.25, 0.75, -0.25, -0.75], floating=True, channels=2))
-        x, _ = compare_real.read_wav(path)
-        np.testing.assert_array_equal(x, [0.5, -0.5])
+        x, _ = compare_real.read_wav(path)   # every channel, never folded (stage 119)
+        np.testing.assert_array_equal(x, [[0.25, 0.75], [-0.25, -0.75]])
         with self.assertRaises(SystemExit):
             plot_sound.read_wav(path)
         self.write(wav_bytes([0.25, -0.25], floating=True))
@@ -94,6 +94,26 @@ class AudioAnalysisTests(unittest.TestCase):
         pcm = compare_real.measure(self.path, 0, 2)
         for key in ("above", "repeat", "crest", "a_loss", "slope"):
             np.testing.assert_allclose(floating[key], pcm[key], atol=0.01, rtol=0)
+
+    def test_stereo_is_measured_channel_by_channel(self):
+        """Stage 119: a stereo file's channels are measured apart and their
+        powers and correlations averaged. Antiphase channels (a mono fold makes
+        them silence) measure exactly as either channel alone."""
+        t = np.arange(96000) / 48000
+        rng = np.random.default_rng(11)
+        signal = (0.2 * np.sin(2 * np.pi * 50 * t) + 0.1 * np.sin(2 * np.pi * 3000 * t)
+                  + 0.02 * rng.normal(size=len(t)))
+        self.write(wav_bytes(signal, floating=True))
+        mono = compare_real.measure(self.path, 0, 2)
+        mono_orders = orders.orders(self.path, 4, 0, 2, 1400, 1600)
+        stereo = np.column_stack((signal, -signal)).ravel()
+        self.write(wav_bytes(stereo, floating=True, channels=2))
+        both = compare_real.measure(self.path, 0, 2)
+        for key in ("above", "repeat", "crest", "a_loss", "slope", "share"):
+            np.testing.assert_allclose(both[key], mono[key], rtol=1e-9, atol=1e-9, err_msg=key)
+        both_orders = orders.orders(self.path, 4, 0, 2, 1400, 1600)
+        self.assertAlmostEqual(both_orders[0], mono_orders[0])
+        self.assertAlmostEqual(both_orders[2], mono_orders[2])
 
     def test_orders_accepts_windows_drive_and_label_colons(self):
         spec = r"C:\engine renders\idle.wav@1-5@700-900:idle: original @ tailpipe"

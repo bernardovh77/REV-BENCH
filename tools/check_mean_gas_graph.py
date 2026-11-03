@@ -89,7 +89,7 @@ def experiment(probe,out,long=True,baseline=None):
                    stability_pass=long and all(r.get('stability_pass',False) for r in stable),
                    zero_flow_parity_pass=bool(baseline) and all(r.get('zero_flow_parity_pass',False) for r in profiles if not r.get('mean_flow')),
                    conservation_pass=all(not r['status'] and r['relative_balance']<=1e-10 and r['clock_error']==0 and abs(r['graph_work_residual_J'])<=1e-10*max(1e-20,r['initial_perturbation_J']) for r in allrows))
-    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n');return summary
+    (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8");return summary
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True)

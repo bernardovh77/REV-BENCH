@@ -207,6 +207,9 @@
   running step `sim->engine` directly (tests/test_presets.c).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
   TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
+- Core code is spaced and commented (stage 119 reformatted Codex's): `if (x) y;`, spaces round
+  operators, one statement a line, a comment on what each function does. A pure reformat must
+  leave `make wasm`'s output and the `-O2 -g0` objects byte-identical (docs/stage-119.md).
 - New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
   in `web/src/core/rb-core.ts` if JS uses them).
 - Bernardo wants a 3D view of the engine running (stages 17–19). Physics stages must expose what it
@@ -337,6 +340,10 @@
   Read git state with `git --no-optional-locks ...`.
 - Never `npm install` inside the mounted folder. Copy REV-BENCH (without node_modules) to $HOME,
   `npm ci` in its web/, run tests there, and copy `package-lock.json` back if it changed.
+- Native Windows works too (stage 119): w64devkit's gcc and make build without LTO (the
+  Makefile checks), and the Python suite passes there. Tools pass make forward-slash paths,
+  read and write text as UTF-8 and use `tools/checks.py` (`require`, `lift_at`, `clutch_at`).
+  Under WSL the snap FFmpeg can't see `/tmp`: run its tests with `TMPDIR` in the home folder.
 - The bridge VM has gcc 11, make, node 22, python3 + numpy, zig 0.17 (`python3 -m ziglang`), git;
   no sudo. GitHub, PyPI and npm are reachable; storage.googleapis.com is not (so no Emscripten SDK).
   Its clock trails the mounted folder slightly, so make prints harmless clock-skew warnings.

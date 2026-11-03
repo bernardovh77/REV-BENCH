@@ -20,7 +20,7 @@ def evaluate(probe,out):
                 np.savez_compressed(out/f'packet-{kind}-{n}-reference.npz',x=d['x_m'],reference=p,measured=measured)
             rows.append(r)
     result=dict(rows=rows,convergent=all(all(not r['status'] for r in rows if r['kind']==k) and all(a['waveform_l2']>b['waveform_l2'] for a,b in zip([r for r in rows if r['kind']==k],[r for r in rows if r['kind']==k][1:])) for k in (0,1)))
-    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n');return result
+    (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
