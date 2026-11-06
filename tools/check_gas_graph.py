@@ -12,6 +12,7 @@ from pathlib import Path
 import subprocess
 import numpy as np
 from gas_graph_reference import SimpleWave
+from checks import program
 
 
 def run(probe,out,name,*,mode='profile',rate=192000,T=300,mix=0,length=1.50317,
@@ -126,7 +127,7 @@ def experiment(probe,out,long=True,native_contract=None):
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--skip-long',action='store_true');p.add_argument('--native-contract',type=Path)
     a=p.parse_args();r=experiment(a.probe,a.out,not a.skip_long,a.native_contract)
     print(json.dumps({k:v for k,v in r.items() if k.endswith('_pass')},indent=2))

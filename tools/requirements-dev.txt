@@ -1,0 +1,11 @@
+# Everything the test suites need besides a C compiler, make and Node, the same on
+# Windows and Linux (tools/run_tests.py). pip install -r tools/requirements-dev.txt
+-r requirements-analysis.txt
+# make wasm: 0.17.0 reproduces the committed rb_core.wasm byte for byte (Windows'
+# wheel is 0.17.0.post0, the same zig); 0.17.1 builds a different one.
+ziglang==0.17.0.*
+# A static FFmpeg for the reference tools' tests (tools/ffmpeg_path.py): the snap
+# in WSL can't read /tmp, and Windows has none.
+imageio-ffmpeg>=0.6,<1
+# The code graph (graphify update .).
+graphifyy==0.9.92

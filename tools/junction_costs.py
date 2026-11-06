@@ -4,9 +4,10 @@ import argparse,json,statistics
 from pathlib import Path
 from check_junction import run
 from junction_mesh import fixture
+from checks import program
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
     results=[]
     for kind,n,rate in [('straight',8,1000000),('y',16,2000000),('x',16,2000000),('h',16,2000000)]:
         for U in [0,1]:

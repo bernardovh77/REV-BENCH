@@ -8,6 +8,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from checks import program
 
 ROOT = Path(__file__).resolve().parents[1]
 FAULTS = {
@@ -27,7 +28,7 @@ FAULTS = {
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--probe', type=Path, required=True)
+    p.add_argument('--probe', type=program, required=True)
     p.add_argument('--output', type=Path, required=True)
     args = p.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)

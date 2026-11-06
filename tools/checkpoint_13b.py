@@ -15,7 +15,7 @@ from pathlib import Path
 import struct
 import subprocess
 
-from checks import clutch_at, lift_at
+from checks import clutch_at, lift_at, program
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i6", "v8-cross", "v8-flat")
@@ -171,7 +171,7 @@ def long_coast(args):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cli", type=Path, default=ROOT/"build/rb_cli")
+    parser.add_argument("--cli", type=program, default=ROOT/"build/rb_cli")
     parser.add_argument("--output", type=Path, default=ROOT/"renders/checkpoint-13b")
     parser.add_argument("--render", action="store_true")
     parser.add_argument("--analyze", action="store_true")

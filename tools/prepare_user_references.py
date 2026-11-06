@@ -32,6 +32,7 @@ import shutil
 import subprocess
 import tempfile
 from checks import require
+from ffmpeg_path import find_ffmpeg
 
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG = ROOT / "tools/user_engine_reference_sources.json"
@@ -191,9 +192,9 @@ def publish_filtered(directory):
 
 
 def prepare(args):
-    ffmpeg = args.ffmpeg or shutil.which("ffmpeg")
+    ffmpeg = args.ffmpeg or find_ffmpeg()
     if not ffmpeg:
-        raise SystemExit("Supply --ffmpeg PATH or install FFmpeg on PATH.")
+        raise SystemExit("Supply --ffmpeg PATH, pip install imageio-ffmpeg or install FFmpeg on PATH.")
     config = json.loads(getattr(args, "config", CONFIG).read_text(encoding="utf-8"))
     source_dir, out, previews = args.source_dir.resolve(), (ROOT / "renders/real").resolve(), args.preview_dir.resolve()
     # Resolve every input before producing files, so a missing source fails early.

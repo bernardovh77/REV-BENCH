@@ -19,6 +19,7 @@ import wave
 import numpy as np
 
 from audio_wav import read_wav
+from ffmpeg_path import find_ffmpeg
 import prepare_user_references as references
 
 
@@ -40,9 +41,9 @@ class ReferenceFilteringTests(unittest.TestCase):
         self.assertTrue(all(r.get("measurement_channels", 2) == 2 for r in rear["recordings"]))
 
     def test_stereo_append_preserves_old_catalog_and_rejects_changed_source(self):
-        ffmpeg = os.environ.get("RB_REFERENCE_FFMPEG") or shutil.which("ffmpeg")
-        if not ffmpeg or subprocess.run([ffmpeg, "-version"], capture_output=True).returncode:
-            self.skipTest("Set RB_REFERENCE_FFMPEG to a usable FFmpeg")
+        ffmpeg = find_ffmpeg()
+        if not ffmpeg:
+            self.skipTest("No FFmpeg: pip install imageio-ffmpeg, or set RB_REFERENCE_FFMPEG")
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             rate = 48000
@@ -94,12 +95,9 @@ class ReferenceFilteringTests(unittest.TestCase):
                 self.assertEqual(hashlib.sha256((root / "renders/real/user-rear-rear-3m-0.wav").read_bytes()).hexdigest(), before)
 
     def test_filtered_only_preserves_measurements_sources_and_stereo(self):
-        ffmpeg = os.environ.get("RB_REFERENCE_FFMPEG") or shutil.which("ffmpeg")
+        ffmpeg = find_ffmpeg()
         if not ffmpeg:
-            self.skipTest("FFmpeg is not installed")
-        ready = subprocess.run([ffmpeg, "-version"], capture_output=True)
-        if ready.returncode:
-            self.skipTest("FFmpeg cannot run; set RB_REFERENCE_FFMPEG to a usable binary")
+            self.skipTest("No FFmpeg: pip install imageio-ffmpeg, or set RB_REFERENCE_FFMPEG")
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             rate = 48000

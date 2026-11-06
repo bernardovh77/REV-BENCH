@@ -9,6 +9,8 @@ import subprocess
 import sys
 import tempfile
 import unittest
+
+import fake_program
 from unittest.mock import patch
 
 from render_results import expected_clips, listening_wav, replace_current, write_page, REV_LIMITS
@@ -105,7 +107,7 @@ class RenderResultsTests(unittest.TestCase):
             self.assertNotIn("\\", argument)
         self.assertIn(f"--assume-old={(renders / 'build' / 'rb_cli').as_posix()}", make)
 
-    @unittest.skipIf(os.name == "nt", "its fake CLI is a POSIX script, which Windows can't run directly")
+    @unittest.skipUnless(fake_program.available(), "on Windows the fake CLI needs a C compiler")
     def test_full_makefile_and_scenario_pipeline_without_site_packages(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -118,7 +120,7 @@ class RenderResultsTests(unittest.TestCase):
             cli = build/"rb_cli"
             fixture = root/"fixture.wav"
             float_wav(fixture, (0.1, -0.2, 0.05, -0.1)*3000)
-            cli.write_text(f"#!{sys.executable} -S\n"
+            fake_program.make(cli,
                 "from pathlib import Path\nimport sys\n"
                 "args=sys.argv\n"
                 "preset=args[args.index('--preset')+1] if '--preset' in args else 'test'\n"
@@ -126,8 +128,7 @@ class RenderResultsTests(unittest.TestCase):
                 f"Path(args[args.index('--out')+1]).write_bytes(Path({str(fixture)!r}).read_bytes())\n"
                 "if '--csv' in args:\n"
                 " Path(args[args.index('--csv')+1]).write_text(f't_s,throttle,crank_inertia_kgm2,rpm\\n0,1,3,1000\\n0.5,1,3,{limit-500}\\n1,1,3,{limit-80}\\n1.002667,0,3,{limit-80}\\n9,0,3,2000\\n9.002667,0,0.2,2000\\n')\n"
-                "if args[1]=='sound': print('soft-limited samples 0, non-finite 0')\n", encoding="utf-8")
-            cli.chmod(0o755)
+                "if args[1]=='sound': print('soft-limited samples 0, non-finite 0')\n")
             script = Path(__file__).with_name("render_results.py").resolve()
             # -S on the orchestrator and fake simulation also proves the complete
             # renderer does not accidentally import numpy/matplotlib.

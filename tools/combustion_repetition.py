@@ -11,6 +11,7 @@ from audio_wav import read_wav,read_wav_bytes
 from compare_real import BANDS,as_db,band,repeat
 from reference_protocol import measurements
 from check_combustion_variation import SEEDS
+from checks import program
 
 
 def digest(path):
@@ -67,7 +68,7 @@ def execute(cli,out,workers):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--cli',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--cli',type=program,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--workers',type=int,default=2);args=p.parse_args()
     if not 1<=args.workers<=4:p.error('workers must be1..4')
     execute(args.cli.resolve(),args.out,args.workers)

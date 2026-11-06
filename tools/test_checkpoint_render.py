@@ -6,19 +6,20 @@ import sys
 import tempfile
 import unittest
 
+import fake_program
+
 
 class CheckpointRenderTests(unittest.TestCase):
-    @unittest.skipIf(os.name == "nt", "its fake CLI is a POSIX script, which Windows can't run directly")
+    @unittest.skipUnless(fake_program.available(), "on Windows the fake CLI needs a C compiler")
     def test_render_without_site_packages(self):
         script = Path(__file__).with_name("checkpoint_13b.py").resolve()
         with tempfile.TemporaryDirectory() as directory:
             # Exercise the real orchestration in an interpreter with site packages
             # disabled. Only the expensive native recording is substituted.
             fake = Path(directory) / "renderer"
-            fake.write_text("#!/usr/bin/env python3\nimport pathlib,sys\n"
-                            "pathlib.Path(sys.argv[sys.argv.index('--out')+1]).write_bytes(b'wave')\n"
-                            "print('soft-limited samples 0, non-finite 0')\n", encoding="utf-8")
-            fake.chmod(0o755)
+            fake_program.make(fake, "import pathlib,sys\n"
+                              "pathlib.Path(sys.argv[sys.argv.index('--out')+1]).write_bytes(b'wave')\n"
+                              "print('soft-limited samples 0, non-finite 0')\n")
             result = subprocess.run([sys.executable, "-S", str(script), "--render",
                                      "--cli", str(fake), "--output", directory],
                                     capture_output=True, text=True, timeout=30,

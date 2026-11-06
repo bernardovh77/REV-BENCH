@@ -5,9 +5,10 @@ from pathlib import Path
 from types import SimpleNamespace
 import numpy as np
 from junction_mesh import fixture,native_input,helmholtz
+from checks import program
 
 def run(probe,out,name,mesh,mode='pulse',rate=2000000,T=300,source=0,amplitude=1,duration=.003,U=0,reuse=False):
-    binary_hash=hashlib.sha256(probe.read_bytes()).hexdigest()
+    binary_hash=hashlib.sha256(program(probe).read_bytes()).hexdigest()
     text=native_input(mesh,mode,rate,T,source,amplitude,duration,U)
     input_hash=hashlib.sha256(text.encode()).hexdigest();raw=None
     if reuse and all((out/(name+s)).exists() for s in ['.input','.csv','.stderr','.json']):
@@ -21,7 +22,7 @@ def run(probe,out,name,mesh,mode='pulse',rate=2000000,T=300,source=0,amplitude=1
     lines=[x[len('RB_JV_RESULT '):] for x in raw.stderr.splitlines() if x.startswith('RB_JV_RESULT ')]
     if len(lines)!=1:raise ValueError((name,'missing result'))
     r=json.loads(re.sub(r'\b(?:-?nan|-?inf)\b','null',lines[0]));r.update(name=name,mode=mode,rate=rate,T=T,source=source,amplitude=amplitude,duration=duration,U=U,geometry_id=mesh['id'])
-    if hashlib.sha256(probe.read_bytes()).hexdigest()!=binary_hash:raise ValueError('Probe changed during measurement')
+    if hashlib.sha256(program(probe).read_bytes()).hexdigest()!=binary_hash:raise ValueError('Probe changed during measurement')
     r['probe_sha256']=binary_hash;r['input_sha256']=hashlib.sha256(text.encode()).hexdigest()
     if not r['status']:
         mass=r['rho_reference']*r['volume_m3'];energy=101325*r['volume_m3']+abs(r['initial_E_J']);momentum=mass*r['c_reference']
@@ -69,7 +70,7 @@ def acoustic_case(probe,out,kind,n,T,frequencies,reference,rate=2000000,duration
     (out/f'{kind}-{n}-{T}-{rate}-summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--kind',default='x');p.add_argument('--n',type=int,default=8);p.add_argument('--temperature',type=int,default=300);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--kind',default='x');p.add_argument('--n',type=int,default=8);p.add_argument('--temperature',type=int,default=300);a=p.parse_args()
     a.out.mkdir(parents=True,exist_ok=True)
     # Audited047 property values, never a fit of the candidate's wave travel.
     c=347.24387326840287 if a.temperature==300 else 580.1001671698209

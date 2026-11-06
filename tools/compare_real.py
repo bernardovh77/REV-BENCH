@@ -46,6 +46,7 @@ import subprocess
 import sys
 import urllib.request
 from audio_wav import read_wav as read_audio_wav
+from ffmpeg_path import find_ffmpeg
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -65,8 +66,9 @@ def read_list(path=LIST):
 
 
 def fetch(_args):
-    if not shutil.which("ffmpeg"):
-        sys.exit("compare_real: needs ffmpeg to decode the MP3s (sudo apt install ffmpeg)")
+    ffmpeg = find_ffmpeg()
+    if not ffmpeg:
+        sys.exit("compare_real: needs ffmpeg to decode the MP3s (pip install imageio-ffmpeg)")
     os.makedirs(REAL_DIR, exist_ok=True)
     rows = {row["id"]: row for row in read_list()}   # a recording can be listed twice
     for row in rows.values():
@@ -78,7 +80,7 @@ def fetch(_args):
             with urllib.request.urlopen(req, timeout=60) as r, open(mp3, "wb") as out:
                 out.write(r.read())
         if not os.path.exists(wav):
-            subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-i", mp3,
+            subprocess.run([ffmpeg, "-nostdin", "-loglevel", "error", "-y", "-i", mp3,
                             "-ac", "1", "-ar", "48000", "-c:a", "pcm_s16le", wav], check=True)
     print(f"the recordings are in {os.path.normpath(REAL_DIR)}")
 

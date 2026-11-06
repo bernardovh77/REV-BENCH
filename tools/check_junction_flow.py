@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from check_junction import run
 from junction_mesh import fixture
+from checks import program
 
 def flow_case(probe,out,kind,mode,amplitude,reuse=False):
     folder=out/f'{kind}-{mode}-{amplitude}';folder.mkdir(parents=True,exist_ok=True)
@@ -30,7 +31,7 @@ def flow_case(probe,out,kind,mode,amplitude,reuse=False):
     (folder/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--workers',type=int,default=2);p.add_argument('--refine',action='store_true');p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--workers',type=int,default=2);p.add_argument('--refine',action='store_true');p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
     jobs=[(k,m,A) for k in ['area','y','x','h'] for m,A in [('flow',1000),('flow',-1000),('reversal',1000)]]
     def execute(job):
         r=flow_case(a.probe,a.out,*job,reuse=a.resume)

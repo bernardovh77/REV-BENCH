@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import subprocess
 import time
+from checks import program
 
 ROOT=Path(__file__).resolve().parents[1]
 SEEDS=(17,29,61)
@@ -112,7 +113,7 @@ def execute(probe,out,workers=2):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--workers',type=int,default=2);args=p.parse_args()
     if not 1<=args.workers<=4:p.error('workers must be1..4')
     result=execute(args.probe.resolve(),args.out,args.workers)

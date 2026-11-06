@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 import subprocess
+from checks import program
 
 PRESETS=('i4','i6','v8-cross','v8-flat','boxer4')
 SEEDS=(17,29,61)
@@ -48,7 +49,7 @@ def commands(probe):
 
 def execute(probe,out,workers):
     out.mkdir(parents=True,exist_ok=True)
-    identity=hashlib.sha256(probe.read_bytes()).hexdigest()
+    identity=hashlib.sha256(program(probe).read_bytes()).hexdigest()
     def one(job):
         key,cmd=job;path=out/(key+'.json')
         old=json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
@@ -71,7 +72,7 @@ def execute(probe,out,workers):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--workers',type=int,default=2);a=p.parse_args()
     if not 1<=a.workers<=4:p.error('workers must be 1..4')
     r=execute(a.probe.resolve(),a.out,a.workers);print(r['runs'],'source scenarios pass; calibration remains open')

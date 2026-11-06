@@ -8,6 +8,7 @@ from pathlib import Path
 import subprocess
 
 from build_contract import ROOT, catalog, dumps, from_native, loads, require, validate_build
+from checks import program
 
 
 def native(probe, command, preset, text=None, no_runners=False):
@@ -76,7 +77,7 @@ def check(probe):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--probe', type=Path, required=True)
+    parser.add_argument('--probe', type=program, required=True)
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     report = check(args.probe.resolve())

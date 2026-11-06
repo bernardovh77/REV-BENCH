@@ -14,7 +14,8 @@
 - Validate physics natively (tests, CSV plots, WAV renders) before wiring anything into the browser.
   Use `rb_cli ... --float` for analysis renders (16-bit files carry quantisation spurs near -97 dB).
 - Every stage ends with all tests green: `make test`, `npm test` (in web/), and for browser work the
-  Playwright test in both modes (dev and `E2E_PREVIEW=1`). Stages that touch `core/` also do the
+  Playwright test in both modes (dev and `E2E_PREVIEW=1`); `python tools/run_tests.py` runs them
+  all, on Windows or WSL (docs/workspace.md). Stages that touch `core/` also do the
   sound check (PLAN.md, "How a stage is done", step 6).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
   which tests catch them. `python3 tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
@@ -340,10 +341,12 @@
   Read git state with `git --no-optional-locks ...`.
 - Never `npm install` inside the mounted folder. Copy REV-BENCH (without node_modules) to $HOME,
   `npm ci` in its web/, run tests there, and copy `package-lock.json` back if it changed.
-- Native Windows works too (stage 119): w64devkit's gcc and make build without LTO (the
-  Makefile checks), and the Python suite passes there. Tools pass make forward-slash paths,
-  read and write text as UTF-8 and use `tools/checks.py` (`require`, `lift_at`, `clutch_at`).
-  Under WSL the snap FFmpeg can't see `/tmp`: run its tests with `TMPDIR` in the home folder.
+- Every suite runs on native Windows and in WSL alike, neither needing the other:
+  `python tools/run_tests.py` (with the Python of `tools/requirements-dev.txt`; setup in
+  docs/workspace.md). On Windows, w64devkit's gcc and make build without LTO (the Makefile
+  checks). Tools pass make forward-slash paths, read and write text as UTF-8, find programs with
+  `checks.program()` (Windows adds `.exe`) and FFmpeg with `ffmpeg_path.find_ffmpeg()`. Tests that
+  fake a program use `tools/fake_program.py`. If WSL hangs, work on Windows rather than restart it.
 - The bridge VM has gcc 11, make, node 22, python3 + numpy, zig 0.17 (`python3 -m ziglang`), git;
   no sudo. GitHub, PyPI and npm are reachable; storage.googleapis.com is not (so no Emscripten SDK).
   Its clock trails the mounted folder slightly, so make prints harmless clock-skew warnings.

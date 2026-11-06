@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from check_junction import run,transfer,compare
 from junction_mesh import fixture,helmholtz
+from checks import program
 
 def control(probe,out,name,kind,n,**kw):
     target=out/name;target.mkdir(parents=True,exist_ok=True)
@@ -34,7 +35,7 @@ def control(probe,out,name,kind,n,**kw):
     print(name,'PASS' if result['pass_'] else 'FAIL',r['steps'],flush=True);return result
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
     jobs=[]
     for U in [-15,15]:
         for n,rate in [(4,512000),(8,1000000)]:jobs.append((f'translate-{U}-{n}','straight',n,dict(mode='translation',rate=rate,T=900,U=U,duration=.032)))

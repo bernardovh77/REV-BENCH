@@ -24,7 +24,7 @@ import sys
 import tempfile
 
 from audio_wav import read_wav_bytes
-from checks import clutch_instant, lift_instant
+from checks import clutch_instant, lift_instant, program
 from checkpoint_sections import adopt_current, carry_diagnostics, compose, diagnostic_names
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -208,6 +208,13 @@ def replace_current(staged, renders):
         shutil.rmtree(backup)
 
 
+def make_target(cli):
+    """The CLI as make's target names it: $(BUILD)/rb_cli, with forward slashes
+    and without the .exe Windows adds."""
+    cli = Path(cli)
+    return (cli.with_suffix("") if cli.suffix.lower() == ".exe" else cli).as_posix()
+
+
 def render_checkpoint(cli, build, renders):
     with tempfile.TemporaryDirectory(prefix=".pending-results-", dir=renders) as workspace:
         staged = Path(workspace) / "next"
@@ -218,7 +225,7 @@ def render_checkpoint(cli, build, renders):
         # Paths with forward slashes: make's targets spell them so, and its
         # shell would eat a Windows path's backslashes.
         run = subprocess.run(["make", "render-standard", f"BUILD={Path(build).as_posix()}",
-                              f"--assume-old={Path(cli).as_posix()}",
+                              f"--assume-old={make_target(cli)}",
                               f"RENDER_DIR={(staged/'standard').as_posix()}", "RENDER_FLAGS=--float"],
                              cwd=ROOT, capture_output=True, text=True)
         log = run.stdout + run.stderr
@@ -238,7 +245,7 @@ def render_checkpoint(cli, build, renders):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cli", type=Path, default=ROOT/"build/rb_cli")
+    parser.add_argument("--cli", type=program, default=ROOT/"build/rb_cli")
     parser.add_argument("--build", default="build")
     parser.add_argument("--publish-only", action="store_true")
     parser.add_argument("--adopt-current", action="store_true", help="register existing research/reference sections and diagnostic assets once")

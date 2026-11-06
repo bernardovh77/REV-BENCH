@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 import subprocess
 
-from checks import lift_at
+from checks import lift_at, program
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i4", "i6", "v8-cross", "v8-flat", "boxer4")
@@ -25,7 +25,7 @@ def sha(path):
 def record(cli, output, name, options):
     wav = output / (name + ".wav")
     csv = output / (name + ".csv")
-    executable_sha = sha(cli)
+    executable_sha = sha(program(cli))
     command = [str(cli.resolve()), "sound", *options, "--float", "--gain", "0.1",
                "--out", str(wav), "--csv", str(csv)]
     run = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=900)
@@ -110,7 +110,7 @@ def deceleration_report(output, previous_coasts=None, constant_coasts=None):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cli", type=Path, required=True)
+    parser.add_argument("--cli", type=program, required=True)
     parser.add_argument("--before-cli", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "renders/work/exhaust-feedback")
     parser.add_argument("--previous-coasts", type=Path, help="optional preserved historical coast controls")

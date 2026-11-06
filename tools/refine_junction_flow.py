@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from check_junction import run
 from junction_mesh import fixture
+from checks import program
 
 def compare_rows(a,b,da,db):
     errors=[]
@@ -41,7 +42,7 @@ def refine(probe,case):
     (case/'refinement.json').write_text(json.dumps(final,indent=2)+'\n', encoding="utf-8");return final
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--case',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--case',type=Path,required=True);a=p.parse_args()
     final=refine(a.probe,a.case)
     if not final['pass_']:raise SystemExit('Fine flow controls still fail')
 

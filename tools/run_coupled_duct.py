@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import numpy as np
+from checks import program
 
 ROOT = Path(__file__).resolve().parents[1]
 RATE, C, RHO, GAMMA = 192000., 343., 1.2, 1.4
@@ -173,6 +174,6 @@ def run(args):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--probe',type=Path,default=Path(tempfile.gettempdir())/'rev-bench-s2d-next/coupled_duct_probe')
+    parser.add_argument('--probe',type=program,default=Path(tempfile.gettempdir())/'rev-bench-s2d-next/coupled_duct_probe')
     parser.add_argument('--output',type=Path,default=ROOT/'renders/evidence/coupling-proof-2026-10-23')
     run(parser.parse_args())

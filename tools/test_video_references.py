@@ -44,9 +44,10 @@ class VideoReferenceTests(unittest.TestCase):
             self.assertEqual(video.screen([session],out)[0]['peak_speech_probability'],0)
 
     def test_video_decode_selects_first_audio_track_and_preserves_antiphase(self):
-        ffmpeg=os.environ.get('RB_REFERENCE_FFMPEG') or shutil.which('ffmpeg')
-        if not ffmpeg or subprocess.run([ffmpeg,'-version'],capture_output=True).returncode:
-            self.skipTest('Set RB_REFERENCE_FFMPEG to a usable FFmpeg')
+        from ffmpeg_path import find_ffmpeg
+        ffmpeg=find_ffmpeg()
+        if not ffmpeg:
+            self.skipTest('No FFmpeg: pip install imageio-ffmpeg, or set RB_REFERENCE_FFMPEG')
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);rate=48000;t=np.arange(rate)/rate
             tone=.2*np.sin(2*np.pi*180*t)

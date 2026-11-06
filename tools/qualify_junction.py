@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 from check_junction import acoustic_case
 from junction_mesh import fixture,helmholtz
+from checks import program
 
 def qualify(probe,out,kind,T,reuse=False):
     target=out/f'{kind}-{T}';target.mkdir(parents=True,exist_ok=True)
@@ -32,14 +33,14 @@ def qualify(probe,out,kind,T,reuse=False):
     return result
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True)
     p.add_argument('--out',type=Path,required=True);p.add_argument('--workers',type=int,default=2)
     p.add_argument('--resume',action='store_true');a=p.parse_args();a.out.mkdir(parents=True,exist_ok=True)
     jobs=[(k,T) for k in ['straight','area','y','x','h'] for T in [300,900]]
     with concurrent.futures.ThreadPoolExecutor(max_workers=a.workers) as pool:
         futures=[pool.submit(qualify,a.probe,a.out,k,T,a.resume) for k,T in jobs]
         results=[f.result() for f in futures]
-    summary=dict(probe_sha256=hashlib.sha256(a.probe.read_bytes()).hexdigest(),cases=results,
+    summary=dict(probe_sha256=hashlib.sha256(program(a.probe).read_bytes()).hexdigest(),cases=results,
                  pass_=all(r['pass_'] for r in results))
     (a.out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8")
     if not summary['pass_']:raise SystemExit('049 matrix has failed gates')

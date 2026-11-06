@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 import statistics
 import subprocess
-from checks import require
+from checks import program, require
 
 
 def check(probe, ticks=48000, repeats=3):
@@ -40,7 +40,7 @@ def check(probe, ticks=48000, repeats=3):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--probe',type=Path,required=True)
+    parser.add_argument('--probe',type=program,required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--ticks',type=int,default=48000)
     parser.add_argument('--repeats',type=int,default=3)

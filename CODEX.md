@@ -4,6 +4,18 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-06: Every test runs on Windows and in WSL alike
+
+- At Bernardo's request, no suite depends on WSL or on Windows any more. `python
+  tools/run_tests.py` runs them all (native, wasm, wasm-c, python, web, e2e) on whichever system
+  it starts on, and both pass everything, with the same counts. Setup: docs/workspace.md,
+  `tools/requirements-dev.txt`.
+- New helpers: `checks.program()` (Windows adds `.exe`), `tools/ffmpeg_path.py` (the bundled
+  imageio-ffmpeg; WSL's snap FFmpeg can't read /tmp) and `tools/fake_program.py` (a test's fake
+  CLI, with a C launcher on Windows). The Makefile picks a Python that runs and its zig.
+- zig 0.17.0 (0.17.0.post0 on Windows) reproduces the committed core; 0.17.1 doesn't.
+- No `core/` change.
+
 ## 2026-11-03: Stage 119, the review's leftovers
 
 - [Stage 119](docs/stage-119.md) closed the rest of Claude's review:

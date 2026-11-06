@@ -4,7 +4,7 @@ import argparse,csv,io,json,math,subprocess,hashlib
 from pathlib import Path
 import numpy as np
 from gas_graph_reference import SimpleWave
-from checks import require
+from checks import program, require
 
 
 def nasa(T,mix):
@@ -84,9 +84,9 @@ def evaluate(probe,out):
     result=dict(schema=1,property_rows=len(props),max_inversion_relative=max(errors),max_isentropic_speed_relative=max(sound_errors),joins=jumps,nasa=comparisons,fixed_wall_rows=len(fixed),pairs=pairs,sensitivities=sensitivities,
                 air_reference_pass=max(abs(r['cp_error']) for r in air)<=.005 and max(abs(r['c_error']) for r in air)<=.002,
                 low_burned_reference_pass=max(abs(r['cp_error']) for r in burned)<=.01 and max(abs(r['c_error']) for r in burned)<=.005,
-                internal_pass=True,wall_pass=True,probe_sha256=hashlib.sha256(probe.read_bytes()).hexdigest())
+                internal_pass=True,wall_pass=True,probe_sha256=hashlib.sha256(program(probe).read_bytes()).hexdigest())
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
     r=evaluate(a.probe,a.out);print({k:v for k,v in r.items() if k.endswith('_pass')})

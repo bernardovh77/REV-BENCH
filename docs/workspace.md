@@ -21,6 +21,48 @@ Bernardo's Personal-Projects repo, on its `rev-bench` branch; its history came a
   session couldn't.
 - Renders aren't in git (`renders/` is ignored): `make render` makes them, about four minutes.
 
+### Running every test, on Windows or in WSL (2026-11-06)
+
+The repo lives on the Windows drive, `C:\Users\berna\REV-BENCH`, which WSL sees as
+`/mnt/c/Users/berna/REV-BENCH`. Every suite runs on either system by itself, so neither depends
+on the other: `tools/run_tests.py` runs them all (native, wasm, wasm-c, python, web, e2e) and
+prints a table. Both give the same results: 251 native tests and 4,950,067 checks, the same
+WebAssembly byte for byte, 102 Python tests with none skipped, 17 web tests and the 2 e2e tests in
+both modes.
+
+**Windows** (the desktop app's sessions run here):
+- **C:** w64devkit's gcc and make (`C:\w64devkit\bin`). It has no LTO; the Makefile notices and
+  builds without it. The native suite takes about 8 minutes this way.
+- **Python:** a venv with the tools, set up once:
+  ```
+  python -m venv C:\Users\berna\rb-venv
+  C:\Users\berna\rb-venv\Scripts\pip install -r tools\requirements-dev.txt
+  ```
+- **Node:** Windows' Node (22.12 or later).
+- **e2e:** the installed Chrome (or Edge), so nothing is downloaded.
+
+Then: `C:\Users\berna\rb-venv\Scripts\python tools\run_tests.py`.
+
+**WSL** (Ubuntu):
+- **C:** gcc and make.
+- **Python:** `~/rb-venv`, set up once with
+  `python3 -m venv ~/rb-venv && ~/rb-venv/bin/pip install -r tools/requirements-dev.txt`.
+- **Node:** Node 22 in `~/.local/node22`, from nodejs.org's Linux tarball, as there is no sudo;
+  the runner adds it to `PATH`.
+- **e2e:** Playwright's own Chromium, downloaded once with `npx playwright install chromium`
+  from the web app (about 190 MB).
+
+Then: `~/rb-venv/bin/python tools/run_tests.py`.
+
+Notes:
+- **zig:** the requirements pin zig 0.17.0, which reproduces the committed `rb_core.wasm`;
+  0.17.1 builds a different one.
+- **FFmpeg:** the reference tools' tests use imageio-ffmpeg's static FFmpeg
+  (`tools/ffmpeg_path.py`). WSL's own FFmpeg is a snap, which can't read files in `/tmp`.
+- **Builds** go to `~/rb-build/tests` on each system, never into the repo.
+- **If WSL stops responding** (it once hung for minutes, even for `echo`), Windows alone runs
+  everything.
+
 ### Moving it out of Personal-Projects (done, 2026-10-20)
 
 Kept for the record; the steps were:

@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import numpy as np
 from check_material import reference
+from checks import program
 
 def run(probe,out,name,mode='profile',n=2048,rate=2000000,U=0,kind=0,front=.7,length=2,amplitude=1,frequency=0,duration=.002):
     command=[str(probe),mode,*map(str,(n,rate,U,kind,front,length,amplitude,frequency,duration))]
@@ -14,7 +15,7 @@ def run(probe,out,name,mode='profile',n=2048,rate=2000000,U=0,kind=0,front=.7,le
     if raw.returncode or len(lines)!=1:raise ValueError((name,raw.returncode,raw.stderr[-500:]))
     r=json.loads(re.sub(r'\b(?:-?nan|-?inf)\b','null',lines[0]))
     r.update(command=command,mode=mode,n=n,rate=rate,U=U,kind=kind,front=front,length=length,amplitude=amplitude,frequency=frequency)
-    r['probe_sha256']=hashlib.sha256(probe.read_bytes()).hexdigest()
+    r['probe_sha256']=hashlib.sha256(program(probe).read_bytes()).hexdigest()
     if not r['status']:
         mass=max(r['rho_left'],r['rho_right'])*.003*length
         Es=101325*.003*length+abs(r['initial_E_J']);Ps=mass*max(r['c_left'],r['c_right'])
@@ -122,5 +123,5 @@ def evaluate(probe,out,properties):
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--properties',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);p.add_argument('--properties',type=Path,required=True);a=p.parse_args()
     r=evaluate(a.probe,a.out,a.properties);print({k:v for k,v in r.items() if k.endswith('gate') or k=='pass'})

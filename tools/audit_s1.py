@@ -19,6 +19,7 @@ import numpy as np
 
 from audio_wav import read_wav
 from compare_real import measure
+from checks import program
 
 ROOT = Path(__file__).resolve().parents[1]
 PRESETS = ("i4", "i6", "v8-cross", "v8-flat", "boxer4")
@@ -105,7 +106,7 @@ def record(cli, preset, output, gain):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--cli", type=Path, default=ROOT / "build/rb_cli")
+    parser.add_argument("--cli", type=program, default=ROOT / "build/rb_cli")
     parser.add_argument("--output", type=Path, default=ROOT / "renders/s1-audit")
     parser.add_argument("--gain", type=float, default=0.5,
                         help="recording gain, in (0, 1]; default 0.5 for analysis headroom")

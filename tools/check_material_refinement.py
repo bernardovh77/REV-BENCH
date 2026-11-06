@@ -4,6 +4,7 @@ import argparse,json
 from pathlib import Path
 import numpy as np
 from check_material import run,reference
+from checks import program
 
 
 def evaluate(probe,out):
@@ -23,5 +24,5 @@ def evaluate(probe,out):
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
     r=evaluate(a.probe,a.out);print([(x['kind'],x['n'],x['status'],x.get('waveform_l2')) for x in r['rows']])

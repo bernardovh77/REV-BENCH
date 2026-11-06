@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 from check_gas_graph import run,balance
 from gas_graph_reference import SimpleWave
+from checks import program
 
 
 def experiment(probe,out,long=True,baseline=None):
@@ -92,6 +93,6 @@ def experiment(probe,out,long=True,baseline=None):
     (out/'summary.json').write_text(json.dumps(summary,indent=2)+'\n', encoding="utf-8");return summary
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--baseline',type=Path);p.add_argument('--skip-long',action='store_true');a=p.parse_args()
     s=experiment(a.probe,a.out,not a.skip_long,a.baseline);print(json.dumps({k:v for k,v in s.items() if k.endswith('_pass')},indent=2))

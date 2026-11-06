@@ -4,7 +4,7 @@ import argparse,csv,hashlib,io,itertools,json,math,re,subprocess
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import numpy as np
-from checks import require
+from checks import program, require
 
 
 def run(probe,out,name,mode='profile',n=768,rate=768000,U=0,kind=1,front=.7,length=2,amplitude=1,frequency=0,duration=None):
@@ -17,7 +17,7 @@ def run(probe,out,name,mode='profile',n=768,rate=768000,U=0,kind=1,front=.7,leng
     if r.returncode or len(lines)!=1:raise ValueError((name,r.returncode,r.stderr[-300:]))
     report=json.loads(re.sub(r'\b(?:-?nan|-?inf)\b','null',lines[0]))
     report.update(command=command,mode=mode,n=n,rate=rate,U=U,kind=kind,front=front,length=length,amplitude=amplitude,frequency=frequency)
-    report['probe_sha256']=hashlib.sha256(probe.read_bytes()).hexdigest()
+    report['probe_sha256']=hashlib.sha256(program(probe).read_bytes()).hexdigest()
     if not report['status']:
         scale=101325*.003*length+abs(report['initial_E_J'])
         report['energy_relative']=abs(report['energy_balance_J'])/scale
@@ -131,5 +131,5 @@ def experiment(probe,out):
     (out/'summary.json').write_text(json.dumps(result,indent=2)+'\n', encoding="utf-8");return result
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=Path,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--probe',type=program,required=True);p.add_argument('--out',type=Path,required=True);a=p.parse_args()
     r=experiment(a.probe,a.out);print({k:v for k,v in r.items() if k.endswith('_pass')})

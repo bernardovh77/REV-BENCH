@@ -40,7 +40,7 @@
 #   make results      rebuild RESULTS.html from current recordings without rerendering
 #   make render PYTHON=path/to/python   choose Python (no analysis packages needed)
 #   make wasm ZIG=... use a specific zig (default: `zig` if it is on PATH,
-#                     else `python3 -m ziglang` from: pip install ziglang)
+#                     else `$(PYTHON) -m ziglang` from: pip install -r tools/requirements-dev.txt)
 
 ifeq ($(SAN),1)
   BUILD   ?= build-san
@@ -53,7 +53,8 @@ BUILD    ?= build
 # Optional isolated standard sets; full checkpoints use the publisher below.
 RENDER_DIR   ?= renders/work/standard
 RENDER_FLAGS ?= --float
-PYTHON       ?= python3
+# python3 where it runs, else python (Windows' python3 can be the Store's stub)
+PYTHON       ?= $(shell python3 -c "" >/dev/null 2>&1 && echo python3 || echo python)
 CFLAGS   ?= -O3 -g
 CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
 # Strict double arithmetic: keep NaN checks and each cell's operation order.
@@ -233,7 +234,7 @@ render-standard: $(CLI)
 # A standalone module: libc/libm are compiled in, it needs no imports and has
 # no JavaScript glue. The output is committed, so the web app works on a
 # machine without zig.
-ZIG      ?= $(shell command -v zig >/dev/null 2>&1 && echo zig || echo python3 -m ziglang)
+ZIG      ?= $(shell command -v zig >/dev/null 2>&1 && echo zig || echo $(PYTHON) -m ziglang)
 WASM_OUT ?= web/src/wasm/rb_core.wasm
 # Fingerprint of the C sources the .wasm was built from. The web unit tests
 # recompute it, so they fail if the C code changed without a `make wasm`.

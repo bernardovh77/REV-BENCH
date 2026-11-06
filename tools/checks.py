@@ -3,6 +3,8 @@
 require(): an acceptance check that stays on under `python -O`, which drops
 every `assert`. A failed check raises CheckFailed with what failed.
 
+program(): a built program's real file (NAME.exe on Windows).
+
 lift_at() and clutch_at() (and their _instant forms, the time alone): when
 `rb_cli sound`'s driver lifted off the pedal and let the clutch in, from its
 --csv telemetry. The CLI acts
@@ -11,6 +13,19 @@ the first row showing the change is one block late (2.67 ms at 48 kHz). The
 instant is that row's block start: the previous row's time, or 0 for the
 first row. Every report takes these instants, so "lift" means one moment.
 """
+import os
+from pathlib import Path
+
+
+def program(path):
+    """The program a path names: on Windows a compiler writes NAME.exe for
+    `-o NAME`, so that file is the program when NAME itself isn't there.
+    Running NAME finds NAME.exe on its own; reading it (to fingerprint it)
+    needs the real name."""
+    path = Path(path)
+    if os.name == "nt" and not path.exists() and path.with_name(path.name + ".exe").exists():
+        return path.with_name(path.name + ".exe")
+    return path
 
 
 class CheckFailed(ValueError):

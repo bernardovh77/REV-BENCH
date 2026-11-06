@@ -13,6 +13,7 @@ import json
 import math
 from pathlib import Path
 import subprocess
+from checks import program
 
 
 def run(probe, mode='wave', n=128, rate=192000, temperature=300, flow=0,
@@ -124,5 +125,5 @@ def experiment(probe,out):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--probe',type=Path,required=True);parser.add_argument('--out',type=Path,required=True)
+    parser.add_argument('--probe',type=program,required=True);parser.add_argument('--out',type=Path,required=True)
     args=parser.parse_args();print(json.dumps(experiment(args.probe,args.out),indent=2))
