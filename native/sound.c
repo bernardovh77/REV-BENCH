@@ -15,6 +15,7 @@
 #include "wav.h"
 
 #include <math.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +23,53 @@
 
 /* Render in blocks of 128 frames, as rb_cli always has. */
 #define BLOCK_FRAMES 128
+
+/* --trace (stage 123): what the drive did, as the command trace the real-time host's offline mode
+ * replays (host/include/rb_host_trace.h), so that the host renders what rb_cli rendered. The build's
+ * lines (the preset, its fields, the parameters set before the first block, the scene) and the
+ * commands (what was set between blocks, at the frame it was set) are kept apart and written
+ * together at the end, with the frames that settled and the frames recorded in between. */
+typedef struct trace_text {
+    char  *text;
+    size_t length, capacity;
+} trace_text;
+
+static int        trace_on;
+static int        trace_building = 1;   /* until the first block is rendered */
+static long long  trace_frame;          /* frames rendered so far, the settling's included */
+static trace_text trace_build_text, trace_command_text;
+
+/* Appends a formatted line to a trace text. */
+static void trace_put(trace_text *t, const char *format, ...)
+{
+    va_list args;
+    char line[256];
+    va_start(args, format);
+    vsnprintf(line, sizeof line, format, args);
+    va_end(args);
+    const size_t n = strlen(line);
+    if (t->length + n + 1 > t->capacity) {
+        t->capacity = (t->capacity ? 2 * t->capacity : 4096) + n;
+        t->text = (char *)realloc(t->text, t->capacity);
+    }
+    memcpy(t->text + t->length, line, n + 1);
+    t->length += n;
+}
+
+/* A parameter set: the build's before the first block, else a command at this frame. */
+static void trace_param(int id, double value)
+{
+    if (!trace_on) return;
+    if (trace_building) trace_put(&trace_build_text, "param %s %.17g\n", rb_param_name(id), value);
+    else trace_put(&trace_command_text, "at %lld set %s %.17g\n", trace_frame, rb_param_name(id), value);
+}
+
+/* A block was rendered. */
+static void trace_rendered(int frames)
+{
+    trace_frame += frames;
+    trace_building = 0;
+}
 
 enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD, DRIVE_REV };
 
@@ -78,7 +126,15 @@ static int layers_from(const char *list)
 /* Sets parameter id, which must take the value (the option was checked). */
 static void set(rb_sim *sim, int id, double value)
 {
+    trace_param(id, value);
     rb_set_param(sim, id, value);
+}
+
+/* Changes an engine field (the build's, before any block) and traces it. */
+static int edit(rb_sim *sim, int field, int index, double value)
+{
+    if (trace_on) trace_put(&trace_build_text, "edit %s %d %.17g\n", rb_engine_field_name(field), index, value);
+    return rb_set_engine(sim, field, index, value);
 }
 
 static double tlm(const rb_sim *sim, int id)
@@ -88,7 +144,7 @@ static double tlm(const rb_sim *sim, int id)
 
 /* The options of rb_cli sound. */
 typedef struct sound_options {
-    const char *out_path, *csv_path, *preset, *snapshots_path;
+    const char *out_path, *csv_path, *preset, *snapshots_path, *trace_path;
     double seconds, rpm, throttle, inertia, gain, os, variation, idle_load, seed;
     double overrun_transition, coast_seconds, pull_seconds;
     int seed_given, burn_model, drive, use_float, where, equal, quality, layers, scene;
@@ -118,6 +174,8 @@ static int read_options(int argc, char **argv, sound_options *o)
             ok = (o->csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--snapshots"))
             ok = (o->snapshots_path = cli_take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--trace"))
+            ok = (o->trace_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--preset"))
             ok = (o->preset = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--idle"))
@@ -252,10 +310,11 @@ static int build_engine(rb_sim *sim, const sound_options *o)
         return 2;
     }
     rb_load_preset(sim, preset);
+    if (trace_on) trace_put(&trace_build_text, "preset %s\n", rb_preset_key(preset));
     int bad = 0;
-    if (o->muffler >= 0) bad |= rb_set_engine(sim, RB_ENG_MUFFLER_TYPE, 0, o->muffler) < 0;
+    if (o->muffler >= 0) bad |= edit(sim, RB_ENG_MUFFLER_TYPE, 0, o->muffler) < 0;
     if (o->outlet_radiation >= 0)
-        bad |= rb_set_engine(sim, RB_ENG_OUTLET_RADIATION, 0, o->outlet_radiation) < 0;
+        bad |= edit(sim, RB_ENG_OUTLET_RADIATION, 0, o->outlet_radiation) < 0;
     const int n = (int)rb_get_engine(sim, RB_ENG_CYLINDERS, 0);
     if (o->headers) {
         const char *v = o->headers;
@@ -263,7 +322,7 @@ static int build_engine(rb_sim *sim, const sound_options *o)
         while (v && *v && k < n) {
             char *end;
             const double length = strtod(v, &end);
-            bad |= rb_set_engine(sim, RB_ENG_HEADER_LENGTH, k++, length) < 0;
+            bad |= edit(sim, RB_ENG_HEADER_LENGTH, k++, length) < 0;
             v = (*end == ',') ? end + 1 : (*end ? NULL : end);
         }
         if (!(v && !*v && k == n)) {
@@ -274,7 +333,7 @@ static int build_engine(rb_sim *sim, const sound_options *o)
     if (o->equal) {   /* every header as long as their mean */
         double mean = 0.0;
         for (int i = 0; i < n; i++) mean += rb_get_engine(sim, RB_ENG_HEADER_LENGTH, i) / n;
-        for (int i = 0; i < n; i++) bad |= rb_set_engine(sim, RB_ENG_HEADER_LENGTH, i, mean) < 0;
+        for (int i = 0; i < n; i++) bad |= edit(sim, RB_ENG_HEADER_LENGTH, i, mean) < 0;
     }
     if (bad) {
         fprintf(stderr, "rb_cli sound: that engine can't be built\n");
@@ -283,11 +342,29 @@ static int build_engine(rb_sim *sim, const sound_options *o)
     return 0;
 }
 
+/* Writes the trace of the drive: its header, the build, the frames settled and recorded, the
+ * commands. 0, or 1 if the file can't be written. */
+static int trace_write(const char *path, int rate, int quality, int oversample, long long skip, long long frames)
+{
+    FILE *f = fopen(path, "wb");
+    if (!f) return 1;
+    fprintf(f, "rbtrace 1\nrate %d\nquality %d\noversample %d\n", rate, quality, oversample);
+    if (trace_build_text.text) fputs(trace_build_text.text, f);
+    fprintf(f, "skip %lld\nframes %lld\n", skip, frames);
+    if (trace_command_text.text) fputs(trace_command_text.text, f);
+    return fclose(f) != 0;
+}
+
 int cli_sound(int argc, char **argv)
 {
     sound_options o;
     const int read = read_options(argc, argv, &o);
     if (read) return read == 1 ? 0 : 2;
+    trace_on = o.trace_path != NULL;
+    if (trace_on && o.rate != 44100.0 && o.rate != 48000.0) {
+        fprintf(stderr, "rb_cli sound: --trace is for the host's rates, 44100 and 48000 Hz\n");
+        return 2;
+    }
 
     rb_config cfg;
     rb_config_default(&cfg);
@@ -344,6 +421,7 @@ int cli_sound(int argc, char **argv)
         rb_destroy(sim);
         return 2;
     }
+    if (trace_on && scene >= 0) trace_put(&trace_build_text, "scene %d\n", scene);
     const int channels = scene >= 0 ? 2 : 1;
     wav_writer *wav = wav_open(o.out_path, (int)fs, channels, o.use_float ? WAV_FLOAT32 : WAV_PCM16);
     if (!wav) {
@@ -409,16 +487,25 @@ int cli_sound(int argc, char **argv)
     }
     printf("\n");
     float buf[2 * BLOCK_FRAMES];
+    long long settled = 0;   /* frames rendered and not recorded: --trace's skip */
     if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
         const long blocks = lround(SOUND_SETTLE * fs / BLOCK_FRAMES);
-        if (scene >= 0) rb_set_scene_time(sim, -blocks * BLOCK_FRAMES / fs);
-        for (long k = 0; k < blocks; k++)
+        if (scene >= 0) {
+            const double start = -blocks * BLOCK_FRAMES / fs;
+            if (trace_on) trace_put(&trace_build_text, "scene_time %.17g\n", start);
+            rb_set_scene_time(sim, start);
+        }
+        for (long k = 0; k < blocks; k++) {
             if (scene >= 0) rb_render_stereo(sim, buf, BLOCK_FRAMES);
             else rb_render_block(sim, buf, BLOCK_FRAMES);
+            trace_rendered(BLOCK_FRAMES);
+        }
+        settled = trace_frame;
         if (drive == DRIVE_HOLD && tlm(sim, RB_TLM_TORQUE) > 0.0) {
             /* Stage 12c: from here on a dyno holds it, as on stage 9's test
              * bed, its crank free: each firing and each cycle moves it a
              * little, as they do a real engine's. */
+            if (trace_on) trace_put(&trace_command_text, "at %lld dyno_attach %.17g\n", trace_frame, rpm);
             rb_dyno_attach(sim, rpm);
             printf("  on a dyno at %.0f rpm, throttle %.0f %%, after %.1f s to settle\n", rpm,
                    100.0 * throttle, SOUND_SETTLE);
@@ -481,6 +568,7 @@ int cli_sound(int argc, char **argv)
         const int n = (int)(total - frames < BLOCK_FRAMES ? total - frames : BLOCK_FRAMES);
         if (scene >= 0) rb_render_stereo(sim, buf, n);
         else rb_render_block(sim, buf, n);
+        trace_rendered(n);
         if (wav_write(wav, buf, (size_t)n) != WAV_OK) io_error = 1;
         for (int i = 0; i < channels * n; i++) {
             if (fabs(buf[i]) > peak) peak = fabs(buf[i]);
@@ -544,6 +632,14 @@ int cli_sound(int argc, char **argv)
     if (wav_close(wav) != WAV_OK) io_error = 1;
     if (csv && csv_close(csv) != 0) io_error = 1;
     if (snapshots && fclose(snapshots) != 0) io_error = 1;
+    if (trace_on) {
+        if (trace_write(o.trace_path, (int)fs, o.quality, (int)o.os, settled, frames)) {
+            fprintf(stderr, "rb_cli sound: cannot write %s\n", o.trace_path);
+            io_error = 1;
+        } else {
+            printf("wrote the command trace %s\n", o.trace_path);
+        }
+    }
     rb_destroy(sim);
     printf("wrote %s (%s)%s%s\n", o.out_path, o.use_float ? "32-bit float" : "16-bit PCM, dithered",
            o.csv_path ? " and " : "", o.csv_path ? o.csv_path : "");

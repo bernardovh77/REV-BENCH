@@ -87,7 +87,7 @@ class PreflightTests(unittest.TestCase):
     def test_everything_present_and_recent_is_no_problem(self):
         with tempfile.TemporaryDirectory() as tmp:
             env = self.tools_dir(tmp, "v22.3.0", ["make", "npm", "npx"])
-            suites = [s for s in run_tests.SUITES if s != "cmake"]
+            suites = [s for s in run_tests.SUITES if s not in ("cmake", "host")]
             self.assertEqual(run_tests.preflight(suites, env), [])
 
     def test_an_old_cmake_is_reported(self):

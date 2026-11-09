@@ -16,8 +16,11 @@ zig builds the WebAssembly). The suites:
   e2e      the Playwright test, dev server and production build, in that copy
   cmake    the CMake build with the system's own compiler (MSVC on Windows,
            through tools/msvc_env.py; gcc or clang elsewhere) and its C tests
+  host     the real-time audio host (stage 123), in the cmake suite's build folder:
+           its tests on miniaudio's null device, then rb_cli's drives against the
+           host's offline renders of their command traces (tools/host_parity.py)
 
-Builds go to ~/rb-build/tests, never into the repo. Needs a C compiler and
+Builds go to ~/rb-build/tests (or $RB_TESTS_OUT), never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
 for e2e, a Chromium: $PW_CHROMIUM, an installed Chrome or Edge on Windows, or
 Playwright's own (npx playwright install chromium).
@@ -33,12 +36,12 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
 TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
-            "cmake": 3600}
-OUT = Path.home() / "rb-build" / "tests"
+            "cmake": 3600, "host": 1800}
+OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
                                      ".agents", "__pycache__")
@@ -65,7 +68,8 @@ def tool(name, env):
 
 # the programs each suite needs on PATH, and the oldest Node it runs on
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
-         "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"]}
+         "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"],
+         "host": ["cmake", "ninja"]}
 NODE_MAJOR = 22
 CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
@@ -95,7 +99,7 @@ def preflight(suites, env):
         if have < CMAKE_LEAST:
             problems.append(f"{first or 'cmake'} ({cmake}); the cmake suite needs "
                             f"{CMAKE_LEAST[0]}.{CMAKE_LEAST[1]} or newer (tools/requirements-dev.txt)")
-    if "cmake" in suites and os.name == "nt":
+    if ("cmake" in suites or "host" in suites) and os.name == "nt":
         import msvc_env
         if not msvc_env.install_path():
             problems.append("no Visual Studio with the C/C++ x64 tools for the cmake suite (docs/workspace.md)")
@@ -211,7 +215,18 @@ def suite_commands(name, state):
         msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
         return [msvc + ["cmake", "-S", str(ROOT), "-B", build, "-G", "Ninja"],
                 msvc + ["cmake", "--build", build],
-                msvc + ["ctest", "--test-dir", build, "--output-on-failure", "-V"]], ROOT, env
+                msvc + ["ctest", "--test-dir", build, "-LE", "host", "--output-on-failure", "-V"]], ROOT, env
+    if name == "host":
+        # the cmake suite's folder: the core is built once for both
+        build = (OUT / "cmake").as_posix()
+        msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
+        exe = ".exe" if os.name == "nt" else ""
+        return [msvc + ["cmake", "-S", str(ROOT), "-B", build, "-G", "Ninja"],
+                msvc + ["cmake", "--build", build, "--target", "rb_host_tests", "rb_host_render", "rb_host_stress",
+                        "rb_host_devices", "rb_cli"],
+                msvc + ["ctest", "--test-dir", build, "-L", "host", "--output-on-failure", "-V"],
+                [sys.executable, str(ROOT / "tools/host_parity.py"), f"{build}/rb_cli{exe}",
+                 f"{build}/rb_host_render{exe}", (OUT / "host-parity").as_posix()]], ROOT, env
     if name == "e2e":
         web = state.get("web") or web_copy()
         npm, npx = tool("npm", env), tool("npx", env)

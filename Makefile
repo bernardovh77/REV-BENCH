@@ -30,11 +30,16 @@
 #   make audit        five-preset S1 physics baseline to renders/s1-audit/physics.csv
 #   make diagnostics-check   five-preset guard/flux/trajectory/cost proof
 #   make clean        delete build output
+#   make host-test    build and run the real-time audio host's tests (stage 123,
+#                     on miniaudio's null device)
+#   make host-tools   rb_host_render, rb_host_stress and rb_host_devices
 #   make help         show this text
 #
 # Options:
 #   make SAN=1 test   build with AddressSanitizer + UBSan (catches memory
 #                     bugs and undefined behaviour), output in build-san/
+#   make TSAN=1 host-test   the host's tests under ThreadSanitizer (gcc or clang
+#                     on Linux or macOS, WSL included), output in build-tsan/
 #   make BUILD=dir    put build output in another folder
 #   make render-standard RENDER_DIR=dir RENDER_FLAGS=--float   isolated float set
 #   make results      rebuild RESULTS.html from current recordings without rerendering
@@ -57,6 +62,20 @@ ifeq ($(SAN),1)
   LDFLAGS += -fsanitize=address,undefined
 endif
 
+ifeq ($(TSAN),1)
+  # ThreadSanitizer, for the host's concurrent tests (stage 123): like SAN, it needs the
+  # runtime library that gcc and clang have on Linux and macOS and w64devkit doesn't
+  TSAN_LINKS := $(shell echo 'int main(void){return 0;}' | $(CC) -fsanitize=thread -x c - -o /dev/null \
+      >/dev/null 2>&1 && echo yes)
+  ifneq ($(TSAN_LINKS),yes)
+    $(error TSAN=1 needs a compiler with the ThreadSanitizer runtime (gcc or clang on Linux or macOS, WSL included); $(CC) here can't link it)
+  endif
+  BUILD   ?= build-tsan
+  CFLAGS  ?= -O1 -g
+  CFLAGS  += -fsanitize=thread -fno-omit-frame-pointer
+  LDFLAGS += -fsanitize=thread
+endif
+
 BUILD    ?= build
 # Optional isolated standard sets; full checkpoints use the publisher below.
 RENDER_DIR   ?= renders/work/standard
@@ -74,7 +93,7 @@ CFLAGS   += -std=c11 -Wall -Wextra -Wpedantic -Wshadow -Wstrict-prototypes
 # It is on by default where the compiler has it: w64devkit's gcc on Windows
 # doesn't (stage 119), and compiling with -flto there fails.
 LTO ?= $(if $(shell echo 'int x;' | $(CC) -flto -x c -S -o - - >/dev/null 2>&1 && echo yes),1,0)
-ifneq ($(SAN),1)
+ifneq ($(filter 1,$(SAN) $(TSAN)),1)
 ifeq ($(LTO),1)
   CFLAGS  += -flto
   LDFLAGS += -flto
@@ -192,6 +211,52 @@ $(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 
 $(AUDIT): $(AUDIT_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+comma := ,
+# ---- the real-time audio host (stage 123) ----
+# host/ sees only the public headers (core/include), as rb_cli sound does, and
+# miniaudio is compiled apart, without the core's warnings. The system layer is
+# host/src/platform_win.c or platform_posix.c.
+ifeq ($(OS),Windows_NT)
+  HOST_PLAT   := host/src/platform_win.c
+  HOST_LIBS   := -lavrt -lwinmm -lpsapi
+else
+  HOST_PLAT   := host/src/platform_posix.c
+  HOST_LIBS   := -lpthread -ldl
+endif
+HOST_MA_SRC   := host/src/miniaudio_impl.c
+HOST_SRC      := $(filter-out host/src/platform_%.c $(HOST_MA_SRC),$(wildcard host/src/*.c)) $(HOST_PLAT)
+HOST_TEST_SRC := $(wildcard host/tests/*.c)
+HOST_TOOL_SRC := $(wildcard host/tools/*.c)
+HOST_OBJ      := $(call obj,$(HOST_SRC))
+HOST_MA_OBJ   := $(call obj,$(HOST_MA_SRC))
+HOST_TEST_OBJ := $(call obj,$(HOST_TEST_SRC))
+HOST_TOOL_OBJ := $(call obj,$(HOST_TOOL_SRC))
+ALL_OBJ       += $(HOST_OBJ) $(HOST_MA_OBJ) $(HOST_TEST_OBJ) $(HOST_TOOL_OBJ)
+HOST_TOOLS    := $(patsubst host/tools/%.c,$(BUILD)/rb_%,$(HOST_TOOL_SRC))
+HOST_TESTS    := $(BUILD)/rb_host_tests
+HOST_FILTER   ?=
+# the test binary also counts the C library's allocator calls the render thread makes (GNU ld's
+# --wrap; not macOS, whose linker has none)
+HOST_WRAP     ?= $(if $(filter Darwin,$(shell uname -s)),,1)
+HOST_WRAP_LD  := $(if $(HOST_WRAP),-Wl$(comma)--wrap=malloc -Wl$(comma)--wrap=calloc -Wl$(comma)--wrap=realloc -Wl$(comma)--wrap=free)
+$(HOST_OBJ) $(HOST_TOOL_OBJ): CPPFLAGS := -Icore/include -Ihost/include -Ihost/src -isystem third_party/miniaudio -Inative -MMD -MP
+$(HOST_TEST_OBJ): CPPFLAGS := -Icore/include -Ihost/include -Ihost/src -Inative -MMD -MP $(if $(HOST_WRAP),-DRB_HOST_MALLOC_WRAP)
+$(HOST_MA_OBJ): CPPFLAGS := -Ithird_party/miniaudio -MMD -MP
+$(HOST_MA_OBJ): CFLAGS := -O2 -g0 -std=gnu11 -w -ffp-contract=off
+
+$(HOST_TESTS): $(HOST_TEST_OBJ) $(HOST_OBJ) $(HOST_MA_OBJ) $(CORE_OBJ) $(call obj,native/wav.c)
+	$(CC) $(LDFLAGS) $(HOST_WRAP_LD) $^ $(LDLIBS) $(HOST_LIBS) -o $@
+
+# a tool is its own object plus the host, the core and the WAV writer
+$(HOST_TOOLS): $(BUILD)/rb_%: $(BUILD)/host/tools/%.o $(HOST_OBJ) $(HOST_MA_OBJ) $(CORE_OBJ) $(call obj,native/wav.c)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) $(HOST_LIBS) -o $@
+
+.PHONY: host-test host-tools
+host-test: $(HOST_TESTS)
+	RBT_TMPDIR=$(BUILD) $(HOST_TESTS) $(HOST_FILTER)
+
+host-tools: $(HOST_TOOLS)
 
 # rb_cli sound drives the engine through the public API alone (stage 121), as
 # the desktop app will: it compiles without core/src on the include path, so

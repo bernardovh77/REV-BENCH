@@ -22,6 +22,9 @@ only in its copy.
 A table is a dict BUGS of
     name: (file, old text, new text, [tests], timeout in s)
 where old and new may be tuples, several replacements making one bug.
+A table may also name the test program its bugs are caught by, with a line
+    TARGET = "rb_host_tests"
+(the default is rb_tests); stage 123's host has its own, built by the same make.
 """
 import glob
 import importlib.util
@@ -34,20 +37,27 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.dirname(HERE)
 
 
-def load_file(path):
-    """The BUGS dict of the table at path."""
+def load_module(path):
+    """The table at path, as a module."""
     name = os.path.splitext(os.path.basename(path))[0]
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.BUGS
+    return mod
+
+
+def load_file(path):
+    """The BUGS dict of the table at path."""
+    return load_module(path).BUGS
 
 
 def load_table(stage):
+    """(the BUGS dict, the test program that catches them) of a stage's table."""
     path = os.path.join(HERE, "bugs", f"stage{stage}.py")
     if not os.path.exists(path):
         sys.exit(f"plant_bugs: no table {path}")
-    return load_file(path)
+    mod = load_module(path)
+    return mod.BUGS, getattr(mod, "TARGET", "rb_tests")
 
 
 def stale_reason(root, bug):
@@ -91,7 +101,7 @@ def check(stage=None):
     return 1 if stale else 0
 
 
-def run(bugs, work, name):
+def run(bugs, work, name, program="rb_tests"):
     path, old, new, tests, timeout = bugs[name]
     if os.path.exists(work):
         shutil.rmtree(work)
@@ -112,12 +122,12 @@ def run(bugs, work, name):
     build = os.path.join(work, "b")
     # forward slashes: make's shell would eat a Windows path's backslashes
     posix = build.replace(os.sep, "/")
-    r = subprocess.run(["make", "-s", "-C", work, f"BUILD={posix}", f"{posix}/rb_tests"],
+    r = subprocess.run(["make", "-s", "-j4", "-C", work, f"BUILD={posix}", f"{posix}/{program}"],
                        capture_output=True, text=True)
     if r.returncode != 0:
         return f"{name}: BUILD FAILED\n{r.stderr[-2000:]}"
     try:
-        r = subprocess.run([f"{build}/rb_tests"] + tests, capture_output=True, text=True,
+        r = subprocess.run([f"{build}/{program}"] + tests, capture_output=True, text=True,
                            timeout=timeout, env=dict(os.environ, RBT_TMPDIR=build))
     except subprocess.TimeoutExpired:
         return f"{name}: caught (timed out after {timeout} s)"
@@ -134,7 +144,7 @@ def main():
         sys.exit(check(sys.argv[1]))
     if len(sys.argv) < 3:
         sys.exit(__doc__)
-    bugs = load_table(sys.argv[1])
+    bugs, target = load_table(sys.argv[1])
     if sys.argv[2] == "--list":
         for name, (path, _, _, tests, _) in bugs.items():
             print(f"{name:28s} {path:24s} {', '.join(tests)}")
@@ -146,7 +156,7 @@ def main():
         if name not in bugs:
             print(f"{name}: unknown bug")
             continue
-        print(run(bugs, work, name), flush=True)
+        print(run(bugs, work, name, target), flush=True)
 
 
 if __name__ == "__main__":

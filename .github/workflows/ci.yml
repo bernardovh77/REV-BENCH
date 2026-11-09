@@ -104,6 +104,22 @@ jobs:
       - name: The C tests under AddressSanitizer and UBSan
         run: make -j4 SAN=1 BUILD=$HOME/rb-build/san test
 
+  # The real-time audio host (stage 123): its tests run on miniaudio's null device in the `host`
+  # suite of both jobs above (MSVC and w64devkit's gcc on Windows, gcc on Linux), together with
+  # rb_cli's drives against the host's offline renders of their traces. MSVC has no
+  # ThreadSanitizer, so the concurrent stress tests (the channels, the swaps) also run here,
+  # under it, built by the Makefile.
+  linux-host-tsan:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: Less address-space randomisation, for ThreadSanitizer on newer kernels
+        run: sudo sysctl vm.mmap_rnd_bits=28
+      - name: The host's tests under ThreadSanitizer
+        run: make -j4 TSAN=1 BUILD=$HOME/rb-build/tsan host-test
+
   macos:
     if: github.event_name == 'schedule' || inputs.macos
     runs-on: macos-15

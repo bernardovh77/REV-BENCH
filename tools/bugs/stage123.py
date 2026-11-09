@@ -1,0 +1,198 @@
+"""Stage 123: the real-time host's tests can fail.
+
+python tools/plant_bugs.py 123 WORKDIR all      (a few at a time, under `timeout`)
+Each bug breaks one thing the host promises: a lock-free channel, the command and
+acknowledgment path, a swap and its fades, the device's underrun, the clock, the
+render thread's rules, the offline mode, the device layer. They are caught by the host's
+own test program (rb_host_tests, TARGET below), not rb_tests: a test name here is a
+substring of the names the program runs.
+"""
+TARGET = "rb_host_tests"
+
+RING = ["test_ring"]
+QUEUE = ["test_queue", "test_host_acks_come", "test_host_no_command_is_lost"]
+TRIPLE = ["test_triple", "test_host_snapshots_are_whole"]
+EVENTS = ["test_evring", "test_host_events"]
+SWAP = ["test_swap_installs", "test_swap_fades"]
+STALE = ["test_swap_stale", "test_swap_commands_behind"]
+FADES = ["test_swap_fades", "test_offline_swap", "test_trace_swap"]
+UNDERRUN = ["test_host_underrun", "test_host_short_data"]
+AUDIT = ["test_render_thread_never_allocates"]
+CLOCK = ["test_host_clock", "test_swap_installs"]
+OFFLINE = ["test_offline"]
+DEVICE = ["test_device"]
+
+BUGS = {
+    # the channels
+    'ring-forgets-the-wrap': ("host/src/ring.c",
+        "    if (n > first) memcpy(r->data, src + (size_t)first * ch, (size_t)(n - first) * ch * sizeof(float));\n",
+        "",
+        RING, 120),
+    'ring-never-looks-full': ("host/src/ring.c",
+        "    return r->capacity - rbh_ring_fill(r);",
+        "    return r->capacity;",
+        RING, 120),
+    'lost-command': ("host/src/queue.c",
+        "    memcpy(q->data + (size_t)(head & q->mask) * q->size, record, q->size);",
+        "    memcpy(q->data + (size_t)(head & (q->mask >> 1)) * q->size, record, q->size);",
+        QUEUE, 120),
+    'torn-snapshot': ("host/src/triple.c",
+        "    if (old & RBH_TRIPLE_DIRTY) atomic_fetch_add_explicit(&t->dropped, 1, memory_order_relaxed);\n"
+        "    t->back = old & RBH_TRIPLE_SLOT;",
+        "    if (old & RBH_TRIPLE_DIRTY) atomic_fetch_add_explicit(&t->dropped, 1, memory_order_relaxed);\n"
+        "    (void)old;   /* keeps writing the slot it just published */",
+        TRIPLE, 120),
+    'snapshot-from-two-moments': ("host/src/runner.c",
+        "    slot->physics_tick = header.physics_tick;",
+        "    slot->physics_tick = header.physics_tick + 1;",
+        ["test_host_snapshots_are_whole", "test_host_clock"], 120),
+    'event-loss-not-counted': ("host/src/evring.c",
+        "    atomic_fetch_add_explicit(&e->lost, 1, memory_order_release);\n    return 0;",
+        "    return 0;",
+        EVENTS, 120),
+    # commands and acknowledgments
+    'command-dropped-by-the-render-thread': ("host/src/runner.c",
+        "        if (!rbh_queue_pop(&h->commands, &c)) break;\n        execute(h, &c);",
+        "        if (!rbh_queue_pop(&h->commands, &c)) break;\n        if (c.request_id % 50 == 49) continue;\n        execute(h, &c);",
+        QUEUE, 120),
+    'stale-generation-applied': ("host/src/runner.c",
+        "    const int stale = c->expected_generation != 0 && c->expected_generation != RB_HOST_ANY_GENERATION\n"
+        "                      && c->expected_generation != r->generation;",
+        "    const int stale = 0;",
+        STALE, 120),
+    'commands-applied-a-block-late': ("host/src/runner.c",
+        ("    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+         "    /* a swap's fades */"),
+        ("    /* the engine's block, in both ears */",
+         "    drain_commands(h);\n\n    /* a swap's fades */"),
+        OFFLINE + ["test_trace_plays"], 120),
+    'refusal-looks-like-success': ("host/src/runner.c",
+        "    send_ack(h, c, code < 0 ? RB_HOST_ACK_REFUSED : RB_HOST_ACK_OK, code, 0);",
+        "    send_ack(h, c, RB_HOST_ACK_OK, code, 0);",
+        ["test_host_refused_commands", "test_host_every_command"], 120),
+    # swaps and their fades
+    'swap-without-fade': ("host/src/runner.c",
+        ("        fade_block(out, frames, h->fade_out, r->tr_pos, fade, 0.0f);",
+         "        fade_block(out, frames, h->fade_in, r->tr_pos, fade, 1.0f);"),
+        ("        (void)h->fade_out;",
+         "        (void)h->fade_in;"),
+        FADES, 120),
+    'swap-without-fade-out': ("host/src/runner.c",
+        "        fade_block(out, frames, h->fade_out, r->tr_pos, fade, 0.0f);",
+        "        (void)h->fade_out;",
+        FADES, 120),
+    'swap-fade-too-short': ("host/src/host.c",
+        "    if (n > 6) n = 6;\n    return (uint32_t)n;",
+        "    n = 1;\n    return (uint32_t)n;",
+        ["test_swap_fades"], 120),
+    'swap-generation-not-advanced': ("host/src/runner.c",
+        "    r->generation++;\n    r->epoch++;\n",
+        "    r->epoch++;\n",
+        SWAP + ["test_swap_rapid"], 120),
+    'swap-epoch-not-advanced': ("host/src/runner.c",
+        "    r->generation++;\n    r->epoch++;\n",
+        "    r->generation++;\n",
+        SWAP + ["test_swap_rapid"], 120),
+    'swap-leaves-the-audio-clock-behind': ("host/src/runner.c",
+        "    r->audio_origin = r->audio_frame;\n    r->snap_acc = 0;",
+        "    r->audio_origin = 0;\n    r->snap_acc = 0;",
+        CLOCK, 120),
+    'old-engine-never-freed': ("host/src/host.c",
+        "        rbh_sim_destroy(r.sim);\n        atomic_fetch_add_explicit(&h->stats.engines_freed, 1, memory_order_relaxed);",
+        "        atomic_fetch_add_explicit(&h->stats.engines_freed, 1, memory_order_relaxed);",
+        SWAP + STALE + ["test_swap_busy"], 120),
+    'stale-swap-leaks-its-engine': ("host/src/runner.c",
+        "            retire(h, (rb_sim *)c->ptr);\n            add(&h->stats.swaps_stale, 1);",
+        "            add(&h->stats.swaps_stale, 1);",
+        STALE, 120),
+    'full-retired-queue-not-noticed': ("host/src/runner.c",
+        "        if (rbh_queue_space(&h->retired) < 1) {\n            add(&h->stats.swaps_busy, 1);",
+        "        if (0) {\n            add(&h->stats.swaps_busy, 1);",
+        ["test_swap_busy"], 120),
+    'failed-build-leaks': ("host/src/sim_build.c",
+        "    if (why && why_size) snprintf(why, why_size, format, a);\n    rbh_sim_destroy(sim);\n    return NULL;",
+        "    if (why && why_size) snprintf(why, why_size, format, a);\n    return NULL;",
+        ["test_swap_failed_preparation"], 120),
+    'failed-build-reported-ready': ("host/src/host.c",
+        "    atomic_store(&p->state, p->sim ? RB_HOST_PREPARE_READY : RB_HOST_PREPARE_FAILED);",
+        "    atomic_store(&p->state, RB_HOST_PREPARE_FAILED);",
+        ["test_swap_installs", "test_swap_fades", "test_swap_stale"], 120),
+    # the device's underrun
+    'underrun-clicks': ("host/src/host.c",
+        "            const float target = (!underrun || (real && (float)(i + 1) + fade <= (float)n)) ? 1.0f : 0.0f;",
+        "            const float target = real ? 1.0f : 0.0f;",
+        UNDERRUN, 120),
+    'underrun-repeats-old-audio': ("host/src/host.c",
+        "            out[2 * i] = h->dev_held[0] * g;\n            out[2 * i + 1] = h->dev_held[1] * g;",
+        "            out[2 * i] = h->dev_held[0];\n            out[2 * i + 1] = h->dev_held[1];",
+        UNDERRUN, 120),
+    'underrun-not-counted': ("host/src/host.c",
+        "    if (underrun) {\n        atomic_fetch_add_explicit(&h->stats.underruns, 1, memory_order_relaxed);",
+        "    if (0) {\n        atomic_fetch_add_explicit(&h->stats.underruns, 1, memory_order_relaxed);",
+        UNDERRUN, 120),
+    'audio-fades-in-never': ("host/src/host.c",
+        "            if (g < target) g = g + step < target ? g + step : target;",
+        "            if (g < target) g = target;",
+        UNDERRUN, 120),
+    # the render thread's rules
+    'priority-not-set': ("host/src/runner.c",
+        "    rbh_plat_render_enter(&priority);",
+        "    memset(&priority, 0, sizeof priority);",
+        ["test_host_render_thread_priority"], 120),
+    'allocation-on-the-render-thread': ("host/src/runner.c",
+        "    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        "    rbh_free(rbh_alloc(16));\n    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        AUDIT + ["test_render_thread_never_calls"], 120),
+    'lock-on-the-render-thread': ("host/src/runner.c",
+        "    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        "    { rbh_mutex *m = rbh_plat_mutex_create(); rbh_plat_mutex_lock(m); rbh_plat_mutex_unlock(m); rbh_plat_mutex_destroy(m); }\n"
+        "    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        AUDIT, 120),
+    'log-on-the-render-thread': ("host/src/runner.c",
+        "    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        "    rbh_log(\"\");\n    drain_commands(h);\n\n    /* the engine's block, in both ears */",
+        AUDIT, 120),
+    'physics-on-the-device-thread': ("host/src/host.c",
+        "    const uint32_t need = (uint32_t)frames;\n    const uint64_t consumed = rbh_ring_consumed(&h->ring);",
+        "    const uint32_t need = (uint32_t)frames;\n    rb_step(h->run.sim);\n    const uint64_t consumed = rbh_ring_consumed(&h->ring);",
+        ["test_device_thread_never_runs_the_physics"], 120),
+    # the clock and the instruments
+    'physics-rate-forgets-the-oversample': ("host/src/clock.c",
+        "    w[C_PHYSICS_HZ] = (uint64_t)r->rate * r->oversample;",
+        "    w[C_PHYSICS_HZ] = (uint64_t)r->rate;",
+        ["test_host_clock"], 120),
+    'device-latency-ignored': ("host/src/clock.c",
+        "    const int64_t ahead = (int64_t)(audio_frame - d[D_CONSUMED]) + (int64_t)d[D_LATENCY];",
+        "    const int64_t ahead = (int64_t)(audio_frame - d[D_CONSUMED]);",
+        ["test_host_output_time"], 120),
+    'snapshots-twice-as-often': ("host/src/runner.c",
+        "    r->oversample = (uint32_t)rb_oversample(sim);\n    r->snap_interval = (uint32_t)((double)r->rate / (double)h->config.snapshot_hz + 0.5);",
+        "    r->oversample = (uint32_t)rb_oversample(sim);\n    r->snap_interval = (uint32_t)((double)r->rate / (double)h->config.snapshot_hz / 2.0 + 0.5);",
+        ["test_host_snapshots_are_whole"], 120),
+    'deadline-never-missed': ("host/src/runner.c",
+        "    if (bin > 9) bin = ns < 2 * budget ? 10 : 11;",
+        "    if (bin > 9) bin = 9;",
+        ["test_host_deadline_bins"], 120),
+    # the offline mode and traces
+    'mono-engine-in-one-ear': ("host/src/runner.c",
+        "        for (int i = 0; i < frames; i++) out[2 * i] = out[2 * i + 1] = r->mono[i];",
+        "        for (int i = 0; i < frames; i++) { out[2 * i] = r->mono[i]; out[2 * i + 1] = 0.0f; }",
+        OFFLINE, 120),
+    'trace-ignores-its-skip': ("host/src/trace.c",
+        "        const long long first = t->skip > frame ? t->skip - frame : 0;",
+        "        const long long first = 0;",
+        ["test_trace_plays"], 120),
+    # the device layer
+    'prefers-44100': ("host/src/device.c",
+        "    if (any || has_48) return 48000;\n    if (has_44) return 44100;",
+        "    if (has_44) return 44100;\n    if (any || has_48) return 48000;",
+        ["test_device_rate"], 120),
+    'lost-device-ignored': ("host/src/host.c",
+        "    if (event) recover_device(h, event);",
+        "    (void)event;",
+        ["test_device_lost"], 120),
+    'resume-keeps-the-old-epoch': ("host/src/host.c",
+        "    int rc = new_epoch(h);       /* the audio in the ring is from before the sleep: dropped */",
+        "    int rc = RB_HOST_OK;",
+        ["test_device_suspend"], 120),
+}
