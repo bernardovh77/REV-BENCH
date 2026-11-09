@@ -22,8 +22,7 @@ and tests on all three systems.
 Linux:
 - **Builds:** Apple clang, universal (arm64 and x86-64 add-ons merged with `lipo`, then
   @electron/universal), and gcc, for the core, the host and the add-on. From here CI runs
-  everything on all three systems (macOS weekly, on demand and on every release tag while the
-  repository is private).
+  everything on all three systems (macOS weekly, on demand and on every release tag).
 - **Real time:** `host/src/platform_mac.c` (the time-constraint policy, joining the device's
   audio workgroup) and `platform_linux.c` (RTKit, else a raised nice level), each measured and
   shown in the diagnostics panel; Core Audio and PipeWire, PulseAudio or ALSA through miniaudio,

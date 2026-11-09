@@ -15,7 +15,8 @@ CLAUDE.md and .claude/ have been preserved.
   then the level, bands and rpm statistically (a last bit can flip a random soft cut).
 - CI (`.github/workflows/ci.yml`) is green on Windows and Linux; macOS runs Mondays and on
   demand and hasn't run yet. Failures show as annotations on the run's page.
-- **The repository is public**, though the plan says private: flagged to Bernardo.
+- **The repository is public**, though the plan said private. Bernardo decided to keep it
+  public (2026-11-09; app-design §15 updated): runners are free, macOS still weekly.
 - **Next stage: 118.**
 
 ## 2026-11-08: Stage 121, the core's public engine API

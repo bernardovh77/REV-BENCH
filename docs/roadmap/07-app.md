@@ -103,9 +103,9 @@ and a CI pipeline proves it on every push:
 **Stop/reject rule:** "It builds" isn't parity: renders must be compared. No compiler flag that
 changes results (fast-math, contraction) to make a build pass.
 
-**Decided (2026-11-08):** the repository stays private for now. Linux and Windows run on every
-push to `main`; macOS, whose minutes count ten times on a private repo, runs the core's tests
-weekly and on demand. Windows first, so this stage builds no macOS or Linux app.
+**Decided (2026-11-08, revised 2026-11-09):** the repository is public (its runners are free).
+Linux and Windows run on every push to `main`; macOS runs the core's tests weekly and on demand.
+Windows first, so this stage builds no macOS or Linux app.
 
 **Legacy coverage:** 13 (stability across builds); 25 (reproducible builds).
 
@@ -398,7 +398,8 @@ reduced realism. A system qualified only in CI, without a real device, is listed
 **Decided (2026-11-08):** Windows first. macOS and Linux are qualified at stage 126 (macOS as
 "CI-tested, limited device testing" while Bernardo's Mac access stays unreliable).
 
-**Decision (Bernardo):** publishing the pre-release, and where, while the repository is private.
+**Decision (Bernardo):** publishing the pre-release, and where (the public repository's GitHub
+Releases being the obvious place).
 
 **Legacy coverage:** 14; 13b-c; R17.
 

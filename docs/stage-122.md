@@ -117,7 +117,8 @@ Getting it green took seven runs, each a lesson:
 **The repository is public** (GitHub's API answers without signing in), though the plan's
 decision was to keep it private for now. On a public repository GitHub's standard runners
 are free, macOS included, so the 2,000-minute budget behind running macOS weekly doesn't
-apply. Recorded for Bernardo to decide (app-design §15).
+apply. Bernardo decided to keep it public (2026-11-09, app-design §15); macOS stays weekly
+and on demand.
 
 ## The test runner
 

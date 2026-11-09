@@ -366,11 +366,11 @@ Linux packages come with stage 126.
   the release stages.
 - **The name is Rev-Bench.** The app's window title, menus, installers and bundle id
   (`io.github.bernardovh77.revbench`) use it.
-- **The repository stays private for now.** CI minutes are limited: GitHub's free plan gives a
-  private repo 2,000 minutes a month, with Windows minutes counted twice and macOS ten times.
-  So Linux and Windows run on every push to `main`, and macOS runs the core's tests weekly and
-  on demand (stage 122); its full runs from stage 126 keep that schedule, plus every release
-  tag.
+- **The repository is public** (decided 2026-11-09, replacing 2026-11-08's "private for now",
+  which it turned out never to have been). On a public repository GitHub's standard runners
+  are free, macOS included. Linux and Windows run on every push to `main`; macOS keeps running
+  the core's tests weekly and on demand (stage 122), its full runs from stage 126 the same plus
+  every release tag. Running macOS on every push is now only a question of time, not money.
 - **Bernardo's Mac access is limited and unreliable.** macOS is built and tested automatically in
   CI (on the null audio device), and checked on a real Mac only when one is available. Until
   then it is listed as "CI-tested, limited device testing", never as fully qualified, and
@@ -403,8 +403,8 @@ Linux packages come with stage 126.
 1. **The baseline machine** (CPU, GPU, OS) for "1.5× real time", and whether a bare-metal Linux
    machine is available for device tests. WSLg can run the Linux build for development, but it
    isn't bare metal. Stage 118 (the baseline), 126 (Linux).
-2. **Where releases are published** while the repository is private (a private repo's
-   releases aren't public). Stage 069, 101.
+2. **Where releases are published:** the public repository's GitHub Releases are the obvious
+   place; whether and when to publish stays Bernardo's call. Stage 069, 101.
 3. **The icon and the licence:** to be looked into later; the repo has no LICENSE file yet.
    Stage 124 (icon drafts), 100 (licence).
 4. **Signing** (deferred, above). Stage 101.
