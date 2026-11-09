@@ -19,6 +19,28 @@ One window on Windows, macOS and Linux. In it you:
 - later, see it run in 3D: cutaway, valves, pulses in the pipes, turbo;
 - save builds as files, share them as a file or a short code, and export what you hear as WAV.
 
+### Windows first
+
+Decided 2026-11-08: the app is built and finished on Windows first. Stage 126 ports it to macOS
+and Linux once everything else is settled, after phase F and before the release stages
+095–102. Until then:
+- **Windows is the one full target:** the MSVC build, real audio devices, the installer, the
+  end-to-end tests and every qualification run there, on Bernardo's machine.
+- **Linux is kept honest by CI:** every push builds the core, the host and the add-on with gcc
+  and runs their tests (the host's on the null device and under ThreadSanitizer), and the
+  interface's unit tests. No Linux installer, app end-to-end tests or real-device runs yet.
+- **macOS is kept honest by a weekly CI run** (and on demand) of the core's tests with Apple
+  clang, so a third compiler's differences show up early. Nothing else is built for it yet.
+- **The code stays portable:**
+  - sound only through miniaudio, builds only through CMake (and the Makefile);
+  - anything specific to a system (thread priority, paths, menu conventions) behind one small
+    platform file per layer: `host/src/platform_win.c` and `platform_posix.c` (a plain fallback
+    with no priority boost), and `app/src/main/platform.ts`, never scattered through the code;
+  - paths built with Node's `path` and the C side's own join, never hard-coded separators.
+- **What stage 126 adds** is marked in each section below: macOS's and Linux's thread
+  priorities, universal macOS builds, their installers, their end-to-end and real-device runs,
+  and each system's conventions.
+
 The sound is the physical simulation's, made live on your computer: the same C core that
 renders today's WAV files, unchanged in what it computes.
 
@@ -34,7 +56,7 @@ renders today's WAV files, unchanged in what it computes.
 | Interface | TypeScript + Svelte 5 + Vite, pinned exactly | A compiled, fine-grained reactive UI: 60 updates a second of telemetry change only what they touch. |
 | Charts | uPlot | Fast canvas time series for instruments and dyno curves. |
 | 3D | Three.js WebGPURenderer (WebGL 2 fallback), TSL shaders, procedural geometry | As planned since stage 17 (old numbering); unchanged. |
-| Packaging | electron-builder | Installers, signing, notarisation and auto-update for all three systems. |
+| Packaging | electron-builder | Installers, signing, notarisation and auto-update: Windows first, macOS and Linux from stage 126. |
 | Tests | the C suites, Vitest, Playwright's Electron driver | One runner, `tools/run_tests.py`, on every system. |
 
 Every dependency is pinned to an exact version at least two weeks old when adopted (CLAUDE.md's
@@ -100,7 +122,7 @@ glitch. With a ring the render thread works a little ahead of the sound card:
 ## 4. Data between the threads
 
 All of it is lock-free and preallocated. Each structure is its own small C module in `host/`
-with its own tests (stage 123), including thread-sanitizer runs on Linux and macOS.
+with its own tests (stage 123), including ThreadSanitizer runs in Linux CI (MSVC has none).
 
 | Data | Structure | Direction | Size |
 | --- | --- | --- | --- |
@@ -188,15 +210,17 @@ Bernardo's machine (stage 118). That leaves room for the 3D view and the rest of
   - link-time optimisation, which every build uses;
   - a wider instruction set: x86-64-v2 for all builds, and possibly AVX2 by runtime dispatch if
     it measurably helps (without FMA contraction, which would change results);
-  - Apple Silicon's NEON;
+  - Apple Silicon's NEON (from stage 126);
   - a dedicated high-priority thread.
 - **Thread priority:**
-  - Windows: MMCSS "Pro Audio" (`AvSetMmThreadCharacteristicsW`);
-  - macOS: a time-constraint policy, and joining the device's audio workgroup (macOS 11+);
-  - Linux: real-time priority through RTKit where the desktop allows it, else a raised nice
-    level.
+  - Windows: MMCSS "Pro Audio" (`AvSetMmThreadCharacteristicsW`), from stage 123;
+  - macOS (stage 126): a time-constraint policy, and joining the device's audio workgroup
+    (macOS 11+);
+  - Linux (stage 126): real-time priority through RTKit where the desktop allows it, else a
+    raised nice level.
 
-  Each measured and reported in the diagnostics panel.
+  Each measured and reported in the diagnostics panel. Until stage 126 the POSIX build runs the
+  render thread at normal priority, which is enough for CI on the null device.
 - **Denormal numbers** can slow the resonators badly. Stage 118 checks whether the core produces
   them, and fixes it in the core (so results stay the same everywhere) rather than flushing
   them to zero on one platform only.
@@ -212,10 +236,14 @@ Each system builds with its usual compiler:
 - Apple clang on macOS;
 - gcc on Linux.
 
+MSVC is the target from stage 122; gcc builds and runs every test in CI on every push; Apple
+clang runs the core's tests weekly until stage 126 makes macOS a full target.
+
 All use strict double arithmetic: no fused multiply-add contraction (`-ffp-contract=off`,
 `/fp:precise`), no fast-math. Within one compiler, a refactor must leave renders bit-identical
 (stage 119's rule). Across compilers, the same seeded drive must match within a stated tolerance
-(stage 122 measures and freezes it), because libm's `exp`/`pow` differ in their last bits.
+(stage 122 measures and freezes it from MSVC and gcc, and Apple clang's weekly runs are checked
+against it), because libm's `exp`/`pow` differ in their last bits.
 
 ## 9. Building it
 
@@ -237,34 +265,37 @@ web/           WebAssembly build and its tests (kept)
 
 - **The Makefile** keeps building the core, the tools and the C tests, as today: gcc in WSL and
   Linux, w64devkit on Windows, clang on macOS.
-- **CMake** builds the core, the host and their tests with each system's compiler (stage 122),
+- **CMake** builds the core, the host and their tests with MSVC and gcc (stage 122; Apple clang
+  for the core's weekly run, everything from stage 126),
   so MSVC is tested as well, and later the add-on (stage 124).
 - **Toolchains:**
   - Windows: Visual Studio 2022 Build Tools (C/C++ workload), CMake, Node.
-  - macOS: Xcode's command-line tools, CMake, Node.
-  - Linux: gcc or clang, CMake, Node, and the ALSA/PulseAudio development headers.
+  - macOS (stage 126; until then only CI's): Xcode's command-line tools, CMake, Node.
+  - Linux (CI from stage 122, a workstation set-up at 126): gcc or clang, CMake, Node, and the
+    ALSA/PulseAudio development headers.
 
   docs/workspace.md lists exact versions, and `tools/run_tests.py` checks them.
-- **macOS builds** are universal: arm64 and x86-64 add-ons merged with `lipo`, then
+- **macOS builds** (stage 126) are universal: arm64 and x86-64 add-ons merged with `lipo`, then
   @electron/universal.
 
 ## 10. Testing
 
 | Level | What | Where |
 | --- | --- | --- |
-| Core | the existing 251 tests, planted bugs, sound check | every system, gcc and the native compiler |
-| Host | ring, queues, triple buffer, swap and fades; deadline harness on the null device; TSan | every system |
-| Parity | the same seeded drive: `rb_cli` offline vs the host's offline render (bit-exact, same compiler); across compilers within the frozen tolerance | every system |
-| Add-on | load, metadata, commands, snapshots, errors, device listing, on the null backend | every system, from Node |
-| Interface | Svelte components, decoders, state, with Vitest | every system |
-| End to end | Playwright drives the real app: start, idle, rev, rebuild, save and load, on the null backend; audio checked through the host's capture tap against the offline render | every system; Linux under a virtual display |
-| Real devices | 15-minute stress drives on each system's real audio: deadline histogram, underruns, memory | Bernardo's machines (stage 069, 099) |
+| Core | the existing 251 tests, planted bugs, sound check | Windows (MSVC and w64devkit) and Linux CI (gcc); macOS weekly (Apple clang) |
+| Host | ring, queues, triple buffer, swap and fades; deadline harness on the null device; TSan | Windows; Linux CI (with TSan); macOS from stage 126 |
+| Parity | the same seeded drive: `rb_cli` offline vs the host's offline render (bit-exact, same compiler); across compilers within the frozen tolerance | Windows and Linux CI; macOS weekly (the core) |
+| Add-on | load, metadata, commands, snapshots, errors, device listing, on the null backend | Windows and Linux CI, from Node; macOS from stage 126 |
+| Interface | Svelte components, decoders, state, with Vitest | Windows and Linux CI |
+| End to end | Playwright drives the real app: start, idle, rev, rebuild, save and load, on the null backend; audio checked through the host's capture tap against the offline render | Windows; macOS and Linux (under a virtual display) from stage 126 |
+| Real devices | 15-minute stress drives on real audio: deadline histogram, underruns, memory | Bernardo's Windows machine (stage 069); macOS and Linux where machines exist (stages 126, 099) |
 | Listening | Bernardo, per preset and scenario | his machine |
 
-`tools/run_tests.py` gains the `host`, `addon`, `app` and `app-e2e` suites. CI runs everything
-on all three systems for every push to `main`, and builds unsigned installers for each (stage
-122 and 124). CI has no sound cards, so it uses the null device; real-device evidence is
-Bernardo's.
+`tools/run_tests.py` gains the `host`, `addon`, `app` and `app-e2e` suites. CI runs on every
+push to `main`: everything on Windows, with its unsigned installer; the C, add-on and interface
+suites on Linux; and the core's tests on macOS weekly and on demand (stages 122 and 124). From
+stage 126 it runs everything on all three systems and builds each one's installers. CI has no
+sound cards, so it uses the null device; real-device evidence is Bernardo's.
 
 ## 11. The interface
 
@@ -304,6 +335,9 @@ light theme, and components built once and used everywhere.
 
 ## 13. Distribution
 
+Windows ships first: its installer is built from stage 124 and qualified at 069. The macOS and
+Linux packages come with stage 126.
+
 | System | Packages | Minimum | Signing |
 | --- | --- | --- | --- |
 | Windows | NSIS installer and a portable zip, x64 | Windows 10 22H2, 11 | Optional Authenticode certificate; without one, SmartScreen warns |
@@ -327,16 +361,20 @@ light theme, and components built once and used everywhere.
 ## 15. Decisions
 
 **Taken (2026-11-08):**
+- **Windows first** (§1): the app is built, tested and qualified on Windows; Linux CI and a
+  weekly macOS core run keep the code portable; stage 126 ports it to macOS and Linux before
+  the release stages.
 - **The name is Rev-Bench.** The app's window title, menus, installers and bundle id
   (`io.github.bernardovh77.revbench`) use it.
 - **The repository stays private for now.** CI minutes are limited: GitHub's free plan gives a
   private repo 2,000 minutes a month, with Windows minutes counted twice and macOS ten times.
-  So Linux and Windows run on every push to `main`, and macOS runs weekly and on demand
-  (stage 122).
+  So Linux and Windows run on every push to `main`, and macOS runs the core's tests weekly and
+  on demand (stage 122); its full runs from stage 126 keep that schedule, plus every release
+  tag.
 - **Bernardo's Mac access is limited and unreliable.** macOS is built and tested automatically in
   CI (on the null audio device), and checked on a real Mac only when one is available. Until
   then it is listed as "CI-tested, limited device testing", never as fully qualified, and
-  Windows and Linux carry the real-device evidence (stages 069, 099).
+  the other systems carry the real-device evidence (stages 126, 099).
 - **Sample rates: 44.1 and 48 kHz.** The host renders natively at either, whichever the device
   runs at. A device at any other rate (88.2, 96 kHz...) is fed 48 kHz and converted by miniaudio
   or the system: higher rates carry nothing audible and would double the physics' cost
@@ -364,7 +402,7 @@ light theme, and components built once and used everywhere.
 **Still open.** Each blocks the stage named, and nothing before it.
 1. **The baseline machine** (CPU, GPU, OS) for "1.5× real time", and whether a bare-metal Linux
    machine is available for device tests. WSLg can run the Linux build for development, but it
-   isn't bare metal. Stage 118, 069.
+   isn't bare metal. Stage 118 (the baseline), 126 (Linux).
 2. **Where releases are published** while the repository is private (a private repo's
    releases aren't public). Stage 069, 101.
 3. **The icon and the licence:** to be looked into later; the repo has no LICENSE file yet.

@@ -8,8 +8,12 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 with the C core and a C real-time host running natively behind a Svelte interface
 ([ADR 0004](../adr/0004-desktop-application.md)). This file used to be `07-browser.md`, the
 browser bench. Stages 066–069 keep their numbers with new specifications; 120–124 are new;
-118 is retargeted from WebAssembly to the native render thread. Every stage here builds and
-tests on all three systems; a feature that works on one only is not done.
+118 is retargeted from WebAssembly to the native render thread.
+
+**Windows first** ([app-design §1](../app-design.md#windows-first)): every stage here is finished and tested on Windows, keeps building
+and passing its tests in Linux CI, and keeps the core's tests passing in macOS's weekly CI run.
+The full macOS and Linux app is [stage 126](12-release.md#stage-126), before the release
+stages.
 
 The order: 120 → 121 → 122 → 118 → 123 → 124 → 066 → 067 → 068 → 069 (120 is specified in
 [14-review-fixes.md](14-review-fixes.md#stage-120)).
@@ -67,27 +71,31 @@ native/rb_cli.c, [docs/stage-09.md](../stage-09.md), [docs/stage-12c.md](../stag
 
 **Dependencies:** [120](14-review-fixes.md#stage-120)
 
-**Deliverable:** The core, the tools and the C tests build with each system's own compiler,
+**Deliverable:** The core, the tools and the C tests build with MSVC and gcc (and the core's
+tests with Apple clang),
 and a CI pipeline proves it on every push:
-- **CMake** for the core and tests: MSVC 2022 on Windows, Apple clang on macOS (arm64 and x86-64,
-  universal), gcc and clang on Linux. Strict double arithmetic everywhere (`/fp:precise`,
+- **CMake** for the core and tests: MSVC 2022 on Windows (the target), gcc on Linux, and Apple
+  clang on macOS for the core's tests (universal builds wait for stage 126). Strict double arithmetic everywhere (`/fp:precise`,
   `-ffp-contract=off`, no fast-math), warnings as errors at a stated level. The Makefile stays
   for the existing workflow.
 - **The core compiles cleanly under MSVC:** anything C11 that MSVC lacks is fixed portably, with
   no behaviour change and renders bit-identical under gcc.
-- **A compiler-parity test:** the same seeded drives rendered by each compiler, compared, and a
-  tolerance frozen from the measurement (libm differs in its last bits).
-- **GitHub Actions** on Windows, macOS and Linux:
-  - the native suite, the Python suite, the WebAssembly build check and the web unit tests;
-  - sanitizers (ASan, UBSan) on Linux and macOS;
+- **A compiler-parity test:** the same seeded drives rendered by MSVC and gcc, compared, and a
+  tolerance frozen from the measurement (libm differs in its last bits); Apple clang's weekly
+  renders are checked against it.
+- **GitHub Actions:**
+  - Windows, every push: the native suite (MSVC and w64devkit), the Python suite, the
+    WebAssembly build check and the web unit tests;
+  - Linux, every push: the same with gcc, plus the sanitizers (ASan, UBSan);
+  - macOS, weekly and on demand: the core's tests with Apple clang;
   - artifacts kept for a week.
 - **`tools/run_tests.py`** gains a `cmake` suite (the CMake build and its tests) and checks
   toolchain versions.
-- **docs/workspace.md** gets each system's toolchain set-up, exact versions included (Visual
-  Studio Build Tools, CMake, Xcode command-line tools).
+- **docs/workspace.md** gets Windows' toolchain set-up, exact versions included (Visual Studio
+  Build Tools, CMake); macOS's and Linux's workstation set-ups come with stage 126.
 
 **Required exit evidence:**
-- Green CI on all three systems for a full push.
+- Green CI: Windows and Linux on a full push, and a macOS core run.
 - The parity measurement and its frozen tolerance.
 - A planted portability fault (e.g. a GNU-only construct) caught by the MSVC job.
 - Bernardo's Windows machine builds with MSVC locally.
@@ -96,8 +104,8 @@ and a CI pipeline proves it on every push:
 changes results (fast-math, contraction) to make a build pass.
 
 **Decided (2026-11-08):** the repository stays private for now. Linux and Windows run on every
-push to `main`; macOS, whose minutes count ten times on a private repo, runs weekly and on
-demand.
+push to `main`; macOS, whose minutes count ten times on a private repo, runs the core's tests
+weekly and on demand. Windows first, so this stage builds no macOS or Linux app.
 
 **Legacy coverage:** 13 (stability across builds); 25 (reproducible builds).
 
@@ -114,8 +122,8 @@ demand.
 **Deliverable:**
 1. **A benchmark of what the app will run:** the whole render path (`rb_render_stereo` with the
    noise, listener and scene) through the public API. It covers each preset and tier on idle, a
-   held pull and a rev, with variation on. It is built natively with each system's compiler and
-   LTO, and as WebAssembly for the record.
+   held pull and a rev, with variation on. It is built with MSVC and LTO on Windows (the target),
+   and with gcc in Linux CI and as WebAssembly for the record.
 2. **A profile** of that path (gprof everywhere; callgrind and perf where available; Windows'
    sampling profiler), and a denormal-number check.
 3. **Speed-ups that change nothing it computes,** where the profile points: renders at the
@@ -133,7 +141,7 @@ demand.
   [app-design §15](../app-design.md#15-decisions) (torque, power, VE and idle speed within 1 %;
   each compare_real and orders measure and the loudness within 1 dB).
 - Bernardo's listening approves the tier.
-- All suites green on all three systems.
+- All suites green on Windows and in Linux CI.
 
 **Stop/reject rule:** No silent quality loss: the tier states what it changes. Below-real-time
 correctness prototypes don't count. The promoted renderer's own tiers stay stage 062.
@@ -159,9 +167,9 @@ WebAssembly.
 **Deliverable:** `host/`, a C11 library that runs the core in real time (app-design §3–5),
 without Node or JavaScript:
 - **A render thread** at high priority:
-  - Windows: MMCSS "Pro Audio";
-  - macOS: time-constraint policy and the device's audio workgroup;
-  - Linux: RTKit real-time, or a raised nice level.
+  - Windows: MMCSS "Pro Audio", in `host/src/platform_win.c`;
+  - elsewhere `platform_posix.c` runs it at normal priority, for Linux CI; macOS's
+    time-constraint policy and audio workgroup and Linux's RTKit come with stage 126.
 
   It renders blocks into an SPSC ring; it never allocates, locks or logs.
 - **The audio device** through vendored, pinned miniaudio:
@@ -185,12 +193,12 @@ without Node or JavaScript:
   - the thread priority actually obtained.
 
 **Required exit evidence:**
-- Unit tests for each channel, including concurrent stress runs under ThreadSanitizer (Linux,
-  macOS).
+- Unit tests for each channel, including concurrent stress runs under ThreadSanitizer (in Linux
+  CI). The host builds and passes its tests on the null device on Windows and in Linux CI.
 - Swap tests, covering failure, stale generation, rapid successive swaps and fades without
   clicks (measured).
 - The offline mode bit-identical to `rb_cli` for the same trace and compiler.
-- A real-device run on each system Bernardo can reach: 15 minutes of a scripted drive with the
+- A real-device run on Bernardo's Windows machine: 15 minutes of a scripted drive with the
   deadline histogram, zero underruns at the default latency, and bounded memory.
 - Planted bugs (a torn snapshot, a lost command, a swap without fade, a priority not set),
   caught.
@@ -211,12 +219,12 @@ looping old audio.
 
 **Dependencies:** [122](#stage-122), [123](#stage-123)
 
-**Deliverable:** The Electron app as a skeleton that plays sound, on all three systems:
+**Deliverable:** The Electron app as a skeleton that plays sound, on Windows:
 - **`app/`**: pinned Electron, Vite, TypeScript (strict), Svelte 5, electron-builder.
 - **The process model** (app-design §3):
   - the main process;
   - the engine utility process with the Node-API add-on (`app/native/`, CMake via cmake-js:
-    MSVC, Apple clang universal, gcc);
+    MSVC; gcc in Linux CI);
   - the sandboxed renderer with context isolation, no Node, a strict content security policy
     and a typed preload API.
 - **The MessagePort channel:** commands, acknowledgments, snapshots and events, with the
@@ -229,13 +237,15 @@ looping old audio.
   base components, and a new look changes them, not the panels.
 - **Tests:** Vitest (UI, decoder, client) and Playwright's Electron driver (launch, play on the
   null device, quit, restart after a killed engine process). Both run in `tools/run_tests.py`
-  (`addon`, `app`, `app-e2e`) and in CI on all three systems.
-- **Unsigned installers** per system from CI: NSIS and zip, DMG and zip universal, AppImage,
-  .deb and tar.gz. They install and launch on a clean machine.
+  (`addon`, `app`, `app-e2e`) and in CI on Windows; the add-on's and Vitest's also on Linux.
+- **An unsigned Windows installer** from CI (NSIS and a portable zip), which installs and
+  launches on a clean Windows machine. macOS and Linux packages come with stage 126.
+- **Platform code in one place:** `app/src/main/platform.ts` for anything system-specific in
+  the shell (menus, paths, the user-data folder).
 - **The app's name and icon** drafted for Bernardo's choice.
 
 **Required exit evidence:**
-- CI green with installers on all three systems.
+- CI green: Windows with its installer, Linux's add-on and interface suites.
 - The installed app plays the engine (a fixed preset idling) on Bernardo's machine.
 - Measured MessagePort snapshot cost (bytes per second, latency) within runtime-v1's budget.
 - The killed-engine-process restart works.
@@ -280,10 +290,10 @@ and test set-up to reuse).
 **Required exit evidence:**
 - A seeded command trace driven through the app's UI produces, through the host's capture tap,
   the same audio as the host's offline render of that trace. It must match within the declared
-  budget at 44.1 and 48 kHz on each system.
+  budget at 44.1 and 48 kHz on Windows.
 - Start, idle, blip, lift, stop, restart, preset changes, invalid commands, device changes and
-  sleep and wake each work on Windows, macOS and Linux, as e2e tests on the null device plus a
-  manual check on real devices.
+  sleep and wake each work on Windows, as e2e tests on the null device plus a manual check on
+  Bernardo's real devices. The C and add-on suites stay green in Linux CI.
 
 **Stop/reject rule:** A tone, a copied mono channel or a benchmark is not the engine playing.
 No JavaScript in the audio path. The tier is never changed silently.
@@ -320,7 +330,7 @@ No JavaScript in the audio path. The tier is never changed silently.
 - Rapid mixed edits, stale commands and failed multi-field loads can't leave a half-applied
   build or double rendering.
 - Changing scenes or layers resets the listener's histories as specified.
-- e2e on all three systems.
+- e2e on Windows.
 
 **Stop/reject rule:** JavaScript never forks the physics description, and no slider combination
 is claimed physically credible just because it was accepted.
@@ -360,37 +370,35 @@ instrumentation, not from estimates in the interface.
 **Execution record:** `docs/stage-068.md`.
 
 <a id="stage-069"></a>
-## Stage 069 — The first playable app, qualified on three systems
+## Stage 069 — The first playable app, qualified on Windows
 
 **Dependencies:** [066](#stage-066), [067](#stage-067), [068](#stage-068), [118](#stage-118). Base sound acceptance stays 063, and the final listening 098.
 
-**Deliverable:** Qualify the engine, controls, stereo and instruments on Windows, macOS and
-Linux, on named machines (Bernardo's baseline, plus whatever Mac and Linux machines are
-available). Define and record:
-- the supported systems and versions;
+**Deliverable:** Qualify the engine, controls, stereo and instruments on Windows, on named
+machines (Bernardo's baseline first). Define and record:
+- the supported Windows versions;
 - the sample rates and the latency defaults;
 - the tier and its hardware demand;
 - the command and telemetry budgets.
 
-Publish the first playable build: the unsigned installers as a GitHub pre-release, once
+Publish the first playable build: the unsigned Windows installer as a GitHub pre-release, once
 Bernardo authorises publishing.
 
 **Required exit evidence:**
-- On each system's real audio device, the declared 15-minute stress drive: the host's deadline
-  histogram (tail and maximum), underruns (zero at the default latency), and memory.
-- e2e on all three systems.
+- On Bernardo's Windows machine's real audio devices (and a second Windows machine if one is
+  available), the declared 15-minute stress drive: the host's deadline histogram (tail and
+  maximum), underruns (zero at the default latency), and memory.
+- e2e on Windows; Linux CI green; the latest macOS core run green.
 - Manual start, blip, pull and long-coast listening by Bernardo.
 
 **Stop/reject rule:** A percentile alone can hide glitches; unmeasured timing keeps
 qualification open. An untested system or machine gets an explicit limitation, never silently
 reduced realism. A system qualified only in CI, without a real device, is listed as such.
 
-**Decided (2026-11-08):** Bernardo's Mac access is limited and unreliable, so macOS is qualified
-by CI on the null device plus real-Mac checks only when available, and listed as "CI-tested,
-limited device testing" until then.
+**Decided (2026-11-08):** Windows first. macOS and Linux are qualified at stage 126 (macOS as
+"CI-tested, limited device testing" while Bernardo's Mac access stays unreliable).
 
-**Decisions (Bernardo):** whether a bare-metal Linux machine is available; publishing the
-pre-release, and where, while the repository is private.
+**Decision (Bernardo):** publishing the pre-release, and where, while the repository is private.
 
 **Legacy coverage:** 14; 13b-c; R17.
 

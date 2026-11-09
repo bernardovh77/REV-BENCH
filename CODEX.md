@@ -4,6 +4,19 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-08: Windows first
+
+- At Bernardo's request the app is built Windows first ([app-design §1](docs/app-design.md#windows-first)):
+  - every stage up to the end of phase F is finished, tested and qualified on Windows (MSVC);
+  - Linux CI (gcc) builds and tests the core, the host (null device, ThreadSanitizer), the
+    add-on and the interface on every push; macOS runs the core's tests with Apple clang weekly;
+  - system-specific code lives only in `host/src/platform_*.c` and `app/src/main/platform.ts`.
+- **New stage 126** (docs/roadmap/12-release.md), at the start of phase G: the port to macOS and
+  Linux (universal builds, their thread priorities, packages, every e2e test on both,
+  real-device runs where machines exist). 095 and 099 depend on it.
+- Stages 122, 118, 123, 124, 066–069, 070, 077, 084 and 061 now ask for Windows plus Linux CI
+  instead of all three systems. Docs only. **Next stage: 120.**
+
 ## 2026-11-08: The plan remade for a desktop app
 
 - At Bernardo's request REV-BENCH becomes a downloadable app for Windows, macOS and Linux

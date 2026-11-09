@@ -27,7 +27,9 @@ byte-identical results. Every test runs on Windows and in WSL alike.
 
 On 2026-11-08 REV-BENCH became a desktop app instead of a browser page
 ([the design](docs/app-design.md), [the decision](docs/adr/0004-desktop-application.md)).
-Next come its foundations and the engine playing live (stages 120–124, 118 and 066–069),
+It is built Windows first, kept portable by CI on Linux and macOS, and ported to both before
+the release (stage 126). Next come its foundations and the engine playing live (stages 120–124,
+118 and 066–069),
 then the sound to real-engine standard (039, 050–063), the 3D view (070–077), turbo, knock and
 more layouts. The
 [stage protocol](docs/roadmap/README.md) keeps experiment results, the engine, runtime and

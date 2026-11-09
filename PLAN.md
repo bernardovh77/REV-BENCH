@@ -52,7 +52,9 @@ evidence and Bernardo's ears. The first full release includes:
   with the same results on both (docs/workspace.md).
 - **The app replaces the browser** (2026-11-08): a downloadable app for Windows, macOS and
   Linux, chosen for its look, craft and reliable real-time sound
-  ([ADR 0004](docs/adr/0004-desktop-application.md)). Its stages come first.
+  ([ADR 0004](docs/adr/0004-desktop-application.md)). Its stages come first. It is built
+  Windows first: Linux CI and a weekly macOS core run keep the code portable, and stage 126
+  ports it to macOS and Linux before the release stages.
 - **Bernardo's reference recordings and videos** are on his machine, in `renders/` (git-ignored;
   docs/user-sound-references.md). Stages 039, 058, 059 and 063 need them.
 
@@ -71,18 +73,23 @@ turbo and the rest, as agreed.
 **2026-11-08: a desktop app, not a browser page** (Bernardo: a downloadable app for Windows,
 Linux and Mac, chosen for what is best for the project, its look and its craft). Phase A now
 builds the app's foundations first: the workspace's upkeep (120), the core's public engine API
-(121), builds and CI on all three systems (122), the real-time tier (118), the real-time audio
+(121), builds and CI (122), the real-time tier (118), the real-time audio
 host (123) and the app's shell (124). Then 066–069, rewritten for the app.
+
+**2026-11-08, later: Windows first.** Every stage up to the end of phase F is finished and
+tested on Windows; Linux CI builds and tests the C, the add-on and the interface on every push,
+and macOS runs the core's tests weekly. Stage 126, at the start of phase G, ports the app to
+macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 
 1. **Phase A, the app and live play:**
    - [x] **119:** the review's leftovers;
    - [ ] **120:** the workspace and toolset upkeep;
    - [ ] **121:** the core's public engine-control, telemetry and snapshot API;
-   - [ ] **122:** builds and CI on Windows, macOS and Linux;
+   - [ ] **122:** builds and CI: Windows (MSVC) and Linux (gcc) on every push, macOS's core weekly;
    - [ ] **118:** a real-time tier for today's engine;
    - [ ] **123:** the real-time audio host;
    - [ ] **124:** the application's foundation;
-   - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on three systems.
+   - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on Windows.
 2. **Phase B, real sound:**
    - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
    - [ ] **050, 051 → 052;**
@@ -93,7 +100,7 @@ host (123) and the app's shell (124). Then 066–069, rewritten for the app.
 4. **Phase D, turbo:** [ ] 078 → 084.
 5. **Phase E, knock and limits:** [ ] 085 → 089.
 6. **Phase F, more engines:** [ ] 090 → 094.
-7. **Phase G, release:** [ ] 095 → 102.
+7. **Phase G, release:** [ ] 126 (the port to macOS and Linux) → 095 → 102.
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
@@ -110,14 +117,14 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
 | ⬜ | [120](docs/roadmap/14-review-fixes.md#stage-120) | The workspace and toolset upkeep: the 4.7 GB zip and old renders out of the tree, the 30 stale planted bugs, current docs and hooks, the Makefile finding the venv, the test runner's timeouts | 119 |
 | ⬜ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, vehicle and road load, a dyno the sim owns, settings, engine telemetry, snapshots and events; `rb_cli` rewritten on it with identical renders | 037, 120 |
-| ⬜ | [122](docs/roadmap/07-app.md#stage-122) | Builds with each system's compiler (MSVC, Apple clang, gcc) through CMake, a cross-compiler parity tolerance, and CI on Windows, macOS and Linux | 120 |
+| ⬜ | [122](docs/roadmap/07-app.md#stage-122) | Builds through CMake with MSVC (the target) and gcc, a cross-compiler parity tolerance, CI on Windows and Linux every push and the core's tests on macOS weekly | 120 |
 | ⬜ | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine: benchmark the whole render path, profile, speed up without changing results, and declare a tier that runs every preset at least 1.5× real time natively on Bernardo's machine, with what it changes measured and listened to | 121, 122 |
 | ⬜ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): a high-priority render thread, miniaudio, lock-free commands, snapshots and events, rebuilds with fades, the clock mapping, an offline mode and its instrumentation | 121, 122 |
-| ⬜ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron, the engine process with the Node-API add-on, the sandboxed Svelte window, the design system (Bernardo approves), tests and unsigned installers on all three systems | 122, 123 |
+| ⬜ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron, the engine process with the Node-API add-on, the sandboxed Svelte window, a provisional design system on tokens, tests and an unsigned Windows installer; the add-on and interface tests also in Linux CI | 122, 123 |
 | ⬜ | [066](docs/roadmap/07-app.md#stage-066) | The playable engine in the app: start, idle, rev, stop, presets, the tier, stereo scenes, keyboard and game-controller throttle, devices, sleep and wake | 037, 118, 124 |
 | ⬜ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata, with atomic rebuilds and undo | 037, 066 |
 | ⬜ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno, with overlays | 066, 067 |
-| ⬜ | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows, macOS and Linux: deadlines, 15-minute stress runs on real devices, listening; the first pre-release | 066, 067, 068, 118 |
+| ⬜ | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows: deadlines, 15-minute stress runs on real devices, listening; the first pre-release | 066, 067, 068, 118 |
 
 ### Phase B — the sound to real-engine standard
 
@@ -145,7 +152,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [070](docs/roadmap/08-3d.md#stage-070) | 3D scene in the app's window, visual style and capability foundation on all three systems | 037, 069 |
+| ⬜ | [070](docs/roadmap/08-3d.md#stage-070) | 3D scene in the app's window, visual style and capability foundation | 037, 069 |
 | ⬜ | [071](docs/roadmap/08-3d.md#stage-071) | Procedural bottom end and manual kinematics | 037, 070 |
 | ⬜ | [072](docs/roadmap/08-3d.md#stage-072) | Procedural top end and valve motion | 071 |
 | ⬜ | [073](docs/roadmap/08-3d.md#stage-073) | Coherent snapshots and sound-synchronized live animation | 037, 066, 072 |
@@ -190,11 +197,12 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [095](docs/roadmap/12-release.md#stage-095) | Versioned `.rbbuild` files, autosaved sessions | 037, 067, 082, 088, 094 |
+| ⬜ | [126](docs/roadmap/12-release.md#stage-126) | The port to macOS and Linux: Apple clang universal and gcc builds, their real-time thread priorities, packages, every end-to-end test on both, real-device runs where machines exist | 069, 077, 084, 089, 094 |
+| ⬜ | [095](docs/roadmap/12-release.md#stage-095) | Versioned `.rbbuild` files, autosaved sessions | 037, 067, 082, 088, 094, 126 |
 | ⬜ | [096](docs/roadmap/12-release.md#stage-096) | Sharing builds: build codes and `rbench://` links, validated imports | 095 |
 | ⬜ | [097](docs/roadmap/12-release.md#stage-097) | Usability, accessibility and visual polish | 067, 068, 070, 077, 082, 089, 094, 096 |
 | ⬜ | [098](docs/roadmap/12-release.md#stage-098) | Final per-preset listening and realism acceptance | 039, 063, 084, 089, 094, 097 |
-| ⬜ | [099](docs/roadmap/12-release.md#stage-099) | Release qualification on the supported systems and hardware | 077, 084, 089, 094, 096, 097, 098 |
+| ⬜ | [099](docs/roadmap/12-release.md#stage-099) | Release qualification on the supported systems and hardware | 077, 084, 089, 094, 096, 097, 098, 126 |
 | ⬜ | [100](docs/roadmap/12-release.md#stage-100) | Release documentation, licences and asset review | 099 |
 | ⬜ | [101](docs/roadmap/12-release.md#stage-101) | Signed installers and the update channel | 100 |
 | ⬜ | [102](docs/roadmap/12-release.md#stage-102) | Public release and clean-machine acceptance | 101 |
@@ -313,8 +321,9 @@ anything, goes into the engine.
    - Python: the tools' unit tests;
    - web: `npm test`;
    - the app (from stage 124): its unit tests and end-to-end tests;
-   - `python tools/run_tests.py` runs them all, on Windows or WSL; CI runs them on all three
-     systems (from stage 122).
+   - `python tools/run_tests.py` runs them all, on Windows or WSL; CI runs them on Windows and
+     Linux, and the core's on macOS weekly (from stage 122), and everything on all three
+     systems from stage 126.
 4. New physics tests must be able to fail: plant bugs (`tools/plant_bugs.py`).
 5. A change in `core/` rebuilds the WebAssembly core (`make wasm`).
 6. **The sound check:** a change in `core/` also renders the affected sound and compares it with
@@ -322,7 +331,7 @@ anything, goes into the engine.
    realism.
 7. Write `docs/stage-NNN.md`, mark the stage here with a one-line note, and add a short entry to
    `CODEX.md`. Then commit (one per stage) and push.
-8. New work that no stage covers gets the next unused number (126, ...) and a place in the order
+8. New work that no stage covers gets the next unused number (127, ...) and a place in the order
    above. Stage numbers never change.
 
 The full evidence protocol, gates and architecture sketch are in
@@ -337,8 +346,10 @@ The full evidence protocol, gates and architecture sketch are in
   Svelte interface and procedural 3D, on Windows, macOS and Linux (docs/app-design.md). The
   WebAssembly build is kept for portability. The engine is validated natively before it goes
   into the app. No physics or audio ever runs in JavaScript.
-- Every app stage builds and tests on all three systems; a feature that works on one only is
-  not done.
+- Windows first: until stage 126 every app stage is finished and tested on Windows, keeps
+  Linux CI green and keeps the core's tests passing on macOS. System-specific code lives only in
+  the platform files (app-design §1). From stage 126 every stage builds and tests on all three
+  systems; a feature that works on one only is not done.
 - Realism work goes: research, a stated hypothesis, an independent native test, a controlled
   engine comparison, native runs and the app, then Bernardo's listening. Keep findings apart
   from hypotheses, and research results apart from what goes into the engine.

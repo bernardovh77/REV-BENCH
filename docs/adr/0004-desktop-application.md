@@ -37,6 +37,9 @@ sends it commands. The full design is in [docs/app-design.md](../app-design.md).
   release.
 - New stages 120–124 come first: upkeep, the core's public engine API,
   cross-platform builds and CI, the real-time host, and the app's foundation.
+- Built Windows first (decided the same day): Linux CI and a weekly macOS core run keep the
+  code portable, and stage 126 ports the app to macOS and Linux before the release stages
+  ([app-design §1](../app-design.md#windows-first)).
 - Stage 118 targets the native render thread; WebAssembly no longer gates
   anything, and a browser demo is optional stage 125.
 - Contract runtime-v1's ownership, generation and clock rules still hold; its

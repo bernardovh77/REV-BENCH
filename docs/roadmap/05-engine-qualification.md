@@ -149,7 +149,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Promote only the selected, qualified path into the production core, the real-time host and the app (the WebAssembly build kept compiling). Maintain configuration/state ownership, defined fallback/rollback and existing accepted presets; retire redundant propagation only where replaced.
 
-**Required exit evidence:** Production controls reproduce qualified candidate states/audio/loads; complete core/native/Python/app parity suites on all three systems and deliberate integration faults pass. Publish changed engine renders and migration/rollback evidence.
+**Required exit evidence:** Production controls reproduce qualified candidate states/audio/loads; complete core/native/Python/app parity suites on Windows and in Linux CI (the core's in macOS's weekly run too) and deliberate integration faults pass. Publish changed engine renders and migration/rollback evidence.
 
 **Stop/reject rule:** Experimental objects being linked into a probe is not production integration. Never sum old and new copies of the same physical pulse.
 

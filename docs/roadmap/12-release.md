@@ -1,4 +1,4 @@
-# Persistence, final acceptance and release
+# The port, persistence, final acceptance and release
 
 [Canonical tracker](../../PLAN.md) · [Stage protocol](README.md) · [Legacy crosswalk](legacy-map.md) · [The app's design](../app-design.md)
 
@@ -9,10 +9,60 @@ Since 2026-11-08 the release is a desktop application for Windows, macOS and Lin
 files and codes instead of URLs; the release is signed installers and an update channel instead
 of a static web deployment.
 
+The app is built Windows first ([app-design §1](../app-design.md#windows-first)). New stage 126
+comes first here: it ports the finished app to macOS and Linux, so every stage after it builds
+and tests on all three systems.
+
+<a id="stage-126"></a>
+## Stage 126 — The port to macOS and Linux
+
+**Dependencies:** [069](07-app.md#stage-069), [077](08-3d.md#stage-077), [084](09-turbo.md#stage-084), [089](10-limits.md#stage-089), [094](11-engine-catalog.md#stage-094)
+
+**Deliverable:** The app, finished on Windows through phase F, made a full app on macOS and
+Linux:
+- **Builds:** Apple clang, universal (arm64 and x86-64 add-ons merged with `lipo`, then
+  @electron/universal), and gcc, for the core, the host and the add-on. From here CI runs
+  everything on all three systems (macOS weekly, on demand and on every release tag while the
+  repository is private).
+- **Real time:** `host/src/platform_mac.c` (the time-constraint policy, joining the device's
+  audio workgroup) and `platform_linux.c` (RTKit, else a raised nice level), each measured and
+  shown in the diagnostics panel; Core Audio and PipeWire, PulseAudio or ALSA through miniaudio,
+  with device changes and sleep and wake.
+- **The app:** each system's conventions in `app/src/main/platform.ts`: the macOS app menu and
+  Cmd shortcuts, Linux's desktop entry and icon.
+- **Unsigned packages:** DMG and zip, universal; AppImage, .deb and tar.gz.
+- **The 3D view** (WebGPU where Electron's Chromium offers it, WebGL 2 otherwise) checked on
+  each system's GPUs.
+- **docs/workspace.md:** the macOS and Linux workstation set-ups, exact versions included.
+
+**Required exit evidence:**
+- CI green on all three systems, with installers.
+- Every end-to-end test from phases A–F passing on macOS and on Linux (under a virtual display).
+- The seeded drives within stage 122's tolerance under Apple clang and gcc.
+- Where a machine is available, a real-device run per system: the 15-minute stress drive
+  (deadline histogram, zero underruns at the default latency, memory). Without a real Mac,
+  macOS is listed "CI-tested, limited device testing"; WSLg counts only as development, so
+  Linux's device evidence needs a bare-metal machine.
+- Planted portability faults (a hard-coded Windows path, a platform function missing on one
+  system), caught.
+
+**Stop/reject rule:** No feature is removed or weakened on one system to make it pass without
+saying so. System-specific code stays in the platform files. A system tested only in CI is
+listed as such.
+
+**Decision (Bernardo):** which Mac and bare-metal Linux machines are available.
+
+**Legacy coverage:** 13 (stability across builds); 14 (real-time delivery on each system); 25
+(packaging).
+
+**Starting evidence/specification:** [docs/app-design.md](../app-design.md) §1, §7–10, §13.
+
+**Execution record:** `docs/stage-126.md`.
+
 <a id="stage-095"></a>
 ## Stage 095 — Versioned build files and the session
 
-**Dependencies:** [037](03-contracts-and-sources.md#stage-037), [067](07-app.md#stage-067), [082](09-turbo.md#stage-082), [088](10-limits.md#stage-088), [094](11-engine-catalog.md#stage-094)
+**Dependencies:** [037](03-contracts-and-sources.md#stage-037), [067](07-app.md#stage-067), [082](09-turbo.md#stage-082), [088](10-limits.md#stage-088), [094](11-engine-catalog.md#stage-094), [126](#stage-126)
 
 **Deliverable:**
 - **`.rbbuild` files:** versioned JSON under contracts/, holding the configuration, the preset's
@@ -122,7 +172,7 @@ gate; late tuning requires rerunning affected tests.
 <a id="stage-099"></a>
 ## Stage 099 — Release qualification on the supported systems and hardware
 
-**Dependencies:** [077](08-3d.md#stage-077), [084](09-turbo.md#stage-084), [089](10-limits.md#stage-089), [094](11-engine-catalog.md#stage-094), [096](#stage-096), [097](#stage-097), [098](#stage-098)
+**Dependencies:** [077](08-3d.md#stage-077), [084](09-turbo.md#stage-084), [089](10-limits.md#stage-089), [094](11-engine-catalog.md#stage-094), [096](#stage-096), [097](#stage-097), [098](#stage-098), [126](#stage-126)
 
 **Deliverable:** Qualify the whole product (3D, turbo, damage, controls, saving and sharing) on
 the declared support matrix:

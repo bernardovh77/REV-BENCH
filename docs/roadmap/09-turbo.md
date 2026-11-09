@@ -111,7 +111,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Dependencies:** [077](../../docs/roadmap/08-3d.md#stage-077), [080](../../docs/roadmap/09-turbo.md#stage-080), [081](../../docs/roadmap/09-turbo.md#stage-081), [082](../../docs/roadmap/09-turbo.md#stage-082), [083](../../docs/roadmap/09-turbo.md#stage-083)
 
-**Deliverable:** Repeat physical, sound, control, native and combined app/3D qualification on all three systems for supported boosted builds. Publish pull, spool, lift/reapply, neutral and long-coast cases.
+**Deliverable:** Repeat physical, sound, control, native and combined app/3D qualification on Windows (macOS and Linux at stage 126) for supported boosted builds. Publish pull, spool, lift/reapply, neutral and long-coast cases.
 
 **Required exit evidence:** Energy/maps/thermal/load limits pass; Bernardo accepts turbo character; actual runtime on the supported systems and visual/audio synchronization pass. Record the expanded supported envelope and remaining data uncertainty.
 

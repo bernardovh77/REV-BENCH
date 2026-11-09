@@ -12,7 +12,9 @@ Linux, not a browser page ([ADR 0004](../adr/0004-desktop-application.md);
 [07-app.md](07-app.md): new stages 120–124, retargeted 118, and 066–069 rewritten;
 the release stages 095–102 became files, installers and updates. Where this file
 or an older record says "browser", "worklet" or "deployment", read the app, its
-real-time host and its release, unless the text is about a finished stage.
+real-time host and its release, unless the text is about a finished stage. The app is built
+Windows first; stage 126 ports it to macOS and Linux before the release stages
+([app-design §1](../app-design.md#windows-first)).
 
 This roadmap was agreed in scope/order with Bernardo on 2026-10-23. It changes
 planning and documentation, not engine sound, production physics or deployment.
@@ -134,7 +136,7 @@ Run the full existing unit suites for source changes, then relevant numerical,
 mutation, sanitizer and integration checks. Core changes also render and
 compare the complete affected checkpoint. App work extends actual-behavior
 e2e tests (Playwright's Electron driver) and runs them in development and
-packaged builds on Windows, macOS and Linux. Report environment failures
+packaged builds on Windows (and on macOS and Linux from stage 126). Report environment failures
 and skips explicitly rather than treating an unavailable required check as a
 pass. Broaden/rerun tests when new changes, failures or unresolved concerns
 justify it; do not repeat passing suites without a reason.

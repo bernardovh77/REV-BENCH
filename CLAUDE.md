@@ -332,9 +332,13 @@
     engine process through one MessagePort (commands, acks, snapshot-v2 snapshots).
 - No physics or audio in JavaScript. The render thread never allocates, locks or logs. Rebuilds
   are prepared off the thread and swapped at a block boundary with a fade (runtime-v1).
-- Every app stage builds and tests on Windows, macOS and Linux, each with its own compiler (MSVC,
-  Apple clang, gcc; strict doubles, no FMA contraction); a feature that works on one only is not
-  done.
+- Windows first (app-design §1): until stage 126 every app stage is finished and tested on
+  Windows (MSVC), keeps Linux CI green (gcc: the C, the add-on and the interface's tests) and
+  the core's tests passing in macOS's weekly run (Apple clang). Strict doubles, no FMA
+  contraction everywhere. System-specific code only in the platform files
+  (`host/src/platform_*.c`, `app/src/main/platform.ts`), paths never with hard-coded
+  separators. Stage 126 ports the app to macOS and Linux; from then on a feature that works on
+  one system only is not done.
 - Pin every dependency exactly, at versions at least two weeks old, with its licence noted for
   THIRD_PARTY_NOTICES.
 
