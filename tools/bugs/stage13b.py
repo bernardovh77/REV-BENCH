@@ -12,7 +12,7 @@ BUGS = {
         "normal &= m >= 0.0 && m < INFINITY;",
         "normal &= m < INFINITY;", BATCH, 30),
     "nonfinite-specific-energy": ("core/src/chamber.c",
-        "isfinite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]",
+        "rb_finite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]",
         "fabs(correction[j]) <= 1e-6 * T[j]", BATCH, 30),
     "wrong-fuel-weight": ("core/src/gas.c",
         "wf * f->hi[k]", "wa * f->hi[k]",

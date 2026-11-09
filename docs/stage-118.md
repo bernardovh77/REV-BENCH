@@ -1,10 +1,11 @@
 # Stage 118 — A real-time tier for today's engine
 
-**Status:** built and measured on the baseline machine assumed below; **no tier yet meets both
-the speed and the tolerances on every preset** (details under "The tier"). The timings are
-provisional: another agent was building and testing on the same laptop during most runs, so
-the reviewer takes the final baseline with the command given under "The benchmark". Bernardo's
-blind listening and his confirmation of the baseline machine are still to come.
+**Status:** partly done (2026-11-09). The benchmark, the profile and the speed-ups (every
+render bit-identical, with MSVC and gcc) are done and merged, and the reviewer's baseline on
+an idle laptop is below. **No tier yet meets both the speed and the tolerances on every
+preset**, so none is declared: low misses 1.5 times real time on the two V8s (1.28 and 1.41)
+and is 1.3 dB louder on the four at 3000 rpm and revving. Bernardo chooses the way forward
+("The tier"), confirms the baseline machine, and listens to the files.
 
 The roadmap asks ([specification](roadmap/07-app.md#stage-118)) for a benchmark of what the
 app will run, a profile of it, speed-ups that change nothing the core computes, and a declared
@@ -320,6 +321,27 @@ x real time on a performance core, MSVC, after the speed-ups (idle / hold / rev 
 
 I have **not declared a tier**. Declaring low would silently pass a +1.3 dB louder four; the
 stop rule is "no silent quality loss". The data above is what the declaration needs.
+
+## The reviewer's baseline (idle laptop)
+
+Taken after both stages were merged (2026-11-09), with nothing else running and the laptop on
+mains power, by the command under "The benchmark" (MSVC, `rb_bench_render` from the `cmake`
+suite's build, low/medium/high, idle/hold/rev, best of 3 rounds, pinned to the performance
+cores and then to the efficiency cores). Each figure is the slowest of the three drives, in
+times real time; 1.5 is the target:
+
+| Preset | low (P) | medium (P) | high (P) | low (E) | medium (E) | high (E) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| four (i4) | 2.43 | 1.68 | 1.25 | 1.59 | 1.03 | 0.78 |
+| six (i6) | 1.59 | 1.12 | 0.82 | 1.03 | 0.69 | 0.52 |
+| cross-plane V8 | **1.28** | 0.88 | 0.65 | 0.81 | 0.53 | 0.40 |
+| flat-plane V8 | **1.41** | 0.94 | 0.70 | 0.88 | 0.57 | 0.43 |
+| boxer | 2.23 | 1.54 | 1.15 | 1.43 | 0.97 | 0.72 |
+
+The provisional figures above stand: an idle machine moved them by a few per cent. The worst
+block in a cell is 2 to 6 times the mean (up to 15 ms for the cross-plane V8's rev at high
+quality, 21 ms on an efficiency core): the host's ring has to absorb those. No tier is
+declared; the choice among the options under "The tier" is Bernardo's.
 
 ## Listening files (Bernardo's blind A/B)
 

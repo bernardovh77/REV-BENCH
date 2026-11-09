@@ -29,8 +29,8 @@ BUGS = {
         GAS, 120),
     # the chamber (chamber.c): cv from the Newton step, 1 / rho
     "cv-never-updated": ("core/src/chamber.c",
-        "        ch->T = rb_gas_T_cv_from_u_diag(&ch->gas, u, guess, &ch->cv, ch->diag);",
-        "        double cv_ignored;\n        ch->T = rb_gas_T_cv_from_u_diag(&ch->gas, u, guess, &cv_ignored, ch->diag);",
+        "        ch->T = rb_gas_newton_T(&ch->gas, u, guess, &ch->cv, ch->diag);",
+        "        double cv_ignored;\n        ch->T = rb_gas_newton_T(&ch->gas, u, guess, &cv_ignored, ch->diag);",
         FLOW + ["test_chamber_init_and_repairs"], 180),
     "per-rho-zero": ("core/src/chamber.c",
         "    ch->per_rho = ch->V * per_kg;",

@@ -52,3 +52,4 @@ graphify-out/.graphify_labels.pending.json
 # machine's own, like an editor's settings
 .agents/
 skills-lock.json
+.claude/worktrees/

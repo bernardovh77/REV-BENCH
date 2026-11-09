@@ -101,7 +101,7 @@ BUGS = {
         ("const double seat_in = K_VALVE *", "const double seat_ex = K_VALVE *"),
         IMPACTS, 300),
     "injector-when-motored": ("core/src/noise.c",
-        "event->kind == RB_INJ_DELIVERED &&\n                event->fuel_kg > 0.0 && isfinite(event->fuel_kg)) {",
+        "event->kind == RB_INJ_DELIVERED &&\n                event->fuel_kg > 0.0 && rb_finite(event->fuel_kg)) {",
         "1) {",
         IMPACTS, 300),
     "force-not-differenced": ("core/src/noise.c",
@@ -127,7 +127,7 @@ BUGS = {
         "    n->out[RB_NOISE_MOUNT] = K_MOUNT * (x - n->mount_hp);",
         MOUNTS, 300),
     "nan-kept": ("core/src/noise.c",
-        "        if (!isfinite(n->out[k])) {",
+        "        if (!rb_finite(n->out[k])) {",
         "        if (0) {",
         ["test_noise_repeatable"], 300),
     # the listener (audio.c): the sources placed, the cabin

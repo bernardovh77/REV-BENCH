@@ -12,6 +12,6 @@ BUGS = {
     # variation off too (Codex's charge-burn model, by design), so there is no variation-gated
     # path left to break.
     "trim-ignored": ("core/src/engine.c",
-        "b->phi_ivc = isfinite(phi) ? phi : 0.0;",
+        "b->phi_ivc = rb_finite(phi) ? phi : 0.0;",
         "b->phi_ivc = (e->afr > 0.0) ? RB_AFR_STOICH / e->afr : 0.0;", CAPTURE, 30),
 }

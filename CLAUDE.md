@@ -232,6 +232,12 @@
 - Core code is spaced and commented (stage 119 reformatted Codex's): `if (x) y;`, spaces round
   operators, one statement a line, a comment on what each function does. A pure reformat must
   leave `make wasm`'s output and the `-O2 -g0` objects byte-identical (docs/stage-119.md).
+- Stage 118's per-step helpers (`core/src/fastmath.h`): `rb_finite` for `isfinite`, `rb_min`,
+  `rb_max`, `rb_clamp` where the values can't be NaN; MSVC makes the library's versions calls.
+  `rb_bench_render` / `tools/bench_render.py` time the app's render path (docs/stage-118.md).
+- Stage 123's `host/` (docs/stage-123.md): the real-time host on rb.h alone; its render
+  thread never allocates, locks or logs (checked by `host/src/audit.c`), and nothing in it is
+  physics. Its tests run on the null device: never play on a real device without Bernardo.
 - New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
   in `web/src/core/rb-core.ts` if JS uses them).
 - Bernardo wants a 3D view of the engine running (stages 070–077, in the app's window). Physics stages must expose what it

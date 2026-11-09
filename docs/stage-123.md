@@ -1,7 +1,7 @@
 # Stage 123 — The real-time audio host
 
 **Status:** built and tested on Windows (MSVC and w64devkit's gcc) and in WSL (gcc, also under
-ThreadSanitizer); CI not yet run. The 15-minute real-device run is not done: the tool for it is
+ThreadSanitizer); merged with stage 118 and the whole suite green on Windows (2026-11-09). The 15-minute real-device run is not done: the tool for it is
 built and has only run on the null device (see "What is left").
 
 `host/` is a C11 library that runs the core in real time without Node or JavaScript

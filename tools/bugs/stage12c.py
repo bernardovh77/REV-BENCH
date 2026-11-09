@@ -21,7 +21,7 @@ BUGS = {
         "    rb_burn *b = &e->burn[i];\n    const double v = 0.0;",
         COV + TRIMS, 300),
     "start-not-varied": ("core/src/engine.c",
-        "    b->kernel_delay_deg = isfinite(delay) ? delay : 0.0;",
+        "    b->kernel_delay_deg = rb_finite(delay) ? delay : 0.0;",
         "    b->kernel_delay_deg = b->mean_kernel_delay;",
         COV, 300),
     "length-not-varied": ("core/src/engine.c",
