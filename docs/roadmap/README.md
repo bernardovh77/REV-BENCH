@@ -6,6 +6,14 @@ rejection rule. They are specifications, not a second status tracker.
 [Legacy mapping](legacy-map.md) preserves all earlier obligations;
 [audit coverage](audit-coverage.md) assigns every D/R finding.
 
+**2026-11-08:** REV-BENCH is now a desktop application for Windows, macOS and
+Linux, not a browser page ([ADR 0004](../adr/0004-desktop-application.md);
+[the app's design](../app-design.md)). The app stages are in
+[07-app.md](07-app.md): new stages 120–124, retargeted 118, and 066–069 rewritten;
+the release stages 095–102 became files, installers and updates. Where this file
+or an older record says "browser", "worklet" or "deployment", read the app, its
+real-time host and its release, unless the text is about a finished stage.
+
 This roadmap was agreed in scope/order with Bernardo on 2026-10-23. It changes
 planning and documentation, not engine sound, production physics or deployment.
 Stages 001–035 preserve historical implementation/experiment evidence;
@@ -55,7 +63,7 @@ silent assumptions or approvals already obtained.
    evaluating a candidate. A paper is justification, not a test of our code.
 3. **Small proof.** Implement the smallest useful fixture, test that it detects
    meaningful deliberately planted faults, then add adverse and integration
-   cases. Use native numerical fixtures before dependent browser or visual work.
+   cases. Use native numerical fixtures before dependent app or visual work.
    Split an oversized stage rather than claim partial work as complete.
 4. **Integration.** Verify the actual production boundary and end-to-end path.
    Include all affected engines/components, independent seeds, unseen
@@ -118,13 +126,15 @@ PYTHONPATH=tools .venv-analysis/bin/python -m unittest discover -s tools -p 'tes
 make wasm
 # In the configured web workspace:
 npm test
+# Or every suite at once, on Windows or WSL (docs/workspace.md):
+python tools/run_tests.py
 ```
 
 Run the full existing unit suites for source changes, then relevant numerical,
 mutation, sanitizer and integration checks. Core changes also render and
-compare the complete affected checkpoint. Browser work extends actual-behavior
-e2e tests and runs them in dev and production-preview modes; use the current
-repository scripts and `E2E_PREVIEW=1` convention. Report environment failures
+compare the complete affected checkpoint. App work extends actual-behavior
+e2e tests (Playwright's Electron driver) and runs them in development and
+packaged builds on Windows, macOS and Linux. Report environment failures
 and skips explicitly rather than treating an unavailable required check as a
 pass. Broaden/rerun tests when new changes, failures or unresolved concerns
 justify it; do not repeat passing suites without a reason.
@@ -148,11 +158,11 @@ after seeing a failure.
 | Spatial/time convergence | Vary spatial cells, propagation tick and engine tick independently; compare multiple amplitudes and gas/interface partitions. Preserve failed/refined-growth cases. Conservation or energy retention alone does not establish phase accuracy. |
 | Digital listener path | Existing proposal: at most 0.5 dB unintended delay/resampling coloration through 12 kHz; test phase and Doppler too. Measured physical attenuation remains part of the model. No claim that 1D plane-wave physics is valid to every audible frequency. |
 | Combustion/source causality | Zero heat before actual spark discharge in the normal spark-ignited/autoignition-disabled control and zero injector event when no injection occurs, to declared numerical/event tolerances. Continuity as variation tends to zero; event/fuel/energy books, multi-seed COV/repetition and reference-valid operating states. |
-| Engine maps and dyno | Match a named physical configuration and measurement conditions with stated uncertainty; distinguish generic/modified engines from exact factory claims. Stage 068 freezes a browser/native curve tolerance before comparison. |
-| Audio runtime | Measure the actual render quantum: at 48 kHz, 128 frames is about 2.67 ms. Existing proposal is p99 callback time at most 70% of the period, with measured maximum and zero observed deadline misses/underruns over a stated 15-minute stress trajectory. Longer/full-product qualification and named hardware are required in 099. A percentile alone is insufficient. |
-| Performance goals | Retain unmet legacy 4x-native/2x-WASM objectives. Measure full rendering with identical fidelity and no tap/file overhead. If justified realism cost prevents them, record the measured benefit and obtain an explicit hardware/target decision; renumbering does not retire them. |
+| Engine maps and dyno | Match a named physical configuration and measurement conditions with stated uncertainty; distinguish generic/modified engines from exact factory claims. Stage 068 freezes an app/native curve tolerance before comparison. |
+| Audio runtime | Measure the host's actual render blocks and the device's period on each system. Proposal: the render thread renders at least 1.5x real time on the baseline machine (118), each block's render time stays under 70% of its share of the ring's lead at p99, with the measured maximum, and zero observed underruns over a stated 15-minute stress drive at the default latency. Longer/full-product qualification and named hardware are required in 099. A percentile alone is insufficient. |
+| Performance goals | Retain unmet legacy 4x-native/2x-WASM objectives (WebAssembly is recorded, no longer gating, since the app runs natively). Measure full rendering with identical fidelity and no tap/file overhead. If justified realism cost prevents them, record the measured benefit and obtain an explicit hardware/target decision; renumbering does not retire them. |
 | Graphics and sync | Preserve the 60-fps laptop target with audio running; measure frame tails, rebuild latency, GPU/memory and actual audio deadlines together. The old few-degrees-at-6000-rpm goal needs a time/presentation measurement and feasibility decision in 073, not an untested guarantee. |
-| UX | Preserve the original observed-trial goal of a new visitor understanding how to start in 30 seconds; test keyboard, units, accessible legends, reduced motion, touch and gauges-only fallback. |
+| UX | Preserve the original observed-trial goal of a new user understanding how to start in 30 seconds; test keyboard, units, accessible legends, reduced motion, UI scaling and gauges-only fallback on each system. |
 
 Freeze a gate's exact domain, reference and numerical rationale before its run.
 If a target proves inappropriate, retain the failed result, explain why and
@@ -208,7 +218,7 @@ flowchart LR
     G --> S[Coherent timestamped state]
     E --> S
     S --> V
-    C[Validated browser commands and build loading] --> G
+    C[Validated app commands and build loading] --> G
     D --> B[Versioned save and share]
 ```
 
@@ -221,16 +231,16 @@ and possible transfer of mean-flow work; quiescent passivity alone is not enough
 Core simulation owns mutable physical state. Rebuilds are validated transactions
 with explicit history reset/preservation, generations and command acknowledgment.
 Prepared coefficients/geometry are immutable until a defined update. Reuse
-existing engine metadata and TS/WASM bindings. Real-time C paths allocate no
-memory; measure and bound actual JS message/queue/allocation behavior rather
-than claiming the whole worklet is allocation-free without evidence.
+existing engine metadata. Real-time C paths allocate no memory: the render
+thread never allocates, locks or logs, and JavaScript is never on the audio
+path (app-design §3–4).
 
 Shared geometry includes semantic identity, topology, dimensions and spatial
 frames/centerlines. Current pipe lengths alone are not 3D routing. Saved builds
 serialize versioned configuration; live snapshots carry actual state/time.
-The intended AudioWorklet ownership and static hosting remain the baseline;
-any measured need to change scheduling/threading must document latency,
-ownership and deployment-header consequences before promotion.
+The real-time host's render thread owns the running engine (stage 123); any
+measured need to change scheduling/threading must document latency and
+ownership consequences before promotion.
 
 ## Dependency and milestone sketch
 
@@ -246,8 +256,10 @@ flowchart TD
     I --> D{060 Comparison decision}
     D -->|Qualified candidate| Q[061-063 Production parity and base acceptance]
     D -->|No candidate passes| F[New bounded experiment with a new ID]
-    Q --> B[066-069 Playable browser]
-    B --> V[070-077 Complete 3D]
+    H --> A[120-124 and 118 App foundation and real time]
+    A --> B[066-069 Playable app]
+    B --> I
+    Q --> V[070-077 Complete 3D]
     V --> T[078-084 Turbo]
     T --> K[085-089 Knock limits and damage]
     K --> N[090-094 Engine and exhaust catalog]
@@ -259,8 +271,9 @@ flowchart TD
 
 The diagram is a default milestone order, not a replacement for individual
 dependency lists. References and diagnostic fixtures can progress independently.
-Optional learned work never blocks browser/3D by being placed numerically before
-them. Integrating a learned model later reopens all affected sound/runtime gates.
+Optional learned work never blocks the app/3D by being placed numerically before
+them. Since 2026-11-01 the playable app comes before the sound chain, so each sound
+improvement lands in something Bernardo can play. Integrating a learned model later reopens all affected sound/runtime gates.
 Turbo, knock/damage and new layouts similarly reopen affected qualifications;
 base-engine approval does not certify those later operating domains.
 
@@ -291,17 +304,17 @@ For every supported default, load a versioned build, start, idle, throttle to
 load/high RPM/limiter, lift into the complete long coast, clutch/neutral fall,
 stop and restart. Modify an exhaust and physical parameter, perform an atomic
 rebuild, run/overlay the dyno, change listener/camera and save/share the build.
-Check the same seeded command trace natively, in WASM, through the actual
-worklet and at the deployed URL. Add turbo/knock/damage cases only after their
+Check the same seeded command trace natively, through the host's offline
+mode and in the installed app on each system. Add turbo/knock/damage cases only after their
 independent native gates; verify data-driven visuals and genuine stereo.
 
-Repeat with invalid/rapid controls, suspend/resume, background tabs, supported
-sample-rate changes, GPU failure, gauges-only mode, long sessions and repeated
-dispose/recreate. Record deadline tails, observed underruns, frame behavior,
-memory and supported hardware. Browser work tests dev and production builds;
-the release includes Chrome and Firefox on the declared desktop baseline and
-an actual deployed second-device check. Other device/browser claims require
-their own measured support entry.
+Repeat with invalid/rapid controls, sleep/wake, the window minimised or hidden,
+audio-device and sample-rate changes, GPU failure, gauges-only mode, long
+sessions and repeated rebuilds. Record deadline tails, observed underruns,
+frame behavior, memory and supported hardware. App work tests development and
+installed builds; the release covers Windows, macOS and Linux on the declared
+machines and a clean second machine per system. Other system/hardware claims
+require their own measured support entry.
 
 ## Change control and evidence preservation
 

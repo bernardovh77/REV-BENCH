@@ -28,7 +28,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Use actual knock state to constrain spark/power and drive bounded structure sound plus warning/telemetry. Keep controlled test configurations and explicit disabled-knock behavior.
 
-**Required exit evidence:** High-load/low-speed and compression/boost/octane cases alter advance and work consistently; no arbitrary random knock clicks. Native/browser, sound and event timelines agree.
+**Required exit evidence:** High-load/low-speed and compression/boost/octane cases alter advance and work consistently; no arbitrary random knock clicks. Native/app, sound and event timelines agree.
 
 **Stop/reject rule:** Warnings and dramatic audio cannot replace a validated cause. Feedback must not create unstable spark/power loops.
 

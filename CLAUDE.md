@@ -40,8 +40,8 @@
   3000 on all engines feel like they should be the idle", "too smooth... less like a piano
   note", the limiter's "huge gap", the deceleration "very off" (stage 12c's work).
 - **Where it lives:** RESEARCH.md's "Sound realism" has the findings. PLAN.md (remade
-  2026-11-01) acts on them in phase B, stages 039 and 050–063, after the engine plays in the
-  browser (phase A: 119, 118, 066–069). Every stage that touches `core/` does the sound check
+  2026-11-01) acts on them in phase B, stages 039 and 050–063, after the engine plays live in
+  the desktop app (phase A: 120, 121, 122, 118, 123, 124, 066–069). Every stage that touches `core/` does the sound check
   (PLAN.md, "How a stage is done", step 6). Never trade sound for speed silently.
 - **Measuring:** `tools/compare_real.py` measures renders like the recordings of real engines in
   `tools/real_engines.csv` (Freesound, CC0/CC BY/Sampling+). `fetch` puts the recordings in
@@ -213,7 +213,7 @@
   leave `make wasm`'s output and the `-O2 -g0` objects byte-identical (docs/stage-119.md).
 - New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
   in `web/src/core/rb-core.ts` if JS uses them).
-- Bernardo wants a 3D view of the engine running (stages 17–19). Physics stages must expose what it
+- Bernardo wants a 3D view of the engine running (stages 070–077, in the app's window). Physics stages must expose what it
   needs through the API: the engine description (geometry, layout, crank pin angles, valve/cam data,
   pipe geometry) and per-cylinder / per-pipe-cell state. Never duplicate engine geometry in JavaScript.
 - After any change in `core/`, run `make wasm`. It rewrites `web/src/wasm/rb_core.wasm` and
@@ -322,7 +322,25 @@
   categories, and the Inter font when installed. Doc images are rendered in Claude's cloud
   workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
 
-## Web
+## The app (since 2026-11-08)
+- REV-BENCH is a desktop app for Windows, macOS and Linux, not a browser page: docs/app-design.md
+  is the design and docs/adr/0004-desktop-application.md the decision. In short:
+  - Electron's main process for windows, menus and updates;
+  - an engine utility process that loads a Node-API add-on (C) wrapping `host/`, the real-time
+    host, whose render thread runs the core and fills a ring that miniaudio plays;
+  - a sandboxed Svelte 5 + TypeScript renderer for the interface and Three.js 3D, talking to the
+    engine process through one MessagePort (commands, acks, snapshot-v2 snapshots).
+- No physics or audio in JavaScript. The render thread never allocates, locks or logs. Rebuilds
+  are prepared off the thread and swapped at a block boundary with a fade (runtime-v1).
+- Every app stage builds and tests on Windows, macOS and Linux, each with its own compiler (MSVC,
+  Apple clang, gcc; strict doubles, no FMA contraction); a feature that works on one only is not
+  done.
+- Pin every dependency exactly, at versions at least two weeks old, with its licence noted for
+  THIRD_PARTY_NOTICES.
+
+## Web (the WebAssembly build and the old browser scaffold)
+- `web/` keeps the WebAssembly core, its binding and tests as portability checks; the browser
+  bench is no longer the product (an optional browser demo is stage 125).
 - Vite 8 + TypeScript 7 + Vitest 5 + Playwright 1.63, pinned exactly (pick versions at least two
   weeks old). `web/.npmrc` sets `legacy-peer-deps=true` because npm 10 crashes on vitest's optional peers.
 - The worklet gets the wasm bytes in `processorOptions` and compiles its own instance synchronously.

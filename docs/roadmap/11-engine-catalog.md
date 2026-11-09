@@ -11,7 +11,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Add I3, I5 and motorcycle-single configurations with their own dimensions, firing/valve data, suitable exhaust layouts and referenced or explicitly generic calibration assumptions.
 
-**Required exit evidence:** Each starts/idles, passes kinematics/events/dyno sanity and native/browser/audio/3D checks over its supported envelope. Treat each preset separately in the evidence and split this stage if implementation exceeds one bounded checkpoint.
+**Required exit evidence:** Each starts/idles, passes kinematics/events/dyno sanity and native/app/audio/3D checks over its supported envelope. Treat each preset separately in the evidence and split this stage if implementation exceeds one bounded checkpoint.
 
 **Stop/reject rule:** Core cylinder-count support is not a complete engine product. No copied exhaust calibration without physical justification.
 
@@ -45,7 +45,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Add researched or explicitly generic V10/V12 bank/pin/firing and full exhaust descriptions. Prepare larger engine capacities and runtime/geometry budgets explicitly.
 
-**Required exit evidence:** Per-layout event, conservation, dyno, sound, native/WASM capacity and combined 3D/runtime qualification; stable IDs and snapshots at higher cylinder counts.
+**Required exit evidence:** Per-layout event, conservation, dyno, sound, native capacity (the WebAssembly build kept compiling) and combined app/3D/runtime qualification; stable IDs and snapshots at higher cylinder counts.
 
 **Stop/reject rule:** No silent capacity truncation, missing source branch or duplicated bank audio.
 
@@ -79,7 +79,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Give every supported base and added engine a documented complete real-system-inspired exhaust with published versus estimated dimensions, source intervals and model validity. Calibrate each default using its own torque, event, acoustic and visual evidence. Deliver at least two additional generically named inspired-by configurations with their own documented engine/exhaust assumptions, rather than only relabeling the added layouts.
 
-**Required exit evidence:** Per-engine test/recording matrix, all supported NA/turbo variants, orders/COV/response, known-position or uncertain-reference distinctions, native/browser/3D and runtime. Generic inspired builds are labeled; unsupported combinations do not inherit certification.
+**Required exit evidence:** Per-engine test/recording matrix, all supported NA/turbo variants, orders/COV/response, known-position or uncertain-reference distinctions, native/app/3D and runtime. Generic inspired builds are labeled; unsupported combinations do not inherit certification.
 
 **Stop/reject rule:** One successful V8 or one parameter sweep cannot qualify the catalog. Missing reference hardware remains an explicit gap and may require Bernardo's recordings.
 

@@ -148,3 +148,41 @@ spacing; the cases a script can't decide safely stay listed.
 a bug.
 
 **Execution record:** [Stage 119](../stage-119.md).
+
+<a id="stage-120"></a>
+## Stage 120 — Workspace and toolset upkeep
+
+**Dependencies:** [119](#stage-119)
+
+**Deliverable:** Close what the three reviews of 2026-11-06 found in the workspace and tools,
+before the app work starts:
+- **Clutter:** `References.zip` (4.7 GB) and `stage-115-renders/` move into the git-ignored
+  `renders/`. `.gitignore` and `plant_bugs.py`'s copy list ignore `*.zip` and other bulky media,
+  and the stale root-level video entries go. `.agents/` and `skills-lock.json` are committed or
+  ignored, as Bernardo chooses.
+- **Planted bugs:** the 30 that no longer apply are retargeted to today's text, or retired with a
+  note in their table, and `plant_bugs.py --check` reports any that stop applying. The check
+  runs in the Python suite.
+- **Docs:** README.md and CLAUDE.md are current (the test tone "until stage 14", the obsolete
+  "device bridge" section, cloud-only e2e steps, `python3` on Windows). docs/workspace.md matches
+  the desktop app's sessions. PLAN.md's "Where the project is" gains the 2026-11-06 parity.
+- **Hooks:** the graphify reminder hook and the settings' allow rules find graphify in the
+  Windows venv. The cloud set-up script installs `tools/requirements-dev.txt`.
+- **Make:**
+  - the Makefile finds the venv's Python (and so zig) on both systems;
+  - `~/.local/node22` goes on WSL's login PATH;
+  - `SAN=1` says plainly that it needs a sanitizer runtime (WSL and macOS), not just fail to
+    link on w64devkit.
+- **The test runner:** per-suite timeouts that kill the whole process tree, a check that make and
+  Node exist (and Node's version), a sturdier removal of the web copy on Windows, quoted paths,
+  and `--keep-going`.
+- **Line endings:** files that graphify writes on Windows are renormalised, and `core.autocrlf`
+  is turned off for this repo.
+
+**Required exit evidence:** `plant_bugs.py --check` reports no stale bug; `git status` is clean
+apart from what's ignored; `run_tests.py` passes on Windows and WSL with the new checks, and a
+planted hang is killed by its timeout.
+
+**Stop/reject rule:** No `core/` change. Bernardo's recordings are moved, never deleted.
+
+**Execution record:** `docs/stage-120.md`.

@@ -147,9 +147,9 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Dependencies:** [060](../../docs/roadmap/05-engine-qualification.md#stage-060)
 
-**Deliverable:** Promote only the selected, qualified path into production core/native/WASM interfaces. Maintain configuration/state ownership, defined fallback/rollback and existing accepted presets; retire redundant propagation only where replaced.
+**Deliverable:** Promote only the selected, qualified path into the production core, the real-time host and the app (the WebAssembly build kept compiling). Maintain configuration/state ownership, defined fallback/rollback and existing accepted presets; retire redundant propagation only where replaced.
 
-**Required exit evidence:** Production controls reproduce qualified candidate states/audio/loads; complete core/native/Python/WASM parity suites and deliberate integration faults pass. Publish changed engine renders and migration/rollback evidence.
+**Required exit evidence:** Production controls reproduce qualified candidate states/audio/loads; complete core/native/Python/app parity suites on all three systems and deliberate integration faults pass. Publish changed engine renders and migration/rollback evidence.
 
 **Stop/reject rule:** Experimental objects being linked into a probe is not production integration. Never sum old and new copies of the same physical pulse.
 
@@ -160,15 +160,15 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 **Execution record:** for new work, `docs/stage-061.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
 
 <a id="stage-062"></a>
-## Stage 062 — Fidelity tiers, optimization and native/WASM parity
+## Stage 062 — Fidelity tiers, optimization and cross-compiler parity
 
 **Dependencies:** [061](../../docs/roadmap/05-engine-qualification.md#stage-061), [059](../../docs/roadmap/05-engine-qualification.md#stage-059)
 
 **Deliverable:** Profile the validated full implementation; optimize preparation, storage, SIMD/SoA and scheduling where measurements justify it. Define each tier, hardware demand, transition behavior and preserved audible band.
 
-**Required exit evidence:** No-tap/no-file native and WASM costs, state/audio parity, bounded memory/rebuild costs and repeated stress runs. Recheck all physics/audio gates after optimization. Keep old 4x-native/2x-WASM goals explicitly unmet until demonstrated or revised with Bernardo.
+**Required exit evidence:** No-tap/no-file native costs on each system's compiler (WebAssembly recorded, not gating), state/audio parity within stage 122's cross-compiler tolerance, bounded memory/rebuild costs and repeated stress runs. Recheck all physics/audio gates after optimization. Keep old 4x-native/2x-WASM goals explicitly unmet until demonstrated or revised with Bernardo.
 
-**Stop/reject rule:** Below-real-time correctness prototypes do not qualify the product. No silent physics-quality reduction; measured realism benefit must justify cost. Actual worklet deadlines are still Stage 069.
+**Stop/reject rule:** Below-real-time correctness prototypes do not qualify the product. No silent physics-quality reduction; measured realism benefit must justify cost. Real audio-device deadlines are stages 069 and 099.
 
 **Legacy coverage:** 13b; 13b-c; R17.
 

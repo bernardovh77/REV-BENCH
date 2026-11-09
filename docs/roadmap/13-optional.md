@@ -11,7 +11,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Optional: research and couple clutch/gears, drivetrain inertia, road load and vehicle motion. Update engine/exhaust load, listener trajectories, controls and visuals through the same contracts.
 
-**Required exit evidence:** Energy/load/shift/overrun fixtures, native driving cycle and browser/scene/3D runtime/listening regression; explicit vehicle assumptions and tire/drag limits.
+**Required exit evidence:** Energy/load/shift/overrun fixtures, native driving cycle and app/scene/3D runtime/listening regression; explicit vehicle assumptions and tire/drag limits.
 
 **Stop/reject rule:** Do not fake shifts with an RPM/audio sweep unrelated to engine/drivetrain work.
 
@@ -24,7 +24,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Dependencies:** [102](../../docs/roadmap/12-release.md#stage-102)
 
-**Deliverable:** Optional: capture the actual selected stereo output or documented raw measurement stream with consistent sample-rate/channel/gain metadata, without file operations in the callback.
+**Deliverable:** Optional: capture the actual selected stereo output or documented raw measurement stream with consistent sample-rate/channel/gain metadata, without file operations in the callback. In the desktop app it records through the real-time host's capture tap and writes the file off the render thread (app-design §12), so it can be adopted any time after 066.
 
 **Required exit evidence:** Frame continuity, long recording, clipping/nonfinite detection, container round-trip, memory/backpressure and main audio deadline checks.
 
@@ -71,7 +71,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Optional: research compressor map, mechanically driven shaft/work, bypass and thermal topology; add causal sound, controls, geometry and save/share extension.
 
-**Required exit evidence:** Engine/shaft energy, map-domain and transient controls plus native/browser/audio/3D qualification and hardware costs.
+**Required exit evidence:** Engine/shaft energy, map-domain and transient controls plus native/app/audio/3D qualification and hardware costs.
 
 **Stop/reject rule:** Do not reuse exhaust-driven turbo spool dynamics for a belt-driven compressor.
 
@@ -86,7 +86,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Optional: model separate throttle/runner/plenum paths, controller/balance behavior and intake acoustics; update geometry and tuning metadata.
 
-**Required exit evidence:** Per-cylinder air balance, throttle steps, idle stability, order/transfer and native/browser/3D regressions with research-backed references.
+**Required exit evidence:** Per-cylinder air balance, throttle steps, idle stability, order/transfer and native/app/3D regressions with research-backed references.
 
 **Stop/reject rule:** A shared throttle parameter or louder intake filter alone does not represent ITBs.
 
@@ -138,3 +138,18 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 **Legacy coverage:** 26 (video).
 
 **Execution record:** for new work, `docs/stage-111.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+
+<a id="stage-125"></a>
+## Stage 125 — A browser demo on the WebAssembly core
+
+**Dependencies:** [102](../../docs/roadmap/12-release.md#stage-102)
+
+**Deliverable:** Optional: a web page that plays the engine from the WebAssembly build in an AudioWorklet, sharing the app's interface through the same engine-client interface (app-design §14), at a declared lighter quality, for people who won't install the app.
+
+**Required exit evidence:** Worklet deadlines over a stress drive in current Chrome and Firefox on named hardware, the WebAssembly build's parity with native within the cross-compiler tolerance, the demo's tier and its differences measured and listened to, and dev and production e2e.
+
+**Stop/reject rule:** The demo never becomes the reference or changes the app's defaults. A lower quality is declared on the page. Publishing it needs Bernardo's authorisation.
+
+**Legacy coverage:** 14 and 25 (the browser bench, now optional).
+
+**Execution record:** for new work, `docs/stage-125.md`.

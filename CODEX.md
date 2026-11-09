@@ -4,6 +4,34 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-08: The plan remade for a desktop app
+
+- At Bernardo's request REV-BENCH becomes a downloadable app for Windows, macOS and Linux
+  instead of a browser page ([ADR 0004](docs/adr/0004-desktop-application.md)). The full design
+  is in [docs/app-design.md](docs/app-design.md):
+  - Electron, with the C core and a new C real-time host (`host/`, miniaudio) in a Node-API
+    add-on, running in an Electron utility process;
+  - a sandboxed Svelte 5 interface with Three.js 3D.
+- **The stages** (specs in docs/roadmap/07-app.md, renamed from 07-browser.md):
+  - new: 120 (upkeep, in 14-review-fixes.md), 121 (the core's public engine API), 122 (builds
+    with MSVC, Apple clang and gcc, and CI on all three systems), 123 (the real-time host) and
+    124 (the app's foundation);
+  - retargeted: 118, to the native render thread;
+  - rewritten: 066–069 for the app, and 095–102 as files, codes, installers, signing and
+    updates;
+  - optional 125 is a browser demo on the WebAssembly core.
+- **Order:** 120 → 121 → 122 → 118 → 123 → 124 → 066–069, then phase B unchanged.
+- **Bernardo's decisions** (app-design §15): the app is named Rev-Bench; the repo stays private
+  (Linux and Windows CI per push, macOS weekly and on demand); his Mac access is unreliable, so
+  macOS is "CI-tested, limited device testing"; sample rates 44.1 and 48 kHz; a faster tier
+  within 1 % (torque, power, VE, idle) and 1 dB (each compare_real and orders measure, loudness),
+  with his blind listening as the last word. Signing waits until the app works (stage 101), and
+  the visual direction until he asks for it: stage 124 builds a provisional look on design
+  tokens so it can be swapped without touching the panels.
+- **Still open:** the baseline machine and a bare-metal Linux machine, where releases go while
+  the repo is private, the icon and the licence.
+- Docs only: no code changed. **Next stage: 120.**
+
 ## 2026-11-06: Every test runs on Windows and in WSL alike
 
 - At Bernardo's request, no suite depends on WSL or on Windows any more. `python

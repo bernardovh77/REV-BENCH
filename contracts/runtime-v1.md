@@ -1,5 +1,7 @@
 # Event, clock, snapshot and rebuild contract — version 1
 
+**2026-11-08:** REV-BENCH is now a desktop app ([ADR 0004](../docs/adr/0004-desktop-application.md)). The ownership, generation, clock and rebuild rules below still hold, carried out by the C real-time host (stage 123). Where this text speaks of the Web Audio context, the worklet or `process()`, read the host's audio device and render thread. The binary snapshot layout is `snapshot-v2` (stage 121).
+
 Shares [build identity/version rules](README.md) and SI units. These are
 normative requirements plus an executable **serial control-plane reference**,
 not a production event producer, thread-safety implementation or measured

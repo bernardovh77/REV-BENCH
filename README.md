@@ -1,6 +1,6 @@
 # REV-BENCH
 
-A browser-based combustion engine test bench: pick an engine, change displacement,
+A combustion engine test bench, as a desktop app for Windows, macOS and Linux: pick an engine, change displacement,
 compression, cams, headers and turbo size, and hear and see the difference in real time,
 with a 3D view of the engine running. The sound is generated from a physics simulation of
 the gas moving through the engine, not from recordings.
@@ -12,7 +12,7 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status (2026-11-01):** [the roadmap](PLAN.md) runs Stages 001–116, with a
+**Status (2026-11-08):** [the roadmap](PLAN.md) has stages 001–049, 112–117 and 119 done, with a
 [crosswalk for every old ID](docs/roadmap/legacy-map.md). What exists today:
 - the engine, natively: its physics, five presets with researched exhausts, and its sound
   rendered as a listener around the car hears it, in mono or in stereo scenes;
@@ -21,10 +21,15 @@ interests as me and give a purpose to my learnings.
 - [versioned contracts](contracts/README.md) for builds and engine fields.
 
 The latest stages: [Stage 115](docs/stage-115.md) fixed the valves' jet noise and brought the
-cycles' variation back to real engines' range, and [Stage 116](docs/stage-116.md) tightened the
-tests that had been loosened. The browser still plays a test tone. Next comes the engine
-playing in the browser (stages 119, 118 and 066–069), then the sound to real-engine standard
-(039, 050–063), the 3D view (070–077), turbo, knock and more layouts. The
+cycles' variation back to real engines' range, [Stage 116](docs/stage-116.md) tightened the
+tests that had been loosened, and [Stage 119](docs/stage-119.md) made Codex's C readable with
+byte-identical results. Every test runs on Windows and in WSL alike.
+
+On 2026-11-08 REV-BENCH became a desktop app instead of a browser page
+([the design](docs/app-design.md), [the decision](docs/adr/0004-desktop-application.md)).
+Next come its foundations and the engine playing live (stages 120–124, 118 and 066–069),
+then the sound to real-engine standard (039, 050–063), the 3D view (070–077), turbo, knock and
+more layouts. The
 [stage protocol](docs/roadmap/README.md) keeps experiment results, the engine, runtime and
 Bernardo's listening as separate checks.
 
@@ -32,8 +37,7 @@ Current accepted sound remains the [selective rollback](docs/stage-13b-r-rollbac
 I6 earlier twin exhaust at 8500 rpm, flat V8 earlier exhaust at 9000 rpm, cross V8
 sharper rear-delete X at 7500 rpm. These limits are not durability certification.
 
-The C core plays in the browser through an
-AudioWorklet (still a test tone); natively it renders the engine's own sound to WAV files, as a
+Today the engine renders its own sound natively to WAV files, as a
 listener around the car hears it: behind it, beside it, over the bonnet, a metre from a tailpipe
 or in the driver's seat, each tailpipe and the intake's mouth at their own distance and off the
 ground. On top of the pipes' sound come the noise of the gas's jets (at the tailpipes, the
@@ -67,5 +71,6 @@ what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 
 
 
-Stack: C11 physics core → WebAssembly in an AudioWorklet · Vite + TypeScript UI ·
-static hosting (Vercel).
+Stack: C11 physics core → C real-time audio host (miniaudio) → Electron app with a Svelte and
+TypeScript interface and Three.js 3D, for Windows, macOS and Linux. The core also builds as
+WebAssembly, kept for portability tests.

@@ -75,11 +75,11 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-082"></a>
 ## Stage 082 — Turbo controls, instrumentation and build integration
 
-**Dependencies:** [067](../../docs/roadmap/07-browser.md#stage-067), [068](../../docs/roadmap/07-browser.md#stage-068), [080](../../docs/roadmap/09-turbo.md#stage-080), [081](../../docs/roadmap/09-turbo.md#stage-081)
+**Dependencies:** [067](../../docs/roadmap/07-app.md#stage-067), [068](../../docs/roadmap/07-app.md#stage-068), [080](../../docs/roadmap/09-turbo.md#stage-080), [081](../../docs/roadmap/09-turbo.md#stage-081)
 
 **Deliverable:** Expose turbo enable/size/boost/BOV controls, boost/shaft/temperature telemetry and coherent schema/rebuild updates using the shared core. Integrate dyno comparisons and unsupported-range feedback.
 
-**Required exit evidence:** Native/browser commands and telemetry agree, rapid changes/reset remain valid, and saved-build schema extension is tested before persistence UI. Turbo sound tracks actual operating state.
+**Required exit evidence:** Native and app commands and telemetry agree, rapid changes/reset remain valid, and saved-build schema extension is tested before persistence UI. Turbo sound tracks actual operating state.
 
 **Stop/reject rule:** UI settings must not fork map physics or silently reset unrelated engine tuning.
 
@@ -111,9 +111,9 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Dependencies:** [077](../../docs/roadmap/08-3d.md#stage-077), [080](../../docs/roadmap/09-turbo.md#stage-080), [081](../../docs/roadmap/09-turbo.md#stage-081), [082](../../docs/roadmap/09-turbo.md#stage-082), [083](../../docs/roadmap/09-turbo.md#stage-083)
 
-**Deliverable:** Repeat physical, sound, control, native/WASM and combined browser/3D qualification for supported boosted builds. Publish pull, spool, lift/reapply, neutral and long-coast cases.
+**Deliverable:** Repeat physical, sound, control, native and combined app/3D qualification on all three systems for supported boosted builds. Publish pull, spool, lift/reapply, neutral and long-coast cases.
 
-**Required exit evidence:** Energy/maps/thermal/load limits pass; Bernardo accepts turbo character; actual supported-browser runtime and visual/audio synchronization pass. Record the expanded supported envelope and remaining data uncertainty.
+**Required exit evidence:** Energy/maps/thermal/load limits pass; Bernardo accepts turbo character; actual runtime on the supported systems and visual/audio synchronization pass. Record the expanded supported envelope and remaining data uncertainty.
 
 **Stop/reject rule:** Base naturally aspirated acceptance does not certify boosted conditions. Do not expand default boost on an untested hardware tier.
 

@@ -1,6 +1,6 @@
 # REV-BENCH — the plan
 
-Updated 2026-11-03. This file is the only place that says which stages are done and what comes
+Updated 2026-11-08. This file is the only place that says which stages are done and what comes
 next. Each stage's full specification (deliverable, dependencies, evidence, rejection rule) is in
 `docs/roadmap/`, and each finished stage has its record in `docs/stage-NNN.md`.
 
@@ -12,19 +12,22 @@ next. Each stage's full specification (deliverable, dependencies, evidence, reje
 
 ## What REV-BENCH is
 
-A browser engine test bench: pick an engine, change its displacement, compression, cams,
-headers, exhaust and later its turbo, and hear, measure and see the difference in real time. The
-sound comes from a physical simulation of the gas moving through the engine, not from
-recordings. **Realism is the absolute priority**: every realism change needs research, physical
+An engine test bench you download and run: a desktop app for Windows, macOS and Linux. Pick an
+engine, change its displacement, compression, cams, headers, exhaust and later its turbo, and
+hear, measure and see the difference in real time. The sound comes from a physical simulation of
+the gas moving through the engine, not from recordings. The app's design is in
+[docs/app-design.md](docs/app-design.md): the C core on a real-time thread, played through
+the sound card, behind an Electron and Svelte interface
+([ADR 0004](docs/adr/0004-desktop-application.md), 2026-11-08). **Realism is the absolute priority**: every realism change needs research, physical
 evidence and Bernardo's ears. The first full release includes:
 - the engine and exhaust editor, instruments and a dyno;
 - a 3D engine with cutaway, motion and gas views;
 - turbocharging, knock, limits and damage;
 - a larger engine catalog;
-- saving and sharing builds;
-- polish and public deployment.
+- saving and sharing builds as files and codes;
+- polish, and signed installers with updates for all three systems.
 
-## Where the project is (2026-11-03)
+## Where the project is (2026-11-08)
 
 - **Done: stages 001–049, 112–117 and 119.** Five preset engines (I4, I6, cross-plane V8, flat-plane
   V8, boxer-4) with their own researched exhausts, all running natively in C. Their sound is
@@ -41,9 +44,15 @@ evidence and Bernardo's ears. The first full release includes:
 - **Research done but not in the engine:** stages 043–049 and 114 built exhaust-acoustics
   solvers in `experiments/acoustics/`. They run far below real time and only on weak, cool
   waves. They wait for stages 050–063 to decide whether any of them improves the engine.
-- **The browser still plays a test tone.** The engine isn't in the browser yet, and the
-  heaviest presets don't run in real time at the default quality: the cross-plane V8 renders at
-  0.4× real time natively, the four at 0.9×.
+- **Nothing plays the engine live yet.** The public API still plays a test tone (the driving
+  lives in `rb_cli`), and the engine doesn't run in real time: on Bernardo's machine the four's
+  engine step alone runs at 0.66× real time (2026-11-06); the cloud VM's whole render gave the
+  cross-plane V8 0.4×. The old browser scaffold (`web/`) plays a tone in an AudioWorklet.
+- **Every test runs on Windows and in WSL alike** (2026-11-06): `python tools/run_tests.py`,
+  with the same results on both (docs/workspace.md).
+- **The app replaces the browser** (2026-11-08): a downloadable app for Windows, macOS and
+  Linux, chosen for its look, craft and reliable real-time sound
+  ([ADR 0004](docs/adr/0004-desktop-application.md)). Its stages come first.
 - **Bernardo's reference recordings and videos** are on his machine, in `renders/` (git-ignored;
   docs/user-sound-references.md). Stages 039, 058, 059 and 063 need them.
 
@@ -53,46 +62,62 @@ Bernardo (2026-11-01): "Execute in the order you find most ideal as long as all 
 complete and there are no gaps in between." The original order (2026-10-23) was contracts, then
 all the sound physics and runtime work, then the browser, then 3D. One change:
 
-**The engine plays in the browser first.** The playable browser (066–069) moves ahead of the long
-sound-physics chain (050–063). It plays today's engine at a quality that runs in real time (new
-stage 118). Every later sound improvement then lands in something Bernardo can play and hear
+**The engine plays in the app first.** The playable app (066–069) comes ahead of the long
+sound-physics chain (050–063). It plays today's engine at a quality that runs in real time
+(stage 118). Every later sound improvement then lands in something Bernardo can play and hear
 live, not only in WAV files. Nothing is dropped. The sound stages still all come before 3D,
 turbo and the rest, as agreed.
 
-1. **Phase A, clean-up and play:**
+**2026-11-08: a desktop app, not a browser page** (Bernardo: a downloadable app for Windows,
+Linux and Mac, chosen for what is best for the project, its look and its craft). Phase A now
+builds the app's foundations first: the workspace's upkeep (120), the core's public engine API
+(121), builds and CI on all three systems (122), the real-time tier (118), the real-time audio
+host (123) and the app's shell (124). Then 066–069, rewritten for the app.
+
+1. **Phase A, the app and live play:**
    - [x] **119:** the review's leftovers;
+   - [ ] **120:** the workspace and toolset upkeep;
+   - [ ] **121:** the core's public engine-control, telemetry and snapshot API;
+   - [ ] **122:** builds and CI on Windows, macOS and Linux;
    - [ ] **118:** a real-time tier for today's engine;
-   - [ ] **066 → 067 → 068 → 069:** the playable browser.
+   - [ ] **123:** the real-time audio host;
+   - [ ] **124:** the application's foundation;
+   - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on three systems.
 2. **Phase B, real sound:**
    - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
    - [ ] **050, 051 → 052;**
    - [ ] **053, 055, 056 → 054;**
    - [ ] **057 → 058 → 059 → 060 → 061 → 062 → 063:** base sound acceptance. Each of these
-     updates the browser too.
+     updates the app too.
 3. **Phase C, the 3D engine:** [ ] 070 → 071 → 072 → 073 → 074 → 075 → 076 → 077.
 4. **Phase D, turbo:** [ ] 078 → 084.
 5. **Phase E, knock and limits:** [ ] 085 → 089.
 6. **Phase F, more engines:** [ ] 090 → 094.
 7. **Phase G, release:** [ ] 095 → 102.
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
-   103–111 (optional extras).
+   103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 118.**
+**Next stage: 120.**
 
 ## The stages, in the order they'll be done
 
 Click a stage's number for its specification. "Depends on" lists stages that must be done first.
 
-### Phase A — clean-up and the engine in the browser
+### Phase A — the desktop app and live play
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
 | ✅ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
-| ⬜ | [118](docs/roadmap/07-browser.md#stage-118) | A real-time tier for today's engine: profile and speed up the production engine until a declared quality runs at least 1.5× real time as WebAssembly for all five presets, with what that tier changes measured | 119 |
-| ⬜ | [066](docs/roadmap/07-browser.md#stage-066) | Playable browser engine and audio lifecycle: start, idle, rev, stop, presets, stereo, in dev and production builds | 037, 118 |
-| ⬜ | [067](docs/roadmap/07-browser.md#stage-067) | Engine, intake and exhaust control panel, from the core's metadata | 037, 066 |
-| ⬜ | [068](docs/roadmap/07-browser.md#stage-068) | Live instruments, telemetry and the native-owned dyno | 066, 067 |
-| ⬜ | [069](docs/roadmap/07-browser.md#stage-069) | First playable browser qualification in Chrome and Firefox: callback deadlines, 15-minute stress run, listening. The first playable milestone | 066, 067, 068, 118 |
+| ⬜ | [120](docs/roadmap/14-review-fixes.md#stage-120) | The workspace and toolset upkeep: the 4.7 GB zip and old renders out of the tree, the 30 stale planted bugs, current docs and hooks, the Makefile finding the venv, the test runner's timeouts | 119 |
+| ⬜ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, vehicle and road load, a dyno the sim owns, settings, engine telemetry, snapshots and events; `rb_cli` rewritten on it with identical renders | 037, 120 |
+| ⬜ | [122](docs/roadmap/07-app.md#stage-122) | Builds with each system's compiler (MSVC, Apple clang, gcc) through CMake, a cross-compiler parity tolerance, and CI on Windows, macOS and Linux | 120 |
+| ⬜ | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine: benchmark the whole render path, profile, speed up without changing results, and declare a tier that runs every preset at least 1.5× real time natively on Bernardo's machine, with what it changes measured and listened to | 121, 122 |
+| ⬜ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): a high-priority render thread, miniaudio, lock-free commands, snapshots and events, rebuilds with fades, the clock mapping, an offline mode and its instrumentation | 121, 122 |
+| ⬜ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron, the engine process with the Node-API add-on, the sandboxed Svelte window, the design system (Bernardo approves), tests and unsigned installers on all three systems | 122, 123 |
+| ⬜ | [066](docs/roadmap/07-app.md#stage-066) | The playable engine in the app: start, idle, rev, stop, presets, the tier, stereo scenes, keyboard and game-controller throttle, devices, sleep and wake | 037, 118, 124 |
+| ⬜ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata, with atomic rebuilds and undo | 037, 066 |
+| ⬜ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno, with overlays | 066, 067 |
+| ⬜ | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows, macOS and Linux: deadlines, 15-minute stress runs on real devices, listening; the first pre-release | 066, 067, 068, 118 |
 
 ### Phase B — the sound to real-engine standard
 
@@ -110,8 +135,8 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ⬜ | [058](docs/roadmap/05-engine-qualification.md#stage-058) | Deceleration and lift-off: find the causes of the robotic texture and the boom | 039, 057 |
 | ⬜ | [059](docs/roadmap/05-engine-qualification.md#stage-059) | Five-engine physical and acoustic qualification against matched references | 039, 057, 058 |
 | ⬜ | [060](docs/roadmap/05-engine-qualification.md#stage-060) | Renderer comparison and architecture decision (an ADR) | 043, 057, 059 |
-| ⬜ | [061](docs/roadmap/05-engine-qualification.md#stage-061) | Production renderer promotion, into the core, native, WebAssembly and the browser | 060 |
-| ⬜ | [062](docs/roadmap/05-engine-qualification.md#stage-062) | Fidelity tiers, optimization and native/WebAssembly parity for the promoted renderer | 061, 059 |
+| ⬜ | [061](docs/roadmap/05-engine-qualification.md#stage-061) | Production renderer promotion, into the core, the real-time host and the app | 060 |
+| ⬜ | [062](docs/roadmap/05-engine-qualification.md#stage-062) | Fidelity tiers, optimization and cross-compiler parity for the promoted renderer | 061, 059 |
 | ⬜ | [063](docs/roadmap/05-engine-qualification.md#stage-063) | Base-engine sound and realism acceptance: Bernardo listens, per preset and scenario | 039, 059, 061, 062 |
 | 💤 | [064](docs/roadmap/06-learned-research.md#stage-064) | Conditional: learned pulse and DSP-parameter benchmark | 039, 053, 054, 059 |
 | 💤 | [065](docs/roadmap/06-learned-research.md#stage-065) | Conditional: learned unresolved-source integration | 064, 060, 061, 063 |
@@ -120,7 +145,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [070](docs/roadmap/08-3d.md#stage-070) | 3D scene, visual style and capability foundation | 037, 069 |
+| ⬜ | [070](docs/roadmap/08-3d.md#stage-070) | 3D scene in the app's window, visual style and capability foundation on all three systems | 037, 069 |
 | ⬜ | [071](docs/roadmap/08-3d.md#stage-071) | Procedural bottom end and manual kinematics | 037, 070 |
 | ⬜ | [072](docs/roadmap/08-3d.md#stage-072) | Procedural top end and valve motion | 071 |
 | ⬜ | [073](docs/roadmap/08-3d.md#stage-073) | Coherent snapshots and sound-synchronized live animation | 037, 066, 072 |
@@ -165,21 +190,21 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [095](docs/roadmap/12-release.md#stage-095) | Versioned local build persistence | 037, 067, 082, 088, 094 |
-| ⬜ | [096](docs/roadmap/12-release.md#stage-096) | Shareable builds and validated imports | 095 |
+| ⬜ | [095](docs/roadmap/12-release.md#stage-095) | Versioned `.rbbuild` files, autosaved sessions | 037, 067, 082, 088, 094 |
+| ⬜ | [096](docs/roadmap/12-release.md#stage-096) | Sharing builds: build codes and `rbench://` links, validated imports | 095 |
 | ⬜ | [097](docs/roadmap/12-release.md#stage-097) | Usability, accessibility and visual polish | 067, 068, 070, 077, 082, 089, 094, 096 |
 | ⬜ | [098](docs/roadmap/12-release.md#stage-098) | Final per-preset listening and realism acceptance | 039, 063, 084, 089, 094, 097 |
-| ⬜ | [099](docs/roadmap/12-release.md#stage-099) | Complete-browser and hardware release qualification | 077, 084, 089, 094, 096, 097, 098 |
-| ⬜ | [100](docs/roadmap/12-release.md#stage-100) | Release documentation, evidence and asset review | 099 |
-| ⬜ | [101](docs/roadmap/12-release.md#stage-101) | Static production deployment | 100 |
-| ⬜ | [102](docs/roadmap/12-release.md#stage-102) | Deployed second-device acceptance and full release | 101 |
+| ⬜ | [099](docs/roadmap/12-release.md#stage-099) | Release qualification on the supported systems and hardware | 077, 084, 089, 094, 096, 097, 098 |
+| ⬜ | [100](docs/roadmap/12-release.md#stage-100) | Release documentation, licences and asset review | 099 |
+| ⬜ | [101](docs/roadmap/12-release.md#stage-101) | Signed installers and the update channel | 100 |
+| ⬜ | [102](docs/roadmap/12-release.md#stage-102) | Public release and clean-machine acceptance | 101 |
 
 ### Optional, after the release
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
 | 💤 | [103](docs/roadmap/13-optional.md#stage-103) | Gearbox and vehicle-driving mode | 102 |
-| 💤 | [104](docs/roadmap/13-optional.md#stage-104) | WAV recording and audio export | 102 |
+| 💤 | [104](docs/roadmap/13-optional.md#stage-104) | WAV recording and audio export (cheap in the app: the host's capture tap) | 102 |
 | 💤 | [105](docs/roadmap/13-optional.md#stage-105) | Two-stroke engine cycle | 102 |
 | 💤 | [106](docs/roadmap/13-optional.md#stage-106) | Alternative fuels | 102 |
 | 💤 | [107](docs/roadmap/13-optional.md#stage-107) | Supercharger system | 102 |
@@ -187,6 +212,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | 💤 | [109](docs/roadmap/13-optional.md#stage-109) | Anti-lag system | 102, 084, 085, 087 |
 | 💤 | [110](docs/roadmap/13-optional.md#stage-110) | 3D garage or dyno-room environment | 102 |
 | 💤 | [111](docs/roadmap/13-optional.md#stage-111) | Synchronized video capture | 102 |
+| 💤 | [125](docs/roadmap/13-optional.md#stage-125) | A browser demo on the WebAssembly core, at a declared lighter quality | 102 |
 
 ## Done
 
@@ -279,13 +305,16 @@ anything, goes into the engine.
 
 ## How a stage is done
 
-1. Say "do stage 118" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
+1. Say "do stage 120" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
    entry, then the stage's specification in `docs/roadmap/`.
 2. Do only that stage. Follow its dependencies, not just the row above it.
 3. End with all tests green:
    - native: `make test`;
    - Python: the tools' unit tests;
-   - web: `npm test`, plus the Playwright test in dev and `E2E_PREVIEW=1` for browser work.
+   - web: `npm test`;
+   - the app (from stage 124): its unit tests and end-to-end tests;
+   - `python tools/run_tests.py` runs them all, on Windows or WSL; CI runs them on all three
+     systems (from stage 122).
 4. New physics tests must be able to fail: plant bugs (`tools/plant_bugs.py`).
 5. A change in `core/` rebuilds the WebAssembly core (`make wasm`).
 6. **The sound check:** a change in `core/` also renders the affected sound and compares it with
@@ -293,7 +322,7 @@ anything, goes into the engine.
    realism.
 7. Write `docs/stage-NNN.md`, mark the stage here with a one-line note, and add a short entry to
    `CODEX.md`. Then commit (one per stage) and push.
-8. New work that no stage covers gets the next unused number (120, ...) and a place in the order
+8. New work that no stage covers gets the next unused number (126, ...) and a place in the order
    above. Stage numbers never change.
 
 The full evidence protocol, gates and architecture sketch are in
@@ -304,11 +333,14 @@ The full evidence protocol, gates and architecture sketch are in
 - One physical engine owns the crank, combustion and gas exchange. One description of it feeds
   the sound, the controls, saving and the 3D view, and one event clock drives sound and
   visuals. JavaScript never duplicates the engine's geometry or physics.
-- The stack: a C11 core, native measurement tools, the same core as WebAssembly in an
-  AudioWorklet, a TypeScript browser app, procedural 3D. The engine is validated natively before
-  it goes into the browser.
+- The stack: a C11 core, native measurement tools, a C real-time host, and an Electron app with a
+  Svelte interface and procedural 3D, on Windows, macOS and Linux (docs/app-design.md). The
+  WebAssembly build is kept for portability. The engine is validated natively before it goes
+  into the app. No physics or audio ever runs in JavaScript.
+- Every app stage builds and tests on all three systems; a feature that works on one only is
+  not done.
 - Realism work goes: research, a stated hypothesis, an independent native test, a controlled
-  engine comparison, native and WebAssembly runs, then Bernardo's listening. Keep findings apart
+  engine comparison, native runs and the app, then Bernardo's listening. Keep findings apart
   from hypotheses, and research results apart from what goes into the engine.
 - Measurements use unfiltered float audio. Generated and reference audio stay out of git.
 - Query the code graph (graphify) before exploring code, and refresh it after code changes.
@@ -318,19 +350,20 @@ The full evidence protocol, gates and architecture sketch are in
 
 - **The old sound tracks:** S1 (cycle variation, deceleration) closes at 058, 059 and 063. S2 (the
   exhaust's acoustics) closes at 050–061 and 063. S4 (the listener's scenes) closes at 056 and
-  063, and in the browser at 069 and 077.
+  063, and in the app at 069 and 077.
 - **Speed:** the old targets (4× real time natively, 2× in WebAssembly) are unmet. 118 gets a
-  real-time tier for today's engine; 062 does it for the promoted renderer.
+  real-time tier for today's engine natively; 062 does it for the promoted renderer.
+  WebAssembly is recorded, not gating, since the app runs natively.
 - **The audit's 27 findings** each have an owner stage and closure evidence in
   [docs/roadmap/audit-coverage.md](docs/roadmap/audit-coverage.md).
 - **Release gates:**
-  - first playable browser: 069;
+  - first playable app: 069;
   - base sound acceptance: 063;
   - full 3D: 077;
   - turbo: 084;
   - full catalog: 094;
   - final listening: 098;
-  - hardware and browser qualification: 099;
+  - systems and hardware qualification: 099;
   - public release: 102.
 
 ## Documentation map
@@ -342,6 +375,7 @@ The full evidence protocol, gates and architecture sketch are in
   history: Codex's checkpoint-by-checkpoint log is at commit 011b3cf.
 - [The audit's findings and their owners](docs/roadmap/audit-coverage.md),
   [roadmap decision](docs/adr/0002-canonical-roadmap-and-evidence-gates.md).
+- [The app's design](docs/app-design.md) and [its decision](docs/adr/0004-desktop-application.md).
 - [Glossary](GLOSSARY.md), [research](RESEARCH.md), [Codex's handoff log](CODEX.md),
   [notes for Claude](CLAUDE.md), [where the project is worked on](docs/workspace.md).
 - [Results workflow](docs/render-workflow.md), [Bernardo's references](docs/user-sound-references.md).
