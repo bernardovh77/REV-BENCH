@@ -51,13 +51,19 @@ jobs:
           curl -sSfL -o w64devkit.7z.exe \
             "https://github.com/skeeto/w64devkit/releases/download/v${W64DEVKIT_VERSION}/w64devkit-x64-${W64DEVKIT_VERSION}.7z.exe"
           ./w64devkit.7z.exe -y -o"$RUNNER_TEMP" > /dev/null
-          echo "$RUNNER_TEMP/w64devkit/bin" >> "$GITHUB_PATH"
+          # Not on GITHUB_PATH: its BusyBox `bash` would then run every later
+          # step, and it refuses the runner's `bash --noprofile` (exit code 2).
+          # Each step that needs gcc and make puts it on PATH itself.
+          echo "W64DEVKIT_BIN=$(cygpath -u "$RUNNER_TEMP")/w64devkit/bin" >> "$GITHUB_ENV"
       - name: Python tools
         run: python -m pip install -r tools/requirements-dev.txt
       - name: Every suite but the browser test (MSVC, w64devkit)
-        run: python tools/run_tests.py --keep-going --skip e2e
+        run: |
+          export PATH="$W64DEVKIT_BIN:$PATH"
+          python tools/run_tests.py --keep-going --skip e2e
       - name: MSVC and gcc agree
         run: |
+          export PATH="$W64DEVKIT_BIN:$PATH"
           B="$(cygpath -m ~)/rb-build"
           make -j4 BUILD="$B/tests" "$B/tests/rb_cli"
           python tools/compiler_parity.py check "$B/cmake/rb_cli.exe" "$B/tests/rb_cli.exe" "$B/parity"
