@@ -9,6 +9,7 @@
  * The unit tests check that every id has a complete, sane row.
  */
 #include "rb_internal.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <string.h>
@@ -116,7 +117,7 @@ int rb_set_param(rb_sim *sim, int id, double value)
 
     if (!sim)             return RB_ERR_ARG;
     if (!param_ok(id))    return RB_ERR_ID;
-    if (!isfinite(value)) return RB_ERR_VALUE;   /* reject, keep the old value */
+    if (!rb_finite(value)) return RB_ERR_VALUE;   /* reject, keep the old value */
     if ((PARAMS[id].flags & RB_PF_INTEGER) && value != floor(value)) return RB_ERR_VALUE;
 
     if (value < PARAMS[id].min) { value = PARAMS[id].min; rc = RB_CLAMPED; }

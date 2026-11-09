@@ -18,6 +18,7 @@
 
 #include "combustion.h"
 #include "pipe.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <string.h>
@@ -226,7 +227,7 @@ double rb_listener_source_distance(const rb_sim *sim, int source)
 
 int rb_set_scene_time(rb_sim *sim, double seconds)
 {
-    if (!sim || !sim->scene_active || !isfinite(seconds)) return RB_ERR_ARG;
+    if (!sim || !sim->scene_active || !rb_finite(seconds)) return RB_ERR_ARG;
     sim->scene.time = seconds;
     return RB_OK;
 }

@@ -107,6 +107,14 @@ target_compile_options(rb_cli PRIVATE ${RB_WARNINGS})
 add_executable(rb_bench native/rb_bench.c)
 target_link_libraries(rb_bench PRIVATE rb_core_internal)
 
+# rb_bench_render (stage 118) times the app's render path through rb.h alone,
+# like rb_cli sound: its object sees the public headers only.
+add_library(rb_bench_render_obj OBJECT native/bench_render.c)
+target_include_directories(rb_bench_render_obj PRIVATE core/include native)
+target_compile_options(rb_bench_render_obj PRIVATE ${RB_WARNINGS})
+add_executable(rb_bench_render $<TARGET_OBJECTS:rb_bench_render_obj>)
+target_link_libraries(rb_bench_render PRIVATE rb_native)
+
 add_executable(rb_audit native/rb_audit.c)
 target_link_libraries(rb_audit PRIVATE rb_core_internal)
 

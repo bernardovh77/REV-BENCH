@@ -6,6 +6,7 @@
 #include "rand.h"
 #include "rb.h"
 #include "valve.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <string.h>
@@ -229,7 +230,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
         n->force += (e->cyl[i].gas.p - d->p_ambient) * e->cyl[i].geom.area;
         n->angle[i] = rb_engine_cylinder_angle(e, i);
     }
-    n->mount_hp = isfinite(e->gas_torque) ? e->gas_torque : 0.0;   /* settled */
+    n->mount_hp = rb_finite(e->gas_torque) ? e->gas_torque : 0.0;   /* settled */
     n->mount_hp_a = one_pole(MOUNT_HP_HZ, n->dt);
     n->mount_lp_a = one_pole(MOUNT_LP_HZ, n->dt);
 }
@@ -384,13 +385,13 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
     /* Combustion: the pistons' force, as it changes. */
     double force = 0.0;
     for (int i = 0; i < d->cylinders; i++) force += (e->cyl[i].gas.p - d->p_ambient) * e->cyl[i].geom.area;
-    if (isfinite(force)) {
+    if (rb_finite(force)) {
         strike(in, BY_FORCE, K_FORCE * (force - n->force));
         n->force = force;
     }
 
     /* What each cylinder passed in this step. */
-    const double omega = isfinite(e->omega) ? fabs(e->omega) : 0.0;
+    const double omega = rb_finite(e->omega) ? fabs(e->omega) : 0.0;
     const double rpm = omega * 30.0 / PI;
     const double crank_r = 0.5 * d->stroke, lambda = crank_r / d->rod;
     const double inertia = n->recip_mass * crank_r * omega * omega;
@@ -406,7 +407,7 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
         for (int j = 0; j < e->injection_count; j++) {
             const rb_injection_event *event = &e->injection[j];
             if (event->tick + 1 == e->physics_tick && event->kind == RB_INJ_DELIVERED &&
-                event->fuel_kg > 0.0 && isfinite(event->fuel_kg)) {
+                event->fuel_kg > 0.0 && rb_finite(event->fuel_kg)) {
                 impact(n, in, BY_INJECTOR, RB_IMPACT_INJECTOR, K_INJECTOR);
                 n->injected_fuel_kg += event->fuel_kg;
             }
@@ -448,7 +449,7 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
 
     /* The mounts: the gas torque's swings, 20-200 Hz (the high-pass is the
      * torque less its own low-pass, which starts at the torque's mean). */
-    const double x = isfinite(e->gas_torque) ? e->gas_torque : n->mount_hp;
+    const double x = rb_finite(e->gas_torque) ? e->gas_torque : n->mount_hp;
     n->mount_hp += n->mount_hp_a * (x - n->mount_hp);
     n->mount_lp += n->mount_lp_a * ((x - n->mount_hp) - n->mount_lp);
     n->out[RB_NOISE_MOUNT] = K_MOUNT * n->mount_lp;
@@ -466,7 +467,7 @@ void rb_noise_step(rb_noise *n, const rb_engine *e, int what)
     /* A broken state upstream mustn't stay in the filters: anything that
      * isn't a number now starts the noise over, quiet. */
     for (int k = 0; k < RB_NOISE_OUTPUTS; k++) {
-        if (!isfinite(n->out[k])) {
+        if (!rb_finite(n->out[k])) {
             const uint64_t state = n->state;
             rb_noise_init(n, e, state);
             for (int j = 0; j < RB_NOISE_OUTPUTS; j++) n->out[j] = 0.0;

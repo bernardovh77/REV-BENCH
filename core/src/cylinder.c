@@ -8,6 +8,7 @@
  * half stroke at 90 degrees.
  */
 #include "cylinder.h"
+#include "fastmath.h"
 
 #include <math.h>
 
@@ -67,7 +68,7 @@ int rb_cylinder_init(rb_cylinder *c, const rb_cyl_geom *geom, double theta,
     if (!geom || rb_cyl_geom_init(&g, geom->bore, geom->stroke, geom->rod, geom->cr) != 0)
         return -1;
     c->geom  = g;
-    c->theta = isfinite(theta) ? theta : 0.0;
+    c->theta = rb_finite(theta) ? theta : 0.0;
     c->work  = 0.0;
     rb_chamber_init(&c->gas, rb_cyl_volume(&g, c->theta), p, T, y);
     return 0;
@@ -75,7 +76,7 @@ int rb_cylinder_init(rb_cylinder *c, const rb_cyl_geom *geom, double theta,
 
 double rb_cylinder_move(rb_cylinder *c, double theta)
 {
-    if (!isfinite(theta)) {
+    if (!rb_finite(theta)) {
         c->work = 0.0;
         return 0.0;
     }

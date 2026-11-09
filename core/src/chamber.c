@@ -3,6 +3,8 @@
  */
 #include "chamber.h"
 #include "diagnostics.h"
+#include "fastmath.h"
+#include "gas_inline.h"
 
 #include <math.h>
 #include <string.h>
@@ -100,7 +102,7 @@ void rb_chamber_update(rb_chamber *ch)
         per_kg = 1.0 / mass;
         for (int s = 0; s < RB_NSPECIES; s++) ch->y[s] = ch->m[s] * per_kg;
         remix(ch);
-        if (!isfinite(ch->U)) {                  /* rebuild from the last temperature */
+        if (!rb_finite(ch->U)) {                  /* rebuild from the last temperature */
             const double before = ch->U;
             ch->U = mass * rb_gas_u(&ch->gas, ch->T);
             if (ch->diag) rb_diag_repair(ch->diag, RB_D_QUANTITIES - 1, before, ch->U);
@@ -113,7 +115,7 @@ void rb_chamber_update(rb_chamber *ch)
         double guess = ch->T;
         if (ch->cv > 0.0) guess += (u - ch->u) / ch->cv;
         ch->u = u;
-        ch->T = rb_gas_T_cv_from_u_diag(&ch->gas, u, guess, &ch->cv, ch->diag);
+        ch->T = rb_gas_newton_T(&ch->gas, u, guess, &ch->cv, ch->diag);
     } else {
         /* Empty: keep the last composition and temperature. */
         remix(ch);
@@ -121,7 +123,7 @@ void rb_chamber_update(rb_chamber *ch)
             if (ch->diag) rb_diag_note(ch->diag, RB_D_BIT(RB_D_TEMP_FLOOR));
             ch->T = RB_T_REF;
         }
-        ch->u = rb_gas_u_cv(&ch->gas, ch->T, &ch->cv);
+        ch->u = rb_gas_u_and_cv(&ch->gas, ch->T, &ch->cv);
     }
     derive(ch, per_kg);
     ch->repairs += repaired;
@@ -158,7 +160,7 @@ void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt)
             rb_chamber *g = &ch[base + j];
             active[j] = 0;
             /* Unusual inputs retain the complete scalar repair path. */
-            int normal = !g->fixed && isfinite(g->U + g->dU * dt);
+            int normal = !g->fixed && rb_finite(g->U + g->dU * dt);
             double mass = 0.0;
             for (int s = 0; s < RB_NSPECIES; s++) {
                 const double m = g->m[s] + g->dm[s] * dt;
@@ -217,7 +219,7 @@ void rb_chamber_integrate_many(rb_chamber *ch, int count, double dt)
                 if (g->diag) rb_diag_note(g->diag, RB_D_BIT(RB_D_TEMP_FLOOR));
                 T[j] = 1.0;
             }
-            if (isfinite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]) {
+            if (rb_finite(target[j]) && fabs(correction[j]) <= 1e-6 * T[j]) {
                 g->T = T[j];
                 g->cv = cv[j];
             } else {
@@ -247,7 +249,7 @@ static void volume_step(rb_chamber *ch, double V_new)
     /* u and cv together, at the start and after each correction: at the end
      * they're ready for the new state. */
     double T = ch->T, cv;
-    double u = rb_gas_u_cv(&ch->gas, T, &cv);
+    double u = rb_gas_u_and_cv(&ch->gas, T, &cv);
     for (int i = 0; i < 50; i++) {
         const double f = m * (u + k * T) - rhs;
         const double dT = f / (m * (cv + k));
@@ -256,7 +258,7 @@ static void volume_step(rb_chamber *ch, double V_new)
             if (ch->diag) rb_diag_note(ch->diag, RB_D_BIT(RB_D_TEMP_FLOOR));
             T = 1.0;
         }
-        u = rb_gas_u_cv(&ch->gas, T, &cv);
+        u = rb_gas_u_and_cv(&ch->gas, T, &cv);
         if (fabs(dT) <= 1e-12 * T) break;
         if (ch->diag && i == 49) rb_diag_note(ch->diag, RB_D_BIT(RB_D_NEWTON_LIMIT));
     }
@@ -266,7 +268,7 @@ static void volume_step(rb_chamber *ch, double V_new)
             rb_diag_note(ch->diag, RB_D_BIT(RB_D_ENERGY_REPAIR));
         }
         T = ch->T;
-        u = rb_gas_u_cv(&ch->gas, T, &cv);
+        u = rb_gas_u_and_cv(&ch->gas, T, &cv);
         ch->repairs++;
     }
 

@@ -3,6 +3,7 @@
  */
 #include "pipe.h"
 #include "diagnostics.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <string.h>
@@ -501,7 +502,10 @@ static double momentum_flux(const rb_pipe *p, int k, double in, double out)
             right = side_flow(p, k + 1, 1) - out;
         }
         if ((left > 0.0 && right > 0.0) || (left < 0.0 && right < 0.0)) {
-            const double slope = copysign(fmin(fabs(left), fabs(right)), left);
+            /* neither is NaN or zero here, so fmin and copysign are these (and
+             * MSVC calls into the C runtime for both) */
+            const double smaller = (fabs(right) < fabs(left)) ? fabs(right) : fabs(left);
+            const double slope = (left > 0.0) ? smaller : -smaller;
             transported += ((mdot >= 0.0) ? 0.5 : -0.5) * slope;
             if (p->diag) rb_diag_note(p->diag, RB_D_BIT(RB_D_RECONSTRUCT));
         } else {
@@ -540,7 +544,7 @@ static void push_end(rb_pipe *p, int end, double shortest, double dt)
         if (f->diag)
             rb_diag_impulse(f->diag,
                             requested != f->mdot
-                                ? RB_D_BIT(isfinite(requested) ? RB_D_SONIC_CAP : RB_D_BAD_FLOW)
+                                ? RB_D_BIT(rb_finite(requested) ? RB_D_SONIC_CAP : RB_D_BAD_FLOW)
                                 : 0,
                             (requested - previous) / per_length, (f->mdot - previous) / per_length,
                             1 / per_length, density);
@@ -581,7 +585,7 @@ void rb_pipe_accelerate(rb_pipe *p, int fast, double dt)
             const double speed = rb_chamber_sound_speed(&p->cell[k])
                                + fabs(rb_pipe_cell_velocity(p, k));
             const double cfl = speed * dt / p->dx;
-            if (!isfinite(cfl)) p->diag->invalid++;
+            if (!rb_finite(cfl)) p->diag->invalid++;
             else if (cfl > p->diag->max_cfl) p->diag->max_cfl = cfl;
             if (cfl > 1) rb_diag_note(p->diag, RB_D_BIT(RB_D_CFL));
         }

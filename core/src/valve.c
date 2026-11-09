@@ -2,6 +2,7 @@
  * valve.c - cam lift profile and valve flow area (see valve.h).
  */
 #include "valve.h"
+#include "fastmath.h"
 
 #include <math.h>
 
@@ -22,7 +23,10 @@ int rb_valve_check(const rb_valve *v)
 
 double rb_cycle_offset(double theta_deg, double center_deg)
 {
-    double d = fmod(theta_deg - center_deg, 720.0);   /* -720 < d < 720 */
+    /* fmod(x, 720) is x itself within a cycle, which is where the engine's
+     * angles are: the call (MSVC's is a library call) is for the rest. */
+    double d = theta_deg - center_deg;
+    if (!(fabs(d) < 720.0)) d = fmod(d, 720.0);   /* -720 < d < 720 */
     if (d < -360.0) d += 720.0;
     if (d >= 360.0) d -= 720.0;
     return d;
@@ -30,7 +34,7 @@ double rb_cycle_offset(double theta_deg, double center_deg)
 
 double rb_valve_lift(const rb_valve *v, double theta_deg)
 {
-    if (!isfinite(theta_deg)) return 0.0;
+    if (!rb_finite(theta_deg)) return 0.0;
     const double u = 2.0 * rb_cycle_offset(theta_deg, v->center) / v->duration;
     if (!(fabs(u) < 1.0)) return 0.0;
     const double w = 1.0 - u * u;

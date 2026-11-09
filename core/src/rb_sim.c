@@ -11,6 +11,7 @@
 #include "rb_internal.h"
 
 #include "presets.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <string.h>
@@ -52,7 +53,7 @@ size_t rb_sizeof(void)
 /* A valid config (pipe_rate 0 has already become the default). */
 static int config_is_valid(const rb_config *c)
 {
-    return isfinite(c->sample_rate)
+    return rb_finite(c->sample_rate)
         && c->sample_rate >= RB_MIN_SAMPLE_RATE
         && c->sample_rate <= RB_MAX_SAMPLE_RATE
         && c->oversample >= 1
@@ -232,11 +233,11 @@ static inline void model_step(rb_sim *sim)
                                   * (q[j] - sim->scene_flow[j]) / sim->dt;
                     sim->scene_flow[j] = q[j];
                 }
-                if (!isfinite(pressure)) {
+                if (!rb_finite(pressure)) {
                     pressure = 0;
                     sim->nonfinite++;
                 }
-                rb_decimator_push(&sim->scene_aa[j], fmax(-RB_MIC_MAX, fmin(RB_MIC_MAX, pressure)));
+                rb_decimator_push(&sim->scene_aa[j], rb_clamp(pressure, -RB_MIC_MAX, RB_MIC_MAX));
             }
         }
         rb_listener_push_noise(&sim->listener, sim->noise.out, sim->noise.out[RB_NOISE_MOUNT]);
@@ -279,7 +280,7 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
         for (int k = 0; k < os; k++) {
             model_step(sim);
             double x = sim->mic;
-            if (!isfinite(x)) {
+            if (!rb_finite(x)) {
                 x = 0.0;
                 sim->nonfinite++;
             } else if (fabs(x) > RB_MIC_MAX) {
@@ -302,7 +303,7 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
         if (fabs(y) > RB_LIMIT_KNEE
             && !(sim->scene_active && sim->source == RB_SOURCE_ENGINE)) sim->limited++;
         y = rb_soft_limit(y);
-        if (!isfinite(y)) {
+        if (!rb_finite(y)) {
             y = 0.0;
             sim->nonfinite++;
         }
@@ -323,14 +324,14 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
                          * sim->gain_s;
                 if (fabs(v) > RB_LIMIT_KNEE) sim->limited++;
                 v = rb_soft_limit(v);
-                if (!isfinite(v)) {
+                if (!rb_finite(v)) {
                     v = 0;
                     sim->nonfinite++;
                 }
                 if (channels == 2) out[2 * i + k] = (float)v;
                 mono += 0.5 * v;
                 frame_power += 0.5 * v * v;
-                frame_peak = fmax(frame_peak, fabs(v));
+                frame_peak = rb_max(frame_peak, fabs(v));
             }
             if (channels == 1) out[i] = (float)mono;
             y = mono;

@@ -26,6 +26,10 @@
 #   make bench        how fast the core runs: each preset held wide open at
 #                     3000 rpm, then the pieces the profile points at
 #   make bench-wasm   the same as WebAssembly, run by Node (needs zig and node)
+#   make bench-render the app's whole render path (rb_render_stereo through rb.h)
+#                     for each preset, quality and drive (stage 118); the
+#                     interleaved table: tools/bench_render.py. bench-render-wasm
+#                     is the same as WebAssembly (BENCH_RENDER_ARGS selects cells)
 #   make test-wasm    run gas/batched-cell/pipe checks in the SIMD WASM build
 #   make audit        five-preset S1 physics baseline to renders/s1-audit/physics.csv
 #   make diagnostics-check   five-preset guard/flux/trajectory/cost proof
@@ -115,6 +119,7 @@ NATIVE_OBJ := $(call obj,$(NATIVE_SRC))
 CLI_OBJ    := $(call obj,$(CLI_SRC))
 TEST_OBJ   := $(call obj,$(TEST_SRC))
 BENCH_OBJ  := $(call obj,native/rb_bench.c)
+BENCH_RENDER_OBJ := $(call obj,native/bench_render.c)
 AUDIT_OBJ  := $(call obj,native/rb_audit.c)
 ACOUSTIC_SRC := experiments/acoustics/wave.c experiments/acoustics/euler.c experiments/acoustics/coupled_duct.c experiments/acoustics/mixture.c experiments/acoustics/gas_graph.c experiments/acoustics/thermal.c experiments/acoustics/material.c experiments/acoustics/fixed_transport.c experiments/acoustics/junction.c
 ACOUSTIC_OBJ := $(call obj,$(ACOUSTIC_SRC))
@@ -138,15 +143,16 @@ THERMAL_PROBE_OBJ := $(call obj,tools/thermal_probe.c)
 GAS_GRAPH_PROBE_OBJ := $(call obj,tools/gas_graph_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(BENCH_RENDER_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
 BENCH := $(BUILD)/rb_bench
+BENCH_RENDER := $(BUILD)/rb_bench_render
 AUDIT := $(BUILD)/rb_audit
 ACOUSTIC_PROBE := $(BUILD)/acoustic_candidate_probe
 
-.PHONY: all test test-wasm render render-standard results wasm bench bench-wasm audit fuzz clean help acoustic-probe
+.PHONY: all test test-wasm render render-standard results wasm bench bench-render bench-wasm bench-render-wasm audit fuzz clean help acoustic-probe
 
 all: $(CLI)
 
@@ -273,6 +279,14 @@ test: $(TESTS)
 bench: $(BENCH)
 	$(BENCH)
 
+# Stage 118: the app's whole render path (rb_render_stereo through rb.h), each
+# preset, quality and drive. tools/bench_render.py runs it interleaved.
+bench-render: $(BENCH_RENDER)
+	$(BENCH_RENDER)
+
+$(BENCH_RENDER): $(BENCH_RENDER_OBJ) $(CORE_OBJ) $(call obj,native/wav.c)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
 audit: $(AUDIT)
 	@mkdir -p renders/s1-audit
 	$(AUDIT) > renders/s1-audit/physics.csv.tmp
@@ -364,6 +378,16 @@ $(BUILD)/rb_bench.wasm: native/rb_bench.c $(CORE_SRC) $(CORE_HDR) Makefile
 	@mkdir -p $(@D)
 	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
 	  -Wall -Wextra -Icore/include -Icore/src native/rb_bench.c $(CORE_SRC) -o $@
+
+# Stage 118: the app's render path (native/bench_render.c) as WebAssembly, for
+# the record: the same drives and the same hashes as the native program's.
+bench-render-wasm: $(BUILD)/rb_bench_render.wasm
+	node tools/bench_wasm.mjs $< $(BENCH_RENDER_ARGS)
+
+$(BUILD)/rb_bench_render.wasm: native/bench_render.c native/wav.c $(CORE_SRC) $(CORE_HDR) Makefile
+	@mkdir -p $(@D)
+	ZIG_LOCAL_CACHE_DIR=$(BUILD)/zig-cache $(ZIG) cc -target wasm32-wasi $(WASM_OPT) -g0 -std=c11 \
+	  -Wall -Wextra -Icore/include -Icore/src -Inative native/bench_render.c native/wav.c $(CORE_SRC) -o $@
 
 # These tests need no filesystem access: the same C assertions exercise the
 # actual WebAssembly SIMD and scalar-fallback code, not only its exports.

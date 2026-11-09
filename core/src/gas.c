@@ -4,6 +4,8 @@
  */
 #include "gas.h"
 #include "diagnostics.h"
+#include "fastmath.h"
+#include "gas_inline.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -65,14 +67,23 @@ double rb_species_R(int species)
     return SPECIES[species].R;
 }
 
-/* c0 + c1 t + c2 t^2 + c3 t^3 + c4 t^4 (Horner form). */
-static double poly(const double c[5], double t)
-{
-    return c[0] + t * (c[1] + t * (c[2] + t * (c[3] + t * c[4])));
-}
-
 /* Integrating c_k t^k over T (t = T/1000) gives T c_k t^k / (k + 1). */
+/* Where the SSE2 path (below) takes lo[0..4] and hi[0..4] as ten numbers in a
+ * row: the species' and the mixture's arrays lie one after another. */
+#if defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#include <emmintrin.h>
+#define RB_GAS_SSE2 1
+static const double INTEGRAL10[10] = { 1.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 4.0, 1.0 / 5.0,
+                                       1.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 4.0, 1.0 / 5.0 };
+_Static_assert(offsetof(species_data, hi) == offsetof(species_data, lo) + 5 * sizeof(double),
+               "a species' lo and hi lie in a row");
+_Static_assert(offsetof(rb_gas, hi) == offsetof(rb_gas, lo) + 5 * sizeof(double)
+               && offsetof(rb_gas, uhi) == offsetof(rb_gas, ulo) + 5 * sizeof(double),
+               "a mixture's lo and hi, and its ulo and uhi, lie in a row");
+#else
+#define RB_GAS_SSE2 0
 static const double INTEGRAL[5] = { 1.0, 1.0 / 2.0, 1.0 / 3.0, 1.0 / 4.0, 1.0 / 5.0 };
+#endif
 
 void rb_gas_init(rb_gas *g, const double y[RB_NSPECIES])
 {
@@ -92,6 +103,28 @@ void rb_gas_init(rb_gas *g, const double y[RB_NSPECIES])
     const double wa = w[RB_AIR], wf = w[RB_FUEL], wb = w[RB_BURNED];
     const double R = wa * a->R + wf * f->R + wb * b->R;
     g->R = R;
+    /* The ten coefficients of cv (lo[0..4], then hi[0..4]) and each one's
+     * integral for u(T): every one is its species' weighted by mass, less R
+     * for the first of each range, then times 1/(k + 1). Each coefficient is
+     * independent of the others, so doing two at a time in one SSE2 register
+     * (stage 118) gives the same bits as one by one: the same additions and
+     * multiplications, in the same order, never fused. */
+#if RB_GAS_SSE2
+    {
+        const __m128d vwa = _mm_set1_pd(wa), vwf = _mm_set1_pd(wf), vwb = _mm_set1_pd(wb);
+        const __m128d take_R[5] = { _mm_set_pd(0.0, R), _mm_setzero_pd(), _mm_set_pd(R, 0.0),
+                                    _mm_setzero_pd(), _mm_setzero_pd() };
+        for (int i = 0; i < 5; i++) {
+            const __m128d x = _mm_sub_pd(
+                _mm_add_pd(_mm_add_pd(_mm_mul_pd(vwa, _mm_loadu_pd(a->lo + 2 * i)),
+                                      _mm_mul_pd(vwf, _mm_loadu_pd(f->lo + 2 * i))),
+                           _mm_mul_pd(vwb, _mm_loadu_pd(b->lo + 2 * i))),
+                take_R[i]);
+            _mm_storeu_pd(g->lo + 2 * i, x);
+            _mm_storeu_pd(g->ulo + 2 * i, _mm_mul_pd(x, _mm_loadu_pd(INTEGRAL10 + 2 * i)));
+        }
+    }
+#else
     /* Keep each coefficient and its integral together in this loop. Each
      * coefficient is independent, so SIMD does not reorder species sums. */
 #if defined(__clang__)
@@ -104,31 +137,14 @@ void rb_gas_init(rb_gas *g, const double y[RB_NSPECIES])
         g->ulo[k] = g->lo[k] * INTEGRAL[k];
         g->uhi[k] = g->hi[k] * INTEGRAL[k];
     }
+#endif
     g->k_lo = wa * a->k_lo + wf * f->k_lo + wb * b->k_lo;
     g->k_hi = wa * a->k_hi + wf * f->k_hi + wb * b->k_hi;
 }
 
-/* u(T) and cv(T) together (they share the powers of T). Outside the fitted
- * range cv is held constant, so u continues as a straight line. */
-static double u_and_cv(const rb_gas *g, double T, double *cv)
-{
-    const double Tc = (T < RB_T_LO) ? RB_T_LO : (T > RB_T_HI) ? RB_T_HI : T;
-    const double t = Tc * 1e-3;
-    double u;
-    if (Tc <= RB_T_MID) {
-        *cv = poly(g->lo, t);
-        u = g->k_lo + Tc * poly(g->ulo, t);
-    } else {
-        *cv = poly(g->hi, t);
-        u = g->k_hi + Tc * poly(g->uhi, t);
-    }
-    return u + *cv * (T - Tc);
-}
-
 double rb_gas_cv(const rb_gas *g, double T)
 {
-    const double Tc = (T < RB_T_LO) ? RB_T_LO : (T > RB_T_HI) ? RB_T_HI : T;
-    return poly(Tc <= RB_T_MID ? g->lo : g->hi, Tc * 1e-3);
+    return rb_gas_cv_inline(g, T);
 }
 
 double rb_gas_cp(const rb_gas *g, double T)
@@ -145,12 +161,12 @@ double rb_gas_gamma(const rb_gas *g, double T)
 double rb_gas_u(const rb_gas *g, double T)
 {
     double cv;
-    return u_and_cv(g, T, &cv);
+    return rb_gas_u_and_cv(g, T, &cv);
 }
 
 double rb_gas_u_cv(const rb_gas *g, double T, double *cv)
 {
-    return u_and_cv(g, T, cv);
+    return rb_gas_u_and_cv(g, T, cv);
 }
 
 double rb_gas_h(const rb_gas *g, double T)
@@ -166,29 +182,7 @@ double rb_gas_T_from_u(const rb_gas *g, double u, double T_guess)
 
 double rb_gas_T_cv_from_u_diag(const rb_gas *g, double u, double T_guess, double *cv, rb_diag_slot *diag)
 {
-    /* Newton's method on f(T) = u(T) - u, whose slope is cv(T) > 0. It
-     * converges quadratically: a correction dT leaves an error of about
-     * (dcv/dT) / (2 cv) dT^2, under 1e-4 dT^2 per kelvin. So once a
-     * correction is below a millionth of T, what's left is below 1e-10 K at
-     * engine temperatures. From a good guess (a chamber's update makes one,
-     * chamber.c) that's usually a single step. */
-    double T = (T_guess > 0.0 && T_guess < INFINITY) ? T_guess : RB_T_REF;
-    if (diag && T != T_guess) rb_diag_note(diag, RB_D_BIT(RB_D_TEMP_FLOOR));
-    if (!isfinite(u)) {
-        *cv = rb_gas_cv(g, T);
-        return NAN;
-    }
-    for (int i = 0; i < 50; i++) {
-        const double dT = (u_and_cv(g, T, cv) - u) / *cv;
-        T -= dT;
-        if (T < 1.0) {
-            if (diag) rb_diag_note(diag, RB_D_BIT(RB_D_TEMP_FLOOR));
-            T = 1.0;
-        }
-        if (fabs(dT) <= 1e-6 * T) break;
-        if (diag && i == 49) rb_diag_note(diag, RB_D_BIT(RB_D_NEWTON_LIMIT));
-    }
-    return T;
+    return rb_gas_newton_T(g, u, T_guess, cv, diag);
 }
 
 double rb_gas_T_cv_from_u(const rb_gas *g, double u, double guess, double *cv)

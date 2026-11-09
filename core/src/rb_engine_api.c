@@ -16,6 +16,7 @@
 #include "rb_internal.h"
 
 #include "presets.h"
+#include "fastmath.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -220,7 +221,7 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     if (index < 0 || index >= rb_engine_field_size(sim, field)) return RB_ERR_ARG;
     const field_info *f = &FIELDS[field];
     if (f->flags & RB_EF_READONLY) return RB_ERR_READONLY;
-    if (!isfinite(value)) return RB_ERR_VALUE;
+    if (!rb_finite(value)) return RB_ERR_VALUE;
     if ((f->flags & RB_EF_INTEGER) && value != floor(value)) return RB_ERR_VALUE;
 
     /* Angles around the crank wrap; everything else is clamped into its range. */

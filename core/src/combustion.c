@@ -4,6 +4,7 @@
 #include "combustion.h"
 
 #include "gas.h"
+#include "fastmath.h"
 
 #include <math.h>
 
@@ -93,7 +94,7 @@ rb_charge_burn rb_charge_burn_evaluate(double T, double p, double x, double phi,
         phi = 1;
     }
     if (!(T > 0 && p > 0 && x >= 0 && x <= 1 && phi > 0 && rpm >= 0 && reference > 0) ||
-        !isfinite(T + p + x + phi + rpm + reference)) {
+        !rb_finite(T + p + x + phi + rpm + reference)) {
         result.flags |= RB_FLAME_INVALID;
         result.raw_demand_deg = result.demand_deg = result.capped_deg =
             reference > 0 && reference <= 180 ? reference : 60;
@@ -105,12 +106,12 @@ rb_charge_burn rb_charge_burn_evaluate(double T, double p, double x, double phi,
     const double nu = pow(T / 360.0, 1.7) * (1.22e5 / p);
     const double n = (rpm > 100 ? rpm : 100) / 3000;
     double f = .6 + .4 * sqrt(n * nu) / s_l;
-    if (!isfinite(f) || !(speed > 0)) {
+    if (!rb_finite(f) || !(speed > 0)) {
         result.flags |= RB_FLAME_INVALID;
         f = 1;
     }
     if (f < .5) f = .5;
-    result.speed_m_s = isfinite(speed) && speed > 0 ? .01 * speed : 0;
+    result.speed_m_s = rb_finite(speed) && speed > 0 ? .01 * speed : 0;
     result.raw_demand_deg = reference * f;
     result.demand_deg = fmin(result.raw_demand_deg, 720);
     if (result.raw_demand_deg > 720) result.flags |= RB_FLAME_DEMAND_LIMIT;

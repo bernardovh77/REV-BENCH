@@ -2,6 +2,7 @@
  * Derivations, approximations and primary sources: docs/stage-S4.md. */
 #include "scene.h"
 #include "rb.h"
+#include "fastmath.h"
 #include <math.h>
 #include <string.h>
 #define PI 3.14159265358979323846
@@ -146,7 +147,7 @@ void rb_scene_step(rb_scene *s, const double source[RB_SCENE_SOURCES], double ou
         paths(s);
     s->pos = (s->pos + 1) & (RB_SCENE_RING - 1);
     for (int j = 0; j < 4; j++)
-        s->source[j][s->pos] = (float)(isfinite(source[j]) ? source[j] : 0.0);
+        s->source[j][s->pos] = (float)(rb_finite(source[j]) ? source[j] : 0.0);
     double wet_in = 0;
     for (int e = 0; e < 2; e++) {
         double rear = 0, front = 0;

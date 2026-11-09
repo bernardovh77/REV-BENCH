@@ -61,6 +61,14 @@ void test_core_render_bad_args(void);
 void test_core_host_helpers(void);
 void test_core_quality(void);
 /* ---- gas properties (tests/test_gas.c) ---- */
+/* ---- stage 118's speed-ups (tests/test_speed.c) ---- */
+void test_speed_gas_init_is_bit_exact(void);
+void test_speed_finite_is_isfinite(void);
+void test_speed_min_max_clamp_match_the_library(void);
+void test_speed_cycle_offset_matches_fmod(void);
+void test_speed_newton_floors_the_temperature(void);
+void test_speed_momentum_flux_is_minmod(void);
+
 void test_gas_matches_nasa_data(void);
 void test_gas_textbook_air(void);
 void test_gas_u_and_T_are_inverse(void);
@@ -346,6 +354,12 @@ static const struct {
     T(test_core_render_bad_args),
     T(test_core_host_helpers),
     T(test_core_quality),
+    T(test_speed_gas_init_is_bit_exact),
+    T(test_speed_finite_is_isfinite),
+    T(test_speed_min_max_clamp_match_the_library),
+    T(test_speed_cycle_offset_matches_fmod),
+    T(test_speed_newton_floors_the_temperature),
+    T(test_speed_momentum_flux_is_minmod),
     T(test_gas_matches_nasa_data),
     T(test_gas_textbook_air),
     T(test_gas_u_and_T_are_inverse),

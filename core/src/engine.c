@@ -9,6 +9,7 @@
 #include "rand.h"
 #include "diagnostics.h"
 #include "ignition.h"
+#include "fastmath.h"
 #include "rb.h"   /* RB_MUFFLER_* */
 
 #include <math.h>
@@ -754,7 +755,7 @@ static int passes(double angle, double step, double event)
 
 static double cycle_angle(double a)   /* any angle into 0..720 */
 {
-    a = fmod(a, 720.0);
+    if (!(fabs(a) < 720.0)) a = fmod(a, 720.0);   /* inside a cycle fmod returns a itself */
     return a < 0.0 ? a + 720.0 : a;
 }
 
@@ -1000,19 +1001,19 @@ static void close_intake(rb_engine *e, int i, double fraction)
     b->discharged = b->discharged_this_step = b->kernel_pending = b->kernel_started = 0;
     b->kernel_clock = 0;
     const double retained = g->m[RB_FUEL];
-    const double target = (e->afr > 0.0 && isfinite(e->afr))
+    const double target = (e->afr > 0.0 && rb_finite(e->afr))
                               ? g->m[RB_AIR] / e->afr * (1.0 + v * CYL_FUEL * e->trim_fuel[i])
                               : 0.0;
     int kind = RB_INJ_DELIVERED;
     if (!e->ignition)
         kind = RB_INJ_OFF;
-    else if (!(e->afr > 0.0 && isfinite(e->afr)))
+    else if (!(e->afr > 0.0 && rb_finite(e->afr)))
         kind = RB_INJ_AFR_DISABLED;
     else if (e->fuel_cut)
         kind = RB_INJ_DFCO;
     else if (!(g->m[RB_AIR] > 0.0))
         kind = RB_INJ_NO_AIR;
-    if (!isfinite(target) || !isfinite(retained) || retained < 0.0 || !isfinite(g->T) ||
+    if (!rb_finite(target) || !rb_finite(retained) || retained < 0.0 || !rb_finite(g->T) ||
         !(g->T > 0.0))
         kind = RB_INJ_INVALID;
     double fuel = kind == RB_INJ_DELIVERED ? target - retained : 0.0, energy = 0.0;
@@ -1049,7 +1050,7 @@ static void close_intake(rb_engine *e, int i, double fraction)
     b->residual = g->y[RB_BURNED];
     const double phi = (g->m[RB_AIR] > 0.0 && g->m[RB_FUEL] > 0.0)
                      ? RB_AFR_STOICH * (g->m[RB_FUEL] / g->m[RB_AIR]) : 0.0;
-    b->phi_ivc = isfinite(phi) ? phi : 0.0;
+    b->phi_ivc = rb_finite(phi) ? phi : 0.0;
     const double rpm = e->hold_speed ? e->rpm : e->omega * 30.0 / PI;
     const double expected = burn_duration(e, b, rpm);
     const int capped = b->combustion_model == RB_BURN_CAPPED;
@@ -1085,7 +1086,7 @@ static void close_intake(rb_engine *e, int i, double fraction)
      * rb_kernel_delay_unit). The computer's spark allows for its mean. */
     const double delay = v * VARY_START * expected * rb_kernel_delay_unit(start);
     b->kernel_raw_delay_deg = delay;
-    b->kernel_delay_deg = isfinite(delay) ? delay : 0.0; /* a NaN starts with the spark */
+    b->kernel_delay_deg = rb_finite(delay) ? delay : 0.0; /* a NaN starts with the spark */
     b->start_angle = cycle_angle(b->spark_angle + b->kernel_delay_deg);
     b->spark_due = 1;
 }
@@ -1329,7 +1330,7 @@ static void engine_computer(rb_engine *e)
     } else if (e->rpm_smooth > d->idle_rpm + FUEL_CUT_ABOVE
                || e->overrun_time > 0.0 || e->fuel_cut) {
         const double transition = e->overrun_armed && e->overrun_transition > 0.0
-                                && isfinite(e->overrun_transition)
+                                && rb_finite(e->overrun_transition)
                                 ? e->overrun_transition : 0.0;
         e->overrun_time = fmin(e->overrun_time + e->dt, transition);
         e->fuel_cut = e->overrun_time >= transition;

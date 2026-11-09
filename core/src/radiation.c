@@ -7,6 +7,7 @@
  * take its pressure implicitly in the step (pipe.c, push_end). */
 #include "radiation.h"
 #include "diagnostics.h"
+#include "fastmath.h"
 #include <math.h>
 #include <string.h>
 
@@ -52,7 +53,7 @@ void rb_radiation_linear(rb_radiation *r, double dt, double *direct, double *his
 double rb_radiation_step(rb_radiation *r, double velocity)
 {
     if (!r->enabled || !(r->dt > 0.0)) return 0.0;
-    if (!isfinite(velocity) || fabs(velocity) > 1e6) {
+    if (!rb_finite(velocity) || fabs(velocity) > 1e6) {
         if (r->diag) rb_diag_note(r->diag, RB_D_BIT(RB_D_RADIATION_RESET));
         velocity = 0.0;
     }
