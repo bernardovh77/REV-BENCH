@@ -87,7 +87,7 @@ LDLIBS   += -lm
 CORE_SRC   := $(wildcard core/src/*.c)
 CORE_HDR   := $(wildcard core/include/*.h core/src/*.h)
 NATIVE_SRC := native/wav.c native/csv.c native/fuzz.c
-CLI_SRC    := native/rb_cli.c
+CLI_SRC    := native/rb_cli.c native/sound.c
 TEST_SRC   := $(wildcard tests/*.c)
 
 obj = $(patsubst %.c,$(BUILD)/%.o,$(1))
@@ -193,6 +193,11 @@ $(BENCH): $(BENCH_OBJ) $(CORE_OBJ)
 $(AUDIT): $(AUDIT_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
+# rb_cli sound drives the engine through the public API alone (stage 121), as
+# the desktop app will: it compiles without core/src on the include path, so
+# an internal header there is a build error, not a habit.
+$(BUILD)/native/sound.o: CPPFLAGS := -Icore/include -Inative -MMD -MP
+
 $(BUILD)/%.o: %.c Makefile
 	@mkdir -p $(@D)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
@@ -257,7 +262,10 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_step rb_render_block rb_render_stereo rb_set_scene \
     rb_set_param rb_get_param rb_param_count rb_param_name rb_param_unit \
     rb_param_min rb_param_max rb_param_default rb_param_flags rb_param_find \
-    rb_get_telemetry rb_telemetry_count rb_telemetry_name \
+    rb_get_telemetry rb_telemetry_count rb_telemetry_name rb_telemetry_unit \
+    rb_set_quality rb_get_quality rb_variation_seed rb_listener_source_distance rb_set_scene_time \
+    rb_dyno_attach rb_dyno_release rb_dyno_attached rb_dyno_set_sweep rb_dyno_clear rb_get_dyno \
+    rb_snapshot_size rb_get_snapshot rb_event_kind_name rb_read_events rb_events_lost \
     rb_preset_count rb_preset_key rb_preset_name rb_preset_find rb_load_preset rb_get_preset \
     rb_get_engine rb_set_engine rb_engine_field_size rb_engine_field_count \
     rb_engine_field_name rb_engine_field_unit rb_engine_field_flags \

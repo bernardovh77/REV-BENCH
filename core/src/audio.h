@@ -63,7 +63,10 @@
 #ifndef RB_AUDIO_H
 #define RB_AUDIO_H
 
-#define RB_FULL_SCALE_PA  40.0   /* Pa at the listener for an output of 1:
+#include "rb.h"
+
+#define RB_FULL_SCALE_PA  RB_OUTPUT_FULL_SCALE_PA
+                                 /* 40 Pa at the listener for an output of 1:
                                     126 dB SPL. Heard from behind the car, the
                                     loudest preset (the cross-plane V8, wide
                                     open at 6000 rpm) peaks at 33 Pa            */

@@ -29,7 +29,7 @@ evidence and Bernardo's ears. The first full release includes:
 
 ## Where the project is (2026-11-08)
 
-- **Done: stages 001–049, 112–117, 119 and 120.** Five preset engines (I4, I6, cross-plane V8, flat-plane
+- **Done: stages 001–049, 112–117 and 119–121.** Five preset engines (I4, I6, cross-plane V8, flat-plane
   V8, boxer-4) with their own researched exhausts, all running natively in C. Their sound is
   rendered to WAV files as a listener around the car hears it, in mono or in eight stereo
   scenes. Native tests: 251 tests, 4,950,067 checks.
@@ -84,7 +84,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 1. **Phase A, the app and live play:**
    - [x] **119:** the review's leftovers;
    - [x] **120:** the workspace and toolset upkeep;
-   - [ ] **121:** the core's public engine-control, telemetry and snapshot API;
+   - [x] **121:** the core's public engine-control, telemetry and snapshot API;
    - [ ] **122:** builds and CI: Windows (MSVC) and Linux (gcc) on every push, macOS's core weekly;
    - [ ] **118:** a real-time tier for today's engine;
    - [ ] **123:** the real-time audio host;
@@ -104,7 +104,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 121.**
+**Next stage: 122.**
 
 ## The stages, in the order they'll be done
 
@@ -116,7 +116,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | --- | --- | --- | --- |
 | ✅ | [119](docs/roadmap/14-review-fixes.md#stage-119) | The review's leftovers. Readable C in Codex's core code (no behaviour change, identical renders). The reference tools measure in stereo as they say. Failed publishes don't block `make results`. Checks aren't `assert`s. Windows paths. The research solvers' tests can fail. | 117 |
 | ✅ | [120](docs/roadmap/14-review-fixes.md#stage-120) | The workspace and toolset upkeep. The 4.7 GB zip and old renders moved into `renders/`. 29 stale planted bugs: 26 retargeted, 3 retired, and `plant_bugs.py --check` in the Python suite. The runner's pre-flight, time limits and `--keep-going`, written test first. The Makefile finds the venv. Current docs and hooks. | 119 |
-| ⬜ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, vehicle and road load, a dyno the sim owns, settings, engine telemetry, snapshots and events; `rb_cli` rewritten on it with identical renders | 037, 120 |
+| ✅ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, the car and its road load, a dyno the sim owns, settings, 24 telemetry values, snapshot-v2 and events, written test first. `rb_cli sound` on rb.h alone, its 11 drives bit-identical. 28 + 5 planted bugs caught. | 037, 120 |
 | ⬜ | [122](docs/roadmap/07-app.md#stage-122) | Builds through CMake with MSVC (the target) and gcc, a cross-compiler parity tolerance, CI on Windows and Linux every push and the core's tests on macOS weekly | 120 |
 | ⬜ | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine: benchmark the whole render path, profile, speed up without changing results, and declare a tier that runs every preset at least 1.5× real time natively on Bernardo's machine, with what it changes measured and listened to | 121, 122 |
 | ⬜ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): a high-priority render thread, miniaudio, lock-free commands, snapshots and events, rebuilds with fades, the clock mapping, an offline mode and its instrumentation | 121, 122 |

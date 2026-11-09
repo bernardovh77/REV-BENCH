@@ -4,6 +4,20 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-08: Stage 121, the core's public engine API
+
+- [docs/stage-121.md](docs/stage-121.md). A host now drives and watches the engine through
+  rb.h alone (`core/src/rb_drive.c`, `rb_events.c`; CLAUDE.md lists it all): driver controls
+  and settings as parameters, the car and its road load in the core, 24 telemetry values, a
+  dyno the sim owns, snapshot-v2 (contracts/snapshot-v2.md, `tools/snapshot_v2.py`) and an
+  event ring (`RB_PARAM_EVENTS`, off by default).
+- **Every rebuild goes through `rb_sim_build`:** the controls back at rest, the settings
+  kept, no dyno, the generation +1. Don't call `rb_engine_init_at` on the sim's engine
+  elsewhere.
+- **`rb_cli sound` is `native/sound.c`, on rb.h alone** (compiled without core/src).
+  `tools/cli_parity.py render|compare` proves a change keeps its 11 drives bit-identical.
+- Physics unchanged; the wasm core rebuilt for the new exports. **Next stage: 122.**
+
 ## 2026-11-08: Stage 120, the workspace and toolset upkeep
 
 - [docs/stage-120.md](docs/stage-120.md). No `core/` change.

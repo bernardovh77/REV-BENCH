@@ -13,6 +13,10 @@ schema, not a second independently maintained browser physics model. The
 [five native examples](examples/builds-v1.json) are generated from current
 presets, not reference-recording measurements or calibrated fabrication drawings.
 
+The engine's live binary snapshot is [snapshot-v2](snapshot-v2.md) (stage 121), checked by
+[snapshot_v2.py](../tools/snapshot_v2.py); its 64-bit `build_id` hashes the native engine
+description and is not this document's string `build_id` namespace.
+
 ## Versioning, identity and limits
 
 All messages/files carry `schema_version: 1`. Unknown versions, unknown fields

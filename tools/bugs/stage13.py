@@ -77,14 +77,13 @@ BUGS = {
         ": quality == RB_QUALITY_LOW ? 96000.0 : 192000.0;",
         ": quality == RB_QUALITY_LOW ? 192000.0 : 192000.0;",
         ["test_core_quality"], 120),
-    "reset-forgets-pipe-rate": ("core/src/rb_sim.c",
-        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);",
-        "    rb_engine_init(&sim->engine, &d, sim->dt);",
+    # every rebuild (rb_reset's, a preset's) goes through rb_sim_build since stage 121
+    "rebuild-forgets-pipe-rate": ("core/src/rb_drive.c",
+        "    if (rb_engine_init_at(&sim->engine, d, sim->dt, sim->cfg.pipe_rate) != 0) return -1;",
+        "    if (rb_engine_init(&sim->engine, d, sim->dt) != 0) return -1;",
         ["test_core_quality"], 120),
-    "preset-forgets-pipe-rate": ("core/src/rb_engine_api.c",
-        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */",
-        "    rb_engine_init(&sim->engine, &d, sim->dt);   /* presets are possible engines */",
-        ["test_core_quality"], 120),
+    # 'preset-forgets-pipe-rate' retired at stage 121: the same line as
+    # rebuild-forgets-pipe-rate now (rb_sim_build).
     "pipe-rate-ignored": ("core/src/engine.c",
         "    e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));",
         "    e->pipe_every = (int)lround(1.0 / (48000.0 * dt));",

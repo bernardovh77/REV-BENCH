@@ -128,9 +128,9 @@
   back into them the faster it turns). `heat_transfer = 0` means adiabatic cylinders; the pipes'
   walls always trade heat. At 96 kHz the valves' 5 cm cells are too stiff for the flow cap (10 %
   more pumping work motored); 192 kHz is converged.
-- Stage 11 put the sound in `rb_render_block`. Every physics step the sim's source (`sim->source`,
-  internal: stage 1's tone by default, which the old browser scaffold plays, or
-  `RB_SOURCE_ENGINE`, which `rb_cli sound` and the tests set, and the public API from stage 121) gives the microphone's signal in
+- Stage 11 put the sound in `rb_render_block`. Every physics step the sim's source (`sim->source`;
+  since stage 121 `RB_PARAM_SOURCE`: stage 1's tone by default, which the old browser scaffold
+  plays, or `RB_SOURCE_ENGINE`) gives the microphone's signal in
   full-scale units (1 = 40 Pa, `RB_FULL_SCALE_PA`); a NaN becomes 0 there, before the filters. Then
   the anti-alias FIR (157 taps at oversample 4: 0.4 ms), the 10 Hz DC blocker, the gain and the soft
   limiter (knee 0.8: a full-level tone peaks at 0.952, so level tests use 0.7). The engine's
@@ -205,9 +205,28 @@
   `rb_set_engine` clamps a value outside the field's range (returning RB_CLAMPED; pin and bank
   angles wrap instead), changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE
   fields, changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`,
-  with a range. The
-  sim holds the engine, but until stage 121 the public API still plays the test tone; tests that
-  need it running step `sim->engine` directly (tests/test_presets.c).
+  with a range.
+- Stage 121's public API for driving and watching the engine (`rb_drive.c`, `rb_events.c`;
+  docs/stage-121.md), everything a host needs through rb.h alone:
+  - **parameters** (`rb_params.c`'s table; `rb_sim_apply` puts each into the engine): the source;
+    the driver's controls (`RB_PF_CONTROL`: ignition, starter, throttle, load, hold and hold rpm,
+    gear inertia and clutch: the car on the crank, its road load moved here from rb_cli); the
+    settings (variation, listener, layers, overrun transition; burn model, seed and momentum
+    order are `RB_PF_REBUILD`, returning `RB_PENDING` once the engine has run; events);
+  - **telemetry** from `RB_TLM_RPM` on, each with a unit (`rb_telemetry_unit`);
+  - **every rebuild** (rb_reset, a preset, a field, `rb_set_quality`) goes through `rb_sim_build`:
+    the engine at rest, the controls at their defaults, the settings applied, no dyno, no
+    events, the generation +1. `rb_sim_desc` is the description without the car's inertia (the
+    engine's `desc.inertia` carries it in gear);
+  - **a dyno the sim owns** (`rb_dyno_attach` ..., `own_dyno`);
+  - **snapshots** (`rb_get_snapshot`, contracts/snapshot-v2.md, checked by tools/snapshot_v2.py)
+    and **events** (`RB_PARAM_EVENTS`, `rb_read_events`; off by default at no cost).
+
+  New parameters: append to `rb_param` and `PARAMS[]` and apply them in `rb_sim_apply`; new
+  engine telemetry goes before `RB_TLM_COUNT` and so into the snapshot: that's a new snapshot
+  version. `rb_cli sound` (native/sound.c) uses rb.h alone, and the Makefile compiles it without
+  core/src on the include path; `tools/cli_parity.py` checks its drives render bit for bit as
+  before. Internal tests may still step `sim->engine` directly (tests/test_presets.c).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
   TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
 - Core code is spaced and commented (stage 119 reformatted Codex's): `if (x) y;`, spaces round

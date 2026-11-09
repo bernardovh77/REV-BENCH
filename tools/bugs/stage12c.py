@@ -112,10 +112,8 @@ BUGS = {
         "        if (sim->dyno) rb_dyno_step(sim->dyno, e);\n",
         "",
         DYNO, 300),
-    "dyno-kept-on-a-new-preset": ("core/src/rb_engine_api.c",
-        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */\n    sim->dyno = NULL;",
-        "    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */",
-        DYNO, 300),
+    # 'dyno-kept-on-a-new-preset' retired at stage 121: every rebuild goes through
+    # rb_sim_build now, and stage121.py's dyno-outlives-its-engine plants it there.
     # the presets (presets.c)
     "four-headers-alike": ("core/src/presets.c",
         "    static const double header[4] = { 0.58, 0.40, 0.30, 0.52 };",

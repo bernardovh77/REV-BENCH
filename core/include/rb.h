@@ -37,17 +37,40 @@
  * crank, the engine computer's settings) and each cylinder's state cross the
  * API as plain numbers with names and units, so the control panel and the 3D
  * view build themselves from the core and keep no copy of the engine.
+ *
+ * Driving it (stage 121)
+ * ----------------------
+ * RB_PARAM_SOURCE = RB_SOURCE_ENGINE makes the sim play the engine instead
+ * of the stage 1 test tone. The driver's controls (ignition, starter,
+ * throttle, load, the crank held or free, the car on it and the clutch) and
+ * the settings (variation, the listener, the sound's layers, the burn model,
+ * the seed) are parameters too; the engine's own numbers (rpm, MAP, torque,
+ * the cuts...) are telemetry. A dyno the sim owns can hold the crank
+ * (rb_dyno_*). A host that animates the engine reads coherent snapshots
+ * (rb_get_snapshot, contracts/snapshot-v2.md) and the engine's actual events
+ * (rb_read_events).
+ *
+ * Every rebuild (rb_reset, rb_load_preset, a field that isn't RB_EF_LIVE,
+ * rb_set_quality) starts the engine afresh at rest, as contracts/runtime-v1.md
+ * asks: the driver's controls go back to their defaults (key off, crank held
+ * at 0 rpm, no car), the dyno comes off, the events are cleared, and the
+ * generation (RB_TLM_GENERATION) goes up by one. The settings stay.
  */
 #ifndef RB_H
 #define RB_H
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define RB_VERSION_STRING "0.13.0"
+
+/* The output's full scale: 1.0 out of rb_render_block is this many pascals
+ * at the listener (at master_gain 1), so 94 dB SPL is 0.025 (stage 11). */
+#define RB_OUTPUT_FULL_SCALE_PA 40.0
 
 /* Limits for rb_config. */
 #define RB_MIN_SAMPLE_RATE  8000.0
@@ -63,7 +86,11 @@ enum {
     RB_ERR_VALUE  = -3,  /* NaN or infinite value rejected, or a value
                             that would make an impossible engine      */
     RB_ERR_CONFIG = -4,  /* invalid rb_config                         */
-    RB_ERR_READONLY = -5 /* the engine field can't be set             */
+    RB_ERR_READONLY = -5, /* the engine field can't be set            */
+    RB_ERR_SIZE   = -6,  /* a buffer too small for what it must hold  */
+    RB_PENDING    =  2   /* accepted; takes effect when the engine is next
+                            rebuilt (it's applied now if the engine hasn't
+                            run since its last rebuild)               */
 };
 
 /* Start from rb_config_default(): later stages may add fields. */
@@ -93,13 +120,77 @@ typedef enum rb_param {
     RB_PARAM_MASTER_GAIN = 0,   /* output gain (linear)                   */
     RB_PARAM_TEST_TONE_HZ,      /* stage-1 placeholder oscillator, Hz     */
     RB_PARAM_TEST_TONE_LEVEL,   /* stage-1 placeholder oscillator, 0..1   */
+    /* Stage 121: what the sim plays ... */
+    RB_PARAM_SOURCE,            /* RB_SOURCE_TONE (default) or _ENGINE    */
+    /* ... the driver's controls (reset by every rebuild) ... */
+    RB_PARAM_IGNITION,          /* 1: injectors and spark on              */
+    RB_PARAM_STARTER,           /* 1: the key at START, the starter turning
+                                   the free crank                         */
+    RB_PARAM_THROTTLE,          /* the pedal, 0..1                        */
+    RB_PARAM_LOAD_TORQUE,       /* N m the crank drives (< 0: it's driven);
+                                   the car's road load comes on top       */
+    RB_PARAM_HOLD,              /* 1 (default): a motor holds the crank at
+                                   hold_rpm; 0: it turns free             */
+    RB_PARAM_HOLD_RPM,          /* rpm while held                         */
+    RB_PARAM_GEAR_INERTIA,      /* kg m^2: the crank's inertia with the car
+                                   in gear (the engine's own plus the car's
+                                   share); 0: no car                      */
+    RB_PARAM_CLUTCH,            /* 1: the car is in gear on the crank, its
+                                   inertia and road load with it; 0: the
+                                   clutch is in. The crank keeps its speed
+                                   either way.                            */
+    /* ... and the settings (kept across rebuilds). */
+    RB_PARAM_VARIATION,         /* how much no two cycles are alike: 0 (the
+                                   default) none, exact repeatable numbers;
+                                   1 a real engine's; up to 4             */
+    RB_PARAM_LISTENER,          /* where the mono listener stands: RB_LISTENER_* */
+    RB_PARAM_LAYERS,            /* which of the sound's layers: RB_LAYER_* bits */
+    RB_PARAM_OVERRUN_TRANSITION,/* s from lifting off to the fuel cut      */
+    RB_PARAM_BURN_MODEL,        /* RB_BURN_MODEL_* (research)             */
+    RB_PARAM_SEED,              /* the variation's seed: 0 the default,
+                                   else 1..4294967295                     */
+    RB_PARAM_MOMENTUM_ORDER,    /* the pipes' momentum flux: 2 (default)
+                                   second order, 1 first (research)       */
+    RB_PARAM_EVENTS,            /* 1: record the engine's events
+                                   (rb_read_events); 0 (default): none, at
+                                   no cost                                */
     RB_PARAM_COUNT
 } rb_param;
+
+/* RB_PARAM_SOURCE's values. */
+enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE = 1 };
+
+/* RB_PARAM_LISTENER's values: where the listener stands around the car. */
+enum {
+    RB_LISTENER_TAILPIPE = 0,   /* a metre behind the tailpipe            */
+    RB_LISTENER_BEHIND,         /* 3 m behind the car (the default)       */
+    RB_LISTENER_SIDE,           /* beside it                              */
+    RB_LISTENER_FRONT,          /* in front, by the engine bay            */
+    RB_LISTENER_CABIN,          /* in the driver's seat                   */
+    RB_LISTENER_COUNT
+};
+
+/* RB_PARAM_LAYERS's bits: the engine's sound in layers (all by default). */
+enum {
+    RB_LAYER_PIPES  = 1,        /* the pipe ends' flows (stages 11-12)    */
+    RB_LAYER_FLOW   = 2,        /* the flow's noise: jets (stage 12b)     */
+    RB_LAYER_ENGINE = 4,        /* the engine's own, mechanical sound     */
+    RB_LAYER_ALL    = 7
+};
+
+/* RB_PARAM_BURN_MODEL's values. */
+enum {
+    RB_BURN_MODEL_CHARGE = 0,   /* the burn's length from the charge (default) */
+    RB_BURN_MODEL_CAPPED = 1    /* stage 9's length, capped at 180 deg    */
+};
 
 /* Parameter flags. */
 enum {
     RB_PF_LIVE    = 1 << 0,  /* takes effect immediately (smoothed)       */
-    RB_PF_REBUILD = 1 << 1   /* needs the engine to be rebuilt/re-initted */
+    RB_PF_REBUILD = 1 << 1,  /* needs the engine to be rebuilt/re-initted:
+                                rb_set_param returns RB_PENDING          */
+    RB_PF_INTEGER = 1 << 2,  /* whole numbers only                        */
+    RB_PF_CONTROL = 1 << 3   /* a driver's control: a rebuild resets it   */
 };
 
 /* Telemetry (outputs). Append new ids just before RB_TLM_COUNT. */
@@ -110,6 +201,38 @@ typedef enum rb_telemetry {
     RB_TLM_OUT_RMS,      /* RMS of the last rendered block             */
     RB_TLM_NONFINITE,    /* NaN/inf samples replaced by the guard      */
     RB_TLM_LIMITED,      /* samples the soft limiter bent (stage 11)   */
+    /* Stage 121: the sim ... */
+    RB_TLM_GENERATION,   /* engine builds since rb_init: +1 per rebuild */
+    RB_TLM_AUDIO_FRAMES, /* audio frames rendered since rb_init         */
+    /* ... and the engine. From here on, each is one of the snapshots'
+     * instruments, in this order (RB_SNAPSHOT_INSTRUMENTS). */
+    RB_TLM_RPM,          /* crank speed, rpm (now)                      */
+    RB_TLM_RPM_SMOOTH,   /* the engine computer's, over a few firings   */
+    RB_TLM_CYCLE_RPM,    /* mean over the last complete cycle           */
+    RB_TLM_MAP,          /* Pa: the intake manifold's (plenum) pressure */
+    RB_TLM_TORQUE,       /* N m: brake torque over the last cycle       */
+    RB_TLM_POWER,        /* W: brake power over the last cycle          */
+    RB_TLM_LAMBDA,       /* the last cycle's air-fuel ratio over the
+                            stoichiometric one (0 with no fuel)         */
+    RB_TLM_SPARK,        /* deg before TDC: the last cycle's mean advance */
+    RB_TLM_IDLE_VALVE,   /* the idle air valve's opening, 0..1          */
+    RB_TLM_THROTTLE,     /* the pedal the engine has, 0..1              */
+    RB_TLM_THROTTLE_AREA,/* m^2: the throttle's open area               */
+    RB_TLM_IGNITION,     /* 1: on                                       */
+    RB_TLM_STARTER,      /* 1: turning                                  */
+    RB_TLM_HELD,         /* 1: the crank is held (by the motor or the dyno's
+                            absence: see RB_PARAM_HOLD)                 */
+    RB_TLM_FUEL_CUT,     /* 1 while the overrun fuel cut is on          */
+    RB_TLM_SPARK_CUT,    /* 1 while the rev limiter's hard cut is on    */
+    RB_TLM_LIMITER_CUTS, /* sparks the rev limiter has cut since the build */
+    RB_TLM_OVERRUN_TIME, /* s into the current lift towards the fuel cut */
+    RB_TLM_LOAD_TORQUE,  /* N m on the crank: the control, the road, the dyno */
+    RB_TLM_CRANK_INERTIA,/* kg m^2 on the crank: the engine's, plus the car's
+                            in gear                                     */
+    RB_TLM_AIR_FLOW,     /* kg/s through the throttle, last cycle       */
+    RB_TLM_FUEL_FLOW,    /* kg/s injected, last cycle                   */
+    RB_TLM_EXHAUST_T,    /* K: the gas leaving the exhaust valves, last cycle */
+    RB_TLM_TAILPIPE_T,   /* K: the gas leaving the tailpipes, last cycle */
     RB_TLM_COUNT
 } rb_telemetry;
 
@@ -131,7 +254,10 @@ const char *rb_version(void);
 void        rb_config_default(rb_config *cfg);
 size_t      rb_sizeof(void);                       /* bytes for one rb_sim  */
 int         rb_init(rb_sim *sim, const rb_config *cfg); /* cfg NULL = default */
-void        rb_reset(rb_sim *sim);   /* restart the model, keep parameters  */
+/* Restarts the model: the engine afresh at rest (a rebuild: the driver's
+ * controls at their defaults), the sound's filters cleared; the settings
+ * and the output gain stay. */
+void        rb_reset(rb_sim *sim);
 rb_sim     *rb_create(const rb_config *cfg);       /* malloc + rb_init      */
 /* Same as rb_create() for hosts that can't easily build a struct, such as
  * JavaScript. Returns NULL for an invalid rate/oversample. */
@@ -166,6 +292,113 @@ int         rb_param_find(const char *name);  /* id, or RB_ERR_ID */
 double      rb_get_telemetry(const rb_sim *sim, int id);     /* NaN if unknown */
 int         rb_telemetry_count(void);
 const char *rb_telemetry_name(int id);
+const char *rb_telemetry_unit(int id);  /* "" when it has none; NULL if unknown */
+
+/* ---- quality, the variation's seed, the listener (stage 121) ------- */
+/* Rebuilds the sim at a quality (RB_QUALITY_*) at its sample rate: the
+ * engine starts afresh, the parameters stay. RB_OK or RB_ERR_ARG. */
+int         rb_set_quality(rb_sim *sim, int quality);
+/* The quality the sim was made at, or -1 if its rates match none. */
+int         rb_get_quality(const rb_sim *sim);
+/* The seed the engine's variation started from (RB_PARAM_SEED's, or the
+ * default), 0 for NULL. */
+uint64_t    rb_variation_seed(const rb_sim *sim);
+/* m from the listener to a source: 0, 1 the tailpipes, 2 the intake's
+ * mouth (0 for a tailpipe the engine hasn't); NaN if unknown. */
+double      rb_listener_source_distance(const rb_sim *sim, int source);
+/* Sets the stereo scene's clock (s; a pass-by is at its nearest at 0). A
+ * host that lets the engine settle before recording starts it negative.
+ * RB_ERR_ARG without a scene. */
+int         rb_set_scene_time(rb_sim *sim, double seconds);
+
+/* ---- a dyno the sim owns (stage 121) ------------------------------ */
+/* An absorbing dyno on the crank (stage 9): a PI controller brakes the free
+ * crank to hold a speed, up to its torque, and reads each cycle. It belongs
+ * to the engine it was put on: a rebuild takes it off. */
+int         rb_dyno_attach(rb_sim *sim, double rpm);  /* frees the crank; RB_OK,
+                                                         RB_ERR_ARG, RB_ERR_VALUE */
+int         rb_dyno_release(rb_sim *sim);             /* the crank turns free */
+int         rb_dyno_attached(const rb_sim *sim);      /* 1, 0 */
+/* Climbs the dyno's speed at `rate` rpm/s up to `to_rpm` (a sweep test). */
+int         rb_dyno_set_sweep(rb_sim *sim, double to_rpm, double rate);
+/* Forgets the readings so far (the next complete cycle is the first). */
+int         rb_dyno_clear(rb_sim *sim);
+typedef enum rb_dyno_field {
+    RB_DYNO_READINGS = 0,       /* complete cycles read since attach/clear */
+    RB_DYNO_TARGET_RPM,         /* the speed it holds now                 */
+    RB_DYNO_RPM,                /* the last reading's: mean crank speed   */
+    RB_DYNO_ABSORBED_TORQUE,    /* N m it took                            */
+    RB_DYNO_BRAKE_TORQUE,       /* N m: absorbed, plus what sped the crank up */
+    RB_DYNO_BRAKE_POWER,        /* W                                      */
+    RB_DYNO_FIELD_COUNT
+} rb_dyno_field;
+double      rb_get_dyno(const rb_sim *sim, int field);   /* NaN without a dyno */
+
+/* ---- snapshots (stage 121, contracts/snapshot-v2.md) --------------- */
+/* One coherent picture of the engine, taken between two physics steps:
+ * a header, the instruments (the telemetry from RB_TLM_RPM on, in order),
+ * then RB_SNAPSHOT_CYLINDER_FIELDS doubles per cylinder. Little-endian, as
+ * every platform the app runs on. */
+#define RB_SNAPSHOT_VERSION          2
+#define RB_SNAPSHOT_MAGIC            0x32534252u   /* "RBS2" */
+#define RB_SNAPSHOT_INSTRUMENTS      (RB_TLM_COUNT - RB_TLM_RPM)
+#define RB_SNAPSHOT_CYLINDER_FIELDS  5   /* pressure Pa, temperature K, burn
+                                            fraction, intake and exhaust
+                                            valve lift m */
+typedef struct rb_snapshot_header {
+    uint32_t magic, version;        /* RB_SNAPSHOT_MAGIC, _VERSION        */
+    uint32_t size;                  /* bytes in the whole snapshot        */
+    uint32_t cylinders, instruments, cylinder_fields;
+    uint32_t reserved[2];           /* 0                                  */
+    uint64_t build_id;              /* the engine description's hash     */
+    uint64_t generation;            /* RB_TLM_GENERATION                  */
+    uint64_t sequence;              /* +1 per snapshot taken              */
+    uint64_t physics_tick;          /* steps since the build              */
+    uint64_t audio_frame;           /* RB_TLM_AUDIO_FRAMES                */
+    uint64_t cycle_index;           /* the crank's 720 deg cycles since the build */
+    double   physics_hz, audio_hz;
+    double   phase_rad;             /* in the cycle, [0, 4 pi)            */
+    double   speed_rad_s;
+} rb_snapshot_header;               /* 112 bytes                          */
+/* Bytes a snapshot of the sim's engine takes now (0 for NULL). */
+int         rb_snapshot_size(const rb_sim *sim);
+/* Writes a snapshot of `version` (RB_SNAPSHOT_VERSION) into buffer: its
+ * size in bytes, RB_ERR_ARG, RB_ERR_ID (a version it can't write) or
+ * RB_ERR_SIZE (buffer smaller than rb_snapshot_size). */
+int         rb_get_snapshot(rb_sim *sim, int version, void *buffer, int size);
+
+/* ---- events (stage 121, contracts/runtime-v1.md) ------------------- */
+/* What actually happens in the engine, recorded while RB_PARAM_EVENTS is
+ * 1, in the order it happens, into a ring of RB_EVENT_CAPACITY. */
+enum {
+    RB_EVENT_SPARK_COMMAND = 0, /* the crank reaches the spark's angle    */
+    RB_EVENT_SPARK_DISCHARGE,   /* the plug fires                         */
+    RB_EVENT_FLAME_START,       /* the flame starts, after its delay      */
+    RB_EVENT_FUEL_INJECTION,    /* fuel delivered, at IVC                 */
+    RB_EVENT_INTAKE_OPEN,       /* the intake valve starts to open        */
+    RB_EVENT_EXHAUST_OPEN,      /* the exhaust valve starts to open       */
+    RB_EVENT_FUEL_CUT,          /* no fuel: the overrun fuel cut          */
+    RB_EVENT_LIMITER_CUT,       /* no spark: the rev limiter              */
+    RB_EVENT_KIND_COUNT
+};
+#define RB_EVENT_CAPACITY 256
+typedef struct rb_event {
+    uint64_t generation;        /* the engine build it happened in        */
+    uint64_t sequence;          /* 0, 1, 2... in each generation          */
+    uint64_t physics_tick;      /* the step it happened in ...            */
+    double   subtick;           /* ... and how far through it, [0, 1)     */
+    uint64_t cycle_index;       /* the crank's cycle and phase then       */
+    double   phase_rad;
+    uint64_t cycle_id;          /* the cylinder's charge it belongs to    */
+    int32_t  kind;              /* RB_EVENT_*                             */
+    int32_t  cylinder;          /* from 0                                 */
+} rb_event;
+const char *rb_event_kind_name(int kind);    /* "spark-command", ...; NULL if unknown */
+/* Takes up to `max` of the oldest events out of the ring into out: how
+ * many, or RB_ERR_ARG. */
+int         rb_read_events(rb_sim *sim, rb_event *out, int max);
+/* Events lost because the ring was full, since the build. */
+uint64_t    rb_events_lost(const rb_sim *sim);
 
 /* ---- the engine (stage 8) -------------------------------------------
  * Units are SI (m, m^2, m^3, Pa, K, kg m^2), except angles in degrees and
@@ -174,8 +407,8 @@ const char *rb_telemetry_name(int id);
  * is at the TDC between the exhaust and intake strokes). Cylinders and banks
  * are counted from 0 here: cylinder 1 is cylinder 0.
  *
- * Until stage 14 puts the engine in the sound it stays at rest: rb_step
- * and rb_render_block still play the stage 1 test tone. */
+ * The sim plays the stage 1 test tone until RB_PARAM_SOURCE asks for the
+ * engine (stage 121). */
 
 /* Presets: the engines that come with REV-BENCH. Loading one rebuilds the
  * engine, at rest. */
@@ -258,6 +491,9 @@ typedef enum rb_engine_field {
     RB_ENG_ACCESSORY_POWER,     /* W the accessories take once the engine runs:
                                    the alternator, the pumps (stage 12c)           */
     RB_ENG_CATALYST_LAMINAR,    /* Pa per m/s: linear substrate loss; 0: bypass    */
+    RB_ENG_OUTLET_RADIATION,    /* 1: the tailpipes' outlets radiate as unflanged
+                                   pipes (causal load); 0: a constant end (stage 121
+                                   made it public)                                */
     RB_ENG_COUNT
 } rb_engine_field;
 

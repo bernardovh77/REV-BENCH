@@ -3,7 +3,7 @@
  *
  * The plumbing: parameters -> physics substeps -> reduction to the audio rate
  * -> output stage. Stage 1's model is a placeholder sine oscillator, which
- * the browser plays until stage 14. Stage 11 adds the engine as a source (the
+ * the sim plays until RB_PARAM_SOURCE asks for the engine (stage 121). Stage 11 adds the engine as a source (the
  * sim holds it since stage 8, rb_engine_api.c): a listener hears its pipe
  * ends (stage 12: from a place around the car), and the reduction to the
  * audio rate is an anti-alias filter (audio.h).
@@ -106,6 +106,28 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
     return RB_OK;
 }
 
+int rb_sim_reconfigure(rb_sim *sim, const rb_config *cfg)
+{
+    double param[RB_PARAM_COUNT];
+    memcpy(param, sim->param, sizeof param);
+    const rb_engine_desc d = rb_sim_desc(sim);
+    const int preset = sim->preset, scene = sim->scene_active ? sim->scene.kind : -1;
+    const uint64_t generation = sim->generation, frames = sim->frames;
+    rb_config c = *cfg;
+    if (c.pipe_rate == 0.0) c.pipe_rate = RB_PIPE_RATE;
+    if (!config_is_valid(&c)) return RB_ERR_CONFIG;
+    rb_init(sim, &c);
+    memcpy(sim->param, param, sizeof param);
+    sim->preset = preset;
+    sim->generation = generation;   /* rb_reset below makes it one more */
+    sim->frames = frames;           /* the audio clock goes on (runtime-v1) */
+    sim->engine.desc = d;
+    sim->source = (int)param[RB_PARAM_SOURCE];
+    rb_reset(sim);
+    if (scene >= 0) rb_set_scene(sim, scene);
+    return RB_OK;
+}
+
 void rb_reset(rb_sim *sim)
 {
     if (!sim) return;
@@ -127,12 +149,11 @@ void rb_reset(rb_sim *sim)
     sim->tone_level_s = 0.0;
     sim->mic          = 0.0;
 
-    /* The engine starts again at rest, as it's described. The description
-     * is always a possible engine, so this can't fail. */
-    const rb_engine_desc d = sim->engine.desc;
-    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
-    sim->dyno = NULL;
-    rb_sim_listen(sim);
+    /* The engine starts again at rest, as it's described (without a car in
+     * gear), its controls at rest too. The description is always a possible
+     * engine, so this can't fail. */
+    const rb_engine_desc d = rb_sim_desc(sim);
+    rb_sim_build(sim, &d);
 }
 
 _Static_assert(RB_LISTEN_NOISES == RB_NOISE_PLACED, "the listener hears every placed noise source");
@@ -185,6 +206,7 @@ static inline void model_step(rb_sim *sim)
         rb_engine *e = &sim->engine;
         if (sim->dyno) rb_dyno_step(sim->dyno, e);
         rb_engine_step(e);
+        if (sim->param[RB_PARAM_EVENTS] == 1.0) rb_sim_events_step(sim);
         if (e->pipe_steps != sim->pipe_steps_heard) {   /* the pipe ends' new flows */
             const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
             const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1],
@@ -247,6 +269,7 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
     const int os = sim->cfg.oversample;
     double peak  = 0.0;
     double sumsq = 0.0;
+    rb_sim_before_block(sim);
 
     for (int i = 0; i < frames; i++) {
         /* 1. Run the physics `os` substeps for this audio sample, feeding
@@ -321,6 +344,7 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
 
     sim->out_peak = peak;
     sim->out_rms  = frames > 0 ? sqrt(sumsq / (double)frames) : 0.0;
+    sim->frames  += (uint64_t)frames;
     return frames;
 }
 
@@ -345,7 +369,10 @@ double rb_get_telemetry(const rb_sim *sim, int id)
     case RB_TLM_OUT_RMS:   return sim->out_rms;
     case RB_TLM_NONFINITE: return (double)sim->nonfinite;
     case RB_TLM_LIMITED:   return (double)sim->limited;
-    default:               return NAN;
+    case RB_TLM_GENERATION:   return (double)sim->generation;
+    case RB_TLM_AUDIO_FRAMES: return (double)sim->frames;
+    default:               return (id >= RB_TLM_RPM && id < RB_TLM_COUNT)
+                                  ? rb_sim_engine_telemetry(sim, id) : NAN;
     }
 }
 

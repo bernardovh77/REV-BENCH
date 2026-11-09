@@ -29,9 +29,9 @@ BUGS = {
         "                                                  pipes * e->mouth_flow };\n            rb_listener_push(&sim->listener, q);",
         "                                                  0.0 * e->mouth_flow };\n            rb_listener_push(&sim->listener, q);",
         ["test_audio_sim_hears_every_source"], 300),
-    "no-listen-on-rebuild": ("core/src/rb_engine_api.c",
-        "    rb_sim_listen(sim);                          /* a new engine: no jump in its flows */\n",
-        "",
+    "no-listen-on-rebuild": ("core/src/rb_drive.c",   # every rebuild's since stage 121
+        "    rb_sim_events_setup(sim);\n    rb_sim_listen(sim);\n    return 0;",
+        "    rb_sim_events_setup(sim);\n    return 0;",
         ["test_audio_engine_rebuilt_quietly", "test_audio_sim_hears_every_source"], 300),
     "tailpipe-default": ("core/src/rb_sim.c",
         "    sim->hear = RB_HEAR_BEHIND;\n",

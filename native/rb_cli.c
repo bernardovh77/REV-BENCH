@@ -20,6 +20,7 @@
  * exercise pieces of the physics on their own.
  */
 #include "chamber.h"
+#include "cli.h"
 #include "combustion.h"
 #include "csv.h"
 #include "cylinder.h"
@@ -29,7 +30,6 @@
 #include "flow.h"
 #include "fuzz.h"
 #include "rb.h"
-#include "rb_internal.h"   /* rb_cli sound drives the sim's own engine */
 #include "wav.h"
 
 #include <math.h>
@@ -42,7 +42,7 @@
  * is exactly how the browser's AudioWorklet will drive the core. */
 #define BLOCK_FRAMES 128
 
-static void usage(FILE *f)
+void cli_usage(FILE *f)
 {
     fputs(
         "usage: rb_cli <command> [options]\n"
@@ -217,6 +217,8 @@ static void usage(FILE *f)
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
         "      --csv FILE        a row per 128-frame block: speed, throttle, sound level\n"
+        "      --snapshots FILE  the engine's snapshots, about 60 a second, one after another\n"
+        "                        (contracts/snapshot-v2.md; tools/snapshot_v2.py checks them)\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
         "      --quality Q       low, medium, high or ultra: physics/pipe rates together\n"
         "                        (rb.h: RB_QUALITY_*; high is the default)\n"
@@ -233,7 +235,7 @@ static void usage(FILE *f)
 }
 
 /* Returns the value that follows option argv[*i], or NULL if missing. */
-static const char *take_value(int argc, char **argv, int *i)
+const char *cli_take_value(int argc, char **argv, int *i)
 {
     if (*i + 1 >= argc) return NULL;
     *i += 1;
@@ -244,7 +246,7 @@ static const char *take_value(int argc, char **argv, int *i)
 static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra" };
 
 /* A quality level's number from its name, or -1. */
-static int quality_from(const char *name)
+int cli_quality_from(const char *name)
 {
     for (int q = 0; name && q < RB_QUALITY_COUNT; q++)
         if (!strcmp(name, QUALITIES[q])) return q;
@@ -252,7 +254,7 @@ static int quality_from(const char *name)
 }
 
 /* Parses a finite number; returns 0 on success, -1 otherwise. */
-static int to_double(const char *s, double *out)
+int cli_to_double(const char *s, double *out)
 {
     char *end;
     double v;
@@ -325,25 +327,25 @@ static int cmd_tone(int argc, char **argv)
         int ok = 1;
 
         if (!strcmp(a, "-o") || !strcmp(a, "--out"))
-            ok = (out_path = take_value(argc, argv, &i)) != NULL;
+            ok = (out_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &seconds);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &seconds);
         else if (!strcmp(a, "-r") || !strcmp(a, "--rate"))
-            ok = !to_double(take_value(argc, argv, &i), &cfg.sample_rate);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &cfg.sample_rate);
         else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
-            ok = !to_double(take_value(argc, argv, &i), &os);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &os);
         else if (!strcmp(a, "--from"))
-            ok = !to_double(take_value(argc, argv, &i), &f_from);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &f_from);
         else if (!strcmp(a, "--to"))
-            ok = !to_double(take_value(argc, argv, &i), &f_to);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &f_to);
         else if (!strcmp(a, "--level"))
-            ok = !to_double(take_value(argc, argv, &i), &level);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &level);
         else if (!strcmp(a, "--float"))
             use_float = 1;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli tone: unknown option '%s'\n", a);
@@ -472,11 +474,11 @@ static int cmd_blowdown(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &seconds);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &seconds);
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli blowdown: unknown option '%s'\n", a);
@@ -547,21 +549,21 @@ static int cmd_motor(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--rpm"))
-            ok = !to_double(take_value(argc, argv, &i), &rpm);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &rpm);
         else if (!strcmp(a, "--revs"))
-            ok = !to_double(take_value(argc, argv, &i), &revs);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &revs);
         else if (!strcmp(a, "--bore"))
-            ok = !to_double(take_value(argc, argv, &i), &bore);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &bore);
         else if (!strcmp(a, "--stroke"))
-            ok = !to_double(take_value(argc, argv, &i), &stroke);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &stroke);
         else if (!strcmp(a, "--rod"))
-            ok = !to_double(take_value(argc, argv, &i), &rod);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &rod);
         else if (!strcmp(a, "--cr"))
-            ok = !to_double(take_value(argc, argv, &i), &cr);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &cr);
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli motor: unknown option '%s'\n", a);
@@ -879,27 +881,27 @@ static int cmd_breathe(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--rpm"))
-            ok = !to_double(take_value(argc, argv, &i), &rpm);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &rpm);
         else if (!strcmp(a, "--throttle"))
-            ok = !to_double(take_value(argc, argv, &i), &throttle);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &throttle);
         else if (!strcmp(a, "--cylinders"))
-            ok = !to_double(take_value(argc, argv, &i), &cylinders);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &cylinders);
         else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+            ok = cli_take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--plenum"))
-            ok = !to_double(take_value(argc, argv, &i), &plenum);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &plenum);
         else if (!strcmp(a, "--intake"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.intake, 1);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.intake, 1);
         else if (!strcmp(a, "--exhaust"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.exhaust, 0);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.exhaust, 0);
         else if (!strcmp(a, "--sweep"))
             do_sweep = 1;
         else if (!strcmp(a, "--walls"))
             d.heat_transfer = 1;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli breathe: unknown option '%s'\n", a);
@@ -1072,28 +1074,28 @@ static int cmd_fire(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--rpm"))
-            ok = !to_double(take_value(argc, argv, &i), &op.rpm);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.rpm);
         else if (!strcmp(a, "--throttle"))
-            ok = !to_double(take_value(argc, argv, &i), &op.throttle);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.throttle);
         else if (!strcmp(a, "--spark")) {
-            ok = !to_double(take_value(argc, argv, &i), &op.spark);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.spark);
             op.spark_map = 0;
         } else if (!strcmp(a, "--afr"))
-            ok = !to_double(take_value(argc, argv, &i), &op.afr);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.afr);
         else if (!strcmp(a, "--cylinders"))
-            ok = !to_double(take_value(argc, argv, &i), &cylinders);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &cylinders);
         else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+            ok = cli_take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--plenum"))
-            ok = !to_double(take_value(argc, argv, &i), &plenum);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &plenum);
         else if (!strcmp(a, "--cr"))
-            ok = !to_double(take_value(argc, argv, &i), &d.cr);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &d.cr);
         else if (!strcmp(a, "--intake"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.intake, 1);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.intake, 1);
         else if (!strcmp(a, "--exhaust"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.exhaust, 0);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.exhaust, 0);
         else if (!strcmp(a, "--motored"))
             op.ignition = 0;
         else if (!strcmp(a, "--no-walls"))
@@ -1103,7 +1105,7 @@ static int cmd_fire(int argc, char **argv)
         else if (!strcmp(a, "--rpm-sweep"))
             sweep_rpm = 1;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli fire: unknown option '%s'\n", a);
@@ -1192,27 +1194,27 @@ static int cmd_run(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--load"))
-            ok = !to_double(take_value(argc, argv, &i), &load);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &load);
         else if (!strcmp(a, "--inertia"))
-            ok = !to_double(take_value(argc, argv, &i), &inertia);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &inertia);
         else if (!strcmp(a, "--idle"))
-            ok = !to_double(take_value(argc, argv, &i), &idle);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &idle);
         else if (!strcmp(a, "--limit"))
-            ok = !to_double(take_value(argc, argv, &i), &limit);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &limit);
         else if (!strcmp(a, "--idle-valve"))
-            ok = !to_double(take_value(argc, argv, &i), &valve_mm2);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &valve_mm2);
         else if (!strcmp(a, "--idle-gains")) {
-            const char *v = take_value(argc, argv, &i);
+            const char *v = cli_take_value(argc, argv, &i);
             char tail;
             ok = v && sscanf(v, "%lf/%lf%c", &gain_p, &gain_i, &tail) == 2;
         } else if (!strcmp(a, "--cylinders"))
-            ok = !to_double(take_value(argc, argv, &i), &cylinders);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &cylinders);
         else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+            ok = cli_take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli run: unknown option '%s'\n", a);
@@ -1421,12 +1423,12 @@ static int cmd_presets(int argc, char **argv)
     const char *csv_path = NULL, *key = NULL;
     for (int i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "--csv")) {
-            if (!(csv_path = take_value(argc, argv, &i))) {
+            if (!(csv_path = cli_take_value(argc, argv, &i))) {
                 fprintf(stderr, "rb_cli presets: missing value for --csv\n");
                 return 2;
             }
         } else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else if (argv[i][0] != '-' && !key) {
             key = argv[i];
@@ -1563,29 +1565,29 @@ static int cmd_dyno(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--from"))
-            ok = !to_double(take_value(argc, argv, &i), &from);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &from);
         else if (!strcmp(a, "--to"))
-            ok = !to_double(take_value(argc, argv, &i), &to);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &to);
         else if (!strcmp(a, "--rate"))
-            ok = !to_double(take_value(argc, argv, &i), &rate);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &rate);
         else if (!strcmp(a, "--step"))
-            ok = !to_double(take_value(argc, argv, &i), &step);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &step);
         else if (!strcmp(a, "--throttle"))
-            ok = !to_double(take_value(argc, argv, &i), &throttle);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &throttle);
         else if (!strcmp(a, "--variation"))
-            ok = !to_double(take_value(argc, argv, &i), &variation);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &variation);
         else if (!strcmp(a, "--cr"))
-            ok = !to_double(take_value(argc, argv, &i), &d.cr);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &d.cr);
         else if (!strcmp(a, "--intake"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.intake, 1);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.intake, 1);
         else if (!strcmp(a, "--exhaust"))
-            ok = !parse_cam(take_value(argc, argv, &i), &d.exhaust, 0);
+            ok = !parse_cam(cli_take_value(argc, argv, &i), &d.exhaust, 0);
         else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+            ok = cli_take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli dyno: unknown option '%s'\n", a);
@@ -1840,17 +1842,17 @@ static int cmd_pipes(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
+            ok = (csv_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--pulse"))
             pulse = 1;
         else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
+            ok = cli_take_value(argc, argv, &i) != NULL;   /* already read */
         else if (!strcmp(a, "--rpm"))
-            ok = !to_double(take_value(argc, argv, &i), &op.rpm);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.rpm);
         else if (!strcmp(a, "--throttle"))
-            ok = !to_double(take_value(argc, argv, &i), &op.throttle);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &op.throttle);
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else {
             fprintf(stderr, "rb_cli pipes: unknown option '%s'\n", a);
@@ -1873,475 +1875,10 @@ static int cmd_pipes(int argc, char **argv)
     return pipes_engine(&d, &op, csv_path ? csv_path : "renders/pipes.csv");
 }
 
-/* ---- sound: what a listener around the car hears (stages 11 and 12) ---- */
+/* ---- sound: native/sound.c (stage 121: through rb.h alone) ---- */
 
-enum { DRIVE_IDLE, DRIVE_SWEEP, DRIVE_HOLD, DRIVE_REV };
-
-/* The listener's places (RB_HEAR_*, audio.h), by name. */
-static const char *const LISTENERS[RB_HEAR_COUNT] = { "tailpipe", "behind", "side", "front", "cabin" };
-
-/* The sound's layers (RB_LAYER_*, rb_internal.h), by name. */
-static const char *const LAYERS[3] = { "pipes", "flow", "engine" };
-
-/* RB_LAYER_ bits from a comma-separated list of LAYERS' names; -1 if a name
- * isn't one, or the list is empty. */
-static int layers_from(const char *list)
-{
-    if (!list || !*list) return -1;
-    int bits = 0;
-    while (*list) {
-        const char *end = strchr(list, ',');
-        const size_t len = end ? (size_t)(end - list) : strlen(list);
-        int found = -1;
-        for (int k = 0; k < 3; k++)
-            if (strlen(LAYERS[k]) == len && !strncmp(list, LAYERS[k], len)) found = k;
-        if (found < 0) return -1;
-        bits |= 1 << found;
-        list += len + (end != NULL);
-    }
-    return bits ? bits : -1;
-}
-
-/* The mufflers (RB_MUFFLER_*, rb.h), by name, and as the summary says them. */
-static const char *const MUFFLERS[3] = { "none", "straight", "chambered" };
-static const char *const MUFFLER_SAYS[3] = { "no muffler", "straight-through muffler", "chambered muffler" };
-
-#define SOUND_SETTLE   1.5    /* s a held engine runs before the recording starts  */
-#define SWEEP_FROM     1000.0 /* rpm                                               */
-#define SWEEP_LIMITER  1.0    /* s on the rev limiter before the foot comes off    */
-#define SWEEP_LIFT     0.4    /* s coasting in gear before the clutch goes in      */
-#define SWEEP_FALL     4.0    /* s at most for the engine to fall back to idle ... */
-#define SWEEP_IDLE     1.5    /* ... and this long idling after, to the end        */
-
-/* The car on --sweep (stage 12c): its weight in the gear the pull is in is
- * the crank's inertia less the engine's own; with the wheels' radius that
- * gives the gearing, and so the road speed and the road's load on the crank:
- * rolling resistance and the air's drag. */
-#define CAR_MASS     1300.0   /* kg                                              */
-#define CAR_WHEEL    0.31     /* m: the driven wheels' rolling radius            */
-#define CAR_ROLLING  0.012    /* rolling resistance coefficient                  */
-#define CAR_CDA      0.70     /* m^2: drag coefficient times frontal area        */
-#define CAR_AIR      1.2      /* kg/m^3                                          */
-
-/* The road's load on the crank (N m) at crank speed w (rad/s), the car's
- * share of the crank's inertia `j_car` (kg m^2): none without a car. */
-static double road_load(double w, double j_car)
-{
-    if (!(j_car > 0.0)) return 0.0;
-    const double ratio = CAR_WHEEL * sqrt(CAR_MASS / j_car);   /* crank turns per wheel turn */
-    const double v = w * CAR_WHEEL / ratio;
-    return (CAR_ROLLING * CAR_MASS * 9.81 + 0.5 * CAR_AIR * CAR_CDA * v * v) * CAR_WHEEL / ratio;
-}
-
-/* The neutral revs of --rev, like the recordings of real engines revved
- * standing still (stage 12c): started with the key, then a blip, then floored
- * into the rev limiter, then the foot off and back to idle. */
-#define REV_BLIP_AT     3.0   /* s                                               */
-#define REV_BLIP        0.25  /* s at REV_BLIP_THROTTLE                          */
-#define REV_BLIP_THROTTLE 0.4
-#define REV_FLOOR_AT    5.5   /* s: wide open ...                                */
-#define REV_FLOOR       1.6   /* ... for this long, into the limiter             */
-
-static int cmd_sound(int argc, char **argv)
-{
-    rb_engine_desc d;
-    const char *out_path = "renders/sound.wav", *csv_path = NULL;
-    double seconds = -1.0, rpm = 3000.0, throttle = 1.0, inertia = 3.0;
-    double gain = 1.0, os = 4.0, variation = 1.0, idle_load = 0.0;
-    double seed_value=0;
-    int seed_given=0,burn_model=RB_BURN_CHARGE;
-    double overrun_transition = 0.15;
-    double coast_seconds = SWEEP_LIFT, pull_seconds = 0.0;
-    rb_dyno dyno;
-    int drive = DRIVE_IDLE, use_float = 0, where = RB_HEAR_BEHIND, equal = 0, quality = -1;
-    int layers = RB_LAYER_ALL, scene = -1;
-    int momentum_order = 2;
-    const char *const scenes[RB_SCENE_COUNT] = {"asphalt","grass","wall","garage","dyno","iso","passby","cabin"};
-    rb_config cfg;
-
-    rb_config_default(&cfg);
-    if (engine_from_args(argc, argv, "sound", &d)) return 2;
-    for (int i = 1; i < argc; i++) {
-        const char *a = argv[i];
-        int ok = 1;
-        if (!strcmp(a, "-o") || !strcmp(a, "--out"))
-            ok = (out_path = take_value(argc, argv, &i)) != NULL;
-        else if (!strcmp(a, "--csv"))
-            ok = (csv_path = take_value(argc, argv, &i)) != NULL;
-        else if (!strcmp(a, "--preset"))
-            ok = take_value(argc, argv, &i) != NULL;   /* already read */
-        else if (!strcmp(a, "--idle"))
-            drive = DRIVE_IDLE;
-        else if (!strcmp(a, "--sweep"))
-            drive = DRIVE_SWEEP;
-        else if (!strcmp(a, "--hold"))
-            drive = DRIVE_HOLD;
-        else if (!strcmp(a, "--rev"))
-            drive = DRIVE_REV;
-        else if (!strcmp(a, "--rpm"))
-            ok = !to_double(take_value(argc, argv, &i), &rpm);
-        else if (!strcmp(a, "--throttle"))
-            ok = !to_double(take_value(argc, argv, &i), &throttle);
-        else if (!strcmp(a, "--inertia"))
-            ok = !to_double(take_value(argc, argv, &i), &inertia);
-        else if (!strcmp(a, "--coast-seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &coast_seconds)
-                 && coast_seconds >= 0.0 && coast_seconds <= 60.0;
-        else if (!strcmp(a, "--pull-seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &pull_seconds)
-                 && pull_seconds >= 0.0 && pull_seconds <= 120.0;
-        else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &seconds);
-        else if (!strcmp(a, "--listener")) {
-            const char *v = take_value(argc, argv, &i);
-            where = -1;
-            for (int k = 0; v && k < RB_HEAR_COUNT; k++)
-                if (!strcmp(v, LISTENERS[k])) where = k;
-            ok = where >= 0;
-        }
-        else if (!strcmp(a, "--scene")) {
-            const char *v = take_value(argc, argv, &i);
-            scene = -1;
-            for (int k=0; v && k<RB_SCENE_COUNT; k++) if (!strcmp(v,scenes[k])) scene=k;
-            ok = scene>=0;
-        }
-        else if (!strcmp(a, "--layers"))
-            ok = (layers = layers_from(take_value(argc, argv, &i))) > 0;
-        else if (!strcmp(a, "--variation"))
-            ok = !to_double(take_value(argc, argv, &i), &variation);
-        else if (!strcmp(a, "--seed")) {
-            seed_given=1;ok=!to_double(take_value(argc,argv,&i),&seed_value);
-        }
-        else if (!strcmp(a, "--burn-model")) {
-            const char *value=take_value(argc,argv,&i);
-            ok=value && (!strcmp(value,"charge") || !strcmp(value,"capped"));
-            if(ok)burn_model=!strcmp(value,"capped") ? RB_BURN_CAPPED:RB_BURN_CHARGE;
-        }
-        else if (!strcmp(a, "--load"))
-            ok = !to_double(take_value(argc, argv, &i), &idle_load);
-        else if (!strcmp(a, "--overrun-transition"))
-            ok = !to_double(take_value(argc, argv, &i), &overrun_transition)
-                 && overrun_transition >= 0.0 && overrun_transition <= 2.0;
-        else if (!strcmp(a, "--momentum-order")) {
-            const char *value = take_value(argc, argv, &i);
-            ok = value && (!strcmp(value, "1") || !strcmp(value, "2"));
-            if (ok) momentum_order = value[0] - '0';
-        }
-        else if (!strcmp(a, "--outlet-radiation")) {
-            const char *value = take_value(argc, argv, &i);
-            ok = value && (!strcmp(value, "unflanged") || !strcmp(value, "constant"));
-            if (ok) d.outlet_radiation = !strcmp(value, "unflanged");
-        }
-        else if (!strcmp(a, "--muffler")) {
-            const char *v = take_value(argc, argv, &i);
-            ok = 0;
-            for (int k = 0; v && k < 3; k++)
-                if (!strcmp(v, MUFFLERS[k])) {
-                    d.muffler_type = k;
-                    ok = 1;
-                }
-        }
-        else if (!strcmp(a, "--equal-headers"))
-            equal = 1;
-        else if (!strcmp(a, "--headers")) {   /* each header's length, m, comma-separated */
-            const char *v = take_value(argc, argv, &i);
-            int k = 0;
-            while (v && *v && k < d.cylinders) {
-                char *end;
-                d.header_length[k++] = strtod(v, &end);
-                v = (*end == ',') ? end + 1 : (*end ? NULL : end);
-            }
-            ok = v && !*v && k == d.cylinders;
-        }
-        else if (!strcmp(a, "--gain"))
-            ok = !to_double(take_value(argc, argv, &i), &gain);
-        else if (!strcmp(a, "--float"))
-            use_float = 1;
-        else if (!strcmp(a, "-r") || !strcmp(a, "--rate"))
-            ok = !to_double(take_value(argc, argv, &i), &cfg.sample_rate);
-        else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
-            ok = !to_double(take_value(argc, argv, &i), &os);
-        else if (!strcmp(a, "--quality"))
-            ok = (quality = quality_from(take_value(argc, argv, &i))) >= 0;
-        else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
-            return 0;
-        } else {
-            fprintf(stderr, "rb_cli sound: unknown option '%s'\n", a);
-            return 2;
-        }
-        if (!ok) {
-            fprintf(stderr, "rb_cli sound: missing or bad value for %s\n", a);
-            return 2;
-        }
-    }
-    if (seconds < 0.0)
-        seconds = (drive == DRIVE_HOLD) ? 5.0 : (drive == DRIVE_IDLE) ? 8.0 : (drive == DRIVE_REV) ? 12.0 : 60.0;
-    if (!(seconds > 0.0 && seconds <= 600.0)) {
-        fprintf(stderr, "rb_cli sound: --seconds must be in (0, 600]\n");
-        return 2;
-    }
-    if (!(rpm >= 300.0 && rpm <= 20000.0) || !(throttle >= 0.0 && throttle <= 1.0)) {
-        fprintf(stderr, "rb_cli sound: --rpm must be in [300, 20000] and --throttle in [0, 1]\n");
-        return 2;
-    }
-    if (!(inertia >= 0.01 && inertia <= 100.0) || !(gain >= 0.0 && gain <= 4.0)) {
-        fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 100] kg m^2 and --gain in [0, 4]\n");
-        return 2;
-    }
-    if (!(variation >= 0.0 && variation <= 4.0)) {
-        fprintf(stderr, "rb_cli sound: --variation must be in [0, 4]\n");
-        return 2;
-    }
-    if(seed_given && !(seed_value>=1 && seed_value<=4294967295.0 && floor(seed_value)==seed_value)) {
-        fprintf(stderr,"rb_cli sound: --seed must be an integer in [1, 4294967295]\n");
-        return 2;
-    }
-    if (os != floor(os) || os < 1.0 || os > RB_MAX_OVERSAMPLE) {
-        fprintf(stderr, "rb_cli sound: --oversample must be an integer in [1, %d]\n", RB_MAX_OVERSAMPLE);
-        return 2;
-    }
-    cfg.oversample = (int)os;
-    if (quality >= 0 && rb_config_quality(&cfg, quality) != RB_OK) {
-        fprintf(stderr, "rb_cli sound: no --quality at that --rate\n");
-        return 2;
-    }
-    const double own_inertia = d.inertia;   /* the engine's own: crank, flywheel, clutch */
-    if (drive == DRIVE_SWEEP) d.inertia = inertia;
-    const double car_inertia = d.inertia - own_inertia;
-    if (equal) {   /* every header as long as their mean */
-        double mean = 0.0;
-        for (int i = 0; i < d.cylinders; i++) mean += d.header_length[i] / d.cylinders;
-        for (int i = 0; i < d.cylinders; i++) d.header_length[i] = mean;
-    }
-    if (rb_engine_desc_check(&d) != 0) {
-        fprintf(stderr, "rb_cli sound: that engine can't be built\n");
-        return 2;
-    }
-
-    rb_sim *sim = rb_create(&cfg);
-    if (!sim) {
-        fprintf(stderr, "rb_cli sound: invalid --rate (must be %g..%g Hz)\n",
-                RB_MIN_SAMPLE_RATE, RB_MAX_SAMPLE_RATE);
-        return 2;
-    }
-    rb_engine *e = &sim->engine;
-    rb_engine_init_at(e, &d, sim->dt, sim->cfg.pipe_rate);   /* at the sim's quality */
-    if(rb_engine_combustion_model(e,burn_model) || (seed_given && rb_engine_seed(e,(uint64_t)seed_value))) {
-        rb_destroy(sim);return 2;
-    }
-    for (int k = 0; k < rb_engine_pipe_count(e); k++)
-        ((rb_pipe *)rb_engine_pipe(e, k))->momentum_order = momentum_order;
-    sim->source = RB_SOURCE_ENGINE;
-    sim->hear = where;
-    sim->layers = layers;
-    rb_sim_listen(sim);
-    rb_set_param(sim, RB_PARAM_MASTER_GAIN, gain);
-    e->ignition = 1;
-    e->variation = variation;
-    e->overrun_transition = overrun_transition;
-    if (drive == DRIVE_HOLD) {
-        e->rpm = rpm;
-        e->throttle_pos = throttle;
-    } else if (drive == DRIVE_SWEEP) {   /* held there to settle, then let go */
-        e->rpm = SWEEP_FROM;
-        e->throttle_pos = 1.0;
-    } else {   /* --idle and --rev start with the key */
-        e->hold_speed = 0;
-        e->throttle_pos = 0.0;
-        e->starter = 1;
-    }
-
-    if (scene>=0 && rb_set_scene(sim,scene)!=RB_OK) {
-        fprintf(stderr,"rb_cli sound: stereo scenes require 8..96 kHz output\n");
-        rb_destroy(sim);
-        return 2;
-    }
-    const int channels=scene>=0 ? 2 : 1;
-    wav_writer *wav = wav_open(out_path, (int)cfg.sample_rate, channels, use_float ? WAV_FLOAT32 : WAV_PCM16);
-    if (!wav) {
-        fprintf(stderr, "rb_cli sound: cannot write %s (does the folder exist?)\n", out_path);
-        rb_destroy(sim);
-        return 1;
-    }
-    csv_writer *csv = NULL;
-    if (csv_path) {
-        const char *cols[] = { "t_s", "rpm", "throttle", "spark_cut", "fuel_cut", "out_peak", "out_rms",
-                               "spl_dB", "crank_inertia_kgm2", "overrun_time_s",
-                               "throttle_area_m2", "map_kPa" };
-        csv = csv_open(csv_path, cols, 12);
-        if (!csv) {
-            fprintf(stderr, "rb_cli sound: cannot write %s\n", csv_path);
-            wav_close(wav);
-            rb_destroy(sim);
-            return 1;
-        }
-    }
-
-    printf("sound: %s, %d cylinder%s, %.2f L, %s%s%s; ", engine_name,
-           d.cylinders, d.cylinders > 1 ? "s" : "", rb_engine_displacement(e) * 1e3,
-           MUFFLER_SAYS[d.muffler_type], e->systems > 1 ? "s" : "", equal ? ", equal headers" : "");
-    if (scene >= 0)   /* the stereo scene places the listener, not --listener */
-        printf("heard in the %s scene (stereo)\n", scenes[scene]);
-    else
-        printf("heard from %s: ", LISTENERS[where]);
-    if (scene >= 0)
-        ;
-    else if (e->systems > 1)
-        printf("the tailpipes %.2f and %.2f m away", rb_listener_distance(&sim->listener, 0),
-               rb_listener_distance(&sim->listener, 1));
-    else
-        printf("the tailpipe %.2f m away", rb_listener_distance(&sim->listener, 0));
-    if (scene < 0)
-        printf(", the intake's mouth %.2f m\n", rb_listener_distance(&sim->listener, 2));
-    printf("  physics at %.0f kHz, the pipes at %.0f kHz", 1e-3 / sim->dt, 1e-3 * rb_pipe_rate(sim));
-    printf("; burn model %s, variation seed %llu",burn_model==RB_BURN_CHARGE?"charge":"capped",
-           (unsigned long long)e->variation_seed);
-    if (layers != RB_LAYER_ALL) {
-        printf("; only");
-        for (int k = 0, first = 1; k < 3; k++)
-            if (layers & (1 << k)) {
-                printf("%s %s", first ? "" : ",", LAYERS[k]);
-                first = 0;
-            }
-    }
-    printf("\n");
-    float buf[2*BLOCK_FRAMES];
-    const double fs = cfg.sample_rate;
-    if (drive != DRIVE_IDLE) {   /* settle first, held and unrecorded */
-        if (scene>=0) sim->scene.time=-lround(SOUND_SETTLE*fs/BLOCK_FRAMES)*BLOCK_FRAMES/fs;
-        for (long k = 0; k < lround(SOUND_SETTLE * fs / BLOCK_FRAMES); k++)
-            if (scene>=0) rb_render_stereo(sim,buf,BLOCK_FRAMES);
-            else rb_render_block(sim,buf,BLOCK_FRAMES);
-        if (drive == DRIVE_HOLD && e->result.brake_torque > 0.0) {
-            /* Stage 12c: from here on a dyno holds it, as on stage 9's test
-             * bed, its crank free: each firing and each cycle moves it a
-             * little, as they do a real engine's. */
-            rb_dyno_init(&dyno, e, rpm);
-            sim->dyno = &dyno;
-            printf("  on a dyno at %.0f rpm, throttle %.0f %%, after %.1f s to settle\n", rpm,
-                   100.0 * throttle, SOUND_SETTLE);
-        } else if (drive == DRIVE_HOLD) {
-            printf("  held at %.0f rpm, throttle %.0f %% (too little torque for the dyno), after "
-                   "%.1f s to settle\n", rpm, 100.0 * throttle, SOUND_SETTLE);
-        } else {
-            e->hold_speed = 0;   /* the crank's speed and energy are the held ones: no jump */
-        }
-    }
-
-    const long long total = llround(seconds * fs);
-    const double limited0 = rb_get_telemetry(sim, RB_TLM_LIMITED);   /* settling's aren't heard */
-    double peak = 0.0, sumsq = 0.0, lo = INFINITY, hi = 0.0;
-    double released = -1.0, on_limiter = -1.0, lifted = -1.0, clutch = -1.0, idling = -1.0;
-    double fall_from = -1.0, fall_to = -1.0;   /* s: passing 6000 and 2000 rpm, falling */
-    const long cuts0 = e->limiter_cuts;
-    long long frames = 0;
-    int io_error = 0;
-    clock_t c0 = clock();
-    while (frames < total) {
-        const double t = frames / fs;
-        /* the driver */
-        if ((drive == DRIVE_IDLE || drive == DRIVE_REV) && e->starter
-            && (e->rpm_smooth > 0.75 * d.idle_rpm || t > 3.0)) {
-            e->starter = 0;
-            released = t;
-        }
-        if (drive == DRIVE_IDLE && !e->starter) e->load_torque = idle_load;
-        if (drive == DRIVE_REV) {
-            e->throttle_pos = (t >= REV_BLIP_AT && t < REV_BLIP_AT + REV_BLIP) ? REV_BLIP_THROTTLE
-                            : (t >= REV_FLOOR_AT && t < REV_FLOOR_AT + REV_FLOOR) ? 1.0 : 0.0;
-            if (on_limiter < 0.0 && e->limiter_cuts > cuts0) on_limiter = t;
-        }
-        if (drive == DRIVE_SWEEP) {
-            if (on_limiter < 0.0 && e->limiter_cuts > cuts0) on_limiter = t;
-            if (lifted < 0.0 && ((on_limiter >= 0.0 && t >= on_limiter + SWEEP_LIMITER)
-                                || (pull_seconds > 0.0 && t >= pull_seconds))) {
-                e->throttle_pos = 0.0;
-                lifted = t;
-            }
-            if (clutch < 0.0 && lifted >= 0.0 && t >= lifted + coast_seconds) {
-                /* The clutch goes in: the car's inertia leaves the crank,
-                 * which keeps its speed (its kinetic energy is the engine's
-                 * own from now on), and so does the road's load. */
-                e->desc.inertia = own_inertia;
-                e->kinetic = 0.5 * own_inertia * e->omega * e->omega;
-                clutch = t;
-            }
-            e->load_torque = (clutch < 0.0) ? road_load(e->omega, car_inertia) : 0.0;
-            if (clutch >= 0.0 && idling < 0.0 && (e->rpm_smooth < d.idle_rpm + 50.0 || t > clutch + SWEEP_FALL))
-                idling = t;
-            if (idling >= 0.0 && t >= idling + SWEEP_IDLE) break;
-        }
-        if (lifted >= 0.0 || (drive == DRIVE_REV && t > REV_FLOOR_AT + REV_FLOOR)) {   /* falling */
-            if (fall_from < 0.0 && e->rpm < 6000.0) fall_from = t;
-            if (fall_to < 0.0 && e->rpm < 2000.0) fall_to = t;
-        }
-
-        const int n = (int)(total - frames < BLOCK_FRAMES ? total - frames : BLOCK_FRAMES);
-        if (scene>=0) rb_render_stereo(sim,buf,n);
-        else rb_render_block(sim,buf,n);
-        if (wav_write(wav, buf, (size_t)n) != WAV_OK) io_error = 1;
-        for (int i = 0; i < channels*n; i++) {
-            if (fabs(buf[i]) > peak) peak = fabs(buf[i]);
-            sumsq += (double)buf[i] * buf[i];
-        }
-        frames += n;
-        if (e->rpm < lo) lo = e->rpm;
-        if (e->rpm > hi) hi = e->rpm;
-        if (csv) {
-            const double rms = rb_get_telemetry(sim, RB_TLM_OUT_RMS);
-            const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
-            double row[12] = { frames / fs, e->rpm, e->throttle_pos, e->spark_cut, e->fuel_cut,
-                              rb_get_telemetry(sim, RB_TLM_OUT_PEAK), rms,
-                              (pa > 0.0) ? 20.0 * log10(pa / 2e-5) : 0.0,
-                              e->desc.inertia, e->overrun_time, e->throttle.area, e->plenum.p * 1e-3 };
-            if (csv_row(csv, row) != 0) io_error = 1;
-        }
-    }
-    const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
-    const double recorded = frames / fs, rms = frames > 0 ? sqrt(sumsq / (channels*frames)) : 0.0;
-
-    if (drive == DRIVE_IDLE) {
-        if (released >= 0.0) printf("  key to START; the starter lets go at %.2f s\n", released);
-        printf("  idling at %.0f rpm at the end (%.0f-%.0f rpm over the whole run)\n", e->result.rpm, lo, hi);
-    } else if (drive == DRIVE_SWEEP) {
-        printf("  wide open from %.0f rpm, %.1f kg m^2 on the crank and the road's load", SWEEP_FROM, inertia);
-        if (on_limiter >= 0.0) printf(": on the rev limiter after %.1f s", on_limiter);
-        else printf(": no rev limiter within %.1f s", recorded);
-        if (lifted >= 0.0) printf("; foot off at %.2f s", lifted);
-        if (clutch >= 0.0) printf(", clutch in at %.2f s", clutch);
-        if (idling >= 0.0) printf(", idle/recovery checkpoint at %.2f s", idling);
-        printf("\n");
-    } else if (drive == DRIVE_REV) {
-        printf("  revved in neutral: a blip at %.1f s, floored at %.1f s", REV_BLIP_AT, REV_FLOOR_AT);
-        if (on_limiter >= 0.0) printf(", on the rev limiter at %.2f s", on_limiter);
-        printf(", foot off at %.1f s; idling at %.0f rpm at the end\n", REV_FLOOR_AT + REV_FLOOR, e->result.rpm);
-    }
-    if (drive == DRIVE_SWEEP || drive == DRIVE_REV) {
-        printf("  the rev limiter cut %ld sparks", e->limiter_cuts - cuts0);
-        if (fall_from >= 0.0 && fall_to > fall_from)
-            printf("; falling, 6000 to 2000 rpm in %.2f s (%.0f rpm/s)", fall_to - fall_from,
-                   4000.0 / (fall_to - fall_from));
-        printf("\n");
-    }
-    const double pa = (gain > 0.0) ? rms * RB_FULL_SCALE_PA / gain : 0.0;
-    printf("  %.2f s recorded: peak %.3f (%.1f dBFS), rms %.4f: %.1f dB SPL at the listener\n", recorded,
-           peak, peak > 0.0 ? 20.0 * log10(peak) : -INFINITY, rms, pa > 0.0 ? 20.0 * log10(pa / 2e-5) : 0.0);
-    printf("  soft-limited samples %.0f, non-finite %.0f\n", rb_get_telemetry(sim, RB_TLM_LIMITED) - limited0,
-           rb_get_telemetry(sim, RB_TLM_NONFINITE));
-    if (cpu > 0.0) printf("  cpu %.1f s (%.2fx real time)\n", cpu, recorded / cpu);
-
-    if (wav_close(wav) != WAV_OK) io_error = 1;
-    if (csv && csv_close(csv) != 0) io_error = 1;
-    rb_destroy(sim);
-    printf("wrote %s (%s)%s%s\n", out_path, use_float ? "32-bit float" : "16-bit PCM, dithered",
-           csv_path ? " and " : "", csv_path ? csv_path : "");
-    if (io_error) {
-        fprintf(stderr, "rb_cli sound: write error\n");
-        return 1;
-    }
-    return 0;
-}
+/* The listener's places (RB_LISTENER_*), by name, for the fuzzer's table. */
+static const char *const LISTENERS[RB_LISTENER_COUNT] = { "tailpipe", "behind", "side", "front", "cabin" };
 
 /* rb_cli fuzz: random engines, one after another (native/fuzz.h). */
 static int cmd_fuzz(int argc, char **argv)
@@ -2352,17 +1889,17 @@ static int cmd_fuzz(int argc, char **argv)
         const char *a = argv[i];
         int ok = 1;
         if (!strcmp(a, "--sets"))
-            ok = !to_double(take_value(argc, argv, &i), &sets);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &sets);
         else if (!strcmp(a, "-s") || !strcmp(a, "--seconds"))
-            ok = !to_double(take_value(argc, argv, &i), &seconds);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &seconds);
         else if (!strcmp(a, "--seed"))
-            ok = !to_double(take_value(argc, argv, &i), &seed);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &seed);
         else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
-            ok = !to_double(take_value(argc, argv, &i), &os);
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &os);
         else if (!strcmp(a, "--quality"))
-            ok = (quality = quality_from(take_value(argc, argv, &i))) >= 0;
+            ok = (quality = cli_quality_from(cli_take_value(argc, argv, &i))) >= 0;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            usage(stdout);
+            cli_usage(stdout);
             return 0;
         } else
             ok = 0;
@@ -2388,7 +1925,7 @@ static int cmd_fuzz(int argc, char **argv)
         const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
         printf("%8llu  %-9s %4d %4d %-8s %4.1f %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
                r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes,
-               (r.hear >= 0 && r.hear < RB_HEAR_COUNT) ? LISTENERS[r.hear] : "?", r.variation, r.max_rpm,
+               (r.hear >= 0 && r.hear < RB_LISTENER_COUNT) ? LISTENERS[r.hear] : "?", r.variation, r.max_rpm,
                r.max_p / 1e5, r.max_T, r.repairs, cpu, ok ? "ok" : r.what);
         if (!ok)   /* what it changed, to make it again */
             for (int j = 0; j < r.tries; j++) {
@@ -2407,7 +1944,7 @@ static int cmd_fuzz(int argc, char **argv)
 int main(int argc, char **argv)
 {
     if (argc < 2) {
-        usage(stderr);
+        cli_usage(stderr);
         return 2;
     }
     if (!strcmp(argv[1], "info"))
@@ -2431,14 +1968,14 @@ int main(int argc, char **argv)
     if (!strcmp(argv[1], "pipes"))
         return cmd_pipes(argc - 1, argv + 1);
     if (!strcmp(argv[1], "sound"))
-        return cmd_sound(argc - 1, argv + 1);
+        return cli_sound(argc - 1, argv + 1);
     if (!strcmp(argv[1], "fuzz"))
         return cmd_fuzz(argc - 1, argv + 1);
     if (!strcmp(argv[1], "help") || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
-        usage(stdout);
+        cli_usage(stdout);
         return 0;
     }
     fprintf(stderr, "rb_cli: unknown command '%s'\n\n", argv[1]);
-    usage(stderr);
+    cli_usage(stderr);
     return 2;
 }

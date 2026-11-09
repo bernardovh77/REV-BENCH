@@ -100,6 +100,7 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_SNORKEL_DIAMETER]  = { "snorkel_diameter",  "m",      0,             0.03,    0.15,    DBL(snorkel_diameter) },
     [RB_ENG_ACCESSORY_POWER]   = { "accessory_power",   "W",      LIVE,          0.0,     5000.0,  DBL(accessory_power) },
     [RB_ENG_CATALYST_LAMINAR]  = { "catalyst_laminar",  "Pa s/m", 0,             0.0,     10000.0, DBL(catalyst_laminar) },
+    [RB_ENG_OUTLET_RADIATION]  = { "outlet_radiation",  "",       WHOLE,         0.0,     1.0,     INT(outlet_radiation) },
 };
 
 typedef struct cylinder_field_info {
@@ -144,9 +145,7 @@ int rb_load_preset(rb_sim *sim, int preset)
     rb_engine_desc d;
     if (!sim) return RB_ERR_ARG;
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
-    rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);   /* presets are possible engines */
-    sim->dyno = NULL;
-    rb_sim_listen(sim);                          /* a new engine: no jump in its flows */
+    rb_sim_build(sim, &d);   /* presets are possible engines; no jump in the flows */
     sim->preset = preset;
     return RB_OK;
 }
@@ -205,7 +204,8 @@ double rb_get_engine(const rb_sim *sim, int field, int index)
     /* rb_engine_field_size is 0 for a NULL sim or an unknown field. */
     if (index < 0 || index >= rb_engine_field_size(sim, field)) return NAN;
     const field_info *f = &FIELDS[field];
-    const char *at = (const char *)&sim->engine.desc + f->offset;
+    const rb_engine_desc d = rb_sim_desc(sim);   /* without the car in gear */
+    const char *at = (const char *)&d + f->offset;
     switch (f->kind) {
     case STORED_DOUBLE: return ((const double *)at)[index];
     case STORED_INT:    return ((const int *)at)[index];
@@ -241,7 +241,8 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     }
 
     /* Change a copy, then keep it only if it makes a possible engine. */
-    rb_engine_desc d = sim->engine.desc;
+    const rb_engine_desc now = rb_sim_desc(sim);
+    rb_engine_desc d = now;
     char *at = (char *)&d + f->offset;
     if (f->kind == STORED_INT) {
         int *slot = (int *)at;
@@ -254,16 +255,17 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
         slot[index] = v;
     } else {
         ((double *)at)[index] = value;
-        if (field == RB_ENG_REV_LIMIT) d.rev_limit_resume += value - sim->engine.desc.rev_limit;
+        if (field == RB_ENG_REV_LIMIT) d.rev_limit_resume += value - now.rev_limit;
     }
     if (rb_engine_layout(&d) != 0 || rb_engine_desc_check(&d) != 0) return RB_ERR_VALUE;
 
-    if (memcmp(&d, &sim->engine.desc, sizeof d) == 0) return rc;   /* the same engine */
-    if (f->flags & RB_EF_LIVE) sim->engine.desc = d;
-    else {
-        rb_engine_init_at(&sim->engine, &d, sim->dt, sim->cfg.pipe_rate);
-        sim->dyno = NULL;
-        rb_sim_listen(sim);
+    if (memcmp(&d, &now, sizeof d) == 0) return rc;   /* the same engine */
+    if (f->flags & RB_EF_LIVE) {
+        const double inertia = sim->engine.desc.inertia;   /* the car's stays on */
+        sim->engine.desc = d;
+        sim->engine.desc.inertia = inertia;
+    } else {
+        rb_sim_build(sim, &d);
     }
     return rc;
 }

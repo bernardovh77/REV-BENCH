@@ -12,6 +12,8 @@
 #include "audio.h"
 #include "dyno.h"
 #include "engine.h"
+#include "ignition.h"
+#include "injection.h"
 #include "noise.h"
 #include "scene.h"
 
@@ -24,14 +26,13 @@
  * (a slider jump, a level change) never produce clicks. */
 #define RB_SMOOTH_TAU_S 0.010
 
-/* What the listener hears. Until stage 14 the browser plays stage 1's test
- * tone; native tools (rb_cli sound, the tests) switch to the engine. */
-enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE };
+/* What the listener hears (RB_SOURCE_*) and the sound's layers (RB_LAYER_*)
+ * are public since stage 121 (rb.h). */
 
-/* The engine's sound in layers (`layers`, all by default): the pipe ends'
- * flows (stages 11-12), the flow's noise and the engine's own sound (stage
- * 12b, noise.h). Native tools turn some off to hear the rest. */
-enum { RB_LAYER_PIPES = 1, RB_LAYER_FLOW = 2, RB_LAYER_ENGINE = 4, RB_LAYER_ALL = 7 };
+/* Records the engine's ignition and injection traces hold between two
+ * physics steps before the sim turns them into events (stage 121): a step
+ * has at most a few per cylinder. */
+#define RB_TRACE_RECORDS (4 * RB_MAX_CYLINDERS)
 
 /* The seed of the sim's noise: the same every time, so renders repeat. */
 #define RB_NOISE_SEED 0x12B5EED12B5EEDULL
@@ -87,10 +88,30 @@ struct rb_sim {
      * always a possible engine. */
     int       preset;       /* the preset it was built from               */
     rb_engine engine;       /* stays where rb_init put it (see engine.h)  */
-    rb_dyno  *dyno;         /* stage 12c: a dyno a native host put on the
-                             * crank (rb_cli sound --hold), stepped before
-                             * the engine every physics step; a rebuilt
-                             * engine drops it. NULL: none                 */
+    rb_dyno  *dyno;         /* stage 12c: a dyno on the crank, stepped
+                             * before the engine every physics step; a
+                             * rebuilt engine drops it. NULL: none. Since
+                             * stage 121 it's own_dyno (rb_dyno_attach), or
+                             * a test's own                                */
+
+    /* ---- stage 121: the public engine API ---- */
+    uint64_t  generation;   /* engine builds since rb_init                 */
+    uint64_t  frames;       /* audio frames rendered since rb_init         */
+    uint64_t  snapshot_sequence;
+    double    own_inertia;  /* kg m^2: the engine's own, as described; the
+                             * engine's desc.inertia adds the car's in gear */
+    rb_dyno   own_dyno;
+    /* the engine's events (RB_PARAM_EVENTS): a ring of the oldest unread */
+    rb_event  event[RB_EVENT_CAPACITY];
+    int       event_head, event_count;
+    uint64_t  events_lost, event_sequence;
+    rb_ignition_trace ignition_trace;
+    rb_ignition_event ignition_records[RB_TRACE_RECORDS];
+    rb_injection_trace injection_trace;
+    rb_injection_event injection_records[RB_TRACE_RECORDS];
+    double    event_theta;  /* the crank before the step in progress       */
+    double    event_angle[RB_MAX_CYLINDERS];   /* each cylinder's then     */
+    long      event_cycles;
 };
 
 /* Coefficient a for the smoother  y += a * (target - y)  run every dt. */
@@ -101,5 +122,37 @@ double rb_onepole_coef(double dt, double tau);
  * pipe ends as they are: call it whenever the engine is built, or the
  * listener moves. Nothing jumps. */
 void rb_sim_listen(rb_sim *sim);
+
+/* Builds the sim's engine afresh from a description (stage 121, the reset
+ * recipe of contracts/runtime-v1.md): at rest, the driver's controls at their
+ * defaults, the settings applied, no dyno, no events, the listener placed, the
+ * generation one more. -1 (nothing changed) if d isn't a possible engine. */
+int rb_sim_build(rb_sim *sim, const rb_engine_desc *d);
+
+/* The sim's engine description as the host set it: the engine's own, without
+ * the car's inertia in gear (stage 121). */
+rb_engine_desc rb_sim_desc(const rb_sim *sim);
+
+/* Applies parameter id's value (sim->param[id], already in range) to the
+ * engine and the sound (rb_params.c calls it): RB_OK, or RB_PENDING for a
+ * setting that waits for a rebuild. */
+int rb_sim_apply(rb_sim *sim, int id);
+
+/* Rebuilds the whole sim at another config (rb_set_quality): the parameters,
+ * the engine's description and the stereo scene stay; the engine starts
+ * afresh. RB_OK or RB_ERR_CONFIG. */
+int rb_sim_reconfigure(rb_sim *sim, const rb_config *cfg);
+
+/* Before each rendered block: the road's load on a car in gear (rb_drive.c). */
+void rb_sim_before_block(rb_sim *sim);
+
+/* The engine's telemetry, RB_TLM_RPM on (rb_drive.c). */
+double rb_sim_engine_telemetry(const rb_sim *sim, int id);
+
+/* The engine's events (rb_events.c): set up (or stop) recording them as
+ * RB_PARAM_EVENTS says, the ring empty; and, after each physics step while
+ * recording, take what the step did. */
+void rb_sim_events_setup(rb_sim *sim);
+void rb_sim_events_step(rb_sim *sim);
 
 #endif /* RB_INTERNAL_H */

@@ -211,6 +211,18 @@ void test_engine_drives_itself(void);
 void test_engine_free_matches_held(void);
 void test_engine_burns_at_rest(void);
 void test_engine_starter_motor(void);
+/* ---- the public engine API (tests/test_api.c, stage 121) ---- */
+void test_api_controls_metadata(void);
+void test_api_key_starts_the_engine(void);
+void test_api_throttle_and_load(void);
+void test_api_hold(void);
+void test_api_car_in_gear(void);
+void test_api_settings(void);
+void test_api_dyno(void);
+void test_api_snapshot_layout(void);
+void test_api_snapshot(void);
+void test_api_events(void);
+void test_api_events_share_a_step(void);
 /* ---- layouts, presets and the engine API (tests/test_presets.c) ---- */
 void test_presets_table(void);
 void test_presets_fire_where_the_layout_says(void);
@@ -476,6 +488,17 @@ static const struct {
     T(test_engine_free_matches_held),
     T(test_engine_burns_at_rest),
     T(test_engine_starter_motor),
+    T(test_api_controls_metadata),
+    T(test_api_key_starts_the_engine),
+    T(test_api_throttle_and_load),
+    T(test_api_hold),
+    T(test_api_car_in_gear),
+    T(test_api_settings),
+    T(test_api_dyno),
+    T(test_api_snapshot_layout),
+    T(test_api_snapshot),
+    T(test_api_events),
+    T(test_api_events_share_a_step),
     T(test_presets_table),
     T(test_presets_fire_where_the_layout_says),
     T(test_layout_rules),
