@@ -21,6 +21,7 @@ tolerances. Either renders into WORKDIR.
 """
 from pathlib import Path
 import math
+import os
 import struct
 import subprocess
 import sys
@@ -101,19 +102,27 @@ def main():
     mode, a_cli, b_cli, work = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), Path(sys.argv[4])
     (work / "a").mkdir(parents=True, exist_ok=True)
     (work / "b").mkdir(parents=True, exist_ok=True)
-    failed = 0
-    print(f"{'drive':18s} {'sound':>9s} {'rpm':>9s} {'SPL dB':>9s}   (worst; tolerances "
-          f"{SOUND_RMS:g}, {RPM:g}, {SPL_DB:g})")
+    failed, table = 0, []
+
+    def say(text):
+        table.append(text)
+        print(text, flush=True)
+
+    say(f"{'drive':18s} {'sound':>9s} {'rpm':>9s} {'SPL dB':>9s}   (worst; tolerances "
+        f"{SOUND_RMS:g}, {RPM:g}, {SPL_DB:g})")
     for name, args in CASES.items():
         d = compare(*render(a_cli, work / "a", name, args), *render(b_cli, work / "b", name, args))
         bad = out_of_tolerance(d)
         failed += bool(bad)
         if bad == ["length"]:
-            print(f"{name:18s} the renders don't line up: {d}")
+            say(f"{name:18s} the renders don't line up: {d}")
             continue
-        print(f"{name:18s} {d['sound']:9.2g} {d['rpm']:9.2g} {d['spl']:9.2g}   "
-              f"quarters {' '.join(f'{q:.2g}' for q in d['quarters'])}{'   OUT OF TOLERANCE: ' + ', '.join(bad) if bad else ''}")
-    print(f"{len(CASES)} drives: " + ("within the tolerances" if not failed else f"{failed} out of tolerance"))
+        say(f"{name:18s} {d['sound']:9.2g} {d['rpm']:9.2g} {d['spl']:9.2g}   "
+            f"quarters {' '.join(f'{q:.2g}' for q in d['quarters'])}"
+            + ("   OUT OF TOLERANCE: " + ", ".join(bad) if bad else ""))
+    say(f"{len(CASES)} drives: " + ("within the tolerances" if not failed else f"{failed} out of tolerance"))
+    if os.environ.get("GITHUB_ACTIONS"):   # the table on the run's page too, as a notice
+        print("::notice title=compiler parity::" + "%0A".join(line.replace("%", "%25") for line in table))
     return 1 if failed and mode == "check" else 0
 
 
