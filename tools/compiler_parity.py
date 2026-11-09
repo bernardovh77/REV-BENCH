@@ -7,24 +7,26 @@
 Within one compiler a change must leave every render bit-identical (stage
 119, tools/cli_parity.py). Across compilers it can't: libm's exp and pow differ
 in their last bits between MSVC, gcc's and Apple's libraries, and the engine
-carries those bits on. So the same seeded drives are rendered by both builds
-(float WAVs and their per-block CSVs), and the differences must stay within
-tolerances frozen from the measurement (docs/stage-122.md):
+carries those bits on. Mostly they stay a billionth of the sound; but where a
+decision is made at random against a computed share (the rev limiter's soft
+cut), a last bit can flip one, and from there each render is its own valid
+run. So the same seeded drives are rendered by both builds and checked twice:
 
-  - the sound: the RMS of the difference, relative to the sound's own RMS,
-    over the whole drive and over each quarter of it;
-  - the engine: its speed (rpm) at every 128-frame block;
-  - the level: the SPL of every block.
+  - before anything can flip, they must agree: the RMS of the difference over
+    the drive's first quarter, relative to the sound's RMS, at most 1e-6;
+  - over the whole drive they must be the same engine: the overall level, each
+    octave band's level, and the speed (rpm, per 128-frame block, on average).
 
 `measure` prints the differences; `check` also fails (exit 1) beyond the
-tolerances. Either renders into WORKDIR.
+tolerances (docs/stage-122.md). Either renders into WORKDIR.
 """
 from pathlib import Path
-import math
 import os
 import struct
 import subprocess
 import sys
+
+import numpy as np
 
 CASES = {
     "idle-i4": ["--preset", "i4", "--idle", "--seconds", "6"],
@@ -34,13 +36,16 @@ CASES = {
     "rev-boxer-passby": ["--preset", "boxer4", "--rev", "--scene", "passby", "--seconds", "9"],
 }
 
-# Frozen at stage 122 from MSVC 14.51 against w64devkit's gcc 16.1 (docs/stage-122.md).
-# The last-bit differences grow as the engine runs: most drives stay near 1e-9 of
-# the sound, but the six's 12 s rev reached 1.2e-4 in its last quarter (the idle
-# after the limiter), 0.0013 rpm and 0.078 dB. About 8 times that:
-SOUND_RMS = 1e-3     # RMS of the difference / RMS of the sound (-60 dB), each quarter
-RPM = 0.5            # rpm, at any block
-SPL_DB = 0.5         # dB, at any block
+# Frozen at stage 122 (docs/stage-122.md). MSVC 14.51 against gcc 16.1: the first
+# quarter at most 2e-9, the rest identical in level, bands and speed; but on a
+# GitHub runner the boxer's pass-by rev flipped a soft cut in its last quarter
+# (0.35 of the sound, 10 dB in a block). The statistics are sized by a far
+# bigger change: another variation seed changes the level by at most 0.23 dB,
+# a band by 1.2 dB and the speed by 24 rpm on average.
+FIRST_QUARTER = 1e-6   # RMS of the difference / RMS of the sound, first quarter
+LEVEL_DB = 0.5         # the whole drive's level
+BAND_DB = 2.0          # each octave band (31.5 Hz-16 kHz) within 60 dB of the loudest
+RPM_MEAN = 40.0        # the speed's mean difference, rpm
 
 
 def render(cli, out, name, args):
@@ -53,47 +58,58 @@ def render(cli, out, name, args):
 
 
 def samples(wav):
+    """A WAV's samples, its channels averaged."""
     data = Path(wav).read_bytes()
+    channels = struct.unpack_from("<H", data, data.find(b"fmt ") + 10)[0]
     at = data.find(b"data")
     n = struct.unpack_from("<I", data, at + 4)[0]
-    return struct.unpack_from(f"<{n // 4}f", data, at + 8)
+    x = np.frombuffer(data[at + 8:at + 8 + n], dtype="<f4").astype(float)
+    return x.reshape(-1, channels).mean(axis=1)
 
 
-def table(csv):
+def rpm_of(csv):
     lines = Path(csv).read_text(encoding="utf-8").splitlines()
-    head = lines[0].split(",")
-    rows = [[float(v) for v in l.split(",")] for l in lines[1:] if l]
-    return {h: [r[k] for r in rows] for k, h in enumerate(head)}
+    column = lines[0].split(",").index("rpm")
+    return np.array([float(l.split(",")[column]) for l in lines[1:] if l])
+
+
+def octave_bands(x, rate=48000):
+    """dB of each octave band, 31.5 Hz to 16 kHz."""
+    f = np.fft.rfftfreq(len(x), 1.0 / rate)
+    power = np.abs(np.fft.rfft(x)) ** 2
+    return np.array([10 * np.log10(power[(f >= c / 2 ** 0.5) & (f < c * 2 ** 0.5)].sum() + 1e-30)
+                     for c in (31.5 * 2 ** k for k in range(10))])
 
 
 def compare(a_wav, a_csv, b_wav, b_csv):
     """The differences between two renders of one drive."""
     a, b = samples(a_wav), samples(b_wav)
+    ra, rb = rpm_of(a_csv), rpm_of(b_csv)
     if len(a) != len(b):
         return {"length": (len(a), len(b))}
-    rms = math.sqrt(sum(x * x for x in a) / len(a)) or 1.0
-    quarter = max(1, len(a) // 4)
-    quarters = []
-    for k in range(4):
-        d = [a[i] - b[i] for i in range(k * quarter, min(len(a), (k + 1) * quarter))]
-        quarters.append(math.sqrt(sum(x * x for x in d) / max(1, len(d))) / rms)
-    ta, tb = table(a_csv), table(b_csv)
+    rms = lambda x: float(np.sqrt(np.mean(x * x))) if len(x) else 0.0
+    q = max(1, len(a) // 4)
+    sound = rms(a) or 1.0
+    ba, bb = octave_bands(a), octave_bands(b)
+    heard = ba > ba.max() - 60.0
+    n = min(len(ra), len(rb))
     return {
-        "sound": max(quarters),
-        "quarters": quarters,
-        "rpm": max(abs(x - y) for x, y in zip(ta["rpm"], tb["rpm"])),
-        "spl": max(abs(x - y) for x, y in zip(ta["spl_dB"], tb["spl_dB"])),
-        "blocks": (len(ta["rpm"]), len(tb["rpm"])),
+        "first": rms(a[:q] - b[:q]) / sound,
+        "quarters": [rms(a[k * q:(k + 1) * q] - b[k * q:(k + 1) * q]) / sound for k in range(4)],
+        "level": 20 * np.log10(sound / (rms(b) or 1.0)),
+        "bands": float(np.max(np.abs(ba - bb)[heard])) if heard.any() else 0.0,
+        "rpm": float(np.mean(np.abs(ra[:n] - rb[:n]))) if n else 0.0,
+        "blocks": (len(ra), len(rb)),
     }
 
 
 def out_of_tolerance(d):
-    """What of compare's result is beyond the tolerances: a list of "sound",
-    "rpm", "spl", or ["length"] if the renders don't even line up."""
+    """What of compare's result is beyond the tolerances: a list of "first",
+    "level", "bands", "rpm", or ["length"] if the renders don't line up."""
     if "length" in d or d["blocks"][0] != d["blocks"][1]:
         return ["length"]
-    limits = {"sound": SOUND_RMS, "rpm": RPM, "spl": SPL_DB}
-    return [what for what, most in limits.items() if not d[what] <= most]
+    limits = {"first": FIRST_QUARTER, "level": LEVEL_DB, "bands": BAND_DB, "rpm": RPM_MEAN}
+    return [what for what, most in limits.items() if not abs(d[what]) <= most]
 
 
 def main():
@@ -108,8 +124,8 @@ def main():
         table.append(text)
         print(text, flush=True)
 
-    say(f"{'drive':18s} {'sound':>9s} {'rpm':>9s} {'SPL dB':>9s}   (worst; tolerances "
-        f"{SOUND_RMS:g}, {RPM:g}, {SPL_DB:g})")
+    say(f"{'drive':18s} {'first':>8s} {'level dB':>9s} {'bands dB':>9s} {'rpm':>7s}   (tolerances "
+        f"{FIRST_QUARTER:g}, {LEVEL_DB:g}, {BAND_DB:g}, {RPM_MEAN:g})")
     for name, args in CASES.items():
         d = compare(*render(a_cli, work / "a", name, args), *render(b_cli, work / "b", name, args))
         bad = out_of_tolerance(d)
@@ -117,7 +133,7 @@ def main():
         if bad == ["length"]:
             say(f"{name:18s} the renders don't line up: {d}")
             continue
-        say(f"{name:18s} {d['sound']:9.2g} {d['rpm']:9.2g} {d['spl']:9.2g}   "
+        say(f"{name:18s} {d['first']:8.2g} {d['level']:+9.3f} {d['bands']:9.3f} {d['rpm']:7.2f}   "
             f"quarters {' '.join(f'{q:.2g}' for q in d['quarters'])}"
             + ("   OUT OF TOLERANCE: " + ", ".join(bad) if bad else ""))
     say(f"{len(CASES)} drives: " + ("within the tolerances" if not failed else f"{failed} out of tolerance"))
