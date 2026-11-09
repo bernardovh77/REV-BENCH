@@ -18,10 +18,12 @@
   all, on Windows or WSL (docs/workspace.md). Stages that touch `core/` also do the
   sound check (PLAN.md, "How a stage is done", step 6).
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
-  which tests catch them. `python3 tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
+  which tests catch them. `python tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
   applies each bug of `tools/bugs/stageSTAGE.py` (a stage's own table: start from the last one's)
   to a fresh copy of the sources in WORKDIR, builds the test binary there and runs the tests named
-  for it; two work dirs run two bugs at once. The whole suite takes 5–9 min in Claude's cloud
+  for it; two work dirs run two bugs at once. `python tools/plant_bugs.py --check` (in the Python
+  suite) fails if any table's bug no longer matches today's sources: a change that moves a bug's
+  text retargets the bug (or retires it with a note in its table) in the same stage. The whole suite takes 5–9 min in Claude's cloud
   workspace (3.5 at stage 12c; more with the sanitizers, so run that in filtered parts), and
   processes started in the background can die with a call: run a few bugs per call under
   `timeout`, and never `pkill -f` a pattern that also matches your own command line.
@@ -127,8 +129,8 @@
   walls always trade heat. At 96 kHz the valves' 5 cm cells are too stiff for the flow cap (10 %
   more pumping work motored); 192 kHz is converged.
 - Stage 11 put the sound in `rb_render_block`. Every physics step the sim's source (`sim->source`,
-  internal: stage 1's tone by default, which the browser plays until stage 14, or
-  `RB_SOURCE_ENGINE`, which `rb_cli sound` and the tests set) gives the microphone's signal in
+  internal: stage 1's tone by default, which the old browser scaffold plays, or
+  `RB_SOURCE_ENGINE`, which `rb_cli sound` and the tests set, and the public API from stage 121) gives the microphone's signal in
   full-scale units (1 = 40 Pa, `RB_FULL_SCALE_PA`); a NaN becomes 0 there, before the filters. Then
   the anti-alias FIR (157 taps at oversample 4: 0.4 ms), the 10 Hz DC blocker, the gain and the soft
   limiter (knee 0.8: a full-level tone peaks at 0.952, so level tests use 0.7). The engine's
@@ -204,8 +206,8 @@
   angles wrap instead), changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE
   fields, changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`,
   with a range. The
-  sim holds the engine, but until stage 14 `rb_step` still plays the test tone; tests that need it
-  running step `sim->engine` directly (tests/test_presets.c).
+  sim holds the engine, but until stage 121 the public API still plays the test tone; tests that
+  need it running step `sim->engine` directly (tests/test_presets.c).
 - Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
   TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
 - Core code is spaced and commented (stage 119 reformatted Codex's): `if (x) y;`, spaces round
@@ -353,28 +355,31 @@
   TSL, geometry generated procedurally; motion from a display-rate snapshot streamed by the worklet,
   delayed by the audio output latency.
 
-## Environment (device bridge)
-- Deleting files in the project folder is blocked by default, so build with
-  `make BUILD=$HOME/rb-build ...` (outside the mounted folder) and only write deliverables
-  (source, docs, renders) into the project. `git commit` also needs delete permission (lock files).
+## Environment
+- Build outside the repo, `make BUILD=$HOME/rb-build ...` (`tools/run_tests.py` uses
+  ~/rb-build/tests), and only write deliverables (source, docs, renders) into the project.
+  Bernardo's recordings and other bulky media go in `renders/` (git-ignored, as are `*.zip`,
+  `*.webm`, `*.wav` and the like anywhere): moved, never deleted.
 - Commits: one per stage, at its end, on `main` (or the branch a session is told to use). Author as
   in Bernardo's history: `git -c user.name=bernardovh77 -c user.email=you@example.com commit ...`.
   Never add Co-Authored-By or session lines to commit messages (Bernardo's request).
   Read git state with `git --no-optional-locks ...`.
-- Never `npm install` inside the mounted folder. Copy REV-BENCH (without node_modules) to $HOME,
-  `npm ci` in its web/, run tests there, and copy `package-lock.json` back if it changed.
+- Never `npm install` inside the repo. `tools/run_tests.py` copies it (without node_modules) to
+  ~/rb-build/tests/web-copy and runs `npm ci` and the web tests there; for a dependency change,
+  do the same by hand and copy `package-lock.json` back.
 - Every suite runs on native Windows and in WSL alike, neither needing the other:
   `python tools/run_tests.py` (with the Python of `tools/requirements-dev.txt`; setup in
   docs/workspace.md). On Windows, w64devkit's gcc and make build without LTO (the Makefile
   checks). Tools pass make forward-slash paths, read and write text as UTF-8, find programs with
   `checks.program()` (Windows adds `.exe`) and FFmpeg with `ffmpeg_path.find_ffmpeg()`. Tests that
   fake a program use `tools/fake_program.py`. If WSL hangs, work on Windows rather than restart it.
-- The bridge VM has gcc 11, make, node 22, python3 + numpy, zig 0.17 (`python3 -m ziglang`), git;
-  no sudo. GitHub, PyPI and npm are reachable; storage.googleapis.com is not (so no Emscripten SDK).
-  Its clock trails the mounted folder slightly, so make prints harmless clock-skew warnings.
-- The browser e2e test runs in Claude's cloud workspace: stage the web/ files there, `npm ci`, then
-  `PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome npx playwright test`
-  (add `E2E_PREVIEW=1` for the production build).
+- `tools/run_tests.py` checks first that make and Node 22+ are there (exit 2 if not), stops at
+  the first failed suite unless `--keep-going`, and kills a suite (with everything it started)
+  that runs past its limit (`TIMEOUTS`). On Windows, `python` alone may be the system Python:
+  use the venv's, `C:\Users\berna\rb-venv\Scripts\python`.
+- The e2e test runs wherever the others do (`python tools/run_tests.py e2e`, both modes): with the
+  installed Chrome or Edge on Windows, Playwright's Chromium in WSL, and in Claude's cloud
+  workspace with `PW_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome`.
 - The desktop app's built-in browser can't open servers Claude starts, so Bernardo runs
   `npm run dev` himself to listen.
 - REV-BENCH is its own git repo (github.com/bernardovh77/REV-BENCH, default branch `main`). Until
@@ -419,6 +424,9 @@ graphify's section above assumes graphify is installed. In this repo:
   runs before searches and reads (`sh .claude/hooks/graphify-guard.sh search|read`). It finds
   graphify on PATH or in ~/.local/bin and stays quiet in cloud sessions, where it would only
   start Python before every call.
+- On Windows graphify writes CRLF line endings. Git stores LF whatever the working tree has
+  (`.gitattributes`: `eol=lf`; `core.autocrlf` is off for this repo since stage 120), so the
+  diff is unaffected; `git ls-files --eol | grep w/crlf` lists such files if a tool minds.
 - GRAPH_REPORT.md names each community after one of its members ("math", "titles"), not a
   topic: look at what's in it.
 - graphify can't parse core/include/rb.h (its `extern "C"` guard), and headers give it no

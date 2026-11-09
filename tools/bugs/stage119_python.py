@@ -43,7 +43,7 @@ BUGS = {
         "test_checks.CheckTests.test_require_survives_python_optimisation"),
     # make given the paths as Python spells them (backslashes on Windows)
     'make-backslashes': ("tools/render_results.py",
-        'f"--assume-old={Path(cli).as_posix()}"',
+        'f"--assume-old={make_target(cli)}"',
         'f"--assume-old={cli}"',
         "test_render_results.RenderResultsTests.test_make_gets_forward_slashes"),
 }

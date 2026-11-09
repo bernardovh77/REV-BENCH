@@ -24,16 +24,21 @@ import argparse
 import os
 from pathlib import Path
 import shutil
+import signal
+import stat
 import subprocess
 import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e")
+# each suite's limit in seconds, far above its usual time: a hang is killed,
+# with every process it started, and the suite fails as "timeout"
+TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200}
 OUT = Path.home() / "rb-build" / "tests"
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
-                                     "renders", ".git", "graphify-out", ".venv*", "*.zip",
-                                     "stage-115-renders", ".agents", "__pycache__")
+                                     "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
+                                     ".agents", "__pycache__")
 
 
 def node_env():
@@ -52,6 +57,30 @@ def tool(name, env):
     return found
 
 
+# the programs each suite needs on PATH, and the oldest Node it runs on
+NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
+         "web": ["node", "npm"], "e2e": ["node", "npm", "npx"]}
+NODE_MAJOR = 22
+
+
+def preflight(suites, env):
+    """What's missing for these suites, one line each (empty when nothing is):
+    a needed program not on env's PATH, or a Node older than NODE_MAJOR."""
+    needed = sorted({p for s in suites for p in NEEDS.get(s, [])})
+    problems = [f"{p} isn't on PATH (needed by {', '.join(s for s in suites if p in NEEDS.get(s, []))})"
+                for p in needed if not shutil.which(p, path=env.get("PATH"))]
+    node = shutil.which("node", path=env.get("PATH")) if "node" in needed else None
+    if node:
+        version = subprocess.run([node, "--version"], capture_output=True, text=True, env=env).stdout.strip()
+        try:
+            major = int(version.lstrip("v").split(".")[0])
+        except ValueError:
+            major = 0
+        if major < NODE_MAJOR:
+            problems.append(f"node is {version or 'of no known version'} ({node}); the web suites need {NODE_MAJOR} or newer")
+    return problems
+
+
 def chromium():
     if os.environ.get("PW_CHROMIUM"):
         return os.environ["PW_CHROMIUM"]
@@ -66,20 +95,73 @@ def chromium():
 
 
 def make(*targets):
-    zig = f'{Path(sys.executable).as_posix()} -m ziglang'
+    zig = f'"{Path(sys.executable).as_posix()}" -m ziglang'   # quoted: a path may have spaces
     jobs = f"-j{os.cpu_count() or 2}"
     return ["make", jobs, f"BUILD={OUT.as_posix()}", f"ZIG={zig}", *targets]
+
+
+def remove_tree(path, tries=5):
+    """Deletes a folder. On Windows a file can be read-only (npm's) or still
+    held for a moment by a process that just exited: clear the flag and try
+    again for a few seconds before giving up."""
+    def writable(function, name, _):
+        os.chmod(name, stat.S_IWRITE)
+        function(name)
+    for attempt in range(tries):
+        try:
+            shutil.rmtree(path, onerror=writable)
+            return
+        except OSError:
+            if attempt == tries - 1 or not path.exists():
+                raise
+            time.sleep(1 + attempt)
 
 
 def web_copy():
     copy = OUT / "web-copy"
     if copy.exists():
-        shutil.rmtree(copy)
+        remove_tree(copy)
     shutil.copytree(ROOT, copy, ignore=COPY_IGNORE, symlinks=True)
     return copy / "web"
 
 
+def kill_tree(process):
+    """Kills a process and every process it started."""
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    process.wait()
+
+
+def run_command(command, cwd, env, timeout):
+    """Runs one command: "pass", "fail", or "timeout" when it ran longer than
+    timeout seconds, after which it and its children are killed."""
+    group = ({"creationflags": subprocess.CREATE_NEW_PROCESS_GROUP} if os.name == "nt"
+             else {"start_new_session": True})
+    process = subprocess.Popen(command, cwd=cwd, env=env, **group)
+    try:
+        code = process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        kill_tree(process)
+        return "timeout"
+    except KeyboardInterrupt:
+        kill_tree(process)
+        raise
+    return "pass" if code == 0 else "fail"
+
+
 def run_suite(name, state):
+    """The suite's commands, folder, environment and time limit."""
+    commands, cwd, env = suite_commands(name, state)
+    return commands, cwd, env, TIMEOUTS[name]
+
+
+def suite_commands(name, state):
     env = node_env()
     if name == "native":
         return [make("test")], ROOT, env
@@ -116,32 +198,56 @@ def run_suite(name, state):
     raise ValueError(name)
 
 
+def run_suites(names, prepare, keep_going):
+    """Runs the named suites in order, each from prepare(name) = (commands,
+    folder, environment, time limit), and gives (name, status, seconds) for
+    each: pass, fail, timeout, or skipped after an earlier failure unless
+    keep_going."""
+    results, failed = [], False
+    for name in names:
+        if failed and not keep_going:
+            results.append((name, "skipped", 0.0))
+            continue
+        print(f"\n=== {name} ===", flush=True)
+        start = time.monotonic()
+        status = "pass"
+        commands, cwd, env, timeout = prepare(name)
+        for command in commands:
+            command, command_env = command if isinstance(command, tuple) else (command, env)
+            left = timeout - (time.monotonic() - start)
+            status = run_command(command, cwd, command_env, max(left, 1))
+            if status != "pass":
+                break
+        if status == "timeout":
+            print(f"run_tests: {name} took over {timeout} s and was killed", flush=True)
+        failed = failed or status != "pass"
+        results.append((name, status, time.monotonic() - start))
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("suites", nargs="*", metavar="SUITE", help=" ".join(SUITES))
     parser.add_argument("--skip", nargs="*", default=[], metavar="SUITE")
+    parser.add_argument("--keep-going", action="store_true",
+                        help="run the other suites after one fails (by default the run stops)")
     args = parser.parse_args()
     unknown = sorted(set(args.suites + args.skip) - set(SUITES))
     if unknown:
         parser.error(f"unknown suites {unknown}; they are {' '.join(SUITES)}")
     chosen = [s for s in (args.suites or SUITES) if s not in args.skip]
+    problems = preflight(chosen, node_env())
+    if problems:
+        for problem in problems:
+            print(f"run_tests: {problem}")
+        sys.exit(2)
     OUT.mkdir(parents=True, exist_ok=True)
-    state, results = {}, []
-    for name in chosen:
-        print(f"\n=== {name} ===", flush=True)
-        start = time.monotonic()
-        ok = True
-        commands, cwd, env = run_suite(name, state)
-        for command in commands:
-            command, command_env = command if isinstance(command, tuple) else (command, env)
-            if subprocess.run(command, cwd=cwd, env=command_env).returncode:
-                ok = False
-                break
-        results.append((name, ok, time.monotonic() - start))
-    print(f"\n{'suite':8s} result  time   ({sys.platform})")
-    for name, ok, seconds in results:
-        print(f"{name:8s} {'pass' if ok else 'FAIL':6s} {seconds:5.0f} s")
-    sys.exit(0 if all(ok for _, ok, _ in results) else 1)
+    state = {}
+    results = run_suites(chosen, lambda name: run_suite(name, state), args.keep_going)
+    print(f"\n{'suite':8s} result   time   ({sys.platform})")
+    for name, status, seconds in results:
+        print(f"{name:8s} {status:8s} {seconds:5.0f} s")
+    sys.exit(0 if all(status == "pass" for _, status, _ in results) else 1)
 
 
 if __name__ == "__main__":

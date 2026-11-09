@@ -4,6 +4,22 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-08: Stage 120, the workspace and toolset upkeep
+
+- [docs/stage-120.md](docs/stage-120.md). No `core/` change.
+- `References.zip` and `stage-115-renders/` are in `renders/`. `.gitignore` ignores archives and
+  media anywhere, and `.agents/` and `skills-lock.json` (Bernardo's agent skills, which he asks us
+  to use).
+- **Planted bugs:** `python tools/plant_bugs.py --check` fails on any bug whose text is gone, and
+  the Python suite runs it. If you move a bug's text, retarget the bug in the same change.
+  29 were stale: 26 retargeted (all caught), 3 retired with notes. Gap: no test pins
+  `RB_BURN_CAPPED`'s burn length.
+- **`tools/run_tests.py`:** checks make and Node 22+ first, kills a suite past its `TIMEOUTS`
+  with its child processes, and stops at the first failure unless `--keep-going`.
+- The Makefile uses `~/rb-venv`'s Python when it's there; `SAN=1` explains itself on w64devkit.
+- On Windows, call `C:\Users\berna\rb-venv\Scripts\python` (plain `python` is the system
+  one). **Next stage: 121.**
+
 ## 2026-11-08: Windows first
 
 - At Bernardo's request the app is built Windows first ([app-design §1](docs/app-design.md#windows-first)):

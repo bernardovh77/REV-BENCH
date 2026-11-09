@@ -8,15 +8,18 @@ Bernardo's Personal-Projects repo, on its `rev-bench` branch; its history came a
 
 - The clone is its own folder, `/mnt/c/Users/berna/REV-BENCH`: `git pull` and `git push` there
   sync with this repo. (Until stage 12b it sat inside the old Personal-Projects repo, which no
-  longer exists.) Claude Code runs in WSL, started there, so it reads this repo's `CLAUDE.md`
-  and `.claude/settings.json`.
+  longer exists.) Claude Code runs in the Windows desktop app's Code tab, on this folder as
+  `C:\Users\berna\REV-BENCH` (since 2026-11-06; before that in WSL), and reads this repo's
+  `CLAUDE.md` and `.claude/settings.json` either way. Its shell is Git Bash or PowerShell; WSL is
+  there for Linux checks, and nothing needs it.
 - Bernardo's reference recordings and videos of real engines are only here, in `renders/`
   (ignored by git; docs/user-sound-references.md lists them). A cloud session can't see them.
   To use them, either attach them to a message in the session, or start the session from WSL:
   `claude remote-control` in this folder lets claude.ai/code start sessions that run here. The
   Windows desktop app's Remote Control folders aren't offered to cloud sessions.
-- graphify (the code graph in `graphify-out/`) is installed in `~/.local/bin`, version 0.9.92
-  (`pip install --user graphifyy==0.9.92`). After pulling, run `graphify update .`: it remakes its
+- graphify (the code graph in `graphify-out/`), version 0.9.92, is in the venv on Windows
+  (`C:\Users\berna\rb-venv\Scripts\graphify.exe`, from tools/requirements-dev.txt) and in
+  `~/.local/bin` in WSL. The reminder hook finds it in either. After pulling, run `graphify update .`: it remakes its
   cache and manifest, which are each machine's own and not in git, and catches the graph up if a
   session couldn't.
 - Renders aren't in git (`renders/` is ignored): `make render` makes them, about four minutes.
@@ -60,6 +63,10 @@ Notes:
 - **FFmpeg:** the reference tools' tests use imageio-ffmpeg's static FFmpeg
   (`tools/ffmpeg_path.py`). WSL's own FFmpeg is a snap, which can't read files in `/tmp`.
 - **Builds** go to `~/rb-build/tests` on each system, never into the repo.
+- **The runner** (stage 120) first checks that make and Node 22+ are on PATH, stops at the first
+  failed suite (`--keep-going` runs the rest), and kills a suite that runs past its limit,
+  with every process it started.
+- **Agent skills** in `.agents/` (and `skills-lock.json`) are this machine's own and git-ignored.
 - **If WSL stops responding** (it once hung for minutes, even for `echo`), Windows alone runs
   everything.
 
@@ -95,9 +102,10 @@ Claude Code lists past sessions by the folder they ran in: to `/resume` the old 
 
 ## .claude/settings.json
 
-- **SessionStart:** the setup above.
+- **SessionStart:** the setup above (tools/requirements-dev.txt, reinstalled when it changes).
 - **PreToolUse:** graphify's reminder to query the graph before searching or reading
-  (`.claude/hooks/graphify-guard.sh`). It finds graphify on PATH or in `~/.local/bin`, and stays
+  (`.claude/hooks/graphify-guard.sh`). It finds graphify on PATH, in `~/.local/bin` or in
+  `~/rb-venv` (`Scripts` on Windows, `bin` on Linux), and stays
   quiet in cloud sessions: CLAUDE.md asks for the graph anyway, and the reminder would start Python
   before every call.
 - **Allowed without asking:** `graphify query`, `path`, `explain` and `update`.
