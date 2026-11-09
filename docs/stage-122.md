@@ -1,6 +1,7 @@
 # Stage 122 — Native builds with MSVC and gcc, and continuous integration
 
-**Status:** done locally (2026-11-09); CI_STATUS_PLACEHOLDER
+**Status:** done (2026-11-09): local suites on Windows and WSL, and CI green on Windows
+and Linux; the first macOS run is still to come (Mondays, or on demand)
 
 The core, the tools and the C tests build with each system's own compiler through CMake,
 and a GitHub Actions pipeline is set to prove it on every push
@@ -47,31 +48,44 @@ an eighth of the speed. The default is now set before `project()`, and the flags
 Within one compiler a change must keep every render bit-identical (stage 119's rule;
 `tools/cli_parity.py`). Across compilers it can't: libm's `exp` and `pow` differ in their
 last bits, and the engine carries them on. `tools/compiler_parity.py` renders five seeded
-drives with two builds' `rb_cli` and compares the float WAVs (the RMS of the difference
-over the sound's RMS, per quarter of each drive) and the per-block CSVs (rpm, SPL).
+drives with two builds' `rb_cli` and compares them.
 
-Measured, MSVC 14.51 (Release, `/O2 /GL`) against w64devkit's gcc 16.1 (`-O3`):
+Measured on Bernardo's machine, MSVC 14.51 (Release, `/O2 /GL`) against w64devkit's gcc
+16.1 (`-O3`), the RMS of the difference over the sound's RMS, by quarter of each drive:
 
-| Drive | Sound, worst quarter | rpm | SPL dB |
-| --- | --- | --- | --- |
-| idle, the four, 6 s | 1.5e-9 | 0 | 1e-7 |
-| dyno hold, cross-plane V8, 3 s | 2.7e-9 | 0 | 0 |
-| rev, the six, 12 s | 1.2e-4 | 0.0014 | 0.078 |
-| sweep, the four, in gear | 7e-9 | 1e-6 | 2e-7 |
-| rev, the boxer, pass-by stereo | 8.5e-7 | 1e-5 | 3e-5 |
+| Drive | 1st quarter | 2nd | 3rd | 4th |
+| --- | --- | --- | --- | --- |
+| idle, the four, 6 s | 4.2e-10 | 1e-9 | 1.5e-9 | 8e-10 |
+| dyno hold, cross-plane V8, 3 s | 1.6e-9 | 1.9e-9 | 2.6e-9 | 2.7e-9 |
+| rev, the six, 12 s | 4.3e-10 | 1.3e-8 | 7.8e-7 | 1.2e-4 |
+| sweep, the four, in gear | 1.9e-9 | 2.5e-9 | 7e-9 | 6.1e-9 |
+| rev, the boxer, pass-by stereo | 1.1e-10 | 3e-9 | 1.2e-7 | 8.7e-7 |
 
-(A Debug MSVC build, measured first by mistake, gave the same picture.)
+The difference starts at the last bit, mostly stays near a billionth of the sound, and
+grows where the engine magnifies it: in the six's rev, to 1.2e-4 by the idle after the
+limiter (−78 dB, 0.08 dB of level). A first design froze per-quarter tolerances from this
+(1e-3, 0.5 rpm, 0.5 dB per block).
 
-The first difference comes within milliseconds (at the last bit), and mostly stays near a
-billionth of the sound. It grows where the engine magnifies it: the six's rev went from
-4.5e-10 in its first quarter to 1.2e-4 in its last, the idle settling after the limiter.
-That's still −78 dB below the sound, and 0.08 dB of level.
+**CI broke that design, usefully.** On a GitHub runner the same two compilers agreed as
+closely on four drives, but the boxer's rev came apart in its last quarter: 0.35 of the
+sound, 2.6 rpm, blocks 10 dB apart. Near the rev limiter the soft cut drops sparks at random
+against a share worked out from the speed (stage 12c). A last-bit difference in the speed
+can flip one decision, and from there each render is its own run, both valid. The runner's
+CPU takes different paths in the C libraries' maths than this machine's, so it flipped there
+and not here. No sample-by-sample tolerance can hold across that.
 
-**Frozen tolerances** (`compiler_parity.py`), about 8 times the worst measured: the
-difference's RMS at most 1e-3 of the sound's (−60 dB) in every quarter, 0.5 rpm and
-0.5 dB SPL at every block. CI checks MSVC against gcc on every Windows push, and Apple clang
-against Homebrew's gcc in the weekly macOS run. A compiler that goes beyond them needs a
-look, not a looser number.
+**So the check has two parts** (`compiler_parity.py`, tested in `test_compiler_parity.py`):
+- **before anything can flip,** each drive's first quarter must agree to 1e-6 of the sound
+  (measured: at most 2e-9, here and on the runner). Wrong code shows here at once;
+- **over the whole drive,** it must be the same engine: the level within 0.5 dB, every
+  octave band (31.5 Hz–16 kHz, within 60 dB of the loudest) within 2 dB, the speed within
+  40 rpm on average. These are sized by a far bigger change than one flipped cut: the same
+  build with another variation seed stays within 0.23 dB, 1.2 dB and 24 rpm.
+
+On the runner (run #7) the boxer's rev, flipped again, came in at 8e-11 for its first
+quarter, 0.001 dB of level, 0.61 dB in its worst band and 0.32 rpm on average: within the
+tolerances. CI checks MSVC against gcc on every Windows push, and Apple clang against
+Homebrew's gcc in the macOS run.
 
 ## Continuous integration
 
@@ -80,14 +94,30 @@ look, not a looser number.
 - **Windows** (`windows-2025`), every push to `main`, pull requests and on demand: every
   suite but the browser test, through `run_tests.py`. That covers the Makefile's suites with
   w64devkit's gcc, the WebAssembly check, the Python and web unit tests, and `cmake` with
-  MSVC. Then MSVC against gcc (`compiler_parity.py check`).
+  MSVC. Then MSVC against gcc. About 23 minutes.
 - **Linux** (`ubuntu-24.04`), the same pushes: every suite but the browser test with gcc,
-  `cmake` included; and a second job, the C tests under AddressSanitizer and UBSan.
+  `cmake` included (about 9–15 minutes); and a second job, the C tests under
+  AddressSanitizer and UBSan (about 18–33 minutes; it passed in every run that finished it,
+  and run #7's was still going when this was written).
 - **macOS** (`macos-15`), Mondays and on demand (`workflow_dispatch` with `macos`): the
   `cmake` suite with Apple clang, then Apple clang against gcc.
+- **What failed shows on the run's page:** a failed test step puts its results table, its
+  FAIL lines and its last lines into an annotation (`tools/ci_summary.sh`), and the parity
+  check posts its table as a notice. The job logs and summaries didn't load in the desktop
+  app's browser; annotations do.
 
-The private repository's free plan gives 2,000 minutes a month, Windows' counting twice
-and macOS's ten times; a push costs about MINUTES_PLACEHOLDER.
+Getting it green took seven runs, each a lesson:
+1. w64devkit on `GITHUB_PATH` put its BusyBox `bash` ahead of Git's, and BusyBox refuses
+   the runner's `bash --noprofile` (exit code 2). Now each step adds w64devkit itself.
+2. A suite failed out of sight: the annotations were added (runs 3–6).
+3. The parity check looked for the CMake build in `~/rb-build/cmake`; `run_tests.py` puts it
+   in `~/rb-build/tests/cmake`.
+4. The boxer's flipped soft cut, above.
+
+**The repository is public** (GitHub's API answers without signing in), though the plan's
+decision was to keep it private for now. On a public repository GitHub's standard runners
+are free, macOS included, so the 2,000-minute budget behind running macOS weekly doesn't
+apply. Recorded for Bernardo to decide (app-design §15).
 
 ## The test runner
 
@@ -103,8 +133,12 @@ w64devkit's gcc builds and links it without a word (`make ... rb_tests`, exit 0)
 refuses it ("C4013: '__builtin_expect' undefined", an error under `RB_WERROR`). That's
 the MSVC job's point: gcc alone would let it through.
 
-`tools/bugs/stage122_python.py` plants faults in the new tools: the pre-flight not checking
-CMake's version, and the parity check passing what it shouldn't.
+`tools/bugs/stage122_python.py` plants five faults in the new tools, all caught: the
+pre-flight accepting an old CMake; the parity check ignoring the level, misaligned renders
+or the bands, or measuring its strict check over the whole drive (a late flip would then
+fail it). `bands-not-compared` was missed at first: no test fed the comparison renders that
+differ in one band alone; `test_one_band_louder_is_caught` does now (an 8 kHz whistle on a
+100 Hz note, the level moved 0.01 dB, the band 17).
 
 ## Tests
 
@@ -116,7 +150,7 @@ CMake's version, and the parity check passing what it shouldn't.
 | cmake | the same 262 tests with MSVC 14.51 | the same with gcc 15.2 |
 | wasm | the committed core is current | the same |
 | wasm-c | 18 tests, 5,743 checks | the same |
-| python | 117 tests (114 + 3 new), none skipped | the same |
+| python | 119 tests (114 + 5 new), none skipped | the same |
 | web | 17 tests | the same |
 | e2e | 2 tests, both modes | the same |
 

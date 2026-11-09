@@ -4,6 +4,20 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-09: Stage 122, builds with MSVC and gcc, and CI
+
+- [docs/stage-122.md](docs/stage-122.md). `CMakeLists.txt` builds the core, rb_cli and the
+  tests with each system's compiler; on Windows run it through `python tools/msvc_env.py
+  cmake ...` (MSVC from any shell). CMake and Ninja are in tools/requirements-dev.txt.
+  `run_tests.py` has a `cmake` suite. A new program goes in the Makefile and CMakeLists.txt.
+- MSVC passes every C test. Keep the core free of GNU-only constructs.
+- `tools/compiler_parity.py`: across compilers each drive's first quarter must agree to 1e-6,
+  then the level, bands and rpm statistically (a last bit can flip a random soft cut).
+- CI (`.github/workflows/ci.yml`) is green on Windows and Linux; macOS runs Mondays and on
+  demand and hasn't run yet. Failures show as annotations on the run's page.
+- **The repository is public**, though the plan says private: flagged to Bernardo.
+- **Next stage: 118.**
+
 ## 2026-11-08: Stage 121, the core's public engine API
 
 - [docs/stage-121.md](docs/stage-121.md). A host now drives and watches the engine through

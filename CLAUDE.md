@@ -370,9 +370,13 @@
   New sources under core/src, tests/ are picked up; a new program goes in both the Makefile
   and CMakeLists.txt. Keep the core free of GNU-only constructs (`__builtin_*`, statement
   expressions, VLAs): MSVC refuses them.
-- Across compilers renders can't be bit-identical (libm's last bits); `tools/compiler_parity.py
-  check A B DIR` holds them within stage 122's frozen tolerances. Within one compiler they
-  must be (`tools/cli_parity.py`).
+- Across compilers renders can't be bit-identical (libm's last bits), and a last bit can flip
+  a random decision (the limiter's soft cut), after which each render is its own run.
+  `tools/compiler_parity.py check A B DIR`: each drive's first quarter within 1e-6 of the
+  sound, then the whole drive's level, octave bands and mean rpm (docs/stage-122.md). Within
+  one compiler renders must be bit-identical (`tools/cli_parity.py`).
+- CI job logs and summaries don't load in the desktop app's browser; annotations do: a failed
+  test step raises its table and last lines as one (`tools/ci_summary.sh`).
 - CI (`.github/workflows/ci.yml`): Windows (every suite but e2e with MSVC and w64devkit, then
   MSVC against gcc) and Linux (gcc, plus a sanitizer job) on every push to `main`; macOS
   (Apple clang) Mondays and on demand. Actions are pinned to commits.
