@@ -60,7 +60,8 @@ jobs:
       - name: Every suite but the browser test (MSVC, w64devkit)
         run: |
           export PATH="$W64DEVKIT_BIN:$PATH"
-          python tools/run_tests.py --keep-going --skip e2e
+          python tools/run_tests.py --keep-going --skip e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
+            || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
       - name: MSVC and gcc agree
         run: |
           export PATH="$W64DEVKIT_BIN:$PATH"
@@ -89,7 +90,9 @@ jobs:
       - name: Python tools
         run: python -m pip install -r tools/requirements-dev.txt
       - name: Every suite but the browser test (gcc)
-        run: python tools/run_tests.py --keep-going --skip e2e
+        run: |
+          python tools/run_tests.py --keep-going --skip e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
+            || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
 
   linux-sanitizers:
     if: github.event_name != 'schedule'
