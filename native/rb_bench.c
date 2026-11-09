@@ -30,12 +30,26 @@
 
 static rb_engine engine;   /* 300+ KB: kept out of the stack */
 
+/* A monotonic clock, s: POSIX's, or Windows' performance counter under MSVC
+ * (stage 122), which has no clock_gettime. */
+#ifdef _MSC_VER
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+static double now(void)
+{
+    LARGE_INTEGER count, rate;
+    QueryPerformanceCounter(&count);
+    QueryPerformanceFrequency(&rate);
+    return (double)count.QuadPart / (double)rate.QuadPart;
+}
+#else
 static double now(void)
 {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (double)t.tv_sec + 1e-9 * (double)t.tv_nsec;
 }
+#endif
 
 /* Seconds of computing per simulated second, best of three. */
 static double engine_cost(int preset, double rate, double pipe_rate, double seconds, int *cells)

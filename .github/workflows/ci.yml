@@ -1,0 +1,114 @@
+# REV-BENCH's continuous integration (stage 122; docs/app-design.md section 10).
+#
+# Windows first (app-design section 1): Windows is the app's target, so every
+# push to main builds and tests there with MSVC (the cmake suite) and with
+# w64devkit's gcc (the Makefile's suites), and checks the two compilers agree
+# (tools/compiler_parity.py). Linux keeps the code portable with gcc on every
+# push, with the sanitizers. macOS runs the core's tests with Apple clang
+# weekly and on demand: on a private repository its minutes count ten times
+# (Windows' twice), and GitHub's free plan gives 2,000 a month.
+#
+# Every action is pinned to a commit (its version in the comment), and every
+# tool to an exact version, as CLAUDE.md asks.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      macos:
+        description: "Also run the macOS job"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "17 4 * * 1"   # Mondays 04:17 UTC: the weekly macOS run
+
+env:
+  PYTHON_VERSION: "3.14.8"
+  NODE_VERSION: "22.23.4"
+  W64DEVKIT_VERSION: "2.8.0"
+
+jobs:
+  windows:
+    if: github.event_name != 'schedule'
+    runs-on: windows-2025
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1   # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: w64devkit (gcc and make, as on Bernardo's machine)
+        run: |
+          curl -sSfL -o w64devkit.7z.exe \
+            "https://github.com/skeeto/w64devkit/releases/download/v${W64DEVKIT_VERSION}/w64devkit-x64-${W64DEVKIT_VERSION}.7z.exe"
+          ./w64devkit.7z.exe -y -o"$RUNNER_TEMP" > /dev/null
+          echo "$RUNNER_TEMP/w64devkit/bin" >> "$GITHUB_PATH"
+      - name: Python tools
+        run: python -m pip install -r tools/requirements-dev.txt
+      - name: Every suite but the browser test (MSVC, w64devkit)
+        run: python tools/run_tests.py --keep-going --skip e2e
+      - name: MSVC and gcc agree
+        run: |
+          B="$(cygpath -m ~)/rb-build"
+          make -j4 BUILD="$B/tests" "$B/tests/rb_cli"
+          python tools/compiler_parity.py check "$B/cmake/rb_cli.exe" "$B/tests/rb_cli.exe" "$B/parity"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        if: failure()
+        with:
+          name: windows-logs
+          path: ~/rb-build/parity
+          retention-days: 7
+
+  linux:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1   # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Python tools
+        run: python -m pip install -r tools/requirements-dev.txt
+      - name: Every suite but the browser test (gcc)
+        run: python tools/run_tests.py --keep-going --skip e2e
+
+  linux-sanitizers:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: The C tests under AddressSanitizer and UBSan
+        run: make -j4 SAN=1 BUILD=$HOME/rb-build/san test
+
+  macos:
+    if: github.event_name == 'schedule' || inputs.macos
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: CMake
+        run: python -m pip install cmake==4.4.4 ninja==1.13.2
+      - name: The core's tests with Apple clang
+        run: python tools/run_tests.py cmake
+      - name: Apple clang and gcc agree
+        run: |
+          command -v gcc-14 || brew install gcc@14
+          make -j4 CC=gcc-14 BUILD="$HOME/rb-build/gcc" "$HOME/rb-build/gcc/rb_cli"
+          python tools/compiler_parity.py check "$HOME/rb-build/cmake/rb_cli" "$HOME/rb-build/gcc/rb_cli" "$HOME/rb-build/parity"

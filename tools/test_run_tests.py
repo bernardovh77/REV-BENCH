@@ -87,7 +87,16 @@ class PreflightTests(unittest.TestCase):
     def test_everything_present_and_recent_is_no_problem(self):
         with tempfile.TemporaryDirectory() as tmp:
             env = self.tools_dir(tmp, "v22.3.0", ["make", "npm", "npx"])
-            self.assertEqual(run_tests.preflight(list(run_tests.SUITES), env), [])
+            suites = [s for s in run_tests.SUITES if s != "cmake"]
+            self.assertEqual(run_tests.preflight(suites, env), [])
+
+    def test_an_old_cmake_is_reported(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            env = self.tools_dir(tmp, "v22.3.0", ["ninja"])
+            fake_program.make(Path(tmp, "cmake"), "print('cmake version 3.22.1')\n")
+            problems = [p for p in run_tests.preflight(["cmake"], env) if "Visual Studio" not in p]
+        self.assertEqual(len(problems), 1, problems)
+        self.assertIn("3.22", problems[0])
 
     def test_the_python_suite_needs_neither(self):
         with tempfile.TemporaryDirectory() as tmp:

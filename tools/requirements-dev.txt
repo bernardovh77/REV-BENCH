@@ -9,3 +9,7 @@ ziglang==0.17.0.*
 imageio-ffmpeg>=0.6,<1
 # The code graph (graphify update .).
 graphifyy==0.9.92
+# The CMake build (stage 122): MSVC on Windows, gcc on Linux, Apple clang on
+# macOS. Both Apache 2.0; the wheels bundle the programs, so no system install.
+cmake==4.4.4
+ninja==1.13.2

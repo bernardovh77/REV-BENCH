@@ -14,6 +14,8 @@ zig builds the WebAssembly). The suites:
   python   the tools' unit tests
   web      npm ci and npm test, in a copy outside the repo (CLAUDE.md)
   e2e      the Playwright test, dev server and production build, in that copy
+  cmake    the CMake build with the system's own compiler (MSVC on Windows,
+           through tools/msvc_env.py; gcc or clang elsewhere) and its C tests
 
 Builds go to ~/rb-build/tests, never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
@@ -31,10 +33,11 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
-TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200}
+TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
+            "cmake": 3600}
 OUT = Path.home() / "rb-build" / "tests"
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
@@ -42,11 +45,14 @@ COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "bu
 
 
 def node_env():
-    """The environment, with ~/.local/node22 on PATH if it is there (WSL)."""
+    """The environment, with ~/.local/node22 on PATH if it is there (WSL),
+    and this Python's scripts (the venv's cmake and ninja)."""
     env = dict(os.environ)
+    paths = [str(Path(sys.executable).parent)]
     local = Path.home() / ".local/node22/bin"
     if local.is_dir():
-        env["PATH"] = str(local) + os.pathsep + env.get("PATH", "")
+        paths.insert(0, str(local))
+    env["PATH"] = os.pathsep.join(paths + [env.get("PATH", "")])
     return env
 
 
@@ -59,8 +65,9 @@ def tool(name, env):
 
 # the programs each suite needs on PATH, and the oldest Node it runs on
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
-         "web": ["node", "npm"], "e2e": ["node", "npm", "npx"]}
+         "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"]}
 NODE_MAJOR = 22
+CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
 
 def preflight(suites, env):
@@ -78,6 +85,20 @@ def preflight(suites, env):
             major = 0
         if major < NODE_MAJOR:
             problems.append(f"node is {version or 'of no known version'} ({node}); the web suites need {NODE_MAJOR} or newer")
+    cmake = shutil.which("cmake", path=env.get("PATH")) if "cmake" in needed else None
+    if cmake:
+        first = subprocess.run([cmake, "--version"], capture_output=True, text=True, env=env).stdout.split("\n")[0]
+        try:
+            have = tuple(int(x) for x in first.split()[-1].split(".")[:2])
+        except ValueError:
+            have = (0, 0)
+        if have < CMAKE_LEAST:
+            problems.append(f"{first or 'cmake'} ({cmake}); the cmake suite needs "
+                            f"{CMAKE_LEAST[0]}.{CMAKE_LEAST[1]} or newer (tools/requirements-dev.txt)")
+    if "cmake" in suites and os.name == "nt":
+        import msvc_env
+        if not msvc_env.install_path():
+            problems.append("no Visual Studio with the C/C++ x64 tools for the cmake suite (docs/workspace.md)")
     return problems
 
 
@@ -185,6 +206,12 @@ def suite_commands(name, state):
         state["web"] = web
         npm = tool("npm", env)
         return [[npm, "ci", "--no-audit", "--no-fund"], [npm, "test"]], web, env
+    if name == "cmake":
+        build = (OUT / "cmake").as_posix()
+        msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
+        return [msvc + ["cmake", "-S", str(ROOT), "-B", build, "-G", "Ninja"],
+                msvc + ["cmake", "--build", build],
+                msvc + ["ctest", "--test-dir", build, "--output-on-failure", "-V"]], ROOT, env
     if name == "e2e":
         web = state.get("web") or web_copy()
         npm, npx = tool("npm", env), tool("npx", env)

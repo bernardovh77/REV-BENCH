@@ -46,6 +46,21 @@ both modes.
 
 Then: `C:\Users\berna\rb-venv\Scripts\python tools\run_tests.py`.
 
+**The MSVC build** (stage 122, the `cmake` suite; the app's compiler on Windows):
+- **Visual Studio Build Tools 2026** (18.x) with the "Desktop development with C++" workload:
+  MSVC 14.51 (`cl` 19.51) and the Windows SDK. Here it's in
+  `C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools`.
+- **CMake 4.4.4 and Ninja 1.13.2** come from `tools/requirements-dev.txt` into the venv: no
+  system install.
+- No developer prompt needed: `tools/msvc_env.py` finds the Build Tools through `vswhere`,
+  loads `vcvars64.bat`'s environment and runs the command, e.g.
+  `python tools\msvc_env.py cmake -S . -B %USERPROFILE%\rb-build\msvc -G Ninja`, then
+  `... cmake --build ...` and `... ctest --test-dir ...`. `run_tests.py cmake` does all three.
+- `python tools\compiler_parity.py check MSVC_RB_CLI GCC_RB_CLI WORKDIR` checks the two
+  compilers' renders agree within the frozen tolerances (docs/stage-122.md).
+
+The `cmake` suite runs in WSL too, with gcc (the venv's CMake and Ninja).
+
 **WSL** (Ubuntu):
 - **C:** gcc and make.
 - **Python:** `~/rb-venv`, set up once with

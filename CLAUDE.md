@@ -362,6 +362,20 @@
   one system only is not done.
 - Pin every dependency exactly, at versions at least two weeks old, with its licence noted for
   THIRD_PARTY_NOTICES.
+- The CMake build (stage 122, `CMakeLists.txt`): the core, rb_cli and the tests with each
+  system's compiler; Release by default (set before `project()`, or MSVC makes it Debug); the
+  core's warnings are errors (`RB_WERROR`). On Windows `python tools/msvc_env.py cmake ...`
+  runs it with MSVC from any shell (it loads `vcvars64.bat` through vswhere); CMake and Ninja
+  come from tools/requirements-dev.txt. `run_tests.py cmake` configures, builds and tests.
+  New sources under core/src, tests/ are picked up; a new program goes in both the Makefile
+  and CMakeLists.txt. Keep the core free of GNU-only constructs (`__builtin_*`, statement
+  expressions, VLAs): MSVC refuses them.
+- Across compilers renders can't be bit-identical (libm's last bits); `tools/compiler_parity.py
+  check A B DIR` holds them within stage 122's frozen tolerances. Within one compiler they
+  must be (`tools/cli_parity.py`).
+- CI (`.github/workflows/ci.yml`): Windows (every suite but e2e with MSVC and w64devkit, then
+  MSVC against gcc) and Linux (gcc, plus a sanitizer job) on every push to `main`; macOS
+  (Apple clang) Mondays and on demand. Actions are pinned to commits.
 
 ## Web (the WebAssembly build and the old browser scaffold)
 - `web/` keeps the WebAssembly core, its binding and tests as portability checks; the browser
