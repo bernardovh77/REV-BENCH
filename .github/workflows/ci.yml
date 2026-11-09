@@ -67,7 +67,8 @@ jobs:
           export PATH="$W64DEVKIT_BIN:$PATH"
           B="$(cygpath -m ~)/rb-build"
           make -j4 BUILD="$B/tests" "$B/tests/rb_cli"
-          python tools/compiler_parity.py check "$B/cmake/rb_cli.exe" "$B/tests/rb_cli.exe" "$B/parity"
+          python tools/compiler_parity.py check "$B/tests/cmake/rb_cli.exe" "$B/tests/rb_cli.exe" "$B/parity" \
+            2>&1 | tee "$RUNNER_TEMP/parity.log" || { tools/ci_summary.sh "$RUNNER_TEMP/parity.log"; exit 1; }
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
         if: failure()
         with:
@@ -120,4 +121,5 @@ jobs:
         run: |
           command -v gcc-14 || brew install gcc@14
           make -j4 CC=gcc-14 BUILD="$HOME/rb-build/gcc" "$HOME/rb-build/gcc/rb_cli"
-          python tools/compiler_parity.py check "$HOME/rb-build/cmake/rb_cli" "$HOME/rb-build/gcc/rb_cli" "$HOME/rb-build/parity"
+          python tools/compiler_parity.py check "$HOME/rb-build/tests/cmake/rb_cli" "$HOME/rb-build/gcc/rb_cli" "$HOME/rb-build/parity" \
+            2>&1 | tee "$RUNNER_TEMP/parity.log" || { tools/ci_summary.sh "$RUNNER_TEMP/parity.log"; exit 1; }
