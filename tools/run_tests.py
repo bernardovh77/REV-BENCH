@@ -24,6 +24,8 @@ zig builds the WebAssembly). The suites:
            add-on is built with MSVC (Windows, through tools/msvc_env.py) or gcc into
            <out>/addon-build, and app/native/test/*.test.mjs (node:test, the null backend
            only) run against it
+  app      the Electron app (stage 124): the snapshot decoder is what tools/gen_snapshot_ts.py
+           makes, then npm ci, typecheck, build and Vitest, in a copy of app/ outside the repo
 
 Builds go to ~/rb-build/tests (or $RB_TESTS_OUT), never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
@@ -41,11 +43,11 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
 TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
-            "cmake": 3600, "host": 1800, "addon": 1800}
+            "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200}
 OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
@@ -74,7 +76,7 @@ def tool(name, env):
 # the programs each suite needs on PATH, and the oldest Node it runs on
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
          "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"],
-         "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"]}
+         "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"], "app": ["node", "npm"]}
 NODE_MAJOR = 22
 CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
@@ -155,6 +157,25 @@ def web_copy():
     return copy / "web"
 
 
+def app_copy():
+    """A copy of app/ (and the contracts' examples its decoder test reads, at the same relative
+    path) in OUT/app-copy, without node_modules, builds or the add-on's folder app/native (the
+    addon suite's); returns the copy's app folder."""
+    copy = OUT / "app-copy"
+    if copy.exists():
+        remove_tree(copy)
+
+    def ignore(directory, names):
+        skipped = set(COPY_IGNORE(directory, names))
+        if Path(directory) == ROOT / "app":
+            skipped |= {"native"} & set(names)
+        return skipped
+
+    shutil.copytree(ROOT / "app", copy / "app", ignore=ignore, symlinks=True)
+    shutil.copytree(ROOT / "contracts" / "examples", copy / "contracts" / "examples")
+    return copy / "app"
+
+
 def kill_tree(process):
     """Kills a process and every process it started."""
     if os.name == "nt":
@@ -215,6 +236,12 @@ def suite_commands(name, state):
         state["web"] = web
         npm = tool("npm", env)
         return [[npm, "ci", "--no-audit", "--no-fund"], [npm, "test"]], web, env
+    if name == "app":
+        app = app_copy()
+        npm = tool("npm", env)
+        return [[sys.executable, str(ROOT / "tools/gen_snapshot_ts.py"), "--check"],
+                [npm, "ci", "--no-audit", "--no-fund"], [npm, "run", "typecheck"],
+                [npm, "run", "build"], [npm, "test"]], app, env
     if name == "cmake":
         build = (OUT / "cmake").as_posix()
         msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []

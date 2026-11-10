@@ -1,0 +1,99 @@
+/*
+ * tokens.css - the design system's values: colours (a dark theme, the default, and a light
+ * one), the type scale, the spacing scale, shapes and timings. Provisional (stage 124): the
+ * look is chosen later (docs/app-design.md section 15), and when it is, THIS FILE and the
+ * base components change, not the panels. Panels, the layout and App.svelte use only these
+ * tokens (tests/design-tokens.test.ts fails the build if they use a colour, a font or a size
+ * of their own), so nothing else holds a literal colour, font or length.
+ *
+ * Every colour token is defined in both themes (a test checks it).
+ */
+
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --rb-color-bg: #0e1014;
+  --rb-color-surface: #161920;
+  --rb-color-surface-raised: #1e222b;
+  --rb-color-border: #2b303b;
+  --rb-color-border-strong: #3d4452;
+  --rb-color-text: #e6e8ec;
+  --rb-color-text-muted: #98a0ae;
+  --rb-color-text-disabled: #5f6675;
+  --rb-color-accent: #4c9eff;
+  --rb-color-accent-text: #07101c;
+  --rb-color-danger: #ff6b6b;
+  --rb-color-warning: #f5b94a;
+  --rb-color-success: #4cc38a;
+  --rb-color-focus: #8dc1ff;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --rb-color-bg: #f4f5f7;
+  --rb-color-surface: #ffffff;
+  --rb-color-surface-raised: #eceef2;
+  --rb-color-border: #d5d9e0;
+  --rb-color-border-strong: #b3bac6;
+  --rb-color-text: #14171c;
+  --rb-color-text-muted: #596070;
+  --rb-color-text-disabled: #9aa1ae;
+  --rb-color-accent: #1a6fd6;
+  --rb-color-accent-text: #ffffff;
+  --rb-color-danger: #c62f2f;
+  --rb-color-warning: #8a5a00;
+  --rb-color-success: #1c7a4f;
+  --rb-color-focus: #1a6fd6;
+}
+
+:root {
+  /* typeface: Inter (@fontsource/inter, loaded in main.ts), then the system's */
+  --rb-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* the type scale */
+  --rb-font-size-xs: 11px;
+  --rb-font-size-sm: 12px;
+  --rb-font-size-md: 14px;
+  --rb-font-size-lg: 16px;
+  --rb-font-size-xl: 20px;
+  --rb-font-size-xxl: 28px;
+  --rb-line-height-tight: 1.2;
+  --rb-line-height-normal: 1.5;
+  --rb-weight-regular: 400;
+  --rb-weight-medium: 500;
+  --rb-weight-semibold: 600;
+  --rb-letter-spacing-title: 0.02em;
+
+  /* the spacing scale */
+  --rb-space-1: 2px;
+  --rb-space-2: 4px;
+  --rb-space-3: 8px;
+  --rb-space-4: 12px;
+  --rb-space-5: 16px;
+  --rb-space-6: 24px;
+  --rb-space-7: 32px;
+  --rb-space-8: 48px;
+
+  /* shapes */
+  --rb-radius-sm: 4px;
+  --rb-radius-md: 6px;
+  --rb-radius-round: 50%;
+  --rb-border-width: 1px;
+  --rb-focus-width: 2px;
+  --rb-focus-offset: 2px;
+
+  /* sizes of the parts of the window */
+  --rb-control-height: 32px;
+  --rb-topbar-height: 64px;
+  --rb-editor-width: 280px;
+  --rb-bottom-height: 220px;
+  --rb-slider-width: 160px;
+  --rb-readout-width: 88px;
+  --rb-select-width: 200px;
+  --rb-notice-max-width: 640px;
+
+  /* timings */
+  --rb-duration-fast: 120ms;
+}

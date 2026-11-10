@@ -1,6 +1,7 @@
 """tools/run_tests.py: its timeouts, its order and its pre-flight check."""
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -65,6 +66,63 @@ class OrderTests(unittest.TestCase):
 
     def test_keep_going_runs_every_suite(self):
         self.assertEqual(self.statuses(True), [("good", "pass"), ("bad", "fail"), ("after", "pass")])
+
+
+class AppSuiteTests(unittest.TestCase):
+    """Stage 124's app suite: a copy of app/ outside the repo, with what its tests read."""
+
+    def fake_repo(self):
+        """A repo of its own in a temp folder, swapped in for run_tests.ROOT and OUT."""
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        root, out = Path(tmp.name, "repo"), Path(tmp.name, "out")
+        for path in ("app/package.json", "app/package-lock.json", "app/src/shared/a.ts",
+                     "app/node_modules/dep/index.js", "app/dist/ui/index.html", "app/native/CMakeLists.txt",
+                     "app/native/build/rb_native.node", "contracts/examples/snapshot-v2-i4-idle.bin"):
+            (root / path).parent.mkdir(parents=True, exist_ok=True)
+            (root / path).write_text("x")
+        for name, value in (("ROOT", root), ("OUT", out)):
+            self.addCleanup(setattr, run_tests, name, getattr(run_tests, name))
+            setattr(run_tests, name, value)
+        return root, out
+
+    def test_the_copy_has_the_app_and_the_contracts_examples_at_their_relative_place(self):
+        _root, out = self.fake_repo()
+        app = run_tests.app_copy()
+        self.assertEqual(app, out / "app-copy" / "app")
+        self.assertTrue((app / "package.json").is_file())
+        self.assertTrue((app / "package-lock.json").is_file())
+        self.assertTrue((app / "src" / "shared" / "a.ts").is_file())
+        self.assertTrue((out / "app-copy" / "contracts" / "examples" / "snapshot-v2-i4-idle.bin").is_file())
+
+    def test_the_copy_leaves_out_modules_builds_and_the_addons_folder(self):
+        self.fake_repo()
+        app = run_tests.app_copy()
+        for folder in ("node_modules", "dist", "native"):
+            self.assertFalse((app / folder).exists(), folder)
+
+    def test_a_second_copy_replaces_the_first(self):
+        root, _out = self.fake_repo()
+        first = run_tests.app_copy()
+        (first / "stale.txt").write_text("old")
+        (root / "app" / "src" / "shared" / "a.ts").write_text("new")
+        second = run_tests.app_copy()
+        self.assertFalse((second / "stale.txt").exists())
+        self.assertEqual((second / "src" / "shared" / "a.ts").read_text(), "new")
+
+    def test_the_suite_is_known_needs_node_and_npm_and_checks_the_generated_decoder_first(self):
+        self.fake_repo()
+        self.assertIn("app", run_tests.SUITES)
+        self.assertEqual(run_tests.NEEDS["app"], ["node", "npm"])
+        self.assertIn("app", run_tests.TIMEOUTS)
+        commands, cwd, _env, _timeout = run_tests.run_suite("app", {})
+        flat = [" ".join(map(str, c if isinstance(c, list) else c[0])) for c in commands]
+        self.assertIn("gen_snapshot_ts.py --check", flat[0])
+        self.assertTrue(any(" ci " in c for c in flat))
+        self.assertTrue(any(c.endswith("typecheck") for c in flat))
+        self.assertTrue(any(c.endswith("build") for c in flat))
+        self.assertTrue(flat[-1].endswith("test"))
+        self.assertEqual(cwd.name, "app")
 
 
 @unittest.skipUnless(fake_program.available(), "on Windows fake programs need a C compiler")
