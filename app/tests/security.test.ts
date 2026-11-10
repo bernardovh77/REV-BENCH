@@ -2,7 +2,8 @@
  * Electron's security checklist, as far as it applies (the list is in src/main/window.ts).
  * Stage 124's exit evidence: "the security settings checked by a test".
  */
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -113,6 +114,33 @@ describe("navigation, windows and permissions (checklist 4 and 5)", () => {
     expect(isAppPage("file:///C:/Windows/system.ini", INDEX)).toBe(false);
     expect(isAppPage("not a url", INDEX)).toBe(false);
     expect(isAppPage(undefined, INDEX)).toBe(false);
+  });
+
+  it("knows its page under another spelling of the same path (an 8.3 short name, letter case)", () => {
+    // CI installed the app under C:\Users\RUNNER~1\...; Chromium reported the page under the
+    // long name, and the window never got its port. The same file must count, however spelt.
+    const canonical = (p: string) => p.replace("RUNNER~1", "runneradmin");
+    const short = "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\rb\\resources\\app.asar\\dist\\ui\\index.html";
+    const long = "file:///C:/Users/runneradmin/AppData/Local/Temp/rb/resources/app.asar/dist/ui/index.html";
+    expect(isAppPage(long, short, canonical)).toBe(true);
+    expect(isAppPage(long.replace("index.html", "other.html"), short, canonical)).toBe(false);
+    if (process.platform === "win32") {
+      expect(isAppPage(long.toUpperCase().replace("FILE:", "file:"), short, canonical)).toBe(true);
+    }
+  });
+
+  it.runIf(process.platform === "win32")("resolves a real 8.3 short name on Windows", () => {
+    const dir = mkdtempSync(join(tmpdir(), "rb long folder name "));
+    try {
+      const page = join(dir, "index.html");
+      writeFileSync(page, "");
+      const short = execFileSync("cmd", ["/d", "/c", "for %I in (index.html) do @echo %~sI"], { cwd: dir, encoding: "utf8" }).trim();
+      expect(short).not.toBe(page);                                 // the volume makes short names
+      expect(isAppPage(pathToFileURL(page).href, short)).toBe(true);
+      expect(isAppPage(pathToFileURL(short).href, page)).toBe(true);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("blocks navigation and redirects to anywhere but the app's page", () => {

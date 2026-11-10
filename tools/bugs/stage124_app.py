@@ -22,6 +22,11 @@ OUT = pathlib.Path(os.environ.get("RB_TESTS_OUT") or pathlib.Path.home() / "rb-b
 
 # name: (file from the repo's root, text, replacement, test file under app/, test name filter)
 BUGS = {
+    "page-path-compared-as-text": (
+        "app/src/main/window.ts",
+        "    return fold(canonical(fileURLToPath(given))) === fold(canonical(rendererIndex));",
+        "    return fileURLToPath(given) === rendererIndex;",
+        "tests/security.test.ts", "knows its page under another spelling of the same path"),
     "decoder-off-by-one-field": (
         "app/src/shared/snapshot-v2.generated.ts",
         'physics_tick: counter(view, 56, "physics_tick"),',

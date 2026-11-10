@@ -12,7 +12,9 @@
  *   6  messages from the page reach the main process only if they come from the app's own page
  *   7  nothing is loaded from the network (the window loads a file; see tests)
  */
-import { pathToFileURL } from "node:url";
+import { realpathSync } from "node:fs";
+import { basename, dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { BrowserWindowConstructorOptions, WebPreferences } from "electron";
 
 /** The dark theme's background (src/ui/design/tokens.css), so the window doesn't flash white. */
@@ -48,13 +50,37 @@ export function mainWindowOptions(preloadPath: string, title: string): BrowserWi
   };
 }
 
-/** True only for the app's own page (the same file; the hash and query may differ). */
-export function isAppPage(url: string | undefined, rendererIndex: string): boolean {
+/**
+ * A file's path in one spelling: the real path of its longest existing folder (Windows expands
+ * 8.3 short names such as RUNNER~1 there), with the rest appended. Folders inside app.asar
+ * aren't real, so the walk stops at the asar file itself.
+ */
+export function canonicalPath(path: string): string {
+  let head = resolve(path);
+  const tail: string[] = [];
+  for (;;) {
+    try {
+      return join(realpathSync.native(head), ...tail);
+    } catch {
+      const parent = dirname(head);
+      if (parent === head) return resolve(path);
+      tail.unshift(basename(head));
+      head = parent;
+    }
+  }
+}
+
+/**
+ * True only for the app's own page: the same file, however its path is spelt (a short name, the
+ * letter case on Windows); the hash and query may differ.
+ */
+export function isAppPage(url: string | undefined, rendererIndex: string, canonical: (path: string) => string = canonicalPath): boolean {
   if (!url) return false;
   try {
-    const wanted = pathToFileURL(rendererIndex);
     const given = new URL(url);
-    return given.protocol === "file:" && given.pathname === wanted.pathname && given.host === wanted.host;
+    if (given.protocol !== "file:") return false;
+    const fold = (p: string) => (process.platform === "win32" ? p.toLowerCase() : p);
+    return fold(canonical(fileURLToPath(given))) === fold(canonical(rendererIndex));
   } catch {
     return false;
   }
