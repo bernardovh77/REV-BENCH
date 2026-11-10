@@ -86,8 +86,8 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [x] **120:** the workspace and toolset upkeep;
    - [x] **121:** the core's public engine-control, telemetry and snapshot API;
    - [x] **122:** builds and CI: Windows (MSVC) and Linux (gcc) on every push, macOS's core weekly;
-   - [~] **118:** a real-time tier for today's engine (declared per preset, misses stated; Bernardo's listening left);
-   - [~] **123:** the real-time audio host (built; the 15-minute real-device run waits for a tier);
+   - [~] **118:** a real-time tier for today's engine (declared per preset; open for its stated misses);
+   - [x] **123:** the real-time audio host;
    - [ ] **124:** the application's foundation;
    - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on Windows.
 2. **Phase B, real sound:**
@@ -104,7 +104,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 124.** Open beside it: 118's listening and its stated misses (the four at idle, the V8s' speed), 123's real-device run.
+**Next stage: 124.** Open beside it: 118's stated misses (the four at idle, the V8s' speed), for a faster machine or core.
 
 ## The stages, in the order they'll be done
 
@@ -118,8 +118,8 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [120](docs/roadmap/14-review-fixes.md#stage-120) | The workspace and toolset upkeep. The 4.7 GB zip and old renders moved into `renders/`. 29 stale planted bugs: 26 retargeted, 3 retired, and `plant_bugs.py --check` in the Python suite. The runner's pre-flight, time limits and `--keep-going`, written test first. The Makefile finds the venv. Current docs and hooks. | 119 |
 | ✅ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, the car and its road load, a dyno the sim owns, settings, 24 telemetry values, snapshot-v2 and events, written test first. `rb_cli sound` on rb.h alone, its 11 drives bit-identical. 28 + 5 planted bugs caught. | 037, 120 |
 | ✅ | [122](docs/roadmap/07-app.md#stage-122) | The CMake build: MSVC 14.51 passes all 262 tests (one change: rb_bench's clock). Cross-compiler parity: bit-close before a random decision can flip, statistically the same after. CI green on Windows and Linux; the first macOS run still to come. | 120 |
-| 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), misses stated: the four 1.05 dB off at idle, the V8s at 1.28× and 1.41× real time on the i7-1355U. Left: Bernardo's listening | 121, 122 |
-| 🟡 | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): `host/`, 59 tests on MSVC and gcc (and under ThreadSanitizer), swaps with 16 ms fades, offline mode bit-identical to rb_cli, 39 planted bugs caught. Left: the 15-minute real-device run, which needs 118's tier | 121, 122 |
+| 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), listened to by Bernardo; open for its stated misses: the four 1.05 dB off at idle, the V8s at 1.28× and 1.41× real time on the i7-1355U | 121, 122 |
+| ✅ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): `host/`, 59 tests on MSVC and gcc (and under ThreadSanitizer), swaps with 16 ms fades, offline mode bit-identical to rb_cli, 39 planted bugs caught; 15 minutes on the real device with zero underruns | 121, 122 |
 | ⬜ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron, the engine process with the Node-API add-on, the sandboxed Svelte window, a provisional design system on tokens, tests and an unsigned Windows installer; the add-on and interface tests also in Linux CI | 122, 123 |
 | ⬜ | [066](docs/roadmap/07-app.md#stage-066) | The playable engine in the app: start, idle, rev, stop, presets, the tier, stereo scenes, keyboard and game-controller throttle, devices, sleep and wake | 037, 118, 124 |
 | ⬜ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata, with atomic rebuilds and undo | 037, 066 |

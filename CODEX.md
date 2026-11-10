@@ -9,13 +9,14 @@ CLAUDE.md and .claude/ have been preserved.
 - [docs/stage-123.md](docs/stage-123.md): `host/` runs the core in real time (render thread,
   miniaudio 0.11.25 in `third_party/`, lock-free channels, swaps with fades, the clock, an
   offline mode, instrumentation). `run_tests.py host`; `make TSAN=1 host-test` in Linux CI.
-  `rb_cli sound --trace FILE` records a drive's commands. Left: the 15-minute real-device run.
+  `rb_cli sound --trace FILE` records a drive's commands. The 15-minute real-device run passed
+  (0 underruns; `rb_host_stress --quality tier --presets ...`).
 - [docs/stage-118.md](docs/stage-118.md): `rb_bench_render` and `tools/bench_render.py` time the
   app's render path; speed-ups changed no bit (`core/src/fastmath.h`: `rb_finite`, `rb_min`,
   `rb_max`, `rb_clamp` in the per-step code; `gas_inline.h`; SSE2 in `rb_gas_init`). **The
   tier is per preset** (`rb_preset_quality`; `RB_QUALITY_BALANCED`, physics 96 kHz and pipes
   48 kHz, for the four), declared with its misses: the four 1.05 dB off at idle, the V8s at
-  1.28 and 1.41 times real time on the i7-1355U. Bernardo's listening is left.
+  1.28 and 1.41 times real time on the i7-1355U. Bernardo listened: decent; realism is phase B's.
 - Six old planted bugs targeted `isfinite` text that 118 changed; retargeted at the merge.
 - **Next stage: 124.**
 

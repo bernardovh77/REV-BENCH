@@ -1,7 +1,7 @@
 # Stage 118 — A real-time tier for today's engine
 
 **Status:** the tier is declared, per preset, with what each misses stated (2026-11-09,
-Bernardo's decision); Bernardo's blind listening is still to come. The benchmark, the profile
+Bernardo's decision), and Bernardo has listened (below). The benchmark, the profile
 and the speed-ups (every render bit-identical, with MSVC and gcc) are done, and the reviewer's
 baseline on an idle laptop is below. On this laptop only the six and the boxer meet both the
 speed and the tolerances; the four and the two V8s each miss one, as "The declared tier" says.
@@ -363,6 +363,12 @@ The provisional figures above stand: an idle machine moved them by a few per cen
 block in a cell is 2 to 6 times the mean (up to 15 ms for the cross-plane V8's rev at high
 quality, 21 ms on an efficiency core): the host's ring has to absorb those. No tier is
 declared; the choice among the options under "The tier" is Bernardo's.
+
+## Bernardo's listening (2026-11-09)
+
+Bernardo listened to the renders (the pass-by scene, the engines going past the listener):
+"decent quality wise", with the realism still to be worked on. That realism is phase B's
+(039, 050–063), which these stages did not touch: every default render is bit-identical.
 
 ## Listening files (Bernardo's blind A/B)
 

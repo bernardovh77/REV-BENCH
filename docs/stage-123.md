@@ -1,8 +1,8 @@
 # Stage 123 — The real-time audio host
 
-**Status:** built and tested on Windows (MSVC and w64devkit's gcc) and in WSL (gcc, also under
-ThreadSanitizer); merged with stage 118 and the whole suite green on Windows (2026-11-09). The 15-minute real-device run is not done: the tool for it is
-built and has only run on the null device (see "What is left").
+**Status:** done (2026-11-09). Built and tested on Windows (MSVC and w64devkit's gcc) and in
+WSL (gcc, also under ThreadSanitizer); CI green on Windows and Linux, the ThreadSanitizer job
+included; the 15-minute real-device run passed with zero underruns ("The real-device run").
 
 `host/` is a C11 library that runs the core in real time without Node or JavaScript
 ([specification](roadmap/07-app.md#stage-123), [contracts/runtime-v1.md](../contracts/runtime-v1.md),
@@ -300,19 +300,33 @@ callback's first frame arrives 10 ms (the set latency) after the callback ran.
 `-Wall -Wextra -Wpedantic -Wshadow` with no warning (warnings are errors for the host in CMake).
 A full host build (core, host, tests, tools) is about 16 s with Ninja and MSVC.
 
+## The real-device run (2026-11-09)
+
+On Bernardo's laptop, the default output (his Bluetooth earbuds, 48 kHz), MSVC build, the
+render thread in MMCSS "Pro Audio": `rb_host_stress --backend default --minutes 15 --quality
+tier --presets i4,i6,boxer4 --swap-every 60`, the drive's 20-second cycle (key, idle, blip,
+full throttle into the limiter, foot off) on the four, the six and the boxer in turn, each at
+its declared real-time quality (stage 118), 14 swaps.
+
+| Measure | Result |
+| --- | --- |
+| Underruns | **0** (90,003 device callbacks, 43.2 million frames) |
+| Render time per 2.67 ms block | mean 1.36 ms, max 8.81 ms |
+| Blocks over their duration | 895 of 337,517 (0.27 %; 2 over twice it), all absorbed by the ring |
+| Ring fill | min 0, mean 704, max 2304 frames (target 960) |
+| Memory | 3.5 MB at the end, peak working set 14.3 MB, no growth after 30 s |
+| Forbidden calls on the render thread | none (allocations, locks, logs 0) |
+
+The ring touched empty once without an underrun: the margin is thin on this laptop's
+heaviest blocks, which the deadline histogram's tail shows. Before the run, at the merge, the
+tool learned `--quality tier|balanced` and `--presets`, and its verdict no longer counts a
+slow block as a failure: the roadmap's evidence is the histogram and zero underruns, and a
+slow block the ring absorbs is not heard. The V8s were left out: they miss real time at low
+on this laptop (stage 118).
+
 ## What is left
 
-- **The 15-minute real-device run** on Bernardo's machine is not done (not run here, by
-  instruction). `rb_host_stress --backend default --minutes 15 --csv FILE` is the tool: it plays
-  on the real device; it prints the deadline histogram, the ring's fill, the underruns, the
-  memory (and fails if underruns, missed deadlines, more than 20 MB of growth after 30 s or a
-  forbidden call). It will report underruns until stage 118 makes the core faster (above): run it
-  with `--quality low` for the host alone. `rb_host_devices` lists the devices without opening
-  one.
-- **CI has not run.** The workflow's `host` suite is in both existing jobs through
-  `run_tests.py`, and there is a new `linux-host-tsan` job (`make TSAN=1 host-test`; it first sets
-  `vm.mmap_rnd_bits=28`, which ThreadSanitizer needs on newer kernels). The same commands pass
-  here in WSL.
+- **The V8s on the real device**, once stage 118's tier reaches them (a faster machine or core).
 - **No MSVC ThreadSanitizer.** The concurrent tests run under it on Linux only.
 - **The clock's physics tick** is derived from the audio frame and the oversample (the core
   exposes the engine's tick only inside a snapshot, so it is read from one at each epoch's

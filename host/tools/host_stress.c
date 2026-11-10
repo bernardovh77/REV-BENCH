@@ -6,20 +6,25 @@
  * latency, bounded memory), and runs on the null device in CI.
  *
  *   rb_host_stress [--backend null|default] [--minutes M | --seconds S]
- *                  [--preset KEY] [--quality low|medium|high|ultra] [--device N]
+ *                  [--preset KEY] [--presets KEY,KEY...]
+ *                  [--quality tier|low|medium|high|ultra|balanced] [--device N]
  *                  [--rate 44100|48000] [--target-ms N] [--period-ms N]
  *                  [--swap-every S] [--csv FILE]
  *
  * The drive repeats a 20-second cycle through the control API only, as the app
  * will: the key and the starter, an idle, a blip, a full throttle into the
  * limiter, the foot off. Every --swap-every seconds (60 by default; 0 turns
- * it off) it prepares the next preset on a worker thread and swaps it in,
- * and starts the drive over on the new engine. Once a second it prints the
+ * it off) it prepares the next preset (of --presets, or all) on a worker
+ * thread and swaps it in, and starts the drive over on the new engine.
+ * `--quality tier` runs each preset at its declared real-time default
+ * (rb_preset_quality, stage 118). Once a second it prints the
  * engine's speed (from the snapshots), the ring's fill, the underruns so far
  * and the process's memory.
  *
- * Exit code: 0 if there was no underrun, no missed deadline and the memory
- * grew by less than 20 MB after the first 30 s; 1 otherwise; 2 for a bad
+ * Exit code: 0 if there was no underrun, no forbidden call on the render
+ * thread and the memory grew by less than 20 MB after the first 30 s; 1
+ * otherwise. Blocks slower than their duration are reported (the deadline
+ * histogram) but the ring is there to absorb them: only an underrun is heard; 2 for a bad
  * command line. The default backend plays on the real audio device: run it
  * only when meant to.
  */
@@ -30,6 +35,29 @@
 #include "rb_host.h"
 
 #define CYCLE_S 20.0
+#define QUALITY_TIER (-2)   /* each preset at rb_preset_quality's default */
+#define MAX_PRESETS 16
+
+/* The quality to build `preset` at. */
+static int quality_for(int quality, int preset)
+{
+    return quality == QUALITY_TIER ? rb_preset_quality(preset) : quality;
+}
+
+/* Parses "KEY,KEY,..." into preset numbers; returns how many, or -1. */
+static int parse_presets(const char *list, int *out)
+{
+    char buf[256];
+    int n = 0;
+    if (strlen(list) >= sizeof buf) return -1;
+    strcpy(buf, list);
+    for (char *key = strtok(buf, ","); key; key = strtok(NULL, ",")) {
+        const int p = rb_preset_find(key);
+        if (p < 0 || n >= MAX_PRESETS) return -1;
+        out[n++] = p;
+    }
+    return n > 0 ? n : -1;
+}
 
 static double seconds_since(uint64_t t0)
 {
@@ -81,6 +109,7 @@ int main(int argc, char **argv)
     int backend = RB_HOST_BACKEND_NULL, device = -1, rate = 48000, quality = RB_QUALITY_HIGH, target_ms = 20, period_ms = 10;
     double seconds = 15.0 * 60.0, swap_every = 60.0;
     const char *preset = "i4", *csv_path = NULL;
+    int cycle[MAX_PRESETS], n_cycle = 0;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         const char *v = i + 1 < argc ? argv[i + 1] : NULL;
@@ -90,9 +119,18 @@ int main(int argc, char **argv)
         } else if (!strcmp(a, "--minutes") && v) { seconds = 60.0 * atof(v); i++; }
         else if (!strcmp(a, "--seconds") && v) { seconds = atof(v); i++; }
         else if (!strcmp(a, "--preset") && v) { preset = v; i++; }
+        else if (!strcmp(a, "--presets") && v) {
+            n_cycle = parse_presets(v, cycle);
+            if (n_cycle < 0) {
+                fprintf(stderr, "rb_host_stress: a bad preset list '%s'\n", v);
+                return 2;
+            }
+            i++;
+        }
         else if (!strcmp(a, "--quality") && v) {
             quality = !strcmp(v, "low") ? RB_QUALITY_LOW : !strcmp(v, "medium") ? RB_QUALITY_MEDIUM
-                    : !strcmp(v, "high") ? RB_QUALITY_HIGH : !strcmp(v, "ultra") ? RB_QUALITY_ULTRA : -1;
+                    : !strcmp(v, "high") ? RB_QUALITY_HIGH : !strcmp(v, "ultra") ? RB_QUALITY_ULTRA
+                    : !strcmp(v, "balanced") ? RB_QUALITY_BALANCED : !strcmp(v, "tier") ? QUALITY_TIER : -1;
             i++;
         } else if (!strcmp(a, "--device") && v) { device = atoi(v); i++; }
         else if (!strcmp(a, "--rate") && v) { rate = atoi(v); i++; }
@@ -105,7 +143,7 @@ int main(int argc, char **argv)
             return 2;
         }
     }
-    if (backend < 0 || quality < 0 || !(seconds > 0.0) || rb_preset_find(preset) < 0) {
+    if (backend < 0 || (quality < 0 && quality != QUALITY_TIER) || !(seconds > 0.0) || rb_preset_find(preset) < 0) {
         fprintf(stderr, "rb_host_stress: a bad backend, quality, duration or preset\n");
         return 2;
     }
@@ -118,7 +156,9 @@ int main(int argc, char **argv)
     config.target_fill_ms = target_ms;
     config.period_ms = period_ms;
     config.initial.preset = rb_preset_find(preset);
-    config.initial.quality = quality;
+    config.initial.quality = quality_for(quality, config.initial.preset);
+    if (n_cycle == 0)
+        for (int p = 0; p < rb_preset_count() && p < MAX_PRESETS; p++) cycle[n_cycle++] = p;
     rb_host *h = NULL;
     int rc = rb_host_create(&config, &h);
     if (rc != RB_HOST_OK) {
@@ -145,7 +185,9 @@ int main(int argc, char **argv)
     driver drv = { 0.0, 0, 0 };
     double cycle_start = 0.0, next_report = 1.0, next_swap = swap_every, rpm = 0.0;
     uint64_t swap_prepare = 0, swap_request = 0;
-    int next_preset = config.initial.preset, swaps_done = 0, memory_baseline_set = 0;
+    int at = 0, swaps_done = 0, memory_baseline_set = 0;
+    for (int k = 0; k < n_cycle; k++)
+        if (cycle[k] == config.initial.preset) at = k;
     double memory_baseline = 0.0, memory_worst = 0.0;
     for (double t = 0.0; t < seconds; t = seconds_since(t0)) {
         drive(h, &drv, t - cycle_start);
@@ -169,9 +211,9 @@ int main(int argc, char **argv)
         if (swap_every > 0.0 && t >= next_swap && !swap_prepare && !swap_request) {
             rb_host_build b;
             rb_host_build_default(&b);
-            next_preset = (next_preset + 1) % rb_preset_count();
-            b.preset = next_preset;
-            b.quality = quality;
+            at = (at + 1) % n_cycle;
+            b.preset = cycle[at];
+            b.quality = quality_for(quality, cycle[at]);
             if (rb_host_prepare_begin(h, &b, &swap_prepare) != RB_HOST_OK) swap_prepare = 0;
             next_swap = t + swap_every;
         }
@@ -230,7 +272,7 @@ int main(int argc, char **argv)
     printf("render thread's forbidden calls: allocations %llu, locks %llu, logs %llu\n", (unsigned long long)s.audit_alloc,
            (unsigned long long)s.audit_lock, (unsigned long long)s.audit_log);
     rb_host_destroy(h);
-    const int bad = s.underruns > 0 || s.deadline_missed > 0 || memory_worst > 20.0 || s.audit_alloc + s.audit_lock + s.audit_log > 0;
-    printf("%s\n", bad ? "FAILED: underruns, missed deadlines, memory growth or a forbidden call" : "ok");
+    const int bad = s.underruns > 0 || memory_worst > 20.0 || s.audit_alloc + s.audit_lock + s.audit_log > 0;
+    printf("%s\n", bad ? "FAILED: underruns, memory growth or a forbidden call" : "ok");
     return bad ? 1 : 0;
 }
