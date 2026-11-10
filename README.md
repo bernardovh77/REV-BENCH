@@ -12,7 +12,7 @@ interests as me and give a purpose to my learnings.
 **Note:** due to the size and complexity of this project, the developing is being made with the assistance of AI models such as Claude Code and Codex that are being tasked with the heavier coding and oriented through my feedback regarding the quality of their output. For further information, feel free to check the .md files that are disposed on the repo.
 
 
-**Status (2026-11-09):** [the roadmap](PLAN.md) has stages 001–049, 112–117 and 119–122 done, 118 and 123 mostly, with a
+**Status (2026-11-09):** [the roadmap](PLAN.md) has stages 001–049, 112–117 and 119–123 done, 118 and 124 mostly, with a
 [crosswalk for every old ID](docs/roadmap/legacy-map.md). What exists today:
 - the engine, natively: its physics, five presets with researched exhausts, and its sound
   rendered as a listener around the car hears it, in mono or in stereo scenes;

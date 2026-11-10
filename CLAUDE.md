@@ -363,6 +363,11 @@
     host, whose render thread runs the core and fills a ring that miniaudio plays;
   - a sandboxed Svelte 5 + TypeScript renderer for the interface and Three.js 3D, talking to the
     engine process through one MessagePort (commands, acks, snapshot-v2 snapshots).
+- Stage 124 built it (docs/stage-124.md): `app/native/` (the add-on, `python tools/build_addon.py`),
+  `app/src/{main,engine,preload,ui,shared}`; the contracts `app/src/shared/addon.ts` and
+  `protocol.ts` change on both sides at once. Suites `addon`, `app`, `app-e2e` (never the real
+  audio device); `tools/package_app.py` makes the installer. The engine process builds every
+  engine with `hold` 0: the core's default holds the crank still.
 - No physics or audio in JavaScript. The render thread never allocates, locks or logs. Rebuilds
   are prepared off the thread and swapped at a block boundary with a fade (runtime-v1).
 - Windows first (app-design §1): until stage 126 every app stage is finished and tested on

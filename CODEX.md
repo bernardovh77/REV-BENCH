@@ -4,6 +4,19 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-09: Stage 124, the application's foundation (two Sonnet builders, reviewed by Claude Opus)
+
+- [docs/stage-124.md](docs/stage-124.md) (and docs/stage-124-addon.md). `app/`: Electron 45, the
+  engine utility process loading `app/native/`'s Node-API add-on (`rb_native.node`, built by
+  `tools/build_addon.py`; cmake-js pinned in app/native/build-tools), a sandboxed Svelte 5
+  window, contracts `app/src/shared/addon.ts` and `protocol.ts`, the snapshot decoder generated
+  by `tools/gen_snapshot_ts.py`. Suites `addon`, `app`, `app-e2e`; `tools/package_app.py`
+  builds the unsigned installer and zip. The engine process builds every engine with `hold` 0
+  (the core's default holds the crank). Left: CI's first run, the icon, the real-device check.
+- Also: `tools/speed_check.py` for every stage that touches core/, and the gap check before
+  every stage (PLAN.md, "How a stage is done").
+- **Next stage: 066** once 124's checks are in.
+
 ## 2026-11-09: Stages 123 and 118, the audio host and the speed-ups (built by Sonnet agents, reviewed by Claude Opus)
 
 - [docs/stage-123.md](docs/stage-123.md): `host/` runs the core in real time (render thread,
