@@ -17,6 +17,11 @@
   Playwright test in both modes (dev and `E2E_PREVIEW=1`); `python tools/run_tests.py` runs them
   all, on Windows or WSL (docs/workspace.md). Stages that touch `core/` also do the
   sound check (PLAN.md, "How a stage is done", step 6).
+- **Before a stage, check the open gaps** (PLAN.md's 🟡 rows, stage docs' "What is left") and
+  say which could influence it: those are fixed first, the rest named as safe to leave
+  (Bernardo, 2026-11-09). **A stage that touches `core/` runs `tools/speed_check.py`** (PLAN.md,
+  "How a stage is done", 6b): a median slowdown over 3 % fails, and a deliberate one is stated
+  with the tier it affects.
 - Check that new physics tests can fail: plant deliberate bugs in a copy and note in the stage doc
   which tests catch them. `python tools/plant_bugs.py STAGE WORKDIR NAME...` (or `all`; `--list`)
   applies each bug of `tools/bugs/stageSTAGE.py` (a stage's own table: start from the last one's)

@@ -315,7 +315,10 @@ anything, goes into the engine.
 
 1. Say "do stage 120" or "next stage". Read this file, `CLAUDE.md` and `CODEX.md`'s latest
    entry, then the stage's specification in `docs/roadmap/`.
-2. Do only that stage. Follow its dependencies, not just the row above it.
+2. **Check the open gaps first** (the 🟡 rows, each stage doc's "What is left"): say which
+   could influence this stage. Any that could is fixed before the stage starts (Bernardo,
+   2026-11-09); the rest are named as safe to leave. Then do only that stage. Follow its
+   dependencies, not just the row above it.
 3. End with all tests green:
    - native: `make test`;
    - Python: the tools' unit tests;
@@ -329,6 +332,11 @@ anything, goes into the engine.
 6. **The sound check:** a change in `core/` also renders the affected sound and compares it with
    the real recordings (`tools/compare_real.py`, `tools/orders.py`). Bernardo's ears decide
    realism.
+6b. **The speed check:** a change in `core/` also runs `python tools/speed_check.py [BASE]` (BASE
+   defaults to the last commit): both builds timed interleaved on the performance cores, every
+   preset at low, balanced and high. A median slowdown beyond 3 % fails it. A stage whose
+   physics makes the engine slower on purpose says so in its doc, with the numbers, and checks
+   the tier (stage 118's table) still holds or states what it now misses.
 7. Write `docs/stage-NNN.md`, mark the stage here with a one-line note, and add a short entry to
    `CODEX.md`. Then commit (one per stage) and push.
 8. New work that no stage covers gets the next unused number (127, ...) and a place in the order
