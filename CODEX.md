@@ -12,7 +12,7 @@ CLAUDE.md and .claude/ have been preserved.
   window, contracts `app/src/shared/addon.ts` and `protocol.ts`, the snapshot decoder generated
   by `tools/gen_snapshot_ts.py`. Suites `addon`, `app`, `app-e2e`; `tools/package_app.py`
   builds the unsigned installer and zip. The engine process builds every engine with `hold` 0
-  (the core's default holds the crank). Icon: Bernardo chose B (piston and crank). Left: CI's first run, the real-device check.
+  (the core's default holds the crank). Icon: Bernardo chose B (piston and crank). CI green on its third run (a short-name path bug, then an upload path). Left: the real-device check.
 - Also: `tools/speed_check.py` for every stage that touches core/, and the gap check before
   every stage (PLAN.md, "How a stage is done").
 - **Next stage: 066** once 124's checks are in.

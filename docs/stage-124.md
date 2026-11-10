@@ -206,6 +206,12 @@ whose install path has a short name would have hit it. It now compares the two a
 `security.test.ts` reproduces it with a real short name on Windows, and the planted bug
 `page-path-compared-as-text` is caught.
 
+**Then the upload:** the third problem was CI's own: the installer was built into
+`~/rb-build/tests/package` and uploaded from `~/rb-build/package`. The step now names its folder
+in `$RUNNER_TEMP` and the upload takes it from there; `test_package_app.py` checks they agree.
+**CI's third run (7e06ad1) is green on every job**, the installer and zip uploaded as
+`rev-bench-windows-x64`.
+
 ## 7. CI (`.github/workflows/ci.yml`; actions stay pinned to commits, nothing new is used)
 
 - **Windows**: the run of every suite but the browser's now includes `addon` (MSVC), `app` and
