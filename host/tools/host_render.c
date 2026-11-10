@@ -64,8 +64,10 @@ int main(int argc, char **argv)
         fprintf(stderr, "rb_host_render: %s\n", error);
         return 2;
     }
+    /* read before the trace is freed: the summary below still needs them */
     const int channels = rb_trace_channels(trace);
-    wav_sink sink = { wav_open(out_path, rb_trace_rate(trace), channels, use_float ? WAV_FLOAT32 : WAV_PCM16), 0, 0 };
+    const int rate = rb_trace_rate(trace);
+    wav_sink sink = { wav_open(out_path, rate, channels, use_float ? WAV_FLOAT32 : WAV_PCM16), 0, 0 };
     if (!sink.wav) {
         fprintf(stderr, "rb_host_render: cannot write %s (does the folder exist?)\n", out_path);
         rb_trace_free(trace);
@@ -83,7 +85,7 @@ int main(int argc, char **argv)
         return 1;
     }
     printf("rendered %lld frames at %d Hz (%d channel%s) through the host's offline mode\n", sink.frames,
-           rb_trace_rate(trace), channels, channels > 1 ? "s" : "");
+           rate, channels, channels > 1 ? "s" : "");
     printf("wrote %s (%s)\n", out_path, use_float ? "32-bit float" : "16-bit PCM, dithered");
     return 0;
 }

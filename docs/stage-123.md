@@ -324,6 +324,11 @@ slow block as a failure: the roadmap's evidence is the histogram and zero underr
 slow block the ring absorbs is not heard. The V8s were left out: they miss real time at low
 on this laptop (stage 118).
 
+After the run the host suite crashed now and then: `rb_host_render` printed its summary from
+the trace after freeing it (a use after free in the tool, not the host; its WAVs were already
+written and closed, so parity always held). It reads the rate and channels first now; 30
+renders of the three traces that crashed ran clean.
+
 ## What is left
 
 - **The V8s on the real device**, once stage 118's tier reaches them (a faster machine or core).
