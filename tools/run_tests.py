@@ -19,6 +19,11 @@ zig builds the WebAssembly). The suites:
   host     the real-time audio host (stage 123), in the cmake suite's build folder:
            its tests on miniaudio's null device, then rb_cli's drives against the
            host's offline renders of their command traces (tools/host_parity.py)
+  addon    the Node-API add-on (stage 124, app/native/): cmake-js 8.0.0 and node-api-headers
+           1.9.0 are installed with npm ci in a folder outside the repo (<out>/addon-node), the
+           add-on is built with MSVC (Windows, through tools/msvc_env.py) or gcc into
+           <out>/addon-build, and app/native/test/*.test.mjs (node:test, the null backend
+           only) run against it
 
 Builds go to ~/rb-build/tests (or $RB_TESTS_OUT), never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
@@ -36,11 +41,11 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
 TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
-            "cmake": 3600, "host": 1800}
+            "cmake": 3600, "host": 1800, "addon": 1800}
 OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
@@ -69,7 +74,7 @@ def tool(name, env):
 # the programs each suite needs on PATH, and the oldest Node it runs on
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
          "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"],
-         "host": ["cmake", "ninja"]}
+         "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"]}
 NODE_MAJOR = 22
 CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
@@ -99,7 +104,7 @@ def preflight(suites, env):
         if have < CMAKE_LEAST:
             problems.append(f"{first or 'cmake'} ({cmake}); the cmake suite needs "
                             f"{CMAKE_LEAST[0]}.{CMAKE_LEAST[1]} or newer (tools/requirements-dev.txt)")
-    if ("cmake" in suites or "host" in suites) and os.name == "nt":
+    if ("cmake" in suites or "host" in suites or "addon" in suites) and os.name == "nt":
         import msvc_env
         if not msvc_env.install_path():
             problems.append("no Visual Studio with the C/C++ x64 tools for the cmake suite (docs/workspace.md)")
@@ -227,6 +232,8 @@ def suite_commands(name, state):
                 msvc + ["ctest", "--test-dir", build, "-L", "host", "--output-on-failure", "-V"],
                 [sys.executable, str(ROOT / "tools/host_parity.py"), f"{build}/rb_cli{exe}",
                  f"{build}/rb_host_render{exe}", (OUT / "host-parity").as_posix()]], ROOT, env
+    if name == "addon":
+        return addon_commands(env), ROOT, addon_env(env)
     if name == "e2e":
         web = state.get("web") or web_copy()
         npm, npx = tool("npm", env), tool("npx", env)
@@ -238,6 +245,31 @@ def suite_commands(name, state):
         preview = dict(env, E2E_PREVIEW="1")
         return commands + [[npx, "playwright", "test"], ([npx, "playwright", "test"], preview)], web, env
     raise ValueError(name)
+
+
+def addon_commands(env):
+    """The add-on suite's commands (stage 124): install cmake-js and node-api-headers outside
+    the repo from app/native/build-tools (package.json and its lock, copied: npm ci never runs
+    inside the repo), build app/native with cmake-js into <out>/addon-build (Ninja; MSVC on
+    Windows through tools/msvc_env.py, gcc elsewhere), then run its node:test files one at a
+    time (each makes real-time threads, so they must not compete)."""
+    tools = OUT / "addon-node"
+    tools.mkdir(parents=True, exist_ok=True)
+    for name in ("package.json", "package-lock.json"):
+        shutil.copy2(ROOT / "app/native/build-tools" / name, tools / name)
+    npm, node = tool("npm", env), tool("node", env)
+    msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
+    cmake_js = str(tools / "node_modules/cmake-js/bin/cmake-js")
+    tests = sorted(str(p) for p in (ROOT / "app/native/test").glob("*.test.mjs"))
+    return [[npm, "ci", "--no-audit", "--no-fund", "--prefix", str(tools)],
+            msvc + [node, cmake_js, "build", "-d", str(ROOT / "app/native"), "-O", str(OUT / "addon-build"),
+                    "-G", "Ninja"],
+            [node, "--test", "--test-concurrency=1", *tests]]
+
+
+def addon_env(env):
+    """The environment of the add-on's tests: where the built add-on is."""
+    return dict(env, RB_ADDON=str(OUT / "addon-build" / "rb_native.node"))
 
 
 def run_suites(names, prepare, keep_going):

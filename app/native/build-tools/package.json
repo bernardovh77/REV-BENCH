@@ -1,0 +1,14 @@
+{
+  "name": "rb-native-build-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "What builds the Node-API add-on (stage 124): cmake-js and the Node-API headers, pinned. tools/run_tests.py addon copies this folder OUTSIDE the repo and runs npm ci there (CLAUDE.md: never npm install inside the repo); nothing here is shipped with the app. Licences for THIRD_PARTY_NOTICES: cmake-js MIT, node-api-headers MIT, and cmake-js's dependencies in package-lock.json (MIT, ISC, BlueOak-1.0.0, BSD-2-Clause/MIT/Apache-2.0).",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "cmake-js": "8.0.0",
+    "node-api-headers": "1.9.0"
+  },
+  "overrides": {
+    "semver": "7.8.5"
+  }
+}
