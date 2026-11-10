@@ -111,6 +111,8 @@ enum {
     RB_QUALITY_HIGH,     /* physics at about 192 kHz, the pipes at 48 kHz: the
                             default, and what the tests and renders use       */
     RB_QUALITY_ULTRA,    /* optional: physics 384 kHz, pipes 96 kHz, finer grid */
+    RB_QUALITY_BALANCED, /* physics at about 96 kHz, the pipes at 48 kHz (stage
+                            118: the four's real-time default)               */
     RB_QUALITY_COUNT
 };
 
@@ -416,6 +418,10 @@ int         rb_preset_count(void);
 const char *rb_preset_key(int preset);    /* "i4", "v8-cross", ...; NULL if unknown */
 const char *rb_preset_name(int preset);   /* "2.0 L inline-4", ...; NULL if unknown */
 int         rb_preset_find(const char *key);           /* preset number, or RB_ERR_ID */
+/* The preset's real-time default quality (RB_QUALITY_*, stage 118's tier,
+ * chosen on the baseline machine: docs/stage-118.md says what each one
+ * misses), or RB_ERR_ID. A faster machine may run a higher one. */
+int         rb_preset_quality(int preset);
 int         rb_load_preset(rb_sim *sim, int preset);   /* RB_OK, RB_ERR_ARG or RB_ERR_ID */
 /* The preset the engine was built from (changing fields since doesn't change
  * it), or RB_ERR_ARG. */

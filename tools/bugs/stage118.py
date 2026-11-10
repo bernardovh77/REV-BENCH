@@ -12,6 +12,7 @@ SPEED = ["test_speed_"]
 GAS = ["test_speed_gas_init", "test_gas_matches", "test_gas_textbook", "test_gas_u_and", "test_gas_mixing"]
 PIPE = ["test_pipe_", "test_speed_momentum"]
 QUALITY = ["test_core_quality"]
+TIER = ["test_core_preset_quality"]
 
 BUGS = {
     # the SSE2 mixture (gas.c): two coefficients at a time must give the scalar bits
@@ -71,7 +72,24 @@ BUGS = {
     # matter; the render hashes would not see it either)
     # the tiers: a faster default, silently
     'default-quality-gets-the-low-pipe-rate': ("core/src/rb_sim.c",
-        "                   : quality == RB_QUALITY_HIGH ? RB_PIPE_RATE : 0.5 * RB_PIPE_RATE;",
-        "                   : 0.5 * RB_PIPE_RATE;",
+        "                   : (quality == RB_QUALITY_HIGH || quality == RB_QUALITY_BALANCED) ? RB_PIPE_RATE",
+        "                   : (quality == RB_QUALITY_BALANCED) ? RB_PIPE_RATE",
         QUALITY, 600),
+    # the declared tier: the balanced quality's rates and each preset's default
+    'balanced-pipes-halved': ("core/src/rb_sim.c",
+        "                   : (quality == RB_QUALITY_HIGH || quality == RB_QUALITY_BALANCED) ? RB_PIPE_RATE",
+        "                   : (quality == RB_QUALITY_HIGH) ? RB_PIPE_RATE",
+        QUALITY + TIER, 600),
+    'balanced-physics-doubled': ("core/src/rb_sim.c",
+        "                         : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED) ? 96000.0",
+        "                         : (quality == RB_QUALITY_LOW) ? 96000.0",
+        QUALITY + TIER, 600),
+    'tier-four-at-low': ("core/src/presets.c",
+        '{ "i4", "2.0 L inline-4", inline4, RB_QUALITY_BALANCED },',
+        '{ "i4", "2.0 L inline-4", inline4, RB_QUALITY_LOW },',
+        TIER, 600),
+    'tier-past-the-last-preset': ("core/src/presets.c",
+        "    return (preset >= 0 && preset < N_PRESETS) ? PRESETS[preset].quality : RB_ERR_ID;",
+        "    return (preset >= 0 && preset <= N_PRESETS) ? PRESETS[preset % N_PRESETS].quality : RB_ERR_ID;",
+        TIER, 600),
 }

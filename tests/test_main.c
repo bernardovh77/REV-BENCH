@@ -60,6 +60,7 @@ void test_core_fuzz_output_bounded(void);
 void test_core_render_bad_args(void);
 void test_core_host_helpers(void);
 void test_core_quality(void);
+void test_core_preset_quality(void);
 /* ---- gas properties (tests/test_gas.c) ---- */
 /* ---- stage 118's speed-ups (tests/test_speed.c) ---- */
 void test_speed_gas_init_is_bit_exact(void);
@@ -354,6 +355,7 @@ static const struct {
     T(test_core_render_bad_args),
     T(test_core_host_helpers),
     T(test_core_quality),
+    T(test_core_preset_quality),
     T(test_speed_gas_init_is_bit_exact),
     T(test_speed_finite_is_isfinite),
     T(test_speed_min_max_clamp_match_the_library),

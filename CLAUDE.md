@@ -262,7 +262,8 @@
 - The quality setting (stage 13): `rb_config.pipe_rate` (0 = 48 kHz; faster than the physics means
   every step), and `RB_QUALITY_LOW/MEDIUM/HIGH` (`rb_config_quality`, `rb_create_with_quality`):
   physics 96/192/192 kHz, pipes 24/24/48 kHz. High is the default, and what the tests and renders
-  use. `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
+  use. Stage 118 appended `RB_QUALITY_BALANCED` (96 kHz, pipes 48 kHz) and each preset's
+  real-time default, `rb_preset_quality` (docs/stage-118.md, "The declared tier"). `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
   pipe_rate)`; `rb_engine_init` is 48 kHz. Pipes at 24 kHz move the torque by under 0.3 %.
 - Speed: `make bench` (native/rb_bench.c) and `make bench-wasm` (the same as WASI WebAssembly,
   run by tools/bench_wasm.mjs) time each preset held wide open at 3000 rpm. Timings in Claude's

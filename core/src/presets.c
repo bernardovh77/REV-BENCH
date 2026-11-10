@@ -19,6 +19,7 @@ typedef struct preset_info {
     const char *key;     /* stable identifier for the UI and the CLI */
     const char *name;    /* for people                                */
     void (*build)(rb_engine_desc *d);
+    int quality;         /* the real-time default (RB_QUALITY_*)    */
 } preset_info;
 
 /* Valves: count per cylinder, head diameter, lift, duration, and the lobe
@@ -274,12 +275,14 @@ static void boxer4(rb_engine_desc *d)
             2.6e-4 * 43.0 / 46.0, 3.1e-4 * 43.0 / 46.0, 6500.0);
 }
 
+/* The last column is each preset's real-time default quality (stage 118's
+ * tier, on the baseline machine: docs/stage-118.md has what each misses). */
 static const preset_info PRESETS[] = {
-    { "i4", "2.0 L inline-4", inline4 },
-    { "i6", "3.0 L inline-6", inline6 },
-    { "v8-cross", "5.0 L cross-plane V8", v8_cross },
-    { "v8-flat", "4.5 L flat-plane V8", v8_flat },
-    { "boxer4", "2.0 L flat-4 (boxer)", boxer4 },
+    { "i4", "2.0 L inline-4", inline4, RB_QUALITY_BALANCED },
+    { "i6", "3.0 L inline-6", inline6, RB_QUALITY_LOW },
+    { "v8-cross", "5.0 L cross-plane V8", v8_cross, RB_QUALITY_LOW },
+    { "v8-flat", "4.5 L flat-plane V8", v8_flat, RB_QUALITY_LOW },
+    { "boxer4", "2.0 L flat-4 (boxer)", boxer4, RB_QUALITY_LOW },
 };
 enum { N_PRESETS = sizeof PRESETS / sizeof PRESETS[0] };
 
@@ -296,6 +299,11 @@ const char *rb_preset_key(int preset)
 const char *rb_preset_name(int preset)
 {
     return (preset >= 0 && preset < N_PRESETS) ? PRESETS[preset].name : NULL;
+}
+
+int rb_preset_quality(int preset)
+{
+    return (preset >= 0 && preset < N_PRESETS) ? PRESETS[preset].quality : RB_ERR_ID;
 }
 
 int rb_preset_find(const char *key)

@@ -1,11 +1,10 @@
 # Stage 118 — A real-time tier for today's engine
 
-**Status:** partly done (2026-11-09). The benchmark, the profile and the speed-ups (every
-render bit-identical, with MSVC and gcc) are done and merged, and the reviewer's baseline on
-an idle laptop is below. **No tier yet meets both the speed and the tolerances on every
-preset**, so none is declared: low misses 1.5 times real time on the two V8s (1.28 and 1.41)
-and is 1.3 dB louder on the four at 3000 rpm and revving. Bernardo chooses the way forward
-("The tier"), confirms the baseline machine, and listens to the files.
+**Status:** the tier is declared, per preset, with what each misses stated (2026-11-09,
+Bernardo's decision); Bernardo's blind listening is still to come. The benchmark, the profile
+and the speed-ups (every render bit-identical, with MSVC and gcc) are done, and the reviewer's
+baseline on an idle laptop is below. On this laptop only the six and the boxer meet both the
+speed and the tolerances; the four and the two V8s each miss one, as "The declared tier" says.
 
 The roadmap asks ([specification](roadmap/07-app.md#stage-118)) for a benchmark of what the
 app will run, a profile of it, speed-ups that change nothing the core computes, and a declared
@@ -321,6 +320,28 @@ x real time on a performance core, MSVC, after the speed-ups (idle / hold / rev 
 
 I have **not declared a tier**. Declaring low would silently pass a +1.3 dB louder four; the
 stop rule is "no silent quality loss". The data above is what the declaration needs.
+
+## The declared tier (2026-11-09)
+
+Bernardo chose a tier per preset, declared with its misses rather than held back: each preset
+has a real-time default quality (`rb_preset_quality`, the table in `core/src/presets.c`), and
+the app may run a higher one on a faster machine (its choice, per machine, is stage 066's).
+The four's needs a quality no level had: **`RB_QUALITY_BALANCED`**, the physics at about
+96 kHz and the pipes at 48 kHz (the search's "os2", appended after ultra so the old numbers
+hold). Changing quality is a rebuild, so it starts the engine from rest.
+
+| Preset | Default | x real time (P / E cores) | Speed (1.5) | Sound and engine (1 %, 1 dB) |
+| --- | --- | --- | --- | --- |
+| four | balanced | 1.60 / 1.05 | met on P cores | **misses at idle:** −1.05 dB A, −1.47 dB in the mid-band repeat; within at 3000 rpm and revving |
+| six | low | 1.59 / 1.03 | met on P cores | within |
+| cross-plane V8 | low | **1.28** / 0.81 | **misses** (15 % short) | within (one orders measure at the noise floor) |
+| flat-plane V8 | low | **1.41** / 0.88 | **misses** (6 % short) | within (one repeat measure at −1.02, the noise floor's size) |
+| boxer | low | 2.23 / 1.43 | met on P cores | within |
+
+On the efficiency cores the four (1.05), the six (1.03) and the boxer (1.43) stay above real time and the V8s fall below it, none at 1.5, so the
+render thread must run on the performance cores. These misses keep the stage open: a faster
+machine (Bernardo's i9-13980HX, for high-quality testing later) or more speed from the core
+(the profile's candidates under "The tier") close them; the table is revisited then.
 
 ## The reviewer's baseline (idle laptop)
 

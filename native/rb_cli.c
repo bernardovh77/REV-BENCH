@@ -245,7 +245,7 @@ const char *cli_take_value(int argc, char **argv, int *i)
 }
 
 /* The quality levels by name (rb.h: RB_QUALITY_*). */
-static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra" };
+static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced" };
 
 /* A quality level's number from its name, or -1. */
 int cli_quality_from(const char *name)

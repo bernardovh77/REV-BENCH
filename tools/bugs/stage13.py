@@ -74,8 +74,8 @@ BUGS = {
         ["test_pipe_onward", "test_engine_wide_tailpipes"], 400),
     # the quality setting (rb_sim.c, rb_engine_api.c, engine.c)
     "low-quality-at-192kHz": ("core/src/rb_sim.c",
-        ": quality == RB_QUALITY_LOW ? 96000.0 : 192000.0;",
-        ": quality == RB_QUALITY_LOW ? 192000.0 : 192000.0;",
+        ": (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED) ? 96000.0",
+        ": (quality == RB_QUALITY_BALANCED) ? 96000.0",
         ["test_core_quality"], 120),
     # every rebuild (rb_reset's, a preset's) goes through rb_sim_build since stage 121
     "rebuild-forgets-pipe-rate": ("core/src/rb_drive.c",

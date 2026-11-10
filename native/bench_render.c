@@ -123,18 +123,18 @@ static int set_ftz(void)
 
 enum { DRIVE_IDLE, DRIVE_HOLD, DRIVE_REV, DRIVE_COUNT };
 static const char *const DRIVES[DRIVE_COUNT] = { "idle", "hold", "rev" };
-/* The qualities rb.h names, then variants the tier's search tried (stage 118):
- * physics at 2 or 3 times the sample rate with the pipes at their default
- * 48 kHz, which no named quality has (low and medium cut the pipes to 24 kHz). */
-#define EXTRA_QUALITIES 2
+/* The qualities rb.h names, then a variant the tier's search tried (stage 118):
+ * physics at 3 times the sample rate with the pipes at their default 48 kHz.
+ * (Its "os2", twice the sample rate, became RB_QUALITY_BALANCED.) */
+#define EXTRA_QUALITIES 1
 #define QUALITY_COUNT (RB_QUALITY_COUNT + EXTRA_QUALITIES)
-static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "os2", "os3" };
+static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "os3" };
 
 /* Sets cfg's oversample and pipe rate for quality q (an index of QUALITIES). */
 static int configure(rb_config *cfg, int q)
 {
     if (q < RB_QUALITY_COUNT) return rb_config_quality(cfg, q);
-    cfg->oversample = q - RB_QUALITY_COUNT + 2;
+    cfg->oversample = q - RB_QUALITY_COUNT + 3;
     cfg->pipe_rate = 0.0;   /* the default, 48 kHz */
     return RB_OK;
 }
@@ -388,7 +388,7 @@ int main(int argc, char **argv)
         } else if (!strcmp(a, "--wav-dir") && v) {
             wav_dir = argv[++i];
         } else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            printf("usage: rb_bench_render [PRESET...] [--quality low,medium,high,ultra,os2,os3|all] "
+            printf("usage: rb_bench_render [PRESET...] [--quality low,medium,high,ultra,balanced,os3|all] "
                    "[--drive idle,hold,rev|all] [--runs N] [--rate HZ] [--scene NAME]\n"
                    "                       [--affinity HEXMASK] [--ftz] [--csv FILE] [--wav-dir DIR]\n");
             return 0;

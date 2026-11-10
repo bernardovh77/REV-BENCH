@@ -326,12 +326,36 @@ void test_core_render_bad_args(void)
     rb_destroy(s);
 }
 
+void test_core_preset_quality(void)
+{
+    /* Stage 118's declared tier: each preset's real-time default quality on
+     * the baseline machine (docs/stage-118.md), and a sim built at it reads
+     * that quality back. */
+    static const struct { const char *key; int quality; } TIER[] = {
+        { "i4", RB_QUALITY_BALANCED }, { "i6", RB_QUALITY_LOW }, { "v8-cross", RB_QUALITY_LOW },
+        { "v8-flat", RB_QUALITY_LOW }, { "boxer4", RB_QUALITY_LOW },
+    };
+    CHECK_EQ_INT(rb_preset_count(), (int)(sizeof TIER / sizeof TIER[0]));
+    for (int i = 0; i < (int)(sizeof TIER / sizeof TIER[0]); i++) {
+        const int preset = rb_preset_find(TIER[i].key);
+        CHECK_EQ_INT(rb_preset_quality(preset), TIER[i].quality);
+        rb_sim *s = rb_create_with_quality(48000.0, rb_preset_quality(preset));
+        CHECK(s != NULL);
+        if (s) {
+            CHECK_EQ_INT(rb_get_quality(s), TIER[i].quality);
+            rb_destroy(s);
+        }
+    }
+    CHECK_EQ_INT(rb_preset_quality(-1), RB_ERR_ID);
+    CHECK_EQ_INT(rb_preset_quality(rb_preset_count()), RB_ERR_ID);
+}
+
 void test_core_quality(void)
 {
     /* Stage 13: the quality levels set the physics and pipe rates together;
      * high is the default. */
-    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8 };
-    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0 };
+    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8, 2 };
+    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0, 48000.0 };
     rb_config c, d;
     rb_sim *s;
 
