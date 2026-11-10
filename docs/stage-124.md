@@ -196,6 +196,16 @@ channel: the window draws the newest snapshot it has.
   which CI passes, installs it silently into a temporary folder and starts that.
 - The icon: Bernardo chose B, the piston and crank (section 9).
 
+**CI's first run (2026-11-09) found a real bug.** Every job passed but the last check: the
+installed copy, installed into the runner's TEMP (`C:\Users\RUNNER~1\...`, an 8.3 short name),
+never reached "Engine running". The main process hands the engine's port only to the app's own
+page, and `isAppPage` compared the page's `file:` URL with the expected path as text: Chromium
+reported the long name, the app had the short one, so the window never got its port. Any user
+whose install path has a short name would have hit it. It now compares the two as files
+(`canonicalPath`: the real path of the longest existing folder, letter case folded on Windows);
+`security.test.ts` reproduces it with a real short name on Windows, and the planted bug
+`page-path-compared-as-text` is caught.
+
 ## 7. CI (`.github/workflows/ci.yml`; actions stay pinned to commits, nothing new is used)
 
 - **Windows**: the run of every suite but the browser's now includes `addon` (MSVC), `app` and
