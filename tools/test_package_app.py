@@ -60,6 +60,15 @@ class WorkflowTests(unittest.TestCase):
         self.assertIn("-win-x64.zip", windows)
         self.assertNotIn("--skip e2e app-e2e", windows)   # so it runs the addon, app and app-e2e suites
 
+    def test_the_upload_takes_the_packages_from_where_package_app_writes_them(self):
+        """CI's second run built the installer into ~/rb-build/tests/package and uploaded from
+        ~/rb-build/package: no files. The step names its folder, and the upload uses the same."""
+        windows = self.job("windows")
+        out = re.search(r"package_app\.py --install-check --out \"\$RUNNER_TEMP/([\w-]+)\"", windows)
+        self.assertIsNotNone(out, "the packaging step names its folder in $RUNNER_TEMP")
+        for name in ("Rev-Bench-Setup-*.exe", "Rev-Bench-*-win-x64.zip"):
+            self.assertIn("${{ runner.temp }}/%s/release/%s" % (out.group(1), name), windows)
+
     def test_linux_runs_the_add_on_and_the_interface_but_not_the_electron_test(self):
         linux = self.job("linux")
         self.assertIn("--skip e2e app-e2e", linux)
