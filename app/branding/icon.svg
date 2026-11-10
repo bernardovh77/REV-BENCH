@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rev-Bench, the default icon (draft A)">
-  <title>Rev-Bench icon, the default icon</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rev-Bench, draft B: a piston and crank">
+  <title>Rev-Bench icon, draft B: piston and crank</title>
   <rect width="512" height="512" rx="112" fill="#0e1014"/>
-  <path d="M135.8 390.2 A170 170 0 1 1 376.2 390.2" fill="none" stroke="#2b303b" stroke-width="40" stroke-linecap="round"/>
-  <path d="M135.8 390.2 A170 170 0 1 1 423.9 243.4" fill="none" stroke="#4c9eff" stroke-width="40" stroke-linecap="round"/>
-  <path d="M425.4 255.2 A170 170 0 0 1 376.2 390.2" fill="none" stroke="#ff6b6b" stroke-width="40" stroke-linecap="round"/>
-  <path d="M256 270 L320.0 159.1" stroke="#e6e8ec" stroke-width="22" stroke-linecap="round"/>
-  <circle cx="256" cy="270" r="30" fill="#e6e8ec"/>
-  <circle cx="256" cy="270" r="12" fill="#0e1014"/>
+  <rect x="172" y="80" width="168" height="150" rx="22" fill="#4c9eff"/>
+  <rect x="172" y="112" width="168" height="12" fill="#0e1014"/>
+  <rect x="172" y="140" width="168" height="12" fill="#0e1014"/>
+  <circle cx="256" cy="196" r="16" fill="#0e1014"/>
+  <path d="M256 196 L306 360" stroke="#e6e8ec" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="256" cy="392" r="78" fill="none" stroke="#98a0ae" stroke-width="26"/>
+  <circle cx="306" cy="360" r="26" fill="#ff6b6b"/>
+  <circle cx="256" cy="392" r="14" fill="#e6e8ec"/>
 </svg>

@@ -194,7 +194,7 @@ channel: the window draws the newest snapshot it has.
   stops the engine process with exit 0, no error in the log.
 - **The installer was built but not run here** (it would install on this machine); `--install-check`,
   which CI passes, installs it silently into a temporary folder and starts that.
-- The icon in the exe is the default draft's; the icon is Bernardo's to choose (section 9).
+- The icon: Bernardo chose B, the piston and crank (section 9).
 
 ## 7. CI (`.github/workflows/ci.yml`; actions stay pinned to commits, nothing new is used)
 
@@ -245,11 +245,10 @@ window keeping a dead engine's port, the fake no longer behaving as the real add
 ## 9. Icon and name, and the notices
 
 The name is Rev-Bench (decided): the window title, the menu, the installer, the product name and
-the bundle id `io.github.bernardovh77.revbench`. **Icon drafts for Bernardo to choose**, in
+the bundle id `io.github.bernardovh77.revbench`. **The icon: Bernardo chose B** (2026-11-09). The drafts, in
 `app/branding/` (`icon-drafts-preview.png` shows them at 256, 64 and 32 px on dark and light):
 - **A, tachometer** (`icon-draft-a-tach.svg`): a dial with the blue arc and a red zone and a needle
-  (today's default: `icon.svg`, `icon.ico`, `icon.png`);
-- **B, piston and crank** (`icon-draft-b-piston.svg`);
+- **B, piston and crank** (`icon-draft-b-piston.svg`): **chosen**, now `icon.svg`, `icon.ico`, `icon.png`;
 - **C, sound pulse** (`icon-draft-c-pulse.svg`): a firing pulse as a waveform.
 To choose, copy the draft over `icon.svg` and run `npm run icon` (Chromium renders it; the .ico has
 16–256 px). `THIRD_PARTY_NOTICES.md` is a draft: Electron, Inter (OFL 1.1), miniaudio (Unlicense or
