@@ -109,10 +109,20 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       host.destroy();
     });
 
-    it("refuses an unknown parameter id and a value that is not a number, by throwing", () => {
+    it("refuses an id that is not a whole number by throwing, and a command the core can't take by acknowledging it refused", async () => {
       const host = hostOn(env.make());
-      expect(() => host.setParam(9999, 1)).toThrow();
-      expect(() => host.setParam(0, Number.NaN)).toThrow();
+      host.start();
+      expect(() => host.setParam(-1, 1)).toThrow();
+      expect(() => host.setParam(1.5, 1)).toThrow();
+      const unknown = host.setParam(9999, 1);
+      const notANumber = host.setParam(0, Number.NaN);
+      const acks = new Map<number, string>();
+      for (let i = 0; i < 500 && acks.size < 2; i++) {
+        for (const a of host.poll()) acks.set(a.requestId, a.outcome);
+        if (acks.size < 2) await env.pass(10);
+      }
+      expect(acks.get(unknown)).toBe("refused");
+      expect(acks.get(notANumber)).toBe("refused");
       host.destroy();
     });
 
@@ -169,20 +179,26 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       }
       expect(first).not.toBeNull();
       const decoded = decodeSnapshot(first!.bytes);
-      expect(decoded.sequence).toBe(first!.sequence);
-      expect(decoded.generation).toBe(first!.generation);
+      // the info beside the bytes is the host's, with its own counts: its generation starts at 1 for
+      // the first engine, the core's (in the bytes) counts every build since its sim was made, and
+      // its sequence counts what the host published (the core's counts every snapshot it took)
+      expect(first!.generation).toBeGreaterThanOrEqual(1);
+      expect(decoded.generation).toBeGreaterThanOrEqual(first!.generation);
+      expect(first!.bytes.byteLength).toBe(decoded.size);
       let next = null;
       for (let i = 0; i < 500 && !next; i++) {
         next = host.readSnapshot();
         if (!next) await env.pass(10);
       }
       expect(next!.sequence).toBeGreaterThan(first!.sequence);
+      expect(decodeSnapshot(next!.bytes).sequence).toBeGreaterThan(decoded.sequence);
       host.destroy();
     });
 
     it("selects only devices that exist", () => {
       const addon = env.make();
       const host = hostOn(addon);
+      host.start(); // a device can only be selected on a running host
       host.selectDevice(addon.listDevices("null")[0].index);
       expect(() => host.selectDevice(9999)).toThrow();
       host.destroy();

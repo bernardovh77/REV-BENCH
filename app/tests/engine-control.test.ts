@@ -276,6 +276,32 @@ describe("a rebuild (load-preset)", () => {
   });
 });
 
+describe("the app's driver defaults", () => {
+  const held = (s: ReturnType<typeof setup>) => {
+    s.clock.step(10);
+    s.control.handle({ type: "snapshot-request" });
+    return decodeSnapshot(s.port.of("snapshot").at(-1)!.bytes).instruments.held;
+  };
+
+  it("builds the first engine with a free crank (hold 0), not the core's dyno-held default", () => {
+    expect(held(setup())).toBe(0);
+  });
+
+  it("builds every engine after a rebuild the same way", () => {
+    const s = setup();
+    s.send(60, { kind: "load-preset", preset: "v8-cross" });
+    s.run(200);
+    expect(held(s)).toBe(0);
+  });
+
+  it("asks for nothing the add-on doesn't have", () => {
+    const real = createFakeAddon();
+    const addon: Addon = { ...real, params: () => real.params().filter((p) => p.name !== "hold") };
+    const control = new EngineControl({ addon, config: config(), onBuild: () => {}, log: () => {} });
+    expect(() => control.start()).not.toThrow();
+  });
+});
+
 describe("snapshots and statistics", () => {
   it("sends the newest snapshot as a transferred ArrayBuffer, with its numbers", () => {
     const { control, port, clock } = setup();

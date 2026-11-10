@@ -20,7 +20,7 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 OUT = pathlib.Path(os.environ.get("RB_TESTS_OUT") or pathlib.Path.home() / "rb-build" / "tests") / "app-bugs"
 
-# name: (file under app/, text, replacement, test file, test name filter)
+# name: (file from the repo's root, text, replacement, test file under app/, test name filter)
 BUGS = {
     "decoder-off-by-one-field": (
         "app/src/shared/snapshot-v2.generated.ts",
@@ -127,6 +127,62 @@ BUGS = {
         '      waiting.reject(new CommandError("DETACHED", reason));',
         "      void waiting;",
         "tests/engine-client.test.ts", "fails the waiting commands with DETACHED"),
+    # phase 2: the add-on's path, the packaging and the driver defaults
+    "addon-looked-for-inside-the-asar": (
+        "app/src/engine/addon-loader.ts",
+        "  if (deps.resourcesPath) out.push(join(deps.resourcesPath, ADDON_FILE));",
+        '  if (deps.resourcesPath) out.push(join(deps.resourcesPath, "app.asar", ADDON_FILE));',
+        "tests/packaging.test.ts", "puts the add-on in resources, beside the asar"),
+    "dev-addon-path-keeps-release-folder": (
+        "app/src/engine/addon-loader.ts",
+        '"native", "build", ADDON_FILE));',
+        '"native", "build", "Release", ADDON_FILE));',
+        "tests/packaging.test.ts", "is one: the development build, the tests' and the package's all say rb_native.node"),
+    "package-puts-the-addon-in-a-subfolder": (
+        "app/electron-builder.config.cjs",
+        'to: "rb_native.node" },',
+        'to: "native/rb_native.node" },',
+        "tests/packaging.test.ts", "puts the add-on in resources, beside the asar"),
+    "package-keeps-the-fake-addon": (
+        "app/electron-builder.config.cjs",
+        ', "!dist/engine/fake-addon.cjs"],',
+        '],',
+        "tests/packaging.test.ts", "packs the built files into the asar, without source maps or the fake add-on"),
+    "package-without-an-asar": (
+        "app/electron-builder.config.cjs",
+        "  asar: true,",
+        "  asar: false,",
+        "tests/packaging.test.ts", "packs the built files into the asar, without source maps or the fake add-on"),
+    "fuse-run-as-node-on": (
+        "app/electron-builder.config.cjs",
+        "    runAsNode: false,",
+        "    runAsNode: true,",
+        "tests/packaging.test.ts", "turns off running as plain Node, NODE_OPTIONS and the inspect flags"),
+    "package-without-the-inspect-fuse-off": (
+        "app/electron-builder.config.cjs",
+        "    enableNodeCliInspectArguments: false,",
+        "    enableNodeCliInspectArguments: true,",
+        "tests/packaging.test.ts", "turns off running as plain Node, NODE_OPTIONS and the inspect flags"),
+    "engine-built-with-the-dyno-held-crank": (
+        "app/src/engine/control.ts",
+        "export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };",
+        "export const APP_BUILD_PARAMS: Record<string, number> = {};",
+        "tests/engine-control.test.ts", "builds the first engine with a free crank"),
+    "restarted-engine-gets-no-port": (
+        "app/src/main/supervisor.ts",
+        '    process.postMessage({ type: "init", config: this.deps.engineInit(build) });\n    this.connectWindow();',
+        '    process.postMessage({ type: "init", config: this.deps.engineInit(build) });',
+        "tests/supervisor.test.ts", "is told the new port after the restart, if the window had asked"),
+    "window-keeps-a-dead-engines-port": (
+        "app/src/ui/lib/engine-store.svelte.ts",
+        "      if (this.client.connected) this.client.detach(",
+        "      if (false) this.client.detach(",
+        "tests/engine-store.test.ts", "drops the connection when the engine process restarts"),
+    "fake-add-on-throws-for-an-unknown-parameter": (
+        "app/src/engine/fake-addon.ts",
+        '    if (!info) return this.ack("set-param", "refused", false, -2);',
+        '    if (!info) throw addonError("RB_ERR_ID", `no parameter ${id}`);',
+        "tests/fake-addon.test.ts", "refuses an id that is not a whole number by throwing"),
 }
 
 
@@ -204,7 +260,7 @@ def attempt(name, node_modules, baseline=False):
 def main(argv):
     if "--list" in argv:
         for name, (path, _old, _new, test, test_name) in BUGS.items():
-            print(f"{name}: app/{path} -> {test} -t {test_name!r}")
+            print(f"{name}: {path} -> {test} -t {test_name!r}")
         return
     baseline = "--baseline" in argv
     names = [a for a in argv if not a.startswith("--")] or list(BUGS)

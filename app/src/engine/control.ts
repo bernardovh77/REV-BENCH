@@ -13,7 +13,7 @@
  * add-on. The window's port is an `EnginePort`, so Electron's MessagePortMain and the tests'
  * in-memory ports both fit.
  */
-import type { Ack, Addon, Host, ParamInfo, PresetInfo, Quality } from "../shared/addon";
+import type { Ack, Addon, BuildSpec, Host, ParamInfo, PresetInfo, Quality } from "../shared/addon";
 import type { BuildChoice, EngineInit } from "../shared/process-messages";
 import { PROTOCOL_VERSION, type Command, type FromEngine, type ToEngine } from "../shared/protocol";
 
@@ -34,6 +34,13 @@ export interface ControlDeps {
 
 /** A rebuild that takes longer than this is given up (the running engine plays on). */
 export const PREPARE_TIMEOUT_MS = 30_000;
+/**
+ * What the app wants of every engine it builds, by parameter name: the core's default is a crank
+ * held at a speed by a dyno (hold 1, for the offline renders); the app's engine runs free, so the
+ * driver's ignition, starter and throttle are what make it turn. Applied in the build itself, so
+ * the first block already has it, for the first engine and for every swap.
+ */
+export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };
 const QUALITIES: readonly Quality[] = ["low", "medium", "high", "ultra", "balanced"];
 
 interface Pending {
@@ -89,7 +96,7 @@ export class EngineControl {
       backend: config.backend,
       ...(config.device === undefined ? {} : { device: config.device }),
       ...(config.sampleRate === undefined ? {} : { sampleRate: config.sampleRate }),
-      initial: { preset: config.build.preset, ...(config.build.quality ? { quality: config.build.quality } : {}) },
+      initial: { ...this.buildSpec(config.build) },
     });
     this.host.start();
   }
@@ -101,6 +108,12 @@ export class EngineControl {
   /** The rate the host renders at (the device's, or the null backend's). */
   sampleRate(): number {
     return this.requireHost().sampleRate();
+  }
+
+  /** The add-on's build for a choice: the preset and quality, and the app's driver defaults. */
+  private buildSpec(choice: BuildChoice): BuildSpec {
+    const params = this.params.filter((p) => p.name in APP_BUILD_PARAMS).map((p) => ({ id: p.id, value: APP_BUILD_PARAMS[p.name] }));
+    return { preset: choice.preset, ...(choice.quality ? { quality: choice.quality } : {}), ...(params.length ? { params } : {}) };
   }
 
   /** The window's port: says hello on it. A later attach replaces it (a reloaded window). */
@@ -215,7 +228,7 @@ export class EngineControl {
       return this.reply(id, { error: { code: "BAD_QUALITY", message: `no quality "${String(quality)}"` } });
     }
     const choice: BuildChoice = { preset, ...(quality ? { quality } : {}) };
-    const prepareId = this.requireHost().prepare(choice);
+    const prepareId = this.requireHost().prepare(this.buildSpec(choice));
     this.rebuild = { id, epoch: this.epoch, prepareId, choice, startedAt: this.now() };
   }
 

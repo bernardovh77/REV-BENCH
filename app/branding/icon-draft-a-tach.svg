@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rev-Bench, draft A: a tachometer">
+  <title>Rev-Bench icon, draft A: tachometer</title>
+  <rect width="512" height="512" rx="112" fill="#0e1014"/>
+  <path d="M135.8 390.2 A170 170 0 1 1 376.2 390.2" fill="none" stroke="#2b303b" stroke-width="40" stroke-linecap="round"/>
+  <path d="M135.8 390.2 A170 170 0 1 1 423.9 243.4" fill="none" stroke="#4c9eff" stroke-width="40" stroke-linecap="round"/>
+  <path d="M425.4 255.2 A170 170 0 0 1 376.2 390.2" fill="none" stroke="#ff6b6b" stroke-width="40" stroke-linecap="round"/>
+  <path d="M256 270 L320.0 159.1" stroke="#e6e8ec" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="256" cy="270" r="30" fill="#e6e8ec"/>
+  <circle cx="256" cy="270" r="12" fill="#0e1014"/>
+</svg>

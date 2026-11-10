@@ -152,7 +152,7 @@ class FakeHost implements Host {
     this.rpm = 0;
   }
 
-  private ack(kind: string, outcome: Ack["outcome"], reset = false): number {
+  private ack(kind: string, outcome: Ack["outcome"], reset = false, code = 0): number {
     if (this.acks.length >= MAX_PENDING_ACKS) {
       this.refused++;
       throw addonError("RB_HOST_ERR_FULL", "the acknowledgment queue is full");
@@ -162,7 +162,7 @@ class FakeHost implements Host {
       requestId,
       kind,
       outcome,
-      code: 0,
+      code,
       generation: this.generationNow,
       reset,
       physicsTick: this.physicsTicks,
@@ -204,9 +204,12 @@ class FakeHost implements Host {
 
   setParam(id: number, value: number, expectedGeneration?: number): number {
     this.live();
+    // as the real add-on: an id out of 0..65535 throws; an unknown one or a bad value is a command
+    // the core refuses, acknowledged as "refused" (the engine process checks names and values itself)
+    if (!Number.isInteger(id) || id < 0 || id > 65535) throw addonError("RB_HOST_ERR_ARG", "id must be a whole number from 0 to 65535");
     const info = PARAMS[id];
-    if (!info) throw addonError("RB_ERR_ID", `no parameter ${id}`);
-    if (!Number.isFinite(value)) throw addonError("RB_HOST_ERR_ARG", "the value is not a number");
+    if (!info) return this.ack("set-param", "refused", false, -2);
+    if (!Number.isFinite(value)) return this.ack("set-param", "refused", false, -3);
     if (expectedGeneration !== undefined && expectedGeneration !== this.generationNow) {
       return this.ack("set-param", "stale");
     }
@@ -325,6 +328,7 @@ class FakeHost implements Host {
       throttle,
       ignition: value("ignition"),
       starter: value("starter"),
+      held: value("hold"),
       load_torque: value("load_torque"),
       crank_inertia: 0.16,
       exhaust_temperature: 600,

@@ -68,8 +68,8 @@ class OrderTests(unittest.TestCase):
         self.assertEqual(self.statuses(True), [("good", "pass"), ("bad", "fail"), ("after", "pass")])
 
 
-class AppSuiteTests(unittest.TestCase):
-    """Stage 124's app suite: a copy of app/ outside the repo, with what its tests read."""
+class FakeRepo:
+    """A repo of its own in a temp folder, swapped in for run_tests.ROOT and OUT."""
 
     def fake_repo(self):
         """A repo of its own in a temp folder, swapped in for run_tests.ROOT and OUT."""
@@ -77,14 +77,19 @@ class AppSuiteTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         root, out = Path(tmp.name, "repo"), Path(tmp.name, "out")
         for path in ("app/package.json", "app/package-lock.json", "app/src/shared/a.ts",
-                     "app/node_modules/dep/index.js", "app/dist/ui/index.html", "app/native/CMakeLists.txt",
-                     "app/native/build/rb_native.node", "contracts/examples/snapshot-v2-i4-idle.bin"):
+                     "app/node_modules/dep/index.js", "app/dist/ui/index.html", "app/native/CMakeLists.txt", "app/native/build-tools/package.json",
+                     "app/native/build-tools/package-lock.json",
+                     "app/native/build/rb_native.node", "contracts/examples/snapshot-v2-i4-idle.bin", "THIRD_PARTY_NOTICES.md", "third_party/miniaudio/LICENSE"):
             (root / path).parent.mkdir(parents=True, exist_ok=True)
             (root / path).write_text("x")
         for name, value in (("ROOT", root), ("OUT", out)):
             self.addCleanup(setattr, run_tests, name, getattr(run_tests, name))
             setattr(run_tests, name, value)
         return root, out
+
+
+class AppSuiteTests(FakeRepo, unittest.TestCase):
+    """Stage 124's app suite: a copy of app/ outside the repo, with what its tests read."""
 
     def test_the_copy_has_the_app_and_the_contracts_examples_at_their_relative_place(self):
         _root, out = self.fake_repo()
@@ -94,6 +99,8 @@ class AppSuiteTests(unittest.TestCase):
         self.assertTrue((app / "package-lock.json").is_file())
         self.assertTrue((app / "src" / "shared" / "a.ts").is_file())
         self.assertTrue((out / "app-copy" / "contracts" / "examples" / "snapshot-v2-i4-idle.bin").is_file())
+        self.assertTrue((out / "app-copy" / "THIRD_PARTY_NOTICES.md").is_file())
+        self.assertTrue((out / "app-copy" / "third_party" / "miniaudio" / "LICENSE").is_file())
 
     def test_the_copy_leaves_out_modules_builds_and_the_addons_folder(self):
         self.fake_repo()
@@ -125,6 +132,40 @@ class AppSuiteTests(unittest.TestCase):
         self.assertEqual(cwd.name, "app")
 
 
+class AppE2eSuiteTests(FakeRepo, unittest.TestCase):
+    """The app-e2e suite: the built add-on, Electron's binary, the contract on the real add-on, the e2e tests."""
+
+    def test_the_commands_build_the_addon_first_then_run_the_contract_and_playwright_on_it(self):
+        self.fake_repo()
+        for needed in ("node", "npm", "npx", "cmake", "ninja"):
+            self.assertIn(needed, run_tests.NEEDS["app-e2e"])
+        self.assertIn("app-e2e", run_tests.SUITES)
+        commands, cwd, env, _timeout = run_tests.run_suite("app-e2e", {})
+        flat = [(" ".join(map(str, c[0] if isinstance(c, tuple) else c)), c[1] if isinstance(c, tuple) else env)
+                for c in commands]
+        text = [f for f, _ in flat]
+        self.assertTrue(any("cmake-js" in c and "-O" in c for c in text[:3]), text)
+        self.assertLess(next(i for i, c in enumerate(text) if "cmake-js" in c),
+                        next(i for i, c in enumerate(text) if "playwright" in c))
+        self.assertTrue(any("install-electron" in c for c in text))
+        self.assertTrue(text[-1].endswith("playwright test"))
+        contract = next(e for c, e in flat if "addon-real" in c)
+        self.assertEqual(contract["RB_REQUIRE_NATIVE"], "1")
+        self.assertTrue(env["RB_NATIVE_PATH"].endswith("rb_native.node"))
+        self.assertIn("addon-build", env["RB_NATIVE_PATH"])
+        self.assertNotIn("RB_FAKE_ADDON", env)   # the end-to-end tests are on the real add-on
+        self.assertEqual(cwd.name, "app")
+
+    def test_it_reuses_the_copy_the_app_suite_made(self):
+        self.fake_repo()
+        state = {}
+        run_tests.run_suite("app", state)
+        copy = state["app"]
+        (copy / "marker").write_text("x")
+        run_tests.run_suite("app-e2e", state)
+        self.assertTrue((copy / "marker").exists())
+
+
 @unittest.skipUnless(fake_program.available(), "on Windows fake programs need a C compiler")
 class PreflightTests(unittest.TestCase):
     def tools_dir(self, tmp, node_version, programs):
@@ -145,7 +186,7 @@ class PreflightTests(unittest.TestCase):
     def test_everything_present_and_recent_is_no_problem(self):
         with tempfile.TemporaryDirectory() as tmp:
             env = self.tools_dir(tmp, "v22.3.0", ["make", "npm", "npx"])
-            suites = [s for s in run_tests.SUITES if s not in ("cmake", "host", "addon")]
+            suites = [s for s in run_tests.SUITES if s not in ("cmake", "host", "addon", "app-e2e")]
             self.assertEqual(run_tests.preflight(suites, env), [])
 
     def test_an_old_cmake_is_reported(self):

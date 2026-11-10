@@ -20,7 +20,9 @@ class AppBugTableTests(unittest.TestCase):
 
     def test_every_bug_names_a_test_that_exists(self):
         for name, (_path, _old, _new, test, test_name) in BUGS.BUGS.items():
-            source = (run_tests.ROOT / "app" / test).read_text(encoding="utf-8").replace("\\'", "'")
+            # a contract test lives in tests/addon-contract.ts and runs from the file that names the add-on
+            source = ((run_tests.ROOT / "app" / test).read_text(encoding="utf-8")
+                      + (run_tests.ROOT / "app" / "tests" / "addon-contract.ts").read_text(encoding="utf-8")).replace("\\'", "'")
             wanted = test_name
             if test_name.endswith(" uses only tokens"):
                 # a test made for each file by it.each("%s uses only tokens"): the file must exist

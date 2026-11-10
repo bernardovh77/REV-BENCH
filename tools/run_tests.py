@@ -26,6 +26,11 @@ zig builds the WebAssembly). The suites:
            only) run against it
   app      the Electron app (stage 124): the snapshot decoder is what tools/gen_snapshot_ts.py
            makes, then npm ci, typecheck, build and Vitest, in a copy of app/ outside the repo
+  app-e2e  the app driven by Playwright's Electron driver (Windows; needs a display): the add-on
+           built (as in addon), Electron's binary, the add-on's contract against the real
+           rb_native.node, then e2e/*.spec.ts on the real add-on and the null audio backend
+           (start and play, a swap, a killed engine process, quitting, a missing add-on, the
+           snapshot path's measurements -> <out>/app-e2e-results)
 
 Builds go to ~/rb-build/tests (or $RB_TESTS_OUT), never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
@@ -43,11 +48,11 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app", "app-e2e")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
 TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
-            "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200}
+            "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200, "app-e2e": 1800}
 OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
@@ -76,7 +81,8 @@ def tool(name, env):
 # the programs each suite needs on PATH, and the oldest Node it runs on
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
          "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"],
-         "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"], "app": ["node", "npm"]}
+         "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"], "app": ["node", "npm"],
+         "app-e2e": ["node", "npm", "npx", "cmake", "ninja"]}
 NODE_MAJOR = 22
 CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
@@ -106,7 +112,7 @@ def preflight(suites, env):
         if have < CMAKE_LEAST:
             problems.append(f"{first or 'cmake'} ({cmake}); the cmake suite needs "
                             f"{CMAKE_LEAST[0]}.{CMAKE_LEAST[1]} or newer (tools/requirements-dev.txt)")
-    if ("cmake" in suites or "host" in suites or "addon" in suites) and os.name == "nt":
+    if any(s in suites for s in ("cmake", "host", "addon", "app-e2e")) and os.name == "nt":
         import msvc_env
         if not msvc_env.install_path():
             problems.append("no Visual Studio with the C/C++ x64 tools for the cmake suite (docs/workspace.md)")
@@ -158,8 +164,8 @@ def web_copy():
 
 
 def app_copy():
-    """A copy of app/ (and the contracts' examples its decoder test reads, at the same relative
-    path) in OUT/app-copy, without node_modules, builds or the add-on's folder app/native (the
+    """A copy of app/ (and the contracts' examples its decoder test reads, and the licence files its
+    package carries, at the same relative paths) in OUT/app-copy, without node_modules, builds or the add-on's folder app/native (the
     addon suite's); returns the copy's app folder."""
     copy = OUT / "app-copy"
     if copy.exists():
@@ -173,6 +179,10 @@ def app_copy():
 
     shutil.copytree(ROOT / "app", copy / "app", ignore=ignore, symlinks=True)
     shutil.copytree(ROOT / "contracts" / "examples", copy / "contracts" / "examples")
+    # the notices a package ships (app/electron-builder.config.cjs names them as ../...)
+    shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", copy / "THIRD_PARTY_NOTICES.md")
+    (copy / "third_party" / "miniaudio").mkdir(parents=True)
+    shutil.copy2(ROOT / "third_party" / "miniaudio" / "LICENSE", copy / "third_party" / "miniaudio" / "LICENSE")
     return copy / "app"
 
 
@@ -237,11 +247,31 @@ def suite_commands(name, state):
         npm = tool("npm", env)
         return [[npm, "ci", "--no-audit", "--no-fund"], [npm, "test"]], web, env
     if name == "app":
-        app = app_copy()
+        app = state["app"] = app_copy()
         npm = tool("npm", env)
+        built = OUT / "addon-build" / "rb_native.node"
+        if built.is_file():   # the addon suite built it: the real add-on's contract runs too
+            env["RB_NATIVE_PATH"] = str(built)
         return [[sys.executable, str(ROOT / "tools/gen_snapshot_ts.py"), "--check"],
                 [npm, "ci", "--no-audit", "--no-fund"], [npm, "run", "typecheck"],
                 [npm, "run", "build"], [npm, "test"]], app, env
+    if name == "app-e2e":
+        # the built add-on (the addon suite's build, redone if needed), Electron's binary, the
+        # app's build, the real add-on's contract in Node, then the end-to-end tests: the app
+        # on the real add-on and the null audio backend, never a sound device
+        app = state.get("app") or app_copy()
+        state["app"] = app
+        npm, npx = tool("npm", env), tool("npx", env)
+        native = OUT / "addon-build" / "rb_native.node"
+        env["RB_NATIVE_PATH"] = str(native)
+        env["RB_E2E_OUTPUT"] = str(OUT / "app-e2e-results")
+        env.pop("RB_FAKE_ADDON", None)
+        required = dict(env, RB_REQUIRE_NATIVE="1")
+        install = [] if (app / "node_modules").is_dir() else [[npm, "ci", "--no-audit", "--no-fund"]]
+        return (addon_build_commands(env) + install
+                + [[npx, "install-electron"], [npm, "run", "build"],
+                   ([npx, "vitest", "run", "tests/addon-real.test.ts"], required),
+                   [npx, "playwright", "test"]]), app, env
     if name == "cmake":
         build = (OUT / "cmake").as_posix()
         msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
@@ -274,24 +304,30 @@ def suite_commands(name, state):
     raise ValueError(name)
 
 
-def addon_commands(env):
-    """The add-on suite's commands (stage 124): install cmake-js and node-api-headers outside
-    the repo from app/native/build-tools (package.json and its lock, copied: npm ci never runs
-    inside the repo), build app/native with cmake-js into <out>/addon-build (Ninja; MSVC on
-    Windows through tools/msvc_env.py, gcc elsewhere), then run its node:test files one at a
-    time (each makes real-time threads, so they must not compete)."""
-    tools = OUT / "addon-node"
+def addon_build_commands(env, tools=None, build=None):
+    """The commands that build the add-on (stage 124): install cmake-js and node-api-headers
+    outside the repo from app/native/build-tools (package.json and its lock, copied: npm ci never
+    runs inside the repo; the one place they are pinned), then build app/native with cmake-js
+    into `build` (default <out>/addon-build; Ninja; MSVC on Windows through tools/msvc_env.py,
+    gcc elsewhere). The result is always <build>/rb_native.node."""
+    tools = Path(tools) if tools else OUT / "addon-node"
+    build = Path(build) if build else OUT / "addon-build"
     tools.mkdir(parents=True, exist_ok=True)
     for name in ("package.json", "package-lock.json"):
         shutil.copy2(ROOT / "app/native/build-tools" / name, tools / name)
     npm, node = tool("npm", env), tool("node", env)
     msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
     cmake_js = str(tools / "node_modules/cmake-js/bin/cmake-js")
-    tests = sorted(str(p) for p in (ROOT / "app/native/test").glob("*.test.mjs"))
     return [[npm, "ci", "--no-audit", "--no-fund", "--prefix", str(tools)],
-            msvc + [node, cmake_js, "build", "-d", str(ROOT / "app/native"), "-O", str(OUT / "addon-build"),
-                    "-G", "Ninja"],
-            [node, "--test", "--test-concurrency=1", *tests]]
+            msvc + [node, cmake_js, "build", "-d", str(ROOT / "app/native"), "-O", str(build), "-G", "Ninja"]]
+
+
+def addon_commands(env):
+    """The add-on suite's commands: the build above, then its node:test files one at a time
+    (each makes real-time threads, so they must not compete)."""
+    node = tool("node", env)
+    tests = sorted(str(p) for p in (ROOT / "app/native/test").glob("*.test.mjs"))
+    return addon_build_commands(env) + [[node, "--test", "--test-concurrency=1", *tests]]
 
 
 def addon_env(env):

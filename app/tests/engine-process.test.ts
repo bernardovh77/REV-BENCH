@@ -184,7 +184,7 @@ describe("the add-on loader", () => {
     const list = nativeAddonCandidates({ env: { RB_NATIVE_PATH: "/x/y.node" }, dirname: "/app/dist/engine", resourcesPath: "/res" });
     expect(list[0]).toBe("/x/y.node");
     expect(list[1]).toMatch(/res.rb_native\.node$/);
-    expect(list[2].replaceAll("\\", "/")).toMatch(/\/app\/native\/build\/Release\/rb_native\.node$/);
+    expect(list[2].replaceAll("\\", "/")).toMatch(/\/app\/native\/build\/rb_native\.node$/);
   });
 
   it("loads the first candidate that exists", () => {

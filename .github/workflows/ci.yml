@@ -8,6 +8,9 @@
 # weekly and on demand: on a private repository its minutes count ten times
 # (Windows' twice), and GitHub's free plan gives 2,000 a month.
 #
+# The application (stage 124): the `addon` and `app` suites run on both systems; `app-e2e` and the
+# installer on Windows only.
+#
 # Every action is pinned to a commit (its version in the comment), and every
 # tool to an exact version, as CLAUDE.md asks.
 name: ci
@@ -69,6 +72,31 @@ jobs:
           make -j4 BUILD="$B/tests" "$B/tests/rb_cli"
           python tools/compiler_parity.py check "$B/tests/cmake/rb_cli.exe" "$B/tests/rb_cli.exe" "$B/parity" \
             2>&1 | tee "$RUNNER_TEMP/parity.log" || { tools/ci_summary.sh "$RUNNER_TEMP/parity.log"; exit 1; }
+      # The application (stage 124): the suites above include `addon` (the Node-API add-on built with
+      # MSVC and tested on the null backend), `app` (the interface's Vitest, typecheck and build) and
+      # `app-e2e` (Playwright's Electron driver on the real add-on and the null audio backend: no
+      # sound card is touched). This step then builds the unsigned installer and portable zip,
+      # checks the unpacked app and the extracted zip start, and installs the installer silently
+      # into a temporary folder of the runner and starts that.
+      - name: The installer and the portable zip
+        run: |
+          python tools/package_app.py --install-check 2>&1 | tee "$RUNNER_TEMP/package.log" \
+            || { tools/ci_summary.sh "$RUNNER_TEMP/package.log"; exit 1; }
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        with:
+          name: rev-bench-windows-x64
+          path: |
+            ~/rb-build/package/release/Rev-Bench-Setup-*.exe
+            ~/rb-build/package/release/Rev-Bench-*-win-x64.zip
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
+        if: always()
+        with:
+          name: app-e2e-results
+          path: ~/rb-build/tests/app-e2e-results
+          if-no-files-found: ignore
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9   # v7.0.2
         if: failure()
         with:
@@ -90,9 +118,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - name: Python tools
         run: python -m pip install -r tools/requirements-dev.txt
-      - name: Every suite but the browser test (gcc)
+      # The add-on (gcc) and the interface (Vitest) run here, with every other suite; the
+      # application's end-to-end test needs Electron's window and the Windows package, so it is
+      # Windows's alone until stage 126.
+      - name: Every suite but the browser tests (gcc)
         run: |
-          python tools/run_tests.py --keep-going --skip e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
+          python tools/run_tests.py --keep-going --skip e2e app-e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
             || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
 
   linux-sanitizers:

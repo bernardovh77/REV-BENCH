@@ -27,8 +27,8 @@ export function nativeAddonCandidates(deps: Pick<LoaderDeps, "env" | "dirname" |
   const out: string[] = [];
   if (deps.env.RB_NATIVE_PATH) out.push(deps.env.RB_NATIVE_PATH);
   if (deps.resourcesPath) out.push(join(deps.resourcesPath, ADDON_FILE));
-  // a development build: app/dist/engine -> app/native/build/Release (cmake-js's output)
-  out.push(join(deps.dirname, "..", "..", "native", "build", "Release", ADDON_FILE));
+  // a development build: app/dist/engine -> app/native/build (tools/build_addon.py puts it there)
+  out.push(join(deps.dirname, "..", "..", "native", "build", ADDON_FILE));
   return out;
 }
 

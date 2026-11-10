@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Rev-Bench, draft C: an engine's sound as a waveform">
+  <title>Rev-Bench icon, draft C: sound pulse</title>
+  <rect width="512" height="512" rx="112" fill="#0e1014"/>
+  <rect x="76" y="221" width="26" height="70" rx="13" fill="#4c9eff"/>
+  <rect x="116" y="191" width="26" height="130" rx="13" fill="#4c9eff"/>
+  <rect x="156" y="151" width="26" height="210" rx="13" fill="#4c9eff"/>
+  <rect x="196" y="91" width="26" height="330" rx="13" fill="#4c9eff"/>
+  <rect x="236" y="56" width="26" height="400" rx="13" fill="#e6e8ec"/>
+  <rect x="276" y="91" width="26" height="330" rx="13" fill="#4c9eff"/>
+  <rect x="316" y="151" width="26" height="210" rx="13" fill="#4c9eff"/>
+  <rect x="356" y="191" width="26" height="130" rx="13" fill="#4c9eff"/>
+  <rect x="396" y="221" width="26" height="70" rx="13" fill="#4c9eff"/>
+  <path d="M76 420 H436" stroke="#ff6b6b" stroke-width="12" stroke-linecap="round"/>
+</svg>
