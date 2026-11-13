@@ -3,10 +3,12 @@
 Specification: [docs/roadmap/07-app.md](roadmap/07-app.md#stage-124); design:
 [docs/app-design.md](app-design.md) sections 2–5, 9–13 and 15.
 
-**Status: done on Windows, with three things CI and Bernardo's machine still have to confirm**
-(listed under "Not verified"). The Electron application plays the real engine through the real
-Node-API add-on on the null audio backend, is tested end to end, and builds an unsigned Windows
-installer and a portable zip whose unpacked app and extracted zip were started here.
+**Status: done (2026-11-13).** The Electron application plays the real engine through the real
+Node-API add-on, is tested end to end on the null audio backend, and builds an unsigned Windows
+installer and a portable zip. CI is green (its third run), with the installer installed and
+started on the runner; Bernardo installed the locally built installer on his laptop and it plays
+the engine through his real audio device ("Yes, it plays", 2026-11-13). The items under "Not
+verified" below were written before those checks and are now closed.
 
 The stage ran in two parts by two builders against two fixed contracts
 ([`app/src/shared/addon.ts`](../app/src/shared/addon.ts), the add-on's API, and

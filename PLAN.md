@@ -88,7 +88,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [x] **122:** builds and CI: Windows (MSVC) and Linux (gcc) on every push, macOS's core weekly;
    - [~] **118:** a real-time tier for today's engine (declared per preset; open for its stated misses);
    - [x] **123:** the real-time audio host;
-   - [~] **124:** the application's foundation (built, CI green; the real-device check left);
+   - [x] **124:** the application's foundation;
    - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on Windows.
 2. **Phase B, real sound:**
    - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
@@ -104,7 +104,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 066**, once 124's checks are in. Open beside it: 118's stated misses (the four at idle, the V8s' speed), for a faster machine or core.
+**Next stage: 066.** Open beside it: 118's stated misses (the four at idle, the V8s' speed), for a faster machine or core.
 
 ## The stages, in the order they'll be done
 
@@ -120,7 +120,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [122](docs/roadmap/07-app.md#stage-122) | The CMake build: MSVC 14.51 passes all 262 tests (one change: rb_bench's clock). Cross-compiler parity: bit-close before a random decision can flip, statistically the same after. CI green on Windows and Linux; the first macOS run still to come. | 120 |
 | 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), listened to by Bernardo; open for its stated misses: the four 1.05 dB off at idle, the V8s at 1.28× and 1.41× real time on the i7-1355U | 121, 122 |
 | ✅ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): `host/`, 59 tests on MSVC and gcc (and under ThreadSanitizer), swaps with 16 ms fades, offline mode bit-identical to rb_cli, 39 planted bugs caught; 15 minutes on the real device with zero underruns | 121, 122 |
-| 🟡 | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron 45, the engine process with the Node-API add-on (64 tests), the sandboxed Svelte window on a provisional token design system, a generated snapshot decoder, e2e on the real add-on, an unsigned NSIS installer and zip; snapshots at 1 % of their budget. Icon: B (piston and crank). CI green (installer as an artifact). Left: the installed app on his real device | 122, 123 |
+| ✅ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron 45, the engine process with the Node-API add-on (64 tests), the sandboxed Svelte window on a provisional token design system, a generated snapshot decoder, e2e on the real add-on, an unsigned NSIS installer and zip; snapshots at 1 % of their budget. Icon: B (piston and crank). CI green (installer as an artifact); the installed app plays on Bernardo's real device | 122, 123 |
 | ⬜ | [066](docs/roadmap/07-app.md#stage-066) | The playable engine in the app: start, idle, rev, stop, presets, the tier, stereo scenes, keyboard and game-controller throttle, devices, sleep and wake | 037, 118, 124 |
 | ⬜ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata, with atomic rebuilds and undo | 037, 066 |
 | ⬜ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno, with overlays | 066, 067 |
