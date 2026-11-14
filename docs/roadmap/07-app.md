@@ -286,6 +286,17 @@ and test set-up to reuse).
   - the window minimised or hidden, with the sound going on;
   - quit with a fade.
 - **A minimal engine readout:** rpm and the computer's state.
+- **Added 2026-11-13 (Bernardo, after playing stage 124's build):**
+  - **Throttle styles:** an on/off switch (a key snaps 0 ↔ 100 %), a ramped key (held: rises at
+    a set rate; released: falls), analog key travel, and a controller's analog trigger.
+  - **Analog keyboards:** Bernardo's is a Razer analog optical keyboard. Its key travel reaches
+    the app through Razer Synapse's controller emulation (the Gamepad API); whether a native
+    Razer SDK can read it directly is checked here, not assumed. Tested on his keyboard.
+  - **Levels:** real relative loudness between engines (a V8 louder than a four), with the
+    overall gain lowered so the loudest revs stay under full scale (today the six and V8s reach
+    0 dBFS revving, the four −16), and a volume control. The four's own level is checked against
+    real recordings in phase B.
+  - **A lost device:** keep playing on the new default and show which (app-design §15).
 
 **Required exit evidence:**
 - A seeded command trace driven through the app's UI produces, through the host's capture tap,

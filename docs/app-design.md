@@ -398,6 +398,17 @@ Linux packages come with stage 126.
   every panel uses only those, so the look can be chosen and applied later without touching the
   panels. Bernardo chooses it when he asks for it, at the latest before the public release
   (stage 101); the 3D view's style (stage 070) goes with it.
+- **A lost audio device: switch, and say so** (2026-11-13). When the output device disappears
+  (headphones unplugged), the app keeps playing on the system's new default device and shows a
+  short notice naming it; it never stops to ask. The host already reopens the default device;
+  stage 066 adds the notice.
+- **The V8s get the core's speed before stage 066** (2026-11-13). They missed 1.5× real time at
+  low quality on the baseline laptop (stage 118); the core is sped up first, the sound kept bit
+  for bit, rather than the V8s being marked as needing a faster machine.
+
+- **Levels, throttle and analog keys for stage 066** (2026-11-13): real relative loudness with
+  headroom and a volume control; on/off, ramped, analog-key and controller throttles; his
+  keyboard is a Razer analog optical (roadmap, stage 066).
 
 **Still open.** Each blocks the stage named, and nothing before it.
 1. **The baseline machine** (CPU, GPU, OS) for "1.5× real time", and whether a bare-metal Linux
