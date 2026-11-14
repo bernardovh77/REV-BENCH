@@ -428,6 +428,28 @@ before the bit-exact test's turn. The table now filters to the gas tests so that
 and it fails each of them.
 No existing table's bug needed retargeting (`plant_bugs.py --check`: 0 stale).
 
+## The V8s (2026-11-13)
+
+Before stage 066, Bernardo asked for the V8s' miss to be closed by speeding up the core. Measured
+on the laptop's performance cores, MSVC, interleaved:
+
+| Attempt | Result |
+| --- | --- |
+| `/arch:AVX2` (no FMA under `/fp:precise`) | 0 to −5 %: dropped |
+| `rb_gas_init` filling each temperature range only when first read | −1.9 % median, every cell slower (the SSE pairs lost, a branch in the hottest reader): reverted |
+| a V8-only tier, the pipes at 16 kHz | cross-plane V8 1.83×, flat-plane 2.01× (from 1.40 and 1.56); engine within 1 % for the cross-plane, the flat-plane 1.37 % off at 6000 rpm; **sound far off**: above 1 kHz +8 dB, above 4 kHz +13 to +44 dB, loudness +4 to +7.5 dB (noise floor about 0.1 dB) |
+| the flat-plane V8, pipes at 19.2 kHz | 1.50–1.56× (today's low 1.29–1.37× in the same run); engine within 1 % (worst −0.66 %); **sound off**: above 2 kHz +8 dB, above 4 kHz +12 dB, loudness +3.4 dB |
+
+So no V8 tier meets both, and Bernardo's fallback applies: **the V8s need a faster machine than
+this laptop**; stage 066 plays them and says so (app-design §15). The pipes' imaging is a lead
+for stage 062. The laptop's own state moves the absolute numbers by about ±10 % between days
+(the cross-plane V8 at low read 1.28×, 1.34× and 1.40× on three of them); interleaved
+comparisons are unaffected.
+
+Tools kept from the search: `rb_cli sound --pipe-rate HZ` and `rb_bench_render --pipe-rate HZ`
+(over the quality's; not traced), `tools/tier_compare.py`'s `low-p19` and `low-p16`
+(`tools/test_tier_compare.py`); `rb_cli`'s eleven parity drives stay byte-identical.
+
 ## Decisions and what is left
 
 * **Decided:** the baseline is Bernardo's laptop, assumed; the tier's tolerances are

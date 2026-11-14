@@ -166,6 +166,8 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 
 **Deliverable:** Profile the validated full implementation; optimize preparation, storage, SIMD/SoA and scheduling where measurements justify it. Define each tier, hardware demand, transition behavior and preserved audible band.
 
+**Lead (2026-11-13, stage 118's V8 search):** pipes slower than 24 kHz run the V8s at 1.8–2.2× real time on the baseline laptop with their torque, power and VE within about 1 %, but the sound's highs rise 3–44 dB: the listener seems to hold each pipe-rate flow value until the next, imaging into the treble. Smoothing that hand-off may make slower pipes usable; it changes every quality's sound, so it is measured here with the sound checks, not before.
+
 **Required exit evidence:** No-tap/no-file native costs on each system's compiler (WebAssembly recorded, not gating), state/audio parity within stage 122's cross-compiler tolerance, bounded memory/rebuild costs and repeated stress runs. Recheck all physics/audio gates after optimization. Keep old 4x-native/2x-WASM goals explicitly unmet until demonstrated or revised with Bernardo.
 
 **Stop/reject rule:** Below-real-time correctness prototypes do not qualify the product. No silent physics-quality reduction; measured realism benefit must justify cost. Real audio-device deadlines are stages 069 and 099.

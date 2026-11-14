@@ -4,6 +4,17 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-13: The V8s' speed before stage 066
+
+- docs/stage-118.md, "The V8s": AVX2 and lazy gas ranges don't help (the latter measured
+  −1.9 %, reverted); pipes at 16/19.2 kHz reach the speed but change the sound by 3–44 dB.
+  Decision (app-design §15): the V8s need a faster machine than the baseline laptop, and 066
+  says so. Lead for 062: the listener's hand-off of pipe-rate flows images into the treble.
+- New tool options: `rb_cli sound --pipe-rate`, `rb_bench_render --pipe-rate`,
+  `tier_compare.py` variants `low-p19`/`low-p16`.
+- Bernardo's feedback for 066 is in its roadmap entry: throttle styles, his Razer analog
+  keyboard, real relative levels with headroom, a lost device's notice.
+
 ## 2026-11-09: Stage 124, the application's foundation (two Sonnet builders, reviewed by Claude Opus)
 
 - [docs/stage-124.md](docs/stage-124.md) (and docs/stage-124-addon.md). `app/`: Electron 45, the

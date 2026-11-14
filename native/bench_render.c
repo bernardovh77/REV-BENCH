@@ -130,13 +130,21 @@ static const char *const DRIVES[DRIVE_COUNT] = { "idle", "hold", "rev" };
 #define QUALITY_COUNT (RB_QUALITY_COUNT + EXTRA_QUALITIES)
 static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "os3" };
 
+/* The pipes' rate over every quality's, Hz (--pipe-rate); 0: the quality's. */
+static double pipe_rate_override = 0.0;
+
 /* Sets cfg's oversample and pipe rate for quality q (an index of QUALITIES). */
 static int configure(rb_config *cfg, int q)
 {
-    if (q < RB_QUALITY_COUNT) return rb_config_quality(cfg, q);
-    cfg->oversample = q - RB_QUALITY_COUNT + 3;
-    cfg->pipe_rate = 0.0;   /* the default, 48 kHz */
-    return RB_OK;
+    int rc = RB_OK;
+    if (q < RB_QUALITY_COUNT) {
+        rc = rb_config_quality(cfg, q);
+    } else {
+        cfg->oversample = q - RB_QUALITY_COUNT + 3;
+        cfg->pipe_rate = 0.0;   /* the default, 48 kHz */
+    }
+    if (pipe_rate_override > 0.0) cfg->pipe_rate = pipe_rate_override;
+    return rc;
 }
 static const char *const SCENES[RB_SCENE_COUNT] = { "asphalt", "grass", "wall", "garage",
                                                     "dyno", "iso", "passby", "cabin" };
@@ -371,6 +379,12 @@ int main(int argc, char **argv)
         } else if (!strcmp(a, "--runs") && v) {
             runs = atoi(argv[++i]);
             if (runs < 1 || runs > 100) { fprintf(stderr, "rb_bench_render: bad --runs\n"); return 2; }
+        } else if (!strcmp(a, "--pipe-rate") && v) {
+            pipe_rate_override = atof(argv[++i]);
+            if (!(pipe_rate_override >= 12000.0 && pipe_rate_override <= 96000.0)) {
+                fprintf(stderr, "rb_bench_render: --pipe-rate must be in [12000, 96000]\n");
+                return 2;
+            }
         } else if (!strcmp(a, "--rate") && v) {
             rate = atof(argv[++i]);
         } else if (!strcmp(a, "--scene") && v) {

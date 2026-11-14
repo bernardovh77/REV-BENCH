@@ -402,9 +402,11 @@ Linux packages come with stage 126.
   (headphones unplugged), the app keeps playing on the system's new default device and shows a
   short notice naming it; it never stops to ask. The host already reopens the default device;
   stage 066 adds the notice.
-- **The V8s get the core's speed before stage 066** (2026-11-13). They missed 1.5× real time at
-  low quality on the baseline laptop (stage 118); the core is sped up first, the sound kept bit
-  for bit, rather than the V8s being marked as needing a faster machine.
+- **The V8s need a faster machine than the baseline laptop** (2026-11-13). They missed 1.5×
+  real time at low quality (stage 118). Tried first, as Bernardo chose: bit-identical speed-ups
+  (none left that help) and then a V8-only cheaper tier, slower pipes (16 and 19.2 kHz), which
+  reached the speed but changed the sound far past 1 dB. So, his fallback: stage 066 plays the
+  V8s anyway and says plainly that this machine can't keep up with them, never hiding it.
 
 - **Levels, throttle and analog keys for stage 066** (2026-11-13): real relative loudness with
   headroom and a volume control; on/off, ramped, analog-key and controller throttles; his

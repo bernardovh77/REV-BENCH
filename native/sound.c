@@ -150,6 +150,7 @@ typedef struct sound_options {
     int seed_given, burn_model, drive, use_float, where, equal, quality, layers, scene;
     int momentum_order, outlet_radiation, muffler, rate_given;
     double rate;
+    double pipe_rate;      /* Hz; 0: the quality's (or the default)                    */
     const char *headers;   /* each header's length, m, comma-separated; NULL: the preset's */
 } sound_options;
 
@@ -256,6 +257,8 @@ static int read_options(int argc, char **argv, sound_options *o)
             ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->rate);
         else if (!strcmp(a, "-x") || !strcmp(a, "--oversample"))
             ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->os);
+        else if (!strcmp(a, "--pipe-rate"))
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->pipe_rate);
         else if (!strcmp(a, "--quality"))
             ok = (o->quality = cli_quality_from(cli_take_value(argc, argv, &i))) >= 0;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
@@ -291,6 +294,14 @@ static int read_options(int argc, char **argv, sound_options *o)
     }
     if (o->seed_given && !(o->seed >= 1 && o->seed <= 4294967295.0 && floor(o->seed) == o->seed)) {
         fprintf(stderr, "rb_cli sound: --seed must be an integer in [1, 4294967295]\n");
+        return 2;
+    }
+    if (o->pipe_rate != 0.0 && !(o->pipe_rate >= 12000.0 && o->pipe_rate <= 96000.0)) {
+        fprintf(stderr, "rb_cli sound: --pipe-rate must be in [12000, 96000] Hz\n");
+        return 2;
+    }
+    if (o->pipe_rate != 0.0 && o->trace_path) {
+        fprintf(stderr, "rb_cli sound: --pipe-rate can't be traced (a trace names a quality)\n");
         return 2;
     }
     if (o->os != floor(o->os) || o->os < 1.0 || o->os > RB_MAX_OVERSAMPLE) {
@@ -374,6 +385,7 @@ int cli_sound(int argc, char **argv)
         fprintf(stderr, "rb_cli sound: no --quality at that --rate\n");
         return 2;
     }
+    if (o.pipe_rate > 0.0) cfg.pipe_rate = o.pipe_rate;   /* over the quality's (a tier's search) */
     rb_sim *sim = rb_create(&cfg);
     if (!sim) {
         fprintf(stderr, "rb_cli sound: invalid --rate (must be %g..%g Hz)\n",

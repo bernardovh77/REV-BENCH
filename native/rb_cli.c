@@ -222,8 +222,10 @@ void cli_usage(FILE *f)
         "      --trace FILE      the drive's command trace (host/include/rb_host_trace.h), which\n"
         "                        rb_host_render plays through the real-time host: the same bits\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
-        "      --quality Q       low, medium, high or ultra: physics/pipe rates together\n"
-        "                        (rb.h: RB_QUALITY_*; high is the default)\n"
+        "      --quality Q       low, medium, high, ultra or balanced: physics/pipe rates\n"
+        "                        together (rb.h: RB_QUALITY_*; high is the default)\n"
+        "      --pipe-rate HZ    the pipes' rate over the quality's, 12000..96000 (a tier's\n"
+        "                        search; can't be traced)\n"
         "\n",
         f);
     fputs(   /* split: C99 compilers need only take string literals up to 4095 characters */

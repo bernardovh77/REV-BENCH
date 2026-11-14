@@ -45,6 +45,9 @@ RESEED = "2"
 VARIANTS = {
     "os2": ["-x", "2"],       # physics 96 kHz, pipes 48 kHz
     "os3": ["-x", "3"],       # physics 144 kHz, pipes 48 kHz
+    # stage 118b's V8 search: low's 96 kHz physics with the pipes slower than its 24 kHz
+    "low-p19": ["--quality", "low", "--pipe-rate", "19200"],
+    "low-p16": ["--quality", "low", "--pipe-rate", "16000"],
 }
 
 
