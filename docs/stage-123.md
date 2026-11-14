@@ -329,6 +329,22 @@ the trace after freeing it (a use after free in the tool, not the host; its WAVs
 written and closed, so parity always held). It reads the rate and channels first now; 30
 renders of the three traces that crashed ran clean.
 
+## The render thread on the fast cores (2026-11-13, before stage 066)
+
+On a hybrid CPU the engine runs at about 0.6 times the speed on an efficiency core (stage
+118), and the 15-minute run only passed because Windows happened to keep the "Pro Audio"
+thread on the performance cores. Now the render thread asks for them: `host/src/cores.c` picks
+the logical processors of the highest efficiency class (none where every core is alike, as on
+CI's runners), `platform_win.c` sets them as the thread's selected CPU sets (a preference the
+scheduler honours, not a hard affinity) and reads them back. `rb_host_priority` gained
+`fast_cores` and `all_cores`, and the policy says it: on this laptop "MMCSS Pro Audio, 4 fast
+cores of 12". Tests: `test_cores_pick_only_the_fastest_class` (every system) and
+`test_cores_render_thread_runs_on_the_fast_cores` (against the machine's own answer). Planted:
+picking the slowest class and restricting alike cores (caught by the first), never applying it
+(caught by the second); reporting the chosen count instead of reading it back is an equivalent
+mutant, retired with a note. On CI's alike cores the second test checks only that nothing is
+restricted. Linux keeps to no cores until stage 126.
+
 ## What is left
 
 - **The V8s on the real device**, once stage 118's tier reaches them (a faster machine or core).

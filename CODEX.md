@@ -10,6 +10,8 @@ CLAUDE.md and .claude/ have been preserved.
   −1.9 %, reverted); pipes at 16/19.2 kHz reach the speed but change the sound by 3–44 dB.
   Decision (app-design §15): the V8s need a faster machine than the baseline laptop, and 066
   says so. Lead for 062: the listener's hand-off of pipe-rate flows images into the treble.
+- The host's render thread keeps to a hybrid CPU's fast cores (`host/src/cores.c`, docs/stage-123.md);
+  `rb_host_priority.fast_cores`/`all_cores`.
 - New tool options: `rb_cli sound --pipe-rate`, `rb_bench_render --pipe-rate`,
   `tier_compare.py` variants `low-p19`/`low-p16`.
 - Bernardo's feedback for 066 is in its roadmap entry: throttle styles, his Razer analog

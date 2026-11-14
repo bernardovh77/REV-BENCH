@@ -30,6 +30,8 @@ void test_evring_stress_taken_plus_lost_is_everything(void);
 /* ---- the host (test_host.c) ---- */
 void test_host_render_thread_fills_the_ring_to_its_target(void);
 void test_host_render_thread_priority_is_set_and_reported(void);
+void test_cores_pick_only_the_fastest_class(void);
+void test_cores_render_thread_runs_on_the_fast_cores(void);
 void test_host_command_is_applied_and_acknowledged(void);
 void test_host_acks_come_in_order_with_their_ids(void);
 void test_host_full_command_queue_refuses_and_never_waits(void);
@@ -105,6 +107,8 @@ static const test_entry TESTS[] = {
     T(test_evring_stress_taken_plus_lost_is_everything),
     T(test_host_render_thread_fills_the_ring_to_its_target),
     T(test_host_render_thread_priority_is_set_and_reported),
+    T(test_cores_pick_only_the_fastest_class),
+    T(test_cores_render_thread_runs_on_the_fast_cores),
     T(test_host_command_is_applied_and_acknowledged),
     T(test_host_acks_come_in_order_with_their_ids),
     T(test_host_full_command_queue_refuses_and_never_waits),

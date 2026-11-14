@@ -343,6 +343,10 @@ typedef struct rb_host_priority {
     int32_t  os_priority;           /* what the system says its priority is    */
     uint32_t task_index;
     char     policy[64];            /* in words                                */
+    int32_t  fast_cores;            /* logical processors the thread keeps to: on a
+                                       hybrid CPU its fastest class (read back from
+                                       the system); 0 where all are alike    */
+    int32_t  all_cores;             /* logical processors the system has, 0 if unknown */
 } rb_host_priority;
 
 typedef struct rb_host_stats {

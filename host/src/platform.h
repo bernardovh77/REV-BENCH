@@ -47,6 +47,8 @@ typedef struct rbh_priority {
     int      os_priority;    /* the thread's priority as the system reports it */
     unsigned task_index;
     char     policy[64];
+    int      fast_cores;     /* the processors it keeps to (cores.h), read back */
+    int      all_cores;
 } rbh_priority;
 
 /* Called by the render thread itself when it starts, and when it ends. */

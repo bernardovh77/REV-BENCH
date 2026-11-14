@@ -195,4 +195,19 @@ BUGS = {
         "    int rc = new_epoch(h);       /* the audio in the ring is from before the sleep: dropped */",
         "    int rc = RB_HOST_OK;",
         ["test_device_suspend"], 120),
+    # the render thread kept to the fast cores (2026-11-13, before stage 066)
+    'fast-cores-picks-the-slowest': ("host/src/cores.c",
+        "        if (classes[i] == top) picked[n++] = i;",
+        "        if (classes[i] == lowest) picked[n++] = i;",
+        ["test_cores_pick", "test_cores_render_thread"], 120),
+    'fast-cores-restricts-alike-cores': ("host/src/cores.c",
+        "    if (top == lowest) return 0;   /* every core alike: keep to none */",
+        "    if (top == lowest && count < 0) return 0;",
+        ["test_cores_pick"], 120),
+    'fast-cores-never-applied': ("host/src/platform_win.c",
+        "    if (!SetThreadSelectedCpuSets(GetCurrentThread(), chosen, (ULONG)fast)) return;",
+        "    if (fast) return;",
+        ["test_cores_render_thread"], 120),
+    # retired: reporting the chosen count instead of reading it back is an equivalent mutant
+    # (the line runs only after SetThreadSelectedCpuSets succeeded, when both are the same)
 }

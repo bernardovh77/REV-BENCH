@@ -666,6 +666,8 @@ int rb_host_get_stats(const rb_host *h, rb_host_stats *out)
         out->priority.boosted = h->priority.boosted;
         out->priority.os_priority = h->priority.os_priority;
         out->priority.task_index = h->priority.task_index;
+        out->priority.fast_cores = h->priority.fast_cores;
+        out->priority.all_cores = h->priority.all_cores;
         snprintf(out->priority.policy, sizeof out->priority.policy, "%s", h->priority.policy);
     }
     return RB_HOST_OK;
