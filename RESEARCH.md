@@ -486,3 +486,40 @@ representations and the limits of their evidence. [The primary-source
 companion](docs/audio-robustness-research.md) records validity domains and maps
 all existing audit findings. A faster timestep, brighter spectrum or neural
 model is not itself evidence of realism.
+
+## 2026-11-15: the first known engine to compare with (stage 127)
+
+The catalog's recordings were of engines whose exhaust, state and microphone are unknown.
+`tools/real_engines.csv` now has one whose engine is known and close to a preset: a 2002 Honda
+F20C (2.0 L, naturally aspirated, inline-4) recorded in its engine bay while driven
+([Wikimedia Commons](https://commons.wikimedia.org/wiki/File:2002-Honda-F20C.ogg), Tyler
+Riddle, CC BY 3.0; a dynamic microphone into a 48 kHz, 24-bit interface, published as Ogg
+Vorbis at 245 kbit/s). It has no idle. It has a steady stretch near 2850 rpm (60–64.5 s) and
+two full pulls to about 8800 rpm (43–59 s, 110–135 s).
+
+Against the four held at 2850 rpm (`tools/compare_real.py compare --kind steady`):
+
+| | above 1 kHz | above 2 kHz | above 4 kHz | slope | repeat below 500 Hz | repeat 0.5–2 kHz |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Honda F20C, engine bay, cruising | −20.1 | −32.0 | −41.1 | −8.8 | **+4.6** | −11.6 |
+| ours, from the front, wide open | −12.6 | −18.8 | −25.6 | −2.9 | **+23.2** | −5.9 |
+| ours, from behind, wide open | −9.7 | −18.8 | −24.6 | −2.1 | **+20.8** | −8.9 |
+
+- **The repeat is the finding.** Below 500 Hz our cycle repeats 16–19 dB more exactly than this
+  engine's, and it is the one measure here that the differences between the two set-ups
+  cannot explain. It agrees with stage 12's range for unknown engines (−2 to +13 dB) and with
+  what Bernardo hears ("less like a piano note"). Stage 128 starts from it.
+- **The brightness is not a finding yet.** Ours has 13–16 dB more above 2 kHz, but ours is wide
+  open on a dyno and heard from outside, and the Honda is cruising at part load with the
+  microphone under the bonnet, a dynamic one. A fair comparison needs the preset given the
+  F20C's geometry and the same load.
+- **Limits.** One engine, one microphone, lossy audio, a perspective (the bay) that no
+  `RB_HEAR_*` place matches, and the speed read from the strongest low line, not logged.
+
+Looked for and not found on Freesound or Wikimedia Commons (2026-11-15): a recording of a
+known naturally aspirated inline-6, flat-plane V8 or boxer-4 with a free-flowing or straight
+exhaust. The open-header V8s added to the catalog (Freesound 432508, CC0) are several cars in
+a parade with a crowd: they show how bright unmuffled V8s are (−6 dB above 2 kHz) and nothing
+finer. Videos of named, straight-piped engines exist in plenty, but their audio isn't
+licensed for copying; Bernardo's own recording of a known car (the review's problem 2) is
+still the reference that would settle most.

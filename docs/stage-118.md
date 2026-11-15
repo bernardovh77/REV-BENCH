@@ -471,3 +471,14 @@ Tools kept from the search: `rb_cli sound --pipe-rate HZ` and `rb_bench_render -
   in `ALL_OBJ`), `CMakeLists.txt` (`rb_bench_render`, built from public headers only),
   `tests/test_main.c` (the six new tests), `web/src/wasm/rb_core.*` (`make wasm`).
   No change to `ci.yml` or `run_tests.py`.
+
+## Since: stage 127 (2026-11-15)
+
+The lead above ("the listener's hand-off of pipe-rate flows images into the treble") was right
+and is fixed: the listener now reads pipes slower than 48 kHz between their steps
+([docs/stage-127.md](stage-127.md), "The pipes' hand-off"). The declared tiers hold as stated
+(the six, the boxer and the V8s at low re-measured: inside 1 dB but the cross-plane V8's one
+orders cell at the noise floor, as before; the four's balanced is bit for bit). With the false
+treble gone, 19.2 kHz pipes bring both V8s to about 1.5 times real time with four cells
+outside 1 dB (three repetition measures, the worst −2.55 dB, and one band at +1.03 dB): whether they get that tier is Bernardo's choice, and
+until he makes it they stay at low, short of 1.5.

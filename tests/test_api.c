@@ -522,3 +522,56 @@ void test_api_events_share_a_step(void)
     CHECK_EQ_INT((int)backwards, 0);
     rb_destroy(sim);
 }
+
+void test_api_variant(void)
+{
+    /* The A/B switch (stage 127): a live integer setting. With no candidate
+     * reading a number, it plays the accepted sound, bit for bit, and it
+     * switches while the engine runs without a rebuild. */
+    enum { HEARD = 4800 };
+    static float a[HEARD], b[HEARD];
+    rb_sim *sim = rb_create(NULL);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK(rb_get_param(sim, RB_PARAM_VARIANT) == 0.0);
+    CHECK(strcmp(rb_param_name(RB_PARAM_VARIANT), "variant") == 0);
+    CHECK(rb_param_flags(RB_PARAM_VARIANT) & RB_PF_LIVE);
+    CHECK(rb_param_flags(RB_PARAM_VARIANT) & RB_PF_INTEGER);
+    CHECK(!(rb_param_flags(RB_PARAM_VARIANT) & (RB_PF_REBUILD | RB_PF_CONTROL)));
+    CHECK(rb_param_max(RB_PARAM_VARIANT) == RB_VARIANT_MAX);
+
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_VARIANT, 1.5), RB_ERR_VALUE);
+    CHECK(rb_get_param(sim, RB_PARAM_VARIANT) == 0.0);
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_VARIANT, 99), RB_CLAMPED);
+    CHECK(rb_get_param(sim, RB_PARAM_VARIANT) == RB_VARIANT_MAX);
+
+    /* It is a setting, not a control: a rebuild keeps it, without a new
+     * generation of its own. */
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_VARIANT, 3), RB_OK);
+    const double generation = rb_get_telemetry(sim, RB_TLM_GENERATION);
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_VARIANT, 2), RB_OK);
+    CHECK(rb_get_telemetry(sim, RB_TLM_GENERATION) == generation);
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("i4")), RB_OK);
+    CHECK(rb_get_param(sim, RB_PARAM_VARIANT) == 2.0);
+
+    /* A number no candidate uses is today's sound exactly. */
+    for (int pass = 0; pass < 2; pass++) {
+        float *out = pass ? b : a;
+        rb_destroy(sim);   /* a fresh sim each: the output's filters start alike */
+        sim = rb_create(NULL);
+        CHECK(sim != NULL);
+        if (!sim) return;
+        CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("i4")), RB_OK);
+        rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+        rb_set_param(sim, RB_PARAM_VARIANT, pass ? RB_VARIANT_MAX : 0);
+        rb_set_param(sim, RB_PARAM_HOLD_RPM, 2500);
+        rb_set_param(sim, RB_PARAM_IGNITION, 1);
+        rb_set_param(sim, RB_PARAM_THROTTLE, 1);
+        rb_render_block(sim, out, HEARD);
+    }
+    CHECK(memcmp(a, b, sizeof a) == 0);
+    double power = 0.0;
+    for (int n = 0; n < HEARD; n++) power += (double)a[n] * a[n];
+    CHECK(power > 0.0);   /* and it is a sound */
+    rb_destroy(sim);
+}

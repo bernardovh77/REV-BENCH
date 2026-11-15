@@ -194,6 +194,234 @@ void test_audio_listener_monopole(void)
     }
 }
 
+/* The amplitude of the tone at f (cycles per sample) in x[0..n-1], under a
+ * Hann window. */
+static double tone_amplitude(const double *x, int n, double f)
+{
+    double re = 0.0, im = 0.0, weight = 0.0;
+    for (int i = 0; i < n; i++) {
+        const double w = 0.5 - 0.5 * cos(2.0 * PI * (i + 0.5) / n);
+        re += w * x[i] * cos(2.0 * PI * f * i);
+        im += w * x[i] * sin(2.0 * PI * f * i);
+        weight += w;
+    }
+    return 2.0 * sqrt(re * re + im * im) / weight;
+}
+
+/* A 1 kHz flow from pipes that step at 16 kHz, heard at 96 kHz: the pressure
+ * at 1 kHz, and at 15 kHz, the nearest copy the pipe steps' jumps make. */
+static void heard_from_slow_pipes(int smooth, double *tone, double *copy)
+{
+    enum { EVERY = 6, STEPS = 96000 / 4 };
+    static rb_listener l;
+    static double heard[STEPS];
+    const double dt = 1.0 / 96000.0, pipe_dt = EVERY * dt, rho0 = 1.2, f = 1000.0;
+    const double a[3] = { 0.0, 0.0, 1.0 }, at[3] = { 1.0, 0.0, 1.0 };
+    const double *pos[RB_LISTEN_SOURCES] = { a, NULL, NULL };
+    const double zero[RB_LISTEN_SOURCES] = { 0.0, 0.0, 0.0 };
+    rb_listener_set(&l, pos, at, 0.0, 343.0, pipe_dt);
+    if (smooth) CHECK(rb_listener_smooth(&l, EVERY) == 0);
+    rb_listener_prime(&l, zero);
+    for (int n = 0; n < STEPS; n++) {
+        if (n % EVERY == 0) {
+            const double q[RB_LISTEN_SOURCES] = { 0.01 * sin(2.0 * PI * f * n * dt), 0.0, 0.0 };
+            rb_listener_push(&l, q);
+        }
+        heard[n] = rb_listener_hear(&l, rho0, dt);
+    }
+    *tone = tone_amplitude(heard + 2000, STEPS - 2000, f * dt);
+    *copy = tone_amplitude(heard + 2000, STEPS - 2000, 15000.0 * dt);
+}
+
+void test_audio_listener_smooths_slow_pipes(void)
+{
+    /* A monopole 1 m away: p = rho0 / (4 pi r) dQ/dt, so a flow of amplitude
+     * 0.01 m^3/s at 1 kHz is heard at rho0 / (4 pi) 0.01 (2 pi 1000) Pa. */
+    const double expect = 1.2 / (4.0 * PI) * 0.01 * 2.0 * PI * 1000.0;
+    double tone, copy;
+
+    /* Heard as the pipe steps come, every jump is an impulse: the copy at
+     * 15 kHz is as strong as the tone itself (what stage 118's search for a
+     * cheaper V8 tier measured as +13 to +44 dB of treble). */
+    heard_from_slow_pipes(0, &tone, &copy);
+    CHECK_NEAR(tone / expect, 1.0, 0.02);
+    CHECK(copy > 0.9 * tone);
+
+    /* Smoothed, the tone is the same and the copy at least 50 dB under it. */
+    heard_from_slow_pipes(1, &tone, &copy);
+    CHECK_NEAR(tone / expect, 1.0, 0.02);
+    CHECK(copy < tone * pow(10.0, -50.0 / 20.0));
+
+    /* An `every` the smoother refuses changes nothing. */
+    static rb_listener l;
+    const double a[3] = { 0.0, 0.0, 1.0 }, at[3] = { 1.0, 0.0, 1.0 };
+    const double *pos[RB_LISTEN_SOURCES] = { a, NULL, NULL };
+    rb_listener_set(&l, pos, at, 0.0, 343.0, 1.0 / 48000.0);
+    CHECK(rb_listener_smooth(&l, 1) == -1);
+    CHECK(l.smooth.every == 0);
+}
+
+void test_audio_smoother(void)
+{
+    static rb_smoother s;
+    /* Refused: nothing to smooth, or more steps than it has taps for. */
+    CHECK(rb_smoother_init(&s, 1) == -1);
+    CHECK(s.every == 0);
+    CHECK(rb_smoother_delay(&s) == 0.0);
+    rb_smoother_push(&s, 3.0);
+    CHECK(rb_smoother_next(&s) == 3.0);   /* off: the value as it came */
+    CHECK(rb_smoother_init(&s, RB_SMOOTH_MAX + 1) == -1);
+
+    for (int every = 2; every <= RB_SMOOTH_MAX; every += (every < 8) ? 1 : 7) {
+        CHECK(rb_smoother_init(&s, every) == 0);
+        CHECK_NEAR(rb_smoother_delay(&s), 0.5 * (RB_SMOOTH_TAPS * every - 1), 0.0);
+        /* A steady value stays exactly steady, whatever the phase. */
+        rb_smoother_prime(&s, 0.7);
+        for (int n = 0; n < 3 * every; n++) {
+            if (n % every == 0) rb_smoother_push(&s, 0.7);
+            CHECK_NEAR(rb_smoother_next(&s), 0.7, 1e-15);
+        }
+        /* A ramp comes out as the same ramp, late by the delay: no step in
+         * it is held. */
+        rb_smoother_prime(&s, 0.0);
+        const double late = rb_smoother_delay(&s);
+        for (int n = 0; n < 40 * every; n++) {
+            if (n % every == 0) rb_smoother_push(&s, (double)n);
+            const double y = rb_smoother_next(&s);
+            if (n > 2 * RB_SMOOTH_TAPS * every) CHECK_NEAR(y, n - late, 0.02 * every);
+        }
+        /* A pipe step that never comes holds the last phase: no wild read. */
+        for (int n = 0; n < 3 * every; n++) CHECK(isfinite(rb_smoother_next(&s)));
+    }
+}
+
+void test_audio_variant_reaches_the_sim(void)
+{
+    /* RB_PARAM_VARIANT lands where candidate code reads it, and a rebuild
+     * leaves it there. */
+    rb_sim *sim = rb_create(NULL);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK_EQ_INT(sim->variant, 0);
+    rb_set_param(sim, RB_PARAM_VARIANT, 5);
+    CHECK_EQ_INT(sim->variant, 5);
+    rb_reset(sim);
+    CHECK_EQ_INT(sim->variant, 5);
+    rb_destroy(sim);
+}
+
+/* The share (dB) of x's energy that lies between 13 and 16 kHz, x at 48 kHz
+ * (one channel of `stride` interleaved): where the copies made by 16 kHz
+ * pipe steps land. */
+static double treble_copies_db(const float *x, int frames, int stride)
+{
+    double total = 0.0, band = 0.0;
+    for (int n = 0; n < frames; n++) total += (double)x[n * stride] * x[n * stride];
+    for (double f = 13100.0; f < 16000.0; f += 100.0) {
+        double re = 0.0, im = 0.0;
+        for (int n = 0; n < frames; n++) {
+            const double w = 0.5 - 0.5 * cos(2.0 * PI * (n + 0.5) / frames);
+            re += w * x[n * stride] * cos(2.0 * PI * f * n / 48000.0);
+            im += w * x[n * stride] * sin(2.0 * PI * f * n / 48000.0);
+        }
+        band += re * re + im * im;
+    }
+    /* each bin's energy against the whole signal's, as a Hann window weighs them */
+    return 10.0 * log10(band / (0.375 * frames * total) + 1e-30);
+}
+
+/* The energy of x (one channel of `stride` interleaved, at 48 kHz) at the
+ * four's firing orders at 3000 rpm: 100, 200 ... 2000 Hz, under a Hann
+ * window. The exhaust's own sound, where no pipe-step copy lands. */
+static double firing_orders_energy(const float *x, int frames, int stride)
+{
+    double sum = 0.0;
+    for (double f = 100.0; f <= 2000.0; f += 100.0) {
+        double re = 0.0, im = 0.0;
+        for (int n = 0; n < frames; n++) {
+            const double w = 0.5 - 0.5 * cos(2.0 * PI * (n + 0.5) / frames);
+            re += w * x[n * stride] * cos(2.0 * PI * f * n / 48000.0);
+            im += w * x[n * stride] * sin(2.0 * PI * f * n / 48000.0);
+        }
+        sum += re * re + im * im;
+    }
+    return sum;
+}
+
+/* The four held at 3000 rpm wide open with its pipes at 16 kHz, the pipes'
+ * layer alone, heard in mono (stereo 0) or through a stereo scene; `smooth`
+ * 0 switches the smoother off by hand. Returns treble_copies_db of it, and
+ * its firing orders' energy in *orders. */
+static double slow_pipes_treble(int stereo, int smooth, double *orders)
+{
+    enum { HEARD = 12000 };
+    static float x[2 * HEARD];
+    rb_config c;
+    rb_config_default(&c);
+    rb_config_quality(&c, RB_QUALITY_LOW);
+    c.pipe_rate = 16000.0;
+    rb_sim *sim = rb_create(&c);
+    CHECK(sim != NULL);
+    if (!sim) return 0.0;
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("i4")), RB_OK);
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    rb_set_param(sim, RB_PARAM_LAYERS, RB_LAYER_PIPES);
+    rb_set_param(sim, RB_PARAM_HOLD_RPM, 3000);
+    rb_set_param(sim, RB_PARAM_IGNITION, 1);
+    rb_set_param(sim, RB_PARAM_THROTTLE, 1);
+    if (stereo) CHECK_EQ_INT(rb_set_scene(sim, RB_SCENE_ASPHALT), RB_OK);
+    CHECK_EQ_INT(sim->engine.pipe_every, 6);   /* 96 kHz physics, 16 kHz pipes */
+    CHECK_EQ_INT(sim->listener.smooth.every, 6);
+    if (stereo) for (int j = 0; j < 3; j++) CHECK_EQ_INT(sim->scene_smooth[j].every, 6);
+    if (!smooth) {
+        sim->listener.smooth.every = sim->listener.smooth_front.every = 0;
+        for (int j = 0; j < 3; j++) sim->scene_smooth[j].every = 0;
+    }
+    for (int pass = 0; pass < 3; pass++) {   /* the last quarter second, the engine settled */
+        if (stereo) CHECK_EQ_INT(rb_render_stereo(sim, x, HEARD), HEARD);
+        else rb_render_block(sim, x, HEARD);
+    }
+    rb_destroy(sim);
+    *orders = firing_orders_energy(x, HEARD, stereo ? 2 : 1);
+    return treble_copies_db(x, HEARD, stereo ? 2 : 1);
+}
+
+void test_audio_sim_smooths_only_slow_pipes(void)
+{
+    /* Pipes at 48 kHz (the high and balanced qualities) are heard as they
+     * come, so those renders stay as they were; slower pipes are smoothed,
+     * in mono and in a stereo scene, and a rebuild keeps it so. */
+    static const struct { int quality, every; } Q[] = {
+        { RB_QUALITY_HIGH, 0 }, { RB_QUALITY_BALANCED, 0 }, { RB_QUALITY_LOW, 4 }, { RB_QUALITY_MEDIUM, 8 },
+    };
+    for (size_t k = 0; k < sizeof Q / sizeof Q[0]; k++) {
+        rb_sim *sim = rb_create_with_quality(48000.0, Q[k].quality);
+        CHECK(sim != NULL);
+        if (!sim) return;
+        CHECK_EQ_INT(sim->listener.smooth.every, Q[k].every);
+        CHECK_EQ_INT(sim->listener.smooth_front.every, Q[k].every);
+        CHECK_EQ_INT(rb_set_scene(sim, RB_SCENE_ASPHALT), RB_OK);
+        for (int j = 0; j < 3; j++) CHECK_EQ_INT(sim->scene_smooth[j].every, Q[k].every);
+        CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("v8-cross")), RB_OK);
+        CHECK_EQ_INT(sim->listener.smooth.every, Q[k].every);
+        for (int j = 0; j < 3; j++) CHECK_EQ_INT(sim->scene_smooth[j].every, Q[k].every);
+        rb_destroy(sim);
+    }
+
+    /* What it is for: with the pipes at 16 kHz the copies of the exhaust's
+     * sound around 16 kHz are at least 20 dB weaker smoothed than heard as
+     * the pipe steps come, in mono and in stereo; and the exhaust's own
+     * sound, its firing orders, is as loud either way (within 1 dB). */
+    for (int stereo = 0; stereo < 2; stereo++) {
+        double raw_orders, smooth_orders;
+        const double raw = slow_pipes_treble(stereo, 0, &raw_orders);
+        const double smooth = slow_pipes_treble(stereo, 1, &smooth_orders);
+        CHECK(smooth < raw - 20.0);
+        CHECK(raw_orders > 0.0);
+        CHECK(fabs(10.0 * log10(smooth_orders / raw_orders)) < 1.0);
+    }
+}
+
 void test_audio_listener_paths(void)
 {
     /* Two sources 1 m and about 2.5 m away, 0.35 m up, the listener 0.5 m

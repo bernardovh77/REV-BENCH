@@ -116,6 +116,42 @@ typedef struct rb_cabin {
 
 double rb_cabin_process(rb_cabin *cb, double rear, double front, double mount, double dt);
 
+/* ---- the smoother (stage 127) ----
+ * The pipes' flows change once a pipe step, the listener hears every physics
+ * step. Heard as they come, each change is one jump, and a train of jumps
+ * carries copies of the sound around every multiple of the pipe rate. At
+ * 48 kHz the copies are above hearing and the decimator's filter removes
+ * them; with slower pipes they land in the treble. The smoother reads the
+ * flow between its pipe steps instead, through a windowed-sinc filter: a
+ * polyphase interpolator, one set of taps for each physics step of a pipe
+ * step. It delays the flow by rb_smoother_delay() physics steps. */
+#define RB_SMOOTH_TAPS 12    /* pipe steps the filter spans                      */
+#define RB_SMOOTH_MAX  64    /* the most physics steps in a pipe step            */
+
+typedef struct rb_smoother {
+    int    every;                               /* physics steps a pipe step; 0: off */
+    int    phase;                               /* physics steps since the last push */
+    double x[RB_SMOOTH_TAPS];                   /* the last values, the newest first */
+    double h[RB_SMOOTH_MAX][RB_SMOOTH_TAPS];    /* each phase's taps: they add up to 1 */
+} rb_smoother;
+
+/* A smoother for flows that change every `every` physics steps. Returns 0;
+ * or -1 and stays off (the value is passed on as it comes) when every is
+ * under 2 or over RB_SMOOTH_MAX. */
+int    rb_smoother_init(rb_smoother *s, int every);
+
+/* As if the value had always been v: nothing jumps. */
+void   rb_smoother_prime(rb_smoother *s, double v);
+
+/* A pipe step's new value. */
+void   rb_smoother_push(rb_smoother *s, double v);
+
+/* The value at this physics step; call once every physics step. */
+double rb_smoother_next(rb_smoother *s);
+
+/* How late the smoothed value is, in physics steps (0 when off). */
+double rb_smoother_delay(const rb_smoother *s);
+
 typedef struct rb_listener {
     double gain[RB_LISTEN_SOURCES][2];    /* 1 / r of each source's paths (direct,
                                              off the ground), 1/m; 0: no source  */
@@ -138,6 +174,10 @@ typedef struct rb_listener {
     double mount;                         /* Pa: the mounts', in the cabin, now  */
     int    inside;                        /* 1: in the cabin (RB_HEAR_CABIN)     */
     rb_cabin cabin;
+
+    /* stage 127: the flows read between their pipe steps (off until
+     * rb_listener_smooth) */
+    rb_smoother smooth, smooth_front;     /* of `sum` and of `sum_front`         */
 } rb_listener;
 
 /* The listener at `at` and the sources at pos[0..sources-1] (m; z up from the
@@ -151,6 +191,13 @@ void   rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES
  * `tailpipes` tailpipes (1 or 2) and its intake's mouth behind the grille
  * (audio.c has the car's measurements). Returns 0, or -1 for a bad place. */
 int    rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double pipe_dt);
+
+/* Reads the flows between their pipe steps from now on (the smoother above),
+ * `every` physics steps to a pipe step, and delays stage 12b's sources by as
+ * much, so both still arrive together. Call it after rb_listener_place_noise
+ * and before rb_listener_prime. Returns 0, or -1 (and changes nothing) for
+ * an `every` the smoother refuses. */
+int    rb_listener_smooth(rb_listener *l, int every);
 
 /* How far source j's direct path is (m), 0 if there's no such source. */
 double rb_listener_distance(const rb_listener *l, int j);

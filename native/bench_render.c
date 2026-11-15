@@ -84,7 +84,10 @@ static double now(void)
     clock_gettime(CLOCK_MONOTONIC, &t);
     return (double)t.tv_sec + 1e-9 * (double)t.tv_nsec;
 }
-#ifdef __wasi__   /* WebAssembly (make bench-render-wasm): one thread, no cores to choose */
+/* WebAssembly (make bench-render-wasm) has one thread and no cores to choose;
+ * macOS and the BSDs have no call that keeps a process to chosen cores
+ * (sched_setaffinity is Linux's). There --cores fails and says so. */
+#if defined(__wasi__) || !defined(__linux__)
 static int pin_to(unsigned long long mask)
 {
     (void)mask;

@@ -158,6 +158,9 @@ int rb_sim_apply(rb_sim *sim, int id)
     case RB_PARAM_EVENTS:
         rb_sim_events_setup(sim);
         break;
+    case RB_PARAM_VARIANT:
+        sim->variant = (int)v;
+        break;
     default: break;   /* the gain and the test tone: read where they're used */
     }
     return RB_OK;

@@ -48,6 +48,7 @@ static const param_info PARAMS[RB_PARAM_COUNT] = {
     [RB_PARAM_SEED]            = { "seed",            "",   0.0,   4294967295.0, 0.0, REBUILD | INT },
     [RB_PARAM_MOMENTUM_ORDER]  = { "momentum_order",  "",   1.0,   2.0,     2.0,    REBUILD | INT },
     [RB_PARAM_EVENTS]          = { "events",          "",   0.0,   1.0,     0.0,    LIVE | INT },
+    [RB_PARAM_VARIANT]         = { "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },
 };
 
 typedef struct telemetry_info {

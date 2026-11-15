@@ -72,7 +72,11 @@ struct rb_sim {
     rb_scene scene;
     rb_decimator scene_aa[RB_SCENE_SOURCES];
     rb_dc_blocker scene_dc[2];
+    int    variant;                /* RB_PARAM_VARIANT: the candidate sound that
+                                      plays; code under listening reads it here  */
     double scene_flow[3];
+    rb_smoother scene_smooth[3];   /* stage 127: each source's flow read between
+                                      its pipe steps (off at 48 kHz pipes)       */
 
     /* ---- model ----
      * Stage 1: a placeholder oscillator that proves the plumbing; stage 11

@@ -162,12 +162,91 @@ static double arriving(const rb_listener *l, double *front)
     return sum;
 }
 
+/* ---- the smoother ---- */
+
+static double bessel_i0(double x);
+
+int rb_smoother_init(rb_smoother *s, int every)
+{
+    memset(s, 0, sizeof *s);
+    if (every < 2 || every > RB_SMOOTH_MAX) return -1;
+    s->every = every;
+
+    /* A low-pass at the physics rate that passes half the pipe rate: a sinc
+     * under a Kaiser window (beta 8: side lobes 80 dB down), RB_SMOOTH_TAPS
+     * pipe steps long. Tap k of phase p is its sample k every + p. */
+    const int length = RB_SMOOTH_TAPS * every;
+    const double centre = 0.5 * (length - 1), beta = 8.0;
+    for (int p = 0; p < every; p++) {
+        double sum = 0.0;
+        for (int k = 0; k < RB_SMOOTH_TAPS; k++) {
+            const double t = (k * every + p) - centre;       /* physics steps */
+            const double u = t / (centre + 1.0);
+            const double x = PI * t / every;
+            const double sinc = (fabs(x) < 1e-12) ? 1.0 : sin(x) / x;
+            s->h[p][k] = sinc * bessel_i0(beta * sqrt(1.0 - u * u));
+            sum += s->h[p][k];
+        }
+        /* Each phase adds up to exactly 1: a steady flow stays steady, and
+         * its derivative, the sound, exactly zero. */
+        for (int k = 0; k < RB_SMOOTH_TAPS; k++) s->h[p][k] /= sum;
+    }
+    return 0;
+}
+
+void rb_smoother_prime(rb_smoother *s, double v)
+{
+    for (int k = 0; k < RB_SMOOTH_TAPS; k++) s->x[k] = v;
+    s->phase = 0;
+}
+
+void rb_smoother_push(rb_smoother *s, double v)
+{
+    for (int k = RB_SMOOTH_TAPS - 1; k > 0; k--) s->x[k] = s->x[k - 1];
+    s->x[0] = v;
+    s->phase = 0;
+}
+
+double rb_smoother_next(rb_smoother *s)
+{
+    if (s->every == 0) return s->x[0];
+    /* A pipe step that comes late (it never should) holds the last phase. */
+    const double *h = s->h[(s->phase < s->every) ? s->phase : s->every - 1];
+    s->phase++;
+    double y = 0.0;
+    for (int k = 0; k < RB_SMOOTH_TAPS; k++) y += h[k] * s->x[k];
+    return y;
+}
+
+double rb_smoother_delay(const rb_smoother *s)
+{
+    return (s->every == 0) ? 0.0 : 0.5 * (RB_SMOOTH_TAPS * s->every - 1);
+}
+
+int rb_listener_smooth(rb_listener *l, int every)
+{
+    rb_smoother probe;
+    if (rb_smoother_init(&probe, every)) return -1;
+    l->smooth = probe;
+    l->smooth_front = probe;
+    rb_smoother_prime(&l->smooth, l->sum);
+    rb_smoother_prime(&l->smooth_front, l->sum_front);
+    /* Stage 12b's sources come later by as much. */
+    const double late = rb_smoother_delay(&probe);
+    for (int j = 0; j < RB_LISTEN_NOISES; j++)
+        for (int k = 0; k < 2; k++)
+            if (l->ngain[j][k] != 0.0) l->ndelay[j][k] = fmin(l->ndelay[j][k] + late, RB_LISTEN_RING - 2);
+    return 0;
+}
+
 void rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES])
 {
     for (int j = 0; j < RB_LISTEN_SOURCES; j++)
         for (int n = 0; n < RB_LISTEN_HISTORY; n++) l->flow[j][n] = q[j];
     l->sum = l->heard = arriving(l, &l->sum_front);
     l->heard_front = l->sum_front;
+    rb_smoother_prime(&l->smooth, l->sum);
+    rb_smoother_prime(&l->smooth_front, l->sum_front);
 }
 
 void rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES])
@@ -175,6 +254,10 @@ void rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES])
     l->pos = (l->pos + 1) % RB_LISTEN_HISTORY;
     for (int j = 0; j < RB_LISTEN_SOURCES; j++) l->flow[j][l->pos] = q[j];
     l->sum = arriving(l, &l->sum_front);
+    if (l->smooth.every) {
+        rb_smoother_push(&l->smooth, l->sum);
+        rb_smoother_push(&l->smooth_front, l->sum_front);
+    }
 }
 
 void rb_listener_push_noise(rb_listener *l, const double p[RB_LISTEN_NOISES], double mount)
@@ -246,9 +329,14 @@ double rb_listener_hear(rb_listener *l, double rho0, double dt)
      * The sum's change over the step is its derivative: where it changes only
      * once a pipe step, each change is an impulse, which the decimator's
      * filter turns back into the smooth derivative. */
-    const double change = l->sum - l->heard, change_front = l->sum_front - l->heard_front;
-    l->heard = l->sum;
-    l->heard_front = l->sum_front;
+    double sum = l->sum, sum_front = l->sum_front;
+    if (l->smooth.every) {   /* slower pipes: read between their steps */
+        sum = rb_smoother_next(&l->smooth);
+        sum_front = rb_smoother_next(&l->smooth_front);
+    }
+    const double change = sum - l->heard, change_front = sum_front - l->heard_front;
+    l->heard = sum;
+    l->heard_front = sum_front;
     const double flows = rho0 / (4.0 * PI) * change / dt;
 
     /* Stage 12b's sources; and in the cabin, everything through its filters. */

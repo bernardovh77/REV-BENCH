@@ -22,11 +22,11 @@ on:
   workflow_dispatch:
     inputs:
       macos:
-        description: "Also run the macOS job"
+        description: "Also check Apple clang against gcc (the weekly parity step)"
         type: boolean
         default: false
   schedule:
-    - cron: "17 4 * * 1"   # Mondays 04:17 UTC: the weekly macOS run
+    - cron: "17 4 * * 1"   # Mondays 04:17 UTC: macOS's compiler parity and the long fuzz
 
 env:
   PYTHON_VERSION: "3.14.8"
@@ -151,8 +151,11 @@ jobs:
       - name: The host's tests under ThreadSanitizer
         run: make -j4 TSAN=1 BUILD=$HOME/rb-build/tsan host-test
 
+  # macOS, the thin port (stage 127): the core, the real-time host on the null device and the
+  # add-on build and pass with Apple clang on every push, so stage 126 ports devices, thread
+  # priorities and packages, not three years of compiler surprises at once. The first run ever
+  # (2026-11-15) found one: a Linux-only call in rb_bench_render.
   macos:
-    if: github.event_name == 'schedule' || inputs.macos
     runs-on: macos-15
     timeout-minutes: 60
     steps:
@@ -160,13 +163,42 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-      - name: CMake
-        run: python -m pip install cmake==4.4.4 ninja==1.13.2
-      - name: The core's tests with Apple clang
-        run: python tools/run_tests.py cmake
-      - name: Apple clang and gcc agree
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1   # v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Python tools
+        run: python -m pip install -r tools/requirements-dev.txt
+      - name: The core, the host and the add-on with Apple clang
+        run: |
+          python tools/run_tests.py --keep-going cmake host addon 2>&1 | tee "$RUNNER_TEMP/run.log" \
+            || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
+      - name: Apple clang and gcc agree (the weekly run, or asked for)
+        if: github.event_name == 'schedule' || inputs.macos
         run: |
           command -v gcc-14 || brew install gcc@14
           make -j4 CC=gcc-14 BUILD="$HOME/rb-build/gcc" "$HOME/rb-build/gcc/rb_cli"
           python tools/compiler_parity.py check "$HOME/rb-build/tests/cmake/rb_cli" "$HOME/rb-build/gcc/rb_cli" "$HOME/rb-build/parity" \
             2>&1 | tee "$RUNNER_TEMP/parity.log" || { tools/ci_summary.sh "$RUNNER_TEMP/parity.log"; exit 1; }
+
+  # The long fuzz (stage 127): random engines with their fields anywhere in the ranges the
+  # editor will offer (rb_engine_field_min/max), far more of them than `make fuzz` or the test
+  # suite run. Weekly and on demand; each run starts from new seeds. An engine that fails names
+  # its seed: `rb_cli fuzz --sets 1 --seed N` replays it, and the range that let it through is
+  # narrowed in FIELDS[] or refused by rb_engine_desc_check.
+  fuzz:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - name: rb_cli
+        run: make -j4 BUILD="$HOME/rb-build/fuzz" "$HOME/rb-build/fuzz/rb_cli"
+      - name: 240 random engines at the real-time qualities, 60 at the high one
+        run: |
+          seed=$(( GITHUB_RUN_NUMBER * 1000 ))
+          cli="$HOME/rb-build/fuzz/rb_cli"
+          {
+            "$cli" fuzz --sets 120 --seconds 10 --seed "$seed" --quality low &&
+            "$cli" fuzz --sets 120 --seconds 10 --seed "$(( seed + 200 ))" -x 2 &&
+            "$cli" fuzz --sets 60 --seconds 10 --seed "$(( seed + 400 ))" --quality high
+          } 2>&1 | tee "$RUNNER_TEMP/fuzz.log" || { tools/ci_summary.sh "$RUNNER_TEMP/fuzz.log"; exit 1; }

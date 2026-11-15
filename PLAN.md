@@ -89,22 +89,30 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [~] **118:** a real-time tier for today's engine (declared per preset; open for its stated misses);
    - [x] **123:** the real-time audio host;
    - [x] **124:** the application's foundation;
+   - [x] **127:** the 2026-11-15 review's fixes;
    - [ ] **066 → 067 → 068 → 069:** the playable app, qualified on Windows.
 2. **Phase B, real sound:**
+   - [ ] **128:** the complaints list: the shortest honest fix for each thing Bernardo has
+     heard, listened to live with the A/B key (after 066, before 050);
    - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
    - [ ] **050, 051 → 052;**
    - [ ] **053, 055, 056 → 054;**
+   - [ ] **129:** the cold end of the exhaust on delay lines, a faster tier (beside 050–056,
+     before 062);
    - [ ] **057 → 058 → 059 → 060 → 061 → 062 → 063:** base sound acceptance. Each of these
      updates the app too.
 3. **Phase C, the 3D engine:** [ ] 070 → 071 → 072 → 073 → 074 → 075 → 076 → 077.
-4. **Phase D, turbo:** [ ] 078 → 084.
+4. **Phase D, turbo:** [ ] 130 (`engine.c` split, first) → 078 → 084.
 5. **Phase E, knock and limits:** [ ] 085 → 089.
 6. **Phase F, more engines:** [ ] 090 → 094.
 7. **Phase G, release:** [ ] 126 (the port to macOS and Linux) → 095 → 102.
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 066.** Open beside it: 118's stated misses (the four at idle, the V8s' speed), for a faster machine or core.
+**Next stage: 066.** Open beside it: 118's stated misses (the four at idle, the V8s' speed),
+for a faster machine or core, or for Bernardo's choice of a cheaper V8 tier that stage 127's
+smoother brought close (docs/stage-127.md, "The V8s again"). Two decisions wait for Bernardo:
+that tier, and the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
 
@@ -121,6 +129,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), listened to by Bernardo; open for its stated misses: the four 1.05 dB off at idle, and the V8s, which need a faster machine than the i7-1355U (2026-11-13: no bit-identical speed-up left, slower pipes change the sound; 066 says so) | 121, 122 |
 | ✅ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): `host/`, 59 tests on MSVC and gcc (and under ThreadSanitizer), swaps with 16 ms fades, offline mode bit-identical to rb_cli, 39 planted bugs caught; 15 minutes on the real device with zero underruns | 121, 122 |
 | ✅ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron 45, the engine process with the Node-API add-on (64 tests), the sandboxed Svelte window on a provisional token design system, a generated snapshot decoder, e2e on the real add-on, an unsigned NSIS installer and zip; snapshots at 1 % of their budget. Icon: B (piston and crank). CI green (installer as an artifact); the installed app plays on Bernardo's real device | 122, 123 |
+| ✅ | [127](docs/roadmap/14-review-fixes.md#stage-127) | The 2026-11-15 review's fixes ([the review](docs/review-2026-11-15.md), [how to build a stage](docs/stage-playbook.md)). The listener reads slower pipes' flows between their steps: the false treble of pipes under 48 kHz is gone (16 kHz pipes: within 0.5 dB above 4 kHz, from +13 to +44), the high and balanced qualities bit for bit as before. `RB_PARAM_VARIANT`, the live A/B switch. macOS on every push (its first run found a Linux-only call), a weekly long fuzz, a push hook that runs the quick suites, CLAUDE.md split into rules and docs/architecture.md, a known engine (Honda F20C) in the reference catalog. 21 + 14 planted bugs caught. With the treble fixed, 19.2 kHz pipes bring the V8s to 1.5 times real time with small repetition misses: Bernardo's choice | 118, 123, 124 |
 | ⬜ | [066](docs/roadmap/07-app.md#stage-066) | The playable engine in the app: start, idle, rev, stop, presets, the tier, stereo scenes, keyboard and game-controller throttle, devices, sleep and wake | 037, 118, 124 |
 | ⬜ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata, with atomic rebuilds and undo | 037, 066 |
 | ⬜ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno, with overlays | 066, 067 |
@@ -130,6 +139,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
+| ⬜ | [128](docs/roadmap/14-review-fixes.md#stage-128) | The complaints list: the cycle that repeats too exactly (18 dB more than a real Honda F20C's below 500 Hz), the dull idle, the quiet four, the V8's crackle; each with the shortest honest candidate behind the A/B switch, judged by Bernardo live and blind | 066, 127 |
 | 🟡 | [039](docs/roadmap/03-contracts-and-sources.md#stage-039) | Matched references and calibration protocol. The protocol is done; recordings with known engine, exhaust, state and microphone are still needed | 036 |
 | ⬜ | [050](docs/roadmap/04-propagation.md#stage-050) | Catalysts, mufflers, perforates and packing for the actual exhausts | 047, 049 |
 | ⬜ | [051](docs/roadmap/04-propagation.md#stage-051) | Radiation load and audible-field consistency at the tailpipe | 049 |
@@ -138,6 +148,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ⬜ | [055](docs/roadmap/05-engine-qualification.md#stage-055) | Engine-specific structure and accessories (block, head, body modes per engine) | 041, 042 |
 | ⬜ | [056](docs/roadmap/05-engine-qualification.md#stage-056) | Listener, vehicle and recording-transfer validation | 024, 037, 038, 051 |
 | ⬜ | [054](docs/roadmap/05-engine-qualification.md#stage-054) | Unified pulse and noise routing (stage 115 fixed the paths and junction sharing; the frequency-dependent transfer remains) | 044, 049, 050, 051, 053 |
+| ⬜ | [129](docs/roadmap/14-review-fixes.md#stage-129) | The cold end of the exhaust on delay lines: a faster tier, first measuring where the exhaust's waves are weak enough | 127, 049 |
 | ⬜ | [057](docs/roadmap/05-engine-qualification.md#stage-057) | Whole-engine candidate integration of the surviving research solvers | 041–052, 054, 055, 056 |
 | ⬜ | [058](docs/roadmap/05-engine-qualification.md#stage-058) | Deceleration and lift-off: find the causes of the robotic texture and the boom | 039, 057 |
 | ⬜ | [059](docs/roadmap/05-engine-qualification.md#stage-059) | Five-engine physical and acoustic qualification against matched references | 039, 057, 058 |
@@ -165,6 +176,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
+| ⬜ | [130](docs/roadmap/14-review-fixes.md#stage-130) | `engine.c` split along the step order, no behaviour change and no speed lost | 127 |
 | ⬜ | [078](docs/roadmap/09-turbo.md#stage-078) | Turbo compressor and turbine map components | 037, 061, 039 |
 | ⬜ | [079](docs/roadmap/09-turbo.md#stage-079) | Turbo shaft and engine gas-system integration | 078 |
 | ⬜ | [080](docs/roadmap/09-turbo.md#stage-080) | Boost, wastegate, intercooler and blow-off control | 079 |
@@ -322,7 +334,8 @@ anything, goes into the engine.
 3. End with all tests green:
    - native: `make test`;
    - Python: the tools' unit tests;
-   - web: `npm test`;
+   - web: `npm test` (its Playwright test of the old browser page only on request, since
+     stage 127: `python tools/run_tests.py e2e`);
    - the app (from stage 124): its unit tests and end-to-end tests;
    - `python tools/run_tests.py` runs them all, on Windows or WSL; CI runs them on Windows and
      Linux, and the core's on macOS weekly (from stage 122), and everything on all three
@@ -338,8 +351,10 @@ anything, goes into the engine.
    physics makes the engine slower on purpose says so in its doc, with the numbers, and checks
    the tier (stage 118's table) still holds or states what it now misses.
 7. Write `docs/stage-NNN.md`, mark the stage here with a one-line note, and add a short entry to
-   `CODEX.md`. Then commit (one per stage) and push.
-8. New work that no stage covers gets the next unused number (127, ...) and a place in the order
+   `CODEX.md`. Then commit (one per stage) and push: the push hook runs the quick suites first
+   and refuses a push that fails them (`.githooks/pre-push`, docs/workspace.md). Check CI
+   afterwards, on Windows, Linux and macOS.
+8. New work that no stage covers gets the next unused number (131, ...) and a place in the order
    above. Stage numbers never change.
 
 The full evidence protocol, gates and architecture sketch are in
@@ -395,6 +410,9 @@ The full evidence protocol, gates and architecture sketch are in
 - [The audit's findings and their owners](docs/roadmap/audit-coverage.md),
   [roadmap decision](docs/adr/0002-canonical-roadmap-and-evidence-gates.md).
 - [The app's design](docs/app-design.md) and [its decision](docs/adr/0004-desktop-application.md).
+- [How the code is built](docs/architecture.md) (each module, the step order, the tools),
+  [how to build a stage](docs/stage-playbook.md),
+  [the 2026-11-15 review](docs/review-2026-11-15.md).
 - [Glossary](GLOSSARY.md), [research](RESEARCH.md), [Codex's handoff log](CODEX.md),
   [notes for Claude](CLAUDE.md), [where the project is worked on](docs/workspace.md).
 - [Results workflow](docs/render-workflow.md), [Bernardo's references](docs/user-sound-references.md).

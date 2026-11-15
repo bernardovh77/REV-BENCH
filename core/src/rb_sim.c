@@ -161,6 +161,17 @@ void rb_reset(rb_sim *sim)
 
 _Static_assert(RB_LISTEN_NOISES == RB_NOISE_PLACED, "the listener hears every placed noise source");
 
+/* Stage 127: how many physics steps the listener smooths a pipe step's flow
+ * over, or 0 to hear it as it comes. Pipes at 48 kHz or faster need none:
+ * the copies a pipe step's jumps make are above the decimator's pass band,
+ * and renders at the high quality stay as they were, bit for bit. */
+static int smooth_every(const rb_sim *sim)
+{
+    const rb_engine *e = &sim->engine;
+    if (!(e->pipe_dt > 0.0) || 1.0 / e->pipe_dt >= 47999.0) return 0;
+    return (e->pipe_every >= 2 && e->pipe_every <= RB_SMOOTH_MAX) ? e->pipe_every : 0;
+}
+
 void rb_sim_listen(rb_sim *sim)
 {
     const rb_engine *e = &sim->engine;
@@ -171,6 +182,7 @@ void rb_sim_listen(rb_sim *sim)
     const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1], pipes * e->mouth_flow };
     rb_listener_place(&sim->listener, sim->hear, e->systems, c, e->pipe_dt);
     rb_listener_place_noise(&sim->listener, sim->hear, e->systems, c, e->pipe_dt, sim->dt);
+    if (smooth_every(sim)) rb_listener_smooth(&sim->listener, smooth_every(sim));
     rb_listener_prime(&sim->listener, q);
     sim->pipe_steps_heard = e->pipe_steps;
     rb_noise_init(&sim->noise, e, RB_NOISE_SEED);
@@ -197,6 +209,10 @@ int rb_set_scene(rb_sim *sim, int scene)
     sim->scene_flow[0] = e->tail_flow[0];
     sim->scene_flow[1] = e->tail_flow[1];
     sim->scene_flow[2] = e->mouth_flow;
+    for (int j = 0; j < 3; j++) {
+        rb_smoother_init(&sim->scene_smooth[j], smooth_every(sim));   /* off if 0 */
+        rb_smoother_prime(&sim->scene_smooth[j], sim->scene_flow[j]);
+    }
     sim->scene_active = 1;
     return RB_OK;
 }
@@ -215,6 +231,11 @@ static inline void model_step(rb_sim *sim)
             const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1],
                                                   pipes * e->mouth_flow };
             rb_listener_push(&sim->listener, q);
+            if (sim->scene_active && sim->scene_smooth[0].every) {
+                rb_smoother_push(&sim->scene_smooth[0], e->tail_flow[0]);
+                rb_smoother_push(&sim->scene_smooth[1], e->tail_flow[1]);
+                rb_smoother_push(&sim->scene_smooth[2], e->mouth_flow);
+            }
             sim->pipe_steps_heard = e->pipe_steps;
         }
         /* Stage 12b: the flow's noise and the engine's own sound. */
@@ -226,7 +247,9 @@ static inline void model_step(rb_sim *sim)
              * at the physics rate, into its own anti-alias decimator. The
              * tailpipes and the mouth add their flows' monopoles,
              * rho / (4 pi) dq/dt, to their noise. */
-            const double q[3] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            double q[3] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            if (sim->scene_smooth[0].every)   /* slower pipes: read between their steps */
+                for (int j = 0; j < 3; j++) q[j] = rb_smoother_next(&sim->scene_smooth[j]);
             for (int j = 0; j < RB_SCENE_SOURCES; j++) {
                 double pressure = sim->noise.out[j];
                 if (j < 3) {

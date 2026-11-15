@@ -156,8 +156,17 @@ typedef enum rb_param {
     RB_PARAM_EVENTS,            /* 1: record the engine's events
                                    (rb_read_events); 0 (default): none, at
                                    no cost                                */
+    RB_PARAM_VARIANT,           /* which candidate sound plays: 0 (default)
+                                   the accepted one, 1..RB_VARIANT_MAX a
+                                   candidate under listening (stage 127). A
+                                   number no candidate uses plays the
+                                   accepted sound. Live: it switches while
+                                   the engine runs, for A/B listening      */
     RB_PARAM_COUNT
 } rb_param;
+
+/* RB_PARAM_VARIANT's largest value. */
+#define RB_VARIANT_MAX 7
 
 /* RB_PARAM_SOURCE's values. */
 enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE = 1 };

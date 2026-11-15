@@ -4,6 +4,23 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-15: Stage 127, the review's fixes (Claude)
+
+- docs/review-2026-11-15.md (the review), docs/stage-playbook.md (how to build a stage),
+  docs/stage-127.md (what was done). New stages 128 (the complaints list), 129 (the exhaust's
+  cold end on delay lines), 130 (`engine.c` split) in docs/roadmap/14-review-fixes.md; 066,
+  068 and 069's cards gained the review's items (dead-man throttle, A/B key, guard counter,
+  heavy-window stress run).
+- Core: `rb_smoother` (audio.c) reads pipe flows between pipe steps when the pipes are slower
+  than 48 kHz (low, medium, `--pipe-rate`): high and balanced renders are bit for bit as
+  before. `RB_PARAM_VARIANT` (live A/B switch, read as `sim->variant`; nothing reads it yet).
+- CLAUDE.md is now the rules; the module reference moved verbatim to docs/architecture.md.
+- `.githooks/pre-push` runs `native python host` before a push (`git config core.hooksPath
+  .githooks`). `run_tests.py` leaves out `e2e` unless named. `plant_bugs.py` matches a bug's
+  text with its spacing changed.
+- CI: macOS on every push (cmake, host, addon); a weekly long fuzz job.
+- `tools/real_engines.csv`: a Honda F20C (Wikimedia Commons) and Freesound's open-header V8s.
+
 ## 2026-11-13: The V8s' speed before stage 066
 
 - docs/stage-118.md, "The V8s": AVX2 and lazy gas ranges don't help (the latter measured

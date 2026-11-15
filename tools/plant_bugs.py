@@ -14,7 +14,8 @@ would plant nothing), and exits 1 if there is one. The Python suite runs it.
 STAGE picks the table of bugs, tools/bugs/stageSTAGE.py (12, 13, ...). For
 every named bug: copies the sources (without web/, build output, renders/,
 docs/ and .git) into WORKDIR, fresh each time, applies the bug (a text
-replacement that must match exactly once), builds the test binary there and
+replacement that must match exactly once; spacing and line breaks may differ
+from the source's, words may not), builds the test binary there and
 runs the tests named for it. A bug is caught when that run fails. Prints a
 line per bug. Two work dirs run two bugs at once; a killed run leaves its bug
 only in its copy.
@@ -29,6 +30,7 @@ A table may also name the test program its bugs are caught by, with a line
 import glob
 import importlib.util
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -60,6 +62,39 @@ def load_table(stage):
     return mod.BUGS, getattr(mod, "TARGET", "rb_tests")
 
 
+def replace_once(text, old, new):
+    """(text with `old` replaced by `new`, how many places matched): the
+    replacement is made only when exactly one place matches. `old` is looked
+    for as written first; failing that, with any run of spaces, tabs and line
+    breaks standing for any other, so that re-indenting or re-wrapping the
+    source (a formatter, a moved block) doesn't make the bug stale. Changed
+    words still do: the bug is then retargeted by hand."""
+    count = text.count(old)
+    if count == 1:
+        return text.replace(old, new), 1
+    if count > 1:
+        return text, count
+    words = old.split()
+    if not words:
+        return text, 0
+    pattern = r"\s+".join(re.escape(w) for w in words)
+    # The text's own indent and line end go with it, and no more than those:
+    # the lines around it keep theirs.
+    if old[:1] == "\n":
+        pattern = r"\s*" + pattern
+    elif old[:1].isspace():
+        pattern = r"[ \t]*" + pattern
+    if old[-1:] == "\n":
+        pattern = pattern + r"[ \t]*\n"
+    elif old[-1:].isspace():
+        pattern = pattern + r"[ \t]*"
+    found = list(re.finditer(pattern, text))
+    if len(found) != 1:
+        return text, len(found)
+    m = found[0]
+    return text[:m.start()] + new + text[m.end():], 1
+
+
 def stale_reason(root, bug):
     """Why a bug (file, old, new, ...) wouldn't apply to the sources under
     root, or None if it would: each old text must match exactly once, in turn."""
@@ -71,10 +106,9 @@ def stale_reason(root, bug):
         text = f.read()
     pairs = list(zip(old, new)) if isinstance(old, tuple) else [(old, new)]
     for o, n in pairs:
-        count = text.count(o)
+        text, count = replace_once(text, o, n)
         if count != 1:
             return f"{count} matches in {path} for {o[:50]!r}"
-        text = text.replace(o, n)
     return None
 
 
@@ -114,9 +148,9 @@ def run(bugs, work, name, program="rb_tests"):
         text = f.read()
     pairs = list(zip(old, new)) if isinstance(old, tuple) else [(old, new)]
     for o, n in pairs:   # several replacements in one file make one bug
-        if text.count(o) != 1:
-            return f"{name}: NOT APPLIED ({text.count(o)} matches in {path})"
-        text = text.replace(o, n)
+        text, count = replace_once(text, o, n)
+        if count != 1:
+            return f"{name}: NOT APPLIED ({count} matches in {path})"
     with open(target, "w", encoding="utf-8") as f:
         f.write(text)
     build = os.path.join(work, "b")

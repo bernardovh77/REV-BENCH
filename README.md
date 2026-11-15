@@ -76,3 +76,11 @@ what breaks. See [PLAN.md](PLAN.md) for the roadmap and progress,
 Stack: C11 physics core → C real-time audio host (miniaudio) → Electron app with a Svelte and
 TypeScript interface and Three.js 3D, for Windows, macOS and Linux. The core also builds as
 WebAssembly, kept for portability tests.
+
+## Licence
+
+No licence has been chosen yet. Until one is, the code is public to read but all rights are
+reserved: it may not be copied, changed or redistributed. The parts that come from others keep
+their own licences ([THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)). Choosing a licence is
+Bernardo's decision, open since the 2026-11-15 review
+([docs/review-2026-11-15.md](docs/review-2026-11-15.md), problem 11).

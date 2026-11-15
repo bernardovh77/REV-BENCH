@@ -261,5 +261,28 @@ class AddonSuiteTests(unittest.TestCase):
         self.assertEqual(Path(environment["RB_ADDON"]), out / "addon-build" / "rb_native.node")
 
 
+class ChosenSuitesTests(unittest.TestCase):
+    """Which suites a run does (stage 127: the old browser page's e2e test is on request)."""
+
+    def test_a_plain_run_leaves_out_the_suites_on_request(self):
+        chosen = run_tests.chosen_suites([], [])
+        self.assertNotIn("e2e", chosen)
+        self.assertEqual(chosen, [s for s in run_tests.SUITES if s != "e2e"])
+        for suite in ("native", "wasm", "python", "web", "cmake", "host", "addon", "app", "app-e2e"):
+            self.assertIn(suite, chosen)
+
+    def test_a_suite_on_request_runs_when_named(self):
+        self.assertEqual(run_tests.chosen_suites(["e2e"], []), ["e2e"])
+        self.assertEqual(run_tests.chosen_suites(["python", "e2e"], []), ["python", "e2e"])
+
+    def test_skipped_suites_are_left_out(self):
+        self.assertNotIn("web", run_tests.chosen_suites([], ["web"]))
+        self.assertEqual(run_tests.chosen_suites(["native", "python"], ["native"]), ["python"])
+
+    def test_every_suite_on_request_is_a_suite(self):
+        for suite in run_tests.ON_REQUEST:
+            self.assertIn(suite, run_tests.SUITES)
+
+
 if __name__ == "__main__":
     unittest.main()

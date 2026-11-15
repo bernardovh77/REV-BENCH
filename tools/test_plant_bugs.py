@@ -36,5 +36,47 @@ class PlantBugsCheckTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
 
+class ReplaceOnceTests(unittest.TestCase):
+    """A bug's text is found as written, or with its spacing changed."""
+
+    SOURCE = "int f(int a)\n{\n    if (a > 0) return a;\n    return -a;\n}\n"
+
+    def test_text_as_written_is_replaced(self):
+        text, count = plant_bugs.replace_once(self.SOURCE, "    if (a > 0) return a;\n", "")
+        self.assertEqual(count, 1)
+        self.assertEqual(text, "int f(int a)\n{\n    return -a;\n}\n")
+
+    def test_reindented_and_rewrapped_text_is_still_found(self):
+        moved = "int f(int a)\n{\n        if (a > 0)\n            return a;\n        return -a;\n}\n"
+        text, count = plant_bugs.replace_once(moved, "    if (a > 0) return a;\n", "")
+        self.assertEqual(count, 1)
+        self.assertEqual(text, "int f(int a)\n{\n        return -a;\n}\n")
+
+    def test_changed_words_are_not_found(self):
+        text, count = plant_bugs.replace_once(self.SOURCE, "if (a >= 0) return a;", "")
+        self.assertEqual(count, 0)
+        self.assertEqual(text, self.SOURCE)
+
+    def test_two_places_as_written_refuse(self):
+        twice = self.SOURCE + self.SOURCE
+        text, count = plant_bugs.replace_once(twice, "return -a;", "return a;")
+        self.assertEqual(count, 2)
+        self.assertEqual(text, twice)
+
+    def test_two_places_by_spacing_refuse(self):
+        twice = "x  =  1;\nx   =   1;\n"
+        text, count = plant_bugs.replace_once(twice, "x = 1;", "x = 2;")
+        self.assertEqual(count, 2)
+        self.assertEqual(text, twice)
+
+    def test_words_are_not_joined_or_split(self):
+        # "return a" must not match "returna", nor "re turn a"
+        text, count = plant_bugs.replace_once("returna; re turn a;", "return a;", "")
+        self.assertEqual(count, 0)
+
+    def test_blank_text_matches_nothing(self):
+        self.assertEqual(plant_bugs.replace_once(self.SOURCE, "  \n", "x"), (self.SOURCE, 0))
+
+
 if __name__ == "__main__":
     unittest.main()

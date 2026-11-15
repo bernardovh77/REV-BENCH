@@ -186,3 +186,116 @@ planted hang is killed by its timeout.
 **Stop/reject rule:** No `core/` change. Bernardo's recordings are moved, never deleted.
 
 **Execution record:** `docs/stage-120.md`.
+
+<a id="stage-127"></a>
+## Stage 127 — The 2026-11-15 review's fixes
+
+**Dependencies:** [118](07-app.md#stage-118), [123](07-app.md#stage-123), [124](07-app.md#stage-124).
+
+**Deliverable:** What [the review](../review-2026-11-15.md) found that can be fixed before
+stage 066, fixed; the rest given a stage or written into the stage that owns it.
+- **The pipes' hand-off to the listener** (problem 4): with pipes slower than 48 kHz the
+  listener reads their flows between the pipe steps (a polyphase windowed-sinc smoother),
+  in mono and in the stereo scenes. Pipes at 48 kHz are untouched: renders at the high and
+  balanced qualities stay bit for bit.
+- **The A/B switch** (problem 1): `RB_PARAM_VARIANT`, a live integer setting.
+- **macOS on every push** (problem 9): the core, the host on the null device and the add-on
+  with Apple clang; the compiler-parity step stays weekly.
+- **A weekly long fuzz** (problem 5) over the engine fields' whole ranges.
+- **Rules as checks** (problem 10): a pre-push hook that runs the quick suites; CLAUDE.md
+  split into rules and `docs/architecture.md`; planted bugs that survive re-indenting.
+- **Housekeeping** (problem 11): the stray folders gone, with a test; the old browser page's
+  end-to-end test on request only; the missing licence stated in the README until Bernardo
+  chooses one.
+- **References** (problem 2): a recording of a known, naturally aspirated engine in the
+  catalog, and the first one-to-one comparison with a preset.
+
+**Required exit evidence:** every suite green on Windows; CI green on Windows, Linux and macOS;
+`tools/cli_parity.py` identical for every case at the high quality; `tools/speed_check.py`
+within 3 %; `tools/tier_compare.py` for the declared tiers; planted bugs caught.
+
+**Stop/reject rule:** No preset's declared tier changes without Bernardo: a cheaper tier that
+the smoother makes possible is measured and put to him, not switched on. No licence is chosen
+for him.
+
+**Execution record:** `docs/stage-127.md`.
+
+<a id="stage-128"></a>
+## Stage 128 — The complaints list
+
+**Dependencies:** [066](07-app.md#stage-066) (live play and the A/B key), [127](#stage-127).
+Before [050](04-propagation.md#stage-050).
+
+**Deliverable:** For each thing Bernardo has said is wrong with the sound, the shortest
+physically honest candidate, behind `RB_PARAM_VARIANT`, listened to live and blind:
+- **the cycle repeats too exactly** ("less like a piano note"): against the one matched
+  recording so far (stage 127) the four repeats 18 dB more exactly below 500 Hz than a real
+  Honda F20C. Stage 12c varied the burn; what the gas does on its way down the pipe
+  (turbulence: slow, weakly correlated modulation of each pulse) is not modelled;
+- **dull at idle from behind**;
+- **the four is quiet** next to the others: its level measured against recordings at a known
+  distance before anything is changed;
+- **the V8's crackle** on the overrun: which layer makes it (`--layers`), then why.
+
+Each candidate states what is physical in it and what is fitted, with the recording it was
+fitted to. A candidate that wins is promoted to the accepted sound (variant 0) in a stage of
+its own with the sound check; one that loses is deleted and its number retired.
+
+**Required exit evidence:** per complaint: the measurement that shows it, the candidate's
+effect on that measurement and on the engine's numbers (torque, VE within 1 %), and
+Bernardo's verdict from blind A/B listening in the app, in his words.
+
+**Stop/reject rule:** Nothing here replaces the pipes' solver (that stays stages 057–061).
+No candidate becomes the default without his yes. A linear filter fitted to a recording is
+named as fitted, never as physics.
+
+**Execution record:** `docs/stage-128.md`.
+
+<a id="stage-129"></a>
+## Stage 129 — The cold end of the exhaust, linear
+
+**Dependencies:** [127](#stage-127), [049](04-propagation.md#stage-049). Before
+[062](05-engine-qualification.md#stage-062); it may run beside 050–056.
+
+**Deliverable:** A quality tier in which the exhaust downstream of the point where its waves
+are weak is carried by delay lines (the research graph of `experiments/acoustics/wave.c`,
+joined to the last nonlinear cell by characteristics as `coupled_duct.c` proved), not by gas
+cells: for speed first (stage 118: the cost is the thermodynamics of about 400 cells), and
+for the band above the 7.5 cm grid's 2.4 kHz as a side effect.
+1. **The premise, measured:** for the five presets at full load and on the overrun, each
+   exhaust cell's pressure swing and Mach number; where the swing falls under 5 % of the mean.
+   If that line is not near the catalyst the stage is replanned.
+2. One pipe (the four's tailpipe), with the mean flow kept as a slow term so the back
+   pressure stays right; then the muffler; then the exhaust pipes.
+3. The tier declared like stage 118's, with its misses stated.
+
+**Required exit evidence:** torque, VE and back pressure within 1 % of the high quality;
+mass in equals mass out over a cycle; `tools/tier_compare.py` within 1 dB; the speed-up on
+the baseline laptop, with `tools/speed_check.py`; live A/B by Bernardo.
+
+**Stop/reject rule:** The old and the new copy of a pulse never both sound. If the premise
+fails (step 1) the stage closes as a recorded negative result.
+
+**Execution record:** `docs/stage-129.md`.
+
+<a id="stage-130"></a>
+## Stage 130 — `engine.c` split along the step order
+
+**Dependencies:** [127](#stage-127). Before [078](09-turbo.md#stage-078) (turbo, knock and
+limits each add to the engine's step).
+
+**Deliverable:** `core/src/engine.c` (1,674 lines: the build, the computer, the intake, the
+exhaust, the step and the books) in parts that follow the step order
+`docs/architecture.md` describes: the engine computer; building and stepping the intake side;
+the exhaust side; the cycle and its books. No behaviour change.
+
+**Required exit evidence:** `tools/cli_parity.py` identical for every case;
+`tools/speed_check.py` within 3 % on both compilers (functions that were inlined inside one
+file must still be: measure, and keep them in one translation unit if that is what it
+takes); `make wasm` rebuilt; every planted bug of every table still applies
+(`plant_bugs.py --check`).
+
+**Stop/reject rule:** A split that costs speed is not made: readability is not bought with
+real time.
+
+**Execution record:** `docs/stage-130.md`.

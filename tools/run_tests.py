@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Runs every test suite on this system, Windows or Linux (WSL) alike.
 
-    python tools/run_tests.py                 everything, the e2e test included
+    python tools/run_tests.py                 every suite but the ones run on request (e2e)
     python tools/run_tests.py native python   only those suites
-    python tools/run_tests.py --skip e2e      all but those
+    python tools/run_tests.py --skip web      all but those
+    python tools/run_tests.py e2e             a suite run on request, by name
 
 Run it with the Python that has tools/requirements-dev.txt installed (its
 zig builds the WebAssembly). The suites:
@@ -13,7 +14,10 @@ zig builds the WebAssembly). The suites:
   wasm-c   make test-wasm: a few C tests as WebAssembly, under Node
   python   the tools' unit tests
   web      npm ci and npm test, in a copy outside the repo (CLAUDE.md)
-  e2e      the Playwright test, dev server and production build, in that copy
+  e2e      on request only (stage 127): the Playwright test of the old browser page, which
+           plays stage 1's test tone, dev server and production build, in that copy. The
+           app replaced the page (ADR 0004), so a stage no longer pays for it; run it when
+           web/ itself changes, and from stage 125 (the browser demo) on again
   cmake    the CMake build with the system's own compiler (MSVC on Windows,
            through tools/msvc_env.py; gcc or clang elsewhere) and its C tests
   host     the real-time audio host (stage 123), in the cmake suite's build folder:
@@ -362,6 +366,17 @@ def run_suites(names, prepare, keep_going):
     return results
 
 
+# Suites that only run when named: see the list above.
+ON_REQUEST = ("e2e",)
+
+
+def chosen_suites(named, skipped):
+    """The suites a run does, in order: the named ones, or every suite but
+    those run on request; without the skipped ones either way."""
+    wanted = named or [s for s in SUITES if s not in ON_REQUEST]
+    return [s for s in wanted if s not in skipped]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("suites", nargs="*", metavar="SUITE", help=" ".join(SUITES))
@@ -372,7 +387,7 @@ def main():
     unknown = sorted(set(args.suites + args.skip) - set(SUITES))
     if unknown:
         parser.error(f"unknown suites {unknown}; they are {' '.join(SUITES)}")
-    chosen = [s for s in (args.suites or SUITES) if s not in args.skip]
+    chosen = chosen_suites(args.suites, args.skip)
     problems = preflight(chosen, node_env())
     if problems:
         for problem in problems:

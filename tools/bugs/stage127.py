@@ -1,0 +1,103 @@
+"""Stage 127: the listener's smoother and the A/B switch can fail their tests.
+
+python tools/plant_bugs.py 127 WORKDIR all      (a few at a time, under `timeout`)
+The smoother's bugs are the ways an interpolator goes wrong (taps that don't
+add up to 1, a phase that never moves or never restarts, the taps read
+backwards), the ways it could be left out of a path (mono, stereo, a rebuild)
+and the one that would change the reference sound: smoothing pipes at 48 kHz.
+"""
+SMOOTHER = ["test_audio_smoother"]
+LISTENER = ["test_audio_listener_smooths_slow_pipes"]
+SIM = ["test_audio_sim_smooths_only_slow_pipes"]
+VARIANT = ["test_api_variant", "test_audio_variant_reaches_the_sim"]
+
+BUGS = {
+    # the smoother itself (audio.c)
+    'smoother-taps-not-normalised': ("core/src/audio.c",
+        "        for (int k = 0; k < RB_SMOOTH_TAPS; k++) s->h[p][k] /= sum;\n",
+        "",
+        SMOOTHER, 300),
+    'smoother-phase-never-moves': ("core/src/audio.c",
+        "    s->phase++;\n    double y = 0.0;",
+        "    double y = 0.0;",
+        SMOOTHER + LISTENER, 300),
+    'smoother-push-keeps-the-phase': ("core/src/audio.c",
+        "    s->x[0] = v;\n    s->phase = 0;\n}\n\ndouble rb_smoother_next",
+        "    s->x[0] = v;\n}\n\ndouble rb_smoother_next",
+        SMOOTHER + LISTENER, 300),
+    'smoother-taps-read-backwards': ("core/src/audio.c",
+        "            const double t = (k * every + p) - centre;       /* physics steps */",
+        "            const double t = (k * every - p) - centre;       /* physics steps */",
+        SMOOTHER + LISTENER, 300),
+    'smoother-history-not-shifted': ("core/src/audio.c",
+        "    for (int k = RB_SMOOTH_TAPS - 1; k > 0; k--) s->x[k] = s->x[k - 1];\n",
+        "",
+        SMOOTHER + LISTENER, 300),
+    'smoother-accepts-one-step': ("core/src/audio.c",
+        "    if (every < 2 || every > RB_SMOOTH_MAX) return -1;",
+        "    if (every < 1 || every > RB_SMOOTH_MAX) return -1;",
+        SMOOTHER, 300),
+    'smoother-accepts-too-many-steps': ("core/src/audio.c",
+        "    if (every < 2 || every > RB_SMOOTH_MAX) return -1;",
+        "    if (every < 2) return -1;",
+        SMOOTHER, 300),
+    'smoother-delay-wrong': ("core/src/audio.c",
+        "    return (s->every == 0) ? 0.0 : 0.5 * (RB_SMOOTH_TAPS * s->every - 1);",
+        "    return (s->every == 0) ? 0.0 : 0.5 * (RB_SMOOTH_TAPS * s->every);",
+        SMOOTHER, 300),
+    'smoother-no-window': ("core/src/audio.c",
+        "            s->h[p][k] = sinc * bessel_i0(beta * sqrt(1.0 - u * u));",
+        "            s->h[p][k] = sinc;",
+        LISTENER, 300),
+    # the listener's use of it
+    'listener-hears-the-steps-anyway': ("core/src/audio.c",
+        "        sum = rb_smoother_next(&l->smooth);\n",
+        "        (void)rb_smoother_next(&l->smooth);\n",
+        LISTENER + SIM, 300),
+    'listener-never-feeds-the-smoother': ("core/src/audio.c",
+        "        rb_smoother_push(&l->smooth, l->sum);\n",
+        "",
+        LISTENER + SIM, 300),
+    'listener-smooth-ignores-a-refusal': ("core/src/audio.c",
+        "    if (rb_smoother_init(&probe, every)) return -1;\n    l->smooth = probe;",
+        "    rb_smoother_init(&probe, every);\n    l->smooth = probe;",
+        LISTENER, 300),
+    # the sim's choice of when (rb_sim.c)
+    'sim-smooths-48k-pipes-too': ("core/src/rb_sim.c",
+        "    if (!(e->pipe_dt > 0.0) || 1.0 / e->pipe_dt >= 47999.0) return 0;",
+        "    if (!(e->pipe_dt > 0.0)) return 0;",
+        SIM, 600),
+    'sim-never-smooths': ("core/src/rb_sim.c",
+        "    if (smooth_every(sim)) rb_listener_smooth(&sim->listener, smooth_every(sim));\n",
+        "",
+        SIM, 600),
+    'scene-hears-the-steps-anyway': ("core/src/rb_sim.c",
+        "                for (int j = 0; j < 3; j++) q[j] = rb_smoother_next(&sim->scene_smooth[j]);\n",
+        "                for (int j = 0; j < 3; j++) (void)rb_smoother_next(&sim->scene_smooth[j]);\n",
+        SIM, 600),
+    'scene-never-feeds-its-smoothers': ("core/src/rb_sim.c",
+        "                rb_smoother_push(&sim->scene_smooth[0], e->tail_flow[0]);\n",
+        "",
+        SIM, 600),
+    'scene-smoothers-left-off': ("core/src/rb_sim.c",
+        "        rb_smoother_init(&sim->scene_smooth[j], smooth_every(sim));   /* off if 0 */",
+        "        rb_smoother_init(&sim->scene_smooth[j], 0);   /* off if 0 */",
+        SIM, 600),
+    # the A/B switch
+    'variant-never-reaches-the-sim': ("core/src/rb_drive.c",
+        "        sim->variant = (int)v;\n",
+        "",
+        VARIANT, 300),
+    'variant-needs-a-rebuild': ("core/src/rb_params.c",
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },',
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, REBUILD | INT },',
+        VARIANT, 300),
+    'variant-takes-fractions': ("core/src/rb_params.c",
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },',
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE },',
+        VARIANT, 300),
+    'variant-is-a-control': ("core/src/rb_params.c",
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },',
+        '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT | CONTROL },',
+        VARIANT, 300),
+}

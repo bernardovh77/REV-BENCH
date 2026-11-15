@@ -150,6 +150,10 @@ void test_audio_dc_blocker(void);
 void test_audio_soft_limit(void);
 void test_audio_listener_monopole(void);
 void test_audio_listener_paths(void);
+void test_audio_listener_smooths_slow_pipes(void);
+void test_audio_smoother(void);
+void test_audio_sim_smooths_only_slow_pipes(void);
+void test_audio_variant_reaches_the_sim(void);
 void test_audio_listener_places(void);
 void test_audio_engine_sound(void);
 void test_audio_engine_rebuilt_quietly(void);
@@ -232,6 +236,7 @@ void test_api_snapshot_layout(void);
 void test_api_snapshot(void);
 void test_api_events(void);
 void test_api_events_share_a_step(void);
+void test_api_variant(void);
 /* ---- layouts, presets and the engine API (tests/test_presets.c) ---- */
 void test_presets_table(void);
 void test_presets_fire_where_the_layout_says(void);
@@ -438,6 +443,10 @@ static const struct {
     T(test_audio_soft_limit),
     T(test_audio_listener_monopole),
     T(test_audio_listener_paths),
+    T(test_audio_listener_smooths_slow_pipes),
+    T(test_audio_smoother),
+    T(test_audio_sim_smooths_only_slow_pipes),
+    T(test_audio_variant_reaches_the_sim),
     T(test_audio_listener_places),
     T(test_audio_engine_sound),
     T(test_audio_engine_rebuilt_quietly),
@@ -525,6 +534,7 @@ static const struct {
     T(test_api_engine_changes),
     T(test_api_cylinder_state),
     T(test_api_pipes),
+    T(test_api_variant),
     T(test_dyno_holds_a_speed),
     T(test_dyno_sweeps),
     T(test_dyno_only_absorbs),

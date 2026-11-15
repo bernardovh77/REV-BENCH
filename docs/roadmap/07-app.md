@@ -297,6 +297,17 @@ and test set-up to reuse).
     0 dBFS revving, the four −16), and a volume control. The four's own level is checked against
     real recordings in phase B.
   - **A lost device:** keep playing on the new default and show which (app-design §15).
+- **Added 2026-11-15 (the review, docs/review-2026-11-15.md, problems 1 and 8):**
+  - **A dead-man rule, in the engine process:** while a live throttle style is active (ramped
+    key, analog key, trigger), the window sends the throttle at a steady beat. If none arrives
+    for 250 ms the engine process ramps the throttle to zero over 100 ms. The on/off and
+    latched styles hold by design and are exempt. On blur or hide the window sends "released"
+    for every held key and trigger. Chromium slows a hidden window's timers and stops sending
+    a page its key-ups and controller state once it loses focus, so without this an engine
+    could stay at full throttle with nobody able to lift.
+  - **The A/B key:** a key flips `RB_PARAM_VARIANT` (stage 127) between 0 and the candidate
+    number chosen in a developer menu, while the engine runs; a blind mode picks at random
+    which is A. With no candidate in the core the two are the same sound, and the menu says so.
 
 **Required exit evidence:**
 - A seeded command trace driven through the app's UI produces, through the host's capture tap,
@@ -304,7 +315,10 @@ and test set-up to reuse).
   budget at 44.1 and 48 kHz on Windows.
 - Start, idle, blip, lift, stop, restart, preset changes, invalid commands, device changes and
   sleep and wake each work on Windows, as e2e tests on the null device plus a manual check on
-  Bernardo's real devices. The C and add-on suites stay green in Linux CI.
+  Bernardo's real devices. The C and add-on suites stay green in Linux CI and on macOS.
+- The dead-man rule end to end: the window hidden with a ramped key held, and the engine
+  process's messages stopped mid-pull; the snapshot's throttle reaches zero both times, and
+  stays where it was for the on/off and latched styles.
 
 **Stop/reject rule:** A tone, a copied mono channel or a benchmark is not the engine playing.
 No JavaScript in the audio path. The tier is never changed silently.
@@ -361,6 +375,13 @@ is claimed physically credible just because it was accepted.
 - **Instruments:** rpm, MAP and boost, lambda/AFR, torque and power, the computer's cuts, an
   output meter with defined ballistics, and the engine's render-speed and underrun status, all
   from snapshots.
+- **Added 2026-11-15 (the review, problem 5): the model's own warning.** The core counts
+  every time one of its numerical guards steps in (the pipes' sonic guard and mass cap, the
+  orifices' equalisation limit, a repaired chamber: counters in the engine, not the optional
+  diagnostics taps), as a new telemetry value, guard interventions per second (a new snapshot
+  version). Above a threshold set from the five presets' normal running, the readout says the
+  build is outside what the model handles well. The counters must cost nothing measurable
+  (`tools/speed_check.py`).
 - **The dyno** owned by the core (stage 121): hold, sweep, live curves, previous runs overlaid,
   units, and CSV export.
 
@@ -401,6 +422,12 @@ Bernardo authorises publishing.
   maximum), underruns (zero at the default latency), and memory.
 - e2e on Windows; Linux CI green; the latest macOS core run green.
 - Manual start, blip, pull and long-coast listening by Bernardo.
+- **Added 2026-11-15 (the review, problem 7):** the same 15-minute drive with the window
+  drawing a deliberately heavy animation every frame (a stand-in for the 3D view, which shares
+  the laptop's two fast cores with the render thread): zero underruns, or the measure that
+  got there (the window's frame rate capped while the host's ring is under half) and its
+  result. The ring's level reaches the window in what it already receives. Stage 070 starts
+  from this result.
 
 **Stop/reject rule:** A percentile alone can hide glitches; unmeasured timing keeps
 qualification open. An untested system or machine gets an explicit limitation, never silently

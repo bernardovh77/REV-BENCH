@@ -1,0 +1,336 @@
+# REV-BENCH: how the code is built
+
+The reference for each module of the core, the engine's step order, the conventions, the tools
+and the sound's measured numbers. Until stage 127 this was the long middle of CLAUDE.md; it
+moved here so that CLAUDE.md holds the rules and this file the knowledge.
+
+**Read the part about a module before changing that module, and update it in the same stage.**
+Where this file and the code disagree, the code is right and this file is fixed.
+
+## The core (C)
+
+- C11, SI units, double precision, no allocation anywhere in the core (malloc only in rb_alloc.c,
+  for hosts), NaN/inf guards.
+- Inputs are parameter ids + doubles (enum in `core/include/rb.h`, metadata row in
+  `core/src/rb_params.c`); outputs are telemetry ids + doubles. New C tests go in `tests/test_main.c`.
+- Internal physics modules: `gas.c` (species RB_AIR/RB_FUEL/RB_BURNED, two-range cp fits, u(T), T(u)),
+  `chamber.c` (0D control volume: clear rates, add flows/heat, integrate; `rb_chamber_set_volume` does
+  piston work with the time-symmetric trapezoidal rule and splits changes over 2 %), `flow.c` (nozzle
+  formula, orifices with the equalisation limit, `rb_network_step`), `pipe.c` (stage 10's 1D pipe:
+  cells = chambers on a staggered grid, faces whose ṁ is a state; ends closed, joined to a volume
+  (or another pipe's cell) with the end correction, restricted, laminar loss, or on an orifice, or
+  going straight on into another pipe (`rb_pipe_onward`, stage 12); two rates; stage 12's packing,
+  a laminar loss on the flow's swings only), `cylinder.c` (slider-crank
+  geometry; `rb_cylinder` = chamber + geometry + crank angle, `rb_cylinder_move` returns the work),
+  `valve.c` (cam lift `(1 - u²)²`; effective area = curtain in series with the port), `throttle.c`
+  (butterfly plate + shaft), `combustion.c` (heat release per kg of fuel with the constant-volume
+  correction, Wiebe burn, `rb_burnable_fuel` unmixedness model), `heat.c` (Woschni h and w, wall
+  area), `audio.c` (the listener: stage 11's monopoles, the tailpipes' and since stage 12 the
+  intake mouth's volume flow, heard from a place around the car, each at its distance and delay
+  and off the ground; since stage 12b also `noise.c`'s pressures and the cabin; the Kaiser-window
+  anti-alias FIR and decimator; the DC blocker; the soft limiter), `noise.c` (stage 12b: what the
+  1D gas can't make: the jets' noise and the engine's own, mechanical sound), `engine.c` (N cylinders, the air → snorkel (pipe; the filter a laminar loss at its
+  end) → air box (volume) → throttle + idle air valve → plenum, a runner per cylinder (pipe) →
+  intake valve, exhaust valve → header (pipe) → one of up to two collectors (volumes) → each
+  collector's exhaust pipe → catalyst (a restriction + laminar loss at its end) → muffler (pipe:
+  a chambered can, a packed straight-through or a straight pipe) → tailpipe (pipe; a chambered
+  muffler's baffles at its start) → the air, one or two systems; two air reservoirs; fuel at IVC,
+  spark, burn, walls; the crank, held or free; friction, starter, the engine computer;
+  per-cycle IMEP, BMEP, torque etc.).
+  The cp fits were generated with Cantera (`pip install cantera`, data file `nasa_gas.yaml`) in
+  Claude's cloud workspace; see docs/stage-03.md. Since stage 6, RB_BURNED above 1000 K uses the
+  equilibrium *apparent* cp at 40 bar (dissociation); see docs/stage-06.md.
+- Stage 9 added `dyno.c` (an absorbing dyno: a PI controller on the free crank's `load_torque`, a
+  reading per cycle with the inertia correction; internal, not in rb.h yet). In `engine.c` it added:
+  - the burn's length from the charge at IVC and the speed (`burn_duration`, 0.5–2 times
+    `desc.burn_duration`, which is the four's at 3000 rpm wide open);
+  - the engine computer's spark (`computer_spark`): the best torque's, with half the charge burned
+    8° after TDC; at idle 15° at the idle speed, more below, less above, capped at the best.
+
+  `spark_map = 1` (the default) uses that spark and `spark_map = 0` the fixed `e->spark` of stages
+  6–8, so tests that set `e.spark` must also clear `spark_map`.
+- Stage 10 made the runners (`runner_length = 0`: none, as in stages 5–8) and the exhaust 1D pipes
+  (`pipe.h` explains the scheme). Cells about every 5 cm in runners and headers, 7.5 cm in exhaust
+  pipes and tailpipes, from a pool of 512 in the engine. The pipes step at 48 kHz (`pipe_every`
+  physics steps), but the cells at the valves are fast, stepped every physics step; fast faces see a
+  slow neighbour's pressure as it is by now (`rb_chamber_pressure_now`: the gas it took meanwhile and
+  its rates since the block began). Get this wrong and the engine's VE moves up to 0.9 % between
+  384 and 96 kHz (docs/stage-10.md, "Two rates"; `test_engine_pipes_two_rates`). The engine
+  computer's idle valve and idle spark act on the speed half a second ahead (`idle_heading`), the
+  spark 0.3° per rpm: with runners an idling engine is unstable on its own (less exhaust pushed
+  back into them the faster it turns). `heat_transfer = 0` means adiabatic cylinders; the pipes'
+  walls always trade heat. At 96 kHz the valves' 5 cm cells are too stiff for the flow cap (10 %
+  more pumping work motored); 192 kHz is converged.
+- Stage 11 put the sound in `rb_render_block`. Every physics step the sim's source (`sim->source`;
+  since stage 121 `RB_PARAM_SOURCE`: stage 1's tone by default, which the old browser scaffold
+  plays, or `RB_SOURCE_ENGINE`) gives the microphone's signal in
+  full-scale units (1 = 40 Pa, `RB_FULL_SCALE_PA`); a NaN becomes 0 there, before the filters. Then
+  the anti-alias FIR (157 taps at oversample 4: 0.4 ms), the 10 Hz DC blocker, the gain and the soft
+  limiter (knee 0.8: a full-level tone peaks at 0.952, so level tests use 0.7). The engine's
+  `tail_flow` is the tailpipes' volume flow at the end cell's density, whichever way it flows: the
+  outside air's density for a reversing flow kinks it, a click every firing. A rebuilt engine
+  resets the microphone. 16-bit WAVs are TPDF-dithered by default (`wav_set_dither(w, 0)` for exact
+  values).
+- Stage 12 made the microphone a listener (`rb_listener`, `sim->hear`, `rb_sim_listen` after any
+  rebuild): it stands at an `RB_HEAR_*` place (default `RB_HEAR_BEHIND`, 3 m behind the car: a loud
+  V8 a metre from its tailpipe passes full scale) and hears tailpipe 0, tailpipe 1 and the intake's
+  mouth (`mouth_flow`, < 0 drawing in) each at its 1/r and delay, and again off the ground (an image
+  source, `RB_GROUND` 0.9). Their flows are kept at the pipe rate in a 2048-step ring. The muffler
+  is a pipe (`muffler_type`: none, a straight pipe the tailpipe's bore; straight-through, that pipe
+  packed, `PACKING` and `PACKING_SETTLE` in engine.c; chambered, a can as wide as `muffler_volume`
+  over `muffler_length`, left through `muffler_area` with `BAFFLE_LAMINAR`). A can's exhaust pipes
+  open into its first cell and its tailpipe starts from its last, joined as to volumes; a straight
+  pipe or straight-through goes straight on (`rb_pipe_onward`) from its exhaust pipe, unless two
+  meet there, and into its tailpipe. Joined through a volume, a straight pipe lost two velocity
+  heads and cost more back pressure than the can. Only bores within `RB_PIPE_ONWARD_MAX_RATIO`
+  (1.5) in area go straight on: across a bigger step the joint pumps the flow into the wide pipe
+  until it blows up (stage 13's fuzzer: 75 mm tailpipes on the V8, 1.86 times its exhaust pipe).
+  The intake: snorkel → air box (fast, with the plenum) → throttle; the engine's books
+  (`mass_in` etc.) count at the snorkel's mouth, not the
+  throttle. Pipes: runners, headers, exhaust pipes, tailpipes, then mufflers and the snorkel (new
+  kinds and places appended, so old indices hold). Packing adds weight to slow swings
+  (R τ per m³: keep it under the gas's density). The boom at 1500–2500 rpm in the four is the whole
+  exhaust's lowest ring (~63 Hz), not the can's alone; the rasp above 2 kHz with a straight pipe or
+  straight-through is made at the tailpipe's open end, where the flow turns round every firing.
+- Engine step order: the crank's turn (held: rpm dt; free: ω dt + ½ α dt² from the torques now,
+  after the engine computer runs) → events the crank passes during the step (an event counts if
+  it's in [angle, angle + step)): IVC injects the fuel, notes the trapped charge and fixes the
+  cycle's burn length and spark timing, the spark sets the burnable fuel, EVO stops the burn,
+  overlap TDC closes the peak-pressure bookkeeping → set areas (throttle, valves) → when a block of
+  `pipe_every` steps begins, the slow gas's rates (`slow_flows`: the pipes' slow faces and the
+  collectors, all cleared before any flows) → all fast flows (throttle, valves, the pipes' fast
+  faces with their current ṁ, the snorkel's into the air box), Woschni wall heat and burning as
+  rates from the current state, integrated together (explicit Euler) → turn the crank and move the
+  pistons (trapezoidal) → when the block ends, the slow gas integrated over it, the snorkel's
+  inflow and the tailpipes' outflow counted, its faces' ṁ updated (`slow_step`) → the fast faces'
+  ṁ from the new pressures. A free crank's kinetic energy changes by exactly the work done
+  on it (gas, crankcase at ambient, starter, friction, load), so `crank_books()` in the tests
+  balances to 1e-9.
+  Per-cycle totals share the step that crosses 720° between both cycles. `rb_engine_settle` runs to
+  a steady state of VE, plenum pressure and net work.
+- `hold_speed = 1` (the default after init) is the dyno-held crank of stages 5–6: the engine
+  computer (idle valve, fuel cut, rev limiter, cranking spark) only runs with `hold_speed = 0` and
+  the ignition on, so held runs keep stage 6's numbers. Below 100 rpm the burn and Woschni's gas
+  velocity keep a minimum pace (`RB_GAS_PACE_RPM`).
+- `rb_cli breathe` stays motored with adiabatic walls by default (stage 5's numbers; `--walls` adds
+  heat transfer); `rb_cli fire` has walls and fuel; `rb_cli run` is the free engine's scripted
+  drive; `rb_cli dyno` puts the free engine on stage 9's dyno. In tests, `start()`
+  (test_engine.c) is motored and adiabatic, `start_fired()` the full engine held, `start_free()`
+  the free crank at rest, and test_dyno.c's `run_held()` a preset held wide open at 96 kHz. Loops
+  that wait for the engine must be bounded (`run_cycles`, `run_to_angle`, `run_for`): a planted
+  bug that stops the crank must fail a test, not hang the suite.
+- Valve timing is given cam-card style: intake centerline in degrees after overlap TDC (cycle angle
+  360 + ICL), exhaust centerline before it (360 - ECL).
+- Layouts (stage 8): angles in the direction the crank turns; a piston is at TDC at crank angle
+  `bank_angle[bank[i]] - pin[i]`; `rb_engine_layout` derives `firing[]` from the firing order (each
+  cylinder fires at its first TDC after the previous firing, cylinder 1 first, all within 720°) and
+  `rb_engine_desc_check` refuses a `firing[]` that disagrees. Presets live in `presets.c` (V8s:
+  odd cylinders on bank 0, even on bank 1, cylinders 1 and 2 at the front). Each preset carries
+  its own idle valve, sized so the warm engine idles at about 15 % open (where the computer starts
+  it), and idle gains; tune new ones with a start, a 30 % blip and a 10 N m load at idle, keeping
+  room for gains 1.5 times stronger (docs/stage-08.md, retuned in docs/stage-09.md and
+  docs/stage-10.md). Watch the idle for 30 s: a slow swing can take 15 s to show. To tell the
+  controller from the engine, hold the idle valve and spark still: since stage 10 the six and the
+  cross-plane V8 swing on their own then. Engine changes that move the idle's torque response (the
+  burn, friction, pipes, cams) mean retuning them.
+- The public engine API (`rb_engine_api.c`): `rb_load_preset`, `rb_get_engine`/`rb_set_engine`
+  over a field table (offsets into `rb_engine_desc`, a few worked out), `rb_get_cylinder`.
+  `rb_set_engine` clamps a value outside the field's range (returning RB_CLAMPED; pin and bank
+  angles wrap instead), changes a copy, checks it, then rebuilds the engine (or, for RB_EF_LIVE
+  fields, changes it in place). New fields: append to `rb_engine_field` in rb.h and to `FIELDS[]`,
+  with a range.
+- Stage 121's public API for driving and watching the engine (`rb_drive.c`, `rb_events.c`;
+  docs/stage-121.md), everything a host needs through rb.h alone:
+  - **parameters** (`rb_params.c`'s table; `rb_sim_apply` puts each into the engine): the source;
+    the driver's controls (`RB_PF_CONTROL`: ignition, starter, throttle, load, hold and hold rpm,
+    gear inertia and clutch: the car on the crank, its road load moved here from rb_cli); the
+    settings (variation, listener, layers, overrun transition; burn model, seed and momentum
+    order are `RB_PF_REBUILD`, returning `RB_PENDING` once the engine has run; events);
+  - **telemetry** from `RB_TLM_RPM` on, each with a unit (`rb_telemetry_unit`);
+  - **every rebuild** (rb_reset, a preset, a field, `rb_set_quality`) goes through `rb_sim_build`:
+    the engine at rest, the controls at their defaults, the settings applied, no dyno, no
+    events, the generation +1. `rb_sim_desc` is the description without the car's inertia (the
+    engine's `desc.inertia` carries it in gear);
+  - **a dyno the sim owns** (`rb_dyno_attach` ..., `own_dyno`);
+  - **snapshots** (`rb_get_snapshot`, contracts/snapshot-v2.md, checked by tools/snapshot_v2.py)
+    and **events** (`RB_PARAM_EVENTS`, `rb_read_events`; off by default at no cost).
+
+  New parameters: append to `rb_param` and `PARAMS[]` and apply them in `rb_sim_apply`; new
+  engine telemetry goes before `RB_TLM_COUNT` and so into the snapshot: that's a new snapshot
+  version. `rb_cli sound` (native/sound.c) uses rb.h alone, and the Makefile compiles it without
+  core/src on the include path; `tools/cli_parity.py` checks its drives render bit for bit as
+  before. Internal tests may still step `sim->engine` directly (tests/test_presets.c).
+- Crank angle convention: θ from TDC; over the 720° cycle 0 = firing TDC, 180 = BDC, 360 = overlap
+  TDC, 540 = BDC. Charts run from -360 to 360 so firing TDC is in the middle.
+- Core code is spaced and commented (stage 119 reformatted Codex's): `if (x) y;`, spaces round
+  operators, one statement a line, a comment on what each function does. A pure reformat must
+  leave `make wasm`'s output and the `-O2 -g0` objects byte-identical (docs/stage-119.md).
+- Stage 118's per-step helpers (`core/src/fastmath.h`): `rb_finite` for `isfinite`, `rb_min`,
+  `rb_max`, `rb_clamp` where the values can't be NaN; MSVC makes the library's versions calls.
+  `rb_bench_render` / `tools/bench_render.py` time the app's render path (docs/stage-118.md).
+- Stage 123's `host/` (docs/stage-123.md): the real-time host on rb.h alone; its render
+  thread never allocates, locks or logs (checked by `host/src/audit.c`), and nothing in it is
+  physics. Its tests run on the null device: never play on a real device without Bernardo.
+- New public C functions must also be added to `WASM_EXPORTS` in the Makefile (and to `RbExports`
+  in `web/src/core/rb-core.ts` if JS uses them).
+- Bernardo wants a 3D view of the engine running (stages 070–077, in the app's window). Physics stages must expose what it
+  needs through the API: the engine description (geometry, layout, crank pin angles, valve/cam data,
+  pipe geometry) and per-cylinder / per-pipe-cell state. Never duplicate engine geometry in JavaScript.
+- After any change in `core/`, run `make wasm`. It rewrites `web/src/wasm/rb_core.wasm` and
+  `rb_core.sources.sha256`; the web unit tests fail on a stale core.
+- Stage 13 made the core faster without changing what it computes (renders at high quality match
+  stage 12's; docs/stage-13.md):
+  - **The chamber:** `gamma` and the speed of sound aren't fields any more but
+    `rb_chamber_gamma()` and `rb_chamber_sound_speed()`, worked out when asked (most chambers are
+    pipe cells, which never need them). `per_rho` (1/rho, 0 when empty) is kept for the pipes.
+    The update starts Newton's method for T from a predicted guess, T + (u - u_last)/cv_last, and
+    `rb_gas_T_cv_from_u` returns cv too, so one evaluation of u(T) and cv(T) usually does it.
+  - **The gas:** each species' u(T) constants are worked out by the compiler (`SPECIES_ENTRY` in
+    gas.c) and a mixture is a weighted sum, with no polynomial evaluated. Keep `RB_REMIX` at 1e-8:
+    a remix makes T and p jump by about the threshold (1e-5 would be steps of about 1 Pa).
+  - **The nozzle** is choked when 2a >= (g + 1) r, with a = r^(1/g), so the subsonic case needs
+    one pow. **Woschni's h** is one exp of logs.
+  - **The pipes:** faces keep `per_area` and `per_length`, pipes `per_area` and `wall_ratio`, and
+    `push` skips the drag's division on faces that have none.
+- The quality setting (stage 13): `rb_config.pipe_rate` (0 = 48 kHz; faster than the physics means
+  every step), and `RB_QUALITY_LOW/MEDIUM/HIGH` (`rb_config_quality`, `rb_create_with_quality`):
+  physics 96/192/192 kHz, pipes 24/24/48 kHz. High is the default, and what the tests and renders
+  use. Stage 118 appended `RB_QUALITY_BALANCED` (96 kHz, pipes 48 kHz) and each preset's
+  real-time default, `rb_preset_quality` (docs/stage-118.md, "The declared tier"). `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
+  pipe_rate)`; `rb_engine_init` is 48 kHz. Pipes at 24 kHz move the torque by under 0.3 %.
+- Speed: `make bench` (native/rb_bench.c) and `make bench-wasm` (the same as WASI WebAssembly,
+  run by tools/bench_wasm.mjs) time each preset held wide open at 3000 rpm. Timings in Claude's
+  cloud workspace swing by 20 %: compare builds interleaved, best of several runs, and use
+  callgrind's instruction counts and gprof as second opinions.
+- The fuzzer (stage 13, native/fuzz.c): `rb_cli fuzz` / `make fuzz` (20 random engines for 10 s
+  each on their own crank, heard from a random place since stage 12b) and
+  `test_fuzz_random_engines` (4 short ones, at every quality).
+- Stage 12b added the sound the 1D gas can't make (`noise.c`, `rb_noise` in `sim->noise`), each
+  physics step, as Pa 1 m from its source:
+  - **the flow's noise:** each tailpipe's jet at Lighthill's power (K ρ0 U⁸ D²/c0⁵, hot: T/T0), the
+    exhaust valves' jets (η M⁵ of ½ ṁ U², choked at M = 1) written ahead into a ring and out of
+    their system's tailpipe when they get there (path / 580 m/s), through the catalyst and the
+    muffler's pass (`PASS_*`), the throttle's and idle valve's at the mouth through the air box;
+  - **the engine's own sound:** six block and head modes (resonators y = x sin ωΔt + 2r cos ωΔt
+    y1 − r² y2), moved by √(0.086/bore), struck by the change of the pistons' force (combustion),
+    piston slap at each dead centre (|gas force − inertia m r ω²(1 ± λ)|), valves seating (∝ rpm)
+    and lifting (a third), the injector at IVO when fuelled; each impact ±25 % at random. The
+    impacts are counted (`impacts[]`, `impact_energy[]`) for the tests; the gas torque's swings
+    through the mounts (20–200 Hz) for the cabin;
+  - **seeded** (`RB_NOISE_SEED`), so renders repeat; a NaN anywhere restarts it quiet;
+  - **layers** (`sim->layers`, `RB_LAYER_PIPES | _FLOW | _ENGINE`; `rb_cli sound --layers`):
+    the pipes layer alone is stage 13's sound;
+  - **the listener** keeps these pressures at the physics rate (`rb_listener_place_noise` after
+    `rb_listener_place`, `rb_listener_push_noise` each step), each at (1 m)/r and its delay, the
+    engine bay (`BAY`) muffled by the body but at `RB_HEAR_FRONT`. If a noise source is nearer
+    than every flow source (the cabin), the flows' delays grow to match;
+  - **the cabin** (`RB_HEAR_CABIN`): what's behind through a one-pole low-pass at 100 Hz, in front
+    (the mouth, the bay) at 200 Hz, both at 0.3, plus the mounts, then a 55 Hz boom (RBJ peak);
+  - **tests pose the engine by hand** (test_noise.c's `pose`): set `e.theta`, `e.omega` and the
+    pressures, `rb_noise_init`, move the crank and step only the noise.
+- The pipes' sonic guard (stage 12b, `RB_PIPE_MOST_SONIC`): no face's flow passes twice the sonic
+  flow of the gas it comes from, A √(1.4 ρ p). Normal running stays under 1.13 times it; held at
+  high rpm with the throttle shut, the runners near a vacuum ran away without it (58 times, gas at
+  13 K; `test_engine_vacuum`).
+- Stage 12c, no two cycles alike (`e->variation`, 0 by default so the tests and dyno numbers stay
+  exact; `rb_cli sound` uses 1, the fuzzer 0–2; tests/test_variation.c):
+  - at IVC each burn's length varies by 6 % (RMS) and the flame's start after the spark by 7 % of
+    its length (since stage 040 a development delay that is never negative; since stage 115 a
+    unit exponential, `rb_kernel_delay_unit`, whose mean the computer's spark allows for, idle
+    spark included), correlated 0.5; each cylinder has its own
+    mixture (2 %) and burn length (4 %), drawn at init with their mean taken away; each exhaust
+    valve's area flickers 15 % (RMS, below 2 kHz) while open. COV of IMEP 1.0–2.3 % per
+    cylinder wide open (stage 115), 3–8 % idling. `core/src/rand.h` is the seeded generator (noise.c's too): renders repeat exactly;
+  - `b->work`/`b->last_work`: each cylinder's work over its own cycle;
+  - the presets' headers are unequal (the four 0.58/0.40/0.30/0.52 m, the six's outer and the
+    cross-plane V8's front ones longest); `rb_engine_desc_default` keeps equal ones;
+  - `accessory_power` (an engine field, part of the friction): a steady torque below 1500 rpm,
+    the power above, none while cranking; the presets take 800–1250 W, so their idle valves and
+    gains were retuned (docs/stage-12c.md). Twice that made the idle controllers hunt;
+  - the rev limiter's soft cut (`soft_cut`): in the 150 rpm under the limit single sparks are cut
+    at random, more nearer it; the hard cut above as before; `e->limiter_cuts` counts them; off
+    while held;
+  - `sim->dyno` (internal): a dyno a native host put on the crank, stepped before the engine every
+    physics step (`rb_cli sound --hold`); a rebuilt engine drops it;
+  - `rb_cli sound`: `--hold` on that dyno, `--sweep` with the road's load ending clutch-in at idle,
+    `--rev` (neutral revs), `--variation`, `--headers`, `--load`.
+- Codex's additions (stages 037–049, 114; read CODEX.md for the details):
+  - `ignition.c`/`injection.c` (spark discharge and injection events, traced), `radiation.c`
+    (the tailpipe outlet's causal radiation load), `exhaust_models.c` (each preset's researched
+    exhaust: centre pipes, links, X/Y junctions, `rb_exhaust_model`), `scene.c` (stereo scenes,
+    `rb_set_scene`/`rb_render_stereo`), `diagnostics.c` (optional numerical observation slots);
+    `RB_QUALITY_ULTRA`; the overrun spark retard before the fuel cut (`overrun_transition`).
+  - `experiments/acoustics/`: research solvers (wave, euler, mixture, gas_graph, thermal,
+    material, fixed_transport, junction). They are linked only into the tests and probes, never
+    into the core or the browser, and run far below real time.
+  - `contracts/`: versioned JSON contracts for builds and engine fields (`make build-contract-check`).
+- Stage 127 (docs/stage-127.md), from the 2026-11-15 review:
+  - **The smoother** (`rb_smoother` in `audio.c`): the pipes' flows change once a pipe step,
+    the listener hears every physics step. Heard as they come, each change is one jump, and
+    the pressure, the flow's derivative, is then a train of impulses: it carries a copy of the
+    sound around every multiple of the pipe rate, as strong as the sound itself. At 48 kHz
+    pipes the copies are above the decimator's pass band and nothing is done: renders at the
+    high and balanced qualities are bit for bit what they were. With slower pipes (the low
+    and medium qualities, `--pipe-rate`) the copies land in the treble (stage 118 measured
+    +13 to +44 dB above 4 kHz with 16 kHz pipes), so the listener reads the flow between its
+    pipe steps: a polyphase windowed-sinc interpolator (12 pipe steps of taps under a Kaiser
+    window, beta 8; each phase's taps add up to exactly 1, so a steady flow makes no sound).
+    It delays the flows by `rb_smoother_delay()` physics steps, and `rb_listener_smooth` delays
+    stage 12b's noise sources by as much. `rb_sim.c`'s `smooth_every` decides (pipes under
+    48 kHz), for the mono listener (`l->smooth`, `l->smooth_front`) and for each source of a
+    stereo scene (`sim->scene_smooth[3]`; there the noise is not delayed to match: 0.1 to
+    0.4 ms). Tests pose it with `rb_listener_smooth` after `rb_listener_set`.
+  - **`RB_PARAM_VARIANT`** (0..`RB_VARIANT_MAX`, live, an integer, a setting that rebuilds
+    keep): the A/B switch. It lands in `sim->variant`, which code under listening reads; no
+    code reads it yet, so every number plays the accepted sound, bit for bit
+    (`test_api_variant`).
+  - `rb_bench_render --cores` pins with `sched_setaffinity` on Linux only; macOS has no such
+    call, and there it says it could not set the affinity.
+
+## Tools and charts
+
+- `tools/plot_cycle.py` draws `rb_cli motor` CSVs, `tools/plot_breathe.py` the `rb_cli breathe`
+  ones (cycle, map), `tools/plot_fire.py` the `rb_cli fire` ones (cycle, spark, power),
+  `tools/plot_run.py` the `rb_cli run` one, `tools/plot_presets.py` the presets' (firing, runs,
+  idle), `tools/plot_pipes.py` the `rb_cli pipes` ones (pulse, engine) and a stage-to-stage
+  `fire --rpm-sweep` comparison, `tools/plot_dyno.py` the `rb_cli dyno` sweeps and
+  `fire --rpm-sweep` comparisons (curves, changes, spark), `tools/plot_sound.py` the `rb_cli sound`
+  WAVs (check: levels, DC, clicks and lines; spectrograms; a sweep with its orders; engines by
+  order; pulls' dBA against rpm; third-octave bands side by side; 16-bit WAVs only, so render
+  without `--float`),
+  `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above),
+  `tools/orders.py` how much is between the firing orders,
+  `tools/plant_bugs.py` plants a stage's bugs (see Workflow).
+  The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted
+  #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered
+  categories, and the Inter font when installed. Doc images are rendered in Claude's cloud
+  workspace (it has Inter) and saved in `docs/`; `renders/` is git-ignored.
+
+## The sound's numbers so far
+
+What Bernardo said and how the sound is measured are in CLAUDE.md ("Sound"). These are the
+measurements those rules refer to.
+
+- **The numbers that matter** (medians at idle):
+  - **Repeating:** a real engine's cycle repeats at about +5 dB below 500 Hz (−2 to +13) and
+    under 0 dB above. Ours repeated at +28 to +57 dB below 500 Hz, an exact loop: that was the
+    "artificial" and the "piano note". Stage 12c's variation brought it to +12…+20 (S1's work
+    goes on), and the band 0.5–2 kHz to −7 (real −5 to −10).
+  - **Every firing the same:** between their firing orders real engines have −12 to +11 dB of
+    them; with equal headers and identical cylinders the four had −72 idling and −33 to −41 at
+    3000 rpm. Stage 12c (unequal headers, each cylinder its own): −26 and −14.
+  - **High frequencies:** the pipes' grid carries nothing above c/(πΔx): 2.4 kHz in the 7.5 cm
+    exhaust cells. Real engines keep a broadband floor to 16 kHz (−25 dB of their energy above
+    2 kHz). Until stage 12b ours had −59 there: that was the "dull". Stage 12b's noise brought it
+    to −41 idling from behind and −24/−22 for the four's and the V8's pulls (real −42 to −6).
+  - **The highs were the gap, not the mids.** Under load our energy above 1 kHz was already the
+    real engines' (−14 dB).
+- **Stage 115** (docs/stage-115.md): the valves' and throttle's jet noise takes its Mach number
+  from the pressures either side of the gap (a choked jet had read 15.8 dB too weak),
+  recalibrated (`VALVE_ETA` 5e-4 from behind, `THROTTLE_ETA` 5e-5 at the intake's mouth); it
+  goes through X and Y junctions to every tailpipe beyond. Under load the highs above 2 kHz are
+  now −11 to −20 dB (real revving engines −42 to −6, median −20); idling from behind they are
+  still −38 for the four (real median −25).
+- **How engine-sim does it:** its physics stops at 1.9 kHz too. Its highs come from time jitter,
+  noise multiplied into the flow and a convolution with an impulse response, with a leveler at
+  the end.

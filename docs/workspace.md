@@ -33,6 +33,18 @@ prints a table. Both give the same results: 251 native tests and 4,950,067 check
 WebAssembly byte for byte, 102 Python tests with none skipped, 17 web tests and the 2 e2e tests in
 both modes.
 
+**The push hook (stage 127).** Once per clone:
+
+```
+git config core.hooksPath .githooks
+```
+
+From then on `git push` first runs the quick suites (`native python host`, a few minutes) and
+refuses the push if one fails (`.githooks/pre-push`). `RB_SKIP_PREPUSH=1 git push` skips it for
+one push (say why), and `RB_PREPUSH_SUITES="python" git push` chooses the suites. The full run
+is still a stage's last step. A plain `python tools/run_tests.py` no longer includes `e2e`,
+the old browser page's Playwright test: name it to run it (`python tools/run_tests.py e2e`).
+
 **Windows** (the desktop app's sessions run here):
 - **C:** w64devkit's gcc and make (`C:\w64devkit\bin`). It has no LTO; the Makefile notices and
   builds without it. The native suite takes about 8 minutes this way.
