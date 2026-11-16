@@ -38,4 +38,11 @@ BUGS = {
         "    if (!h->capture.capacity) return RB_HOST_ERR_STATE;\n",
         "    if (!h->capture.capacity) return 0;\n",
         TAP, 300),
+    # 2026-11-16: test_host_a_slow_reader's "nothing new" check had a race (one more snapshot could
+    # be published after the pump stopped); it now asks for nothing or a newer one, and still
+    # catches a reader that never takes the snapshot it read
+    'snapshot-read-never-taken': ("host/src/triple.c",
+        "        const uint32_t old = atomic_exchange_explicit(&t->middle, t->front, memory_order_acq_rel);",
+        "        const uint32_t old = atomic_load_explicit(&t->middle, memory_order_acquire);",
+        ["test_host_a_slow_reader"], 300),
 }

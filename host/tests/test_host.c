@@ -347,7 +347,12 @@ void test_host_a_slow_reader_gets_the_newest_and_drops_are_counted(void)
     CHECK(rb_host_snapshot_read(h, buf, sizeof buf, &info) > 0);
     CHECK(info.sequence + 4 >= published);          /* the newest, give or take the ring's lead */
     CHECK(rb_host_snapshots_dropped(h) >= published - 6);
-    CHECK_EQ_INT(rb_host_snapshot_read(h, buf, sizeof buf, &info), 0);   /* nothing new until another is published */
+    /* the one read is never read again: a second read finds nothing, or a newer snapshot. (The
+     * render thread goes on topping the ring up after the pump stops, so one more may have been
+     * published meanwhile; requiring nothing at all failed now and then, 2026-11-16.) */
+    rb_host_snapshot_info again;
+    const int more = rb_host_snapshot_read(h, buf, sizeof buf, &again);
+    CHECK(more == 0 || (more > 0 && again.sequence > info.sequence));
     char tiny[8];
     ht_pump(h, 4800, NULL, 5000);
     CHECK_EQ_INT(rb_host_snapshot_read(h, tiny, (int)sizeof tiny, &info), RB_HOST_ERR_ARG);   /* a buffer too small */
