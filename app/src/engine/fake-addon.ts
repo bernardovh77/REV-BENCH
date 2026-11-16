@@ -53,8 +53,8 @@ export function addonError(code: string, message: string): AddonError {
 const PRESETS: PresetInfo[] = [
   { index: 0, key: "i4", name: "2.0 L inline-4", quality: "balanced" },
   { index: 1, key: "i6", name: "3.0 L inline-6", quality: "low" },
-  { index: 2, key: "v8-cross", name: "5.0 L cross-plane V8", quality: "low" },
-  { index: 3, key: "v8-flat", name: "4.5 L flat-plane V8", quality: "low" },
+  { index: 2, key: "v8-cross", name: "5.0 L cross-plane V8", quality: "lean" },
+  { index: 3, key: "v8-flat", name: "4.5 L flat-plane V8", quality: "lean" },
   { index: 4, key: "boxer4", name: "2.0 L flat-4 (boxer)", quality: "low" },
 ];
 const CYLINDERS: Record<string, number> = { i4: 4, i6: 6, "v8-cross": 8, "v8-flat": 8, boxer4: 4 };

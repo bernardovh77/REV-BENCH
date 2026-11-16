@@ -41,7 +41,7 @@ export const PREPARE_TIMEOUT_MS = 30_000;
  * the first block already has it, for the first engine and for every swap.
  */
 export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };
-const QUALITIES: readonly Quality[] = ["low", "medium", "high", "ultra", "balanced"];
+const QUALITIES: readonly Quality[] = ["low", "medium", "high", "ultra", "balanced", "lean"];
 
 interface Pending {
   /** the window's command id */

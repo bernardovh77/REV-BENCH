@@ -407,6 +407,9 @@ Linux packages come with stage 126.
   (none left that help) and then a V8-only cheaper tier, slower pipes (16 and 19.2 kHz), which
   reached the speed but changed the sound far past 1 dB. So, his fallback: stage 066 plays the
   V8s anyway and says plainly that this machine can't keep up with them, never hiding it.
+  **Replaced 2026-11-16:** once stage 127 removed the slow pipes' false treble, 19.2 kHz
+  pipes came within 1 dB but for four stated cells, and Bernardo chose them: the V8s' tier is
+  `lean` (docs/stage-118.md, "Since: the V8s' lean tier"), at about 1.5× on the laptop.
 
 - **Levels, throttle and analog keys for stage 066** (2026-11-13): real relative loudness with
   headroom and a volume control; on/off, ramped, analog-key and controller throttles; his

@@ -7,7 +7,7 @@
  *
  *   rb_host_stress [--backend null|default] [--minutes M | --seconds S]
  *                  [--preset KEY] [--presets KEY,KEY...]
- *                  [--quality tier|low|medium|high|ultra|balanced] [--device N]
+ *                  [--quality tier|low|medium|high|ultra|balanced|lean] [--device N]
  *                  [--rate 44100|48000] [--target-ms N] [--period-ms N]
  *                  [--swap-every S] [--csv FILE]
  *
@@ -130,7 +130,8 @@ int main(int argc, char **argv)
         else if (!strcmp(a, "--quality") && v) {
             quality = !strcmp(v, "low") ? RB_QUALITY_LOW : !strcmp(v, "medium") ? RB_QUALITY_MEDIUM
                     : !strcmp(v, "high") ? RB_QUALITY_HIGH : !strcmp(v, "ultra") ? RB_QUALITY_ULTRA
-                    : !strcmp(v, "balanced") ? RB_QUALITY_BALANCED : !strcmp(v, "tier") ? QUALITY_TIER : -1;
+                    : !strcmp(v, "balanced") ? RB_QUALITY_BALANCED : !strcmp(v, "lean") ? RB_QUALITY_LEAN
+                    : !strcmp(v, "tier") ? QUALITY_TIER : -1;
             i++;
         } else if (!strcmp(a, "--device") && v) { device = atoi(v); i++; }
         else if (!strcmp(a, "--rate") && v) { rate = atoi(v); i++; }

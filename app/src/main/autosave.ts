@@ -11,7 +11,7 @@ import { dirname } from "node:path";
 import type { Quality } from "../shared/addon";
 import type { BuildChoice } from "../shared/process-messages";
 
-const QUALITIES: readonly string[] = ["low", "medium", "high", "ultra", "balanced"] satisfies Quality[];
+const QUALITIES: readonly string[] = ["low", "medium", "high", "ultra", "balanced", "lean"] satisfies Quality[];
 
 export const DEFAULT_BUILD: BuildChoice = { preset: "i4" };
 

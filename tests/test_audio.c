@@ -393,6 +393,7 @@ void test_audio_sim_smooths_only_slow_pipes(void)
      * in mono and in a stereo scene, and a rebuild keeps it so. */
     static const struct { int quality, every; } Q[] = {
         { RB_QUALITY_HIGH, 0 }, { RB_QUALITY_BALANCED, 0 }, { RB_QUALITY_LOW, 4 }, { RB_QUALITY_MEDIUM, 8 },
+        { RB_QUALITY_LEAN, 5 },
     };
     for (size_t k = 0; k < sizeof Q / sizeof Q[0]; k++) {
         rb_sim *sim = rb_create_with_quality(48000.0, Q[k].quality);

@@ -44,7 +44,7 @@ export interface PresetInfo {
   quality: Quality;
 }
 
-export type Quality = "low" | "medium" | "high" | "ultra" | "balanced";
+export type Quality = "low" | "medium" | "high" | "ultra" | "balanced" | "lean";
 
 export interface ParamInfo {
   id: number;

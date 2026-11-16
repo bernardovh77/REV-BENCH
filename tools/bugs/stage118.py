@@ -81,8 +81,9 @@ BUGS = {
         "                   : (quality == RB_QUALITY_HIGH) ? RB_PIPE_RATE",
         QUALITY + TIER, 600),
     'balanced-physics-doubled': ("core/src/rb_sim.c",
-        "                         : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED) ? 96000.0",
-        "                         : (quality == RB_QUALITY_LOW) ? 96000.0",
+        # retargeted 2026-11-16 (RB_QUALITY_LEAN joined the line)
+        "                         : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED\n",
+        "                         : (quality == RB_QUALITY_LOW\n",
         QUALITY + TIER, 600),
     'tier-four-at-low': ("core/src/presets.c",
         '{ "i4", "2.0 L inline-4", inline4, RB_QUALITY_BALANCED },',

@@ -35,7 +35,8 @@ int rb_config_quality(rb_config *cfg, int quality)
         || !(cfg->sample_rate >= RB_MIN_SAMPLE_RATE && cfg->sample_rate <= RB_MAX_SAMPLE_RATE))
         return RB_ERR_ARG;
     const double physics = quality == RB_QUALITY_ULTRA ? 384000.0
-                         : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED) ? 96000.0
+                         : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED
+                            || quality == RB_QUALITY_LEAN) ? 96000.0
                          : 192000.0;
     long os = lround(physics / cfg->sample_rate);
     if (os < 1) os = 1;
@@ -43,6 +44,7 @@ int rb_config_quality(rb_config *cfg, int quality)
     cfg->oversample = (int)os;
     cfg->pipe_rate = quality == RB_QUALITY_ULTRA ? 2.0 * RB_PIPE_RATE
                    : (quality == RB_QUALITY_HIGH || quality == RB_QUALITY_BALANCED) ? RB_PIPE_RATE
+                   : quality == RB_QUALITY_LEAN ? 0.4 * RB_PIPE_RATE
                    : 0.5 * RB_PIPE_RATE;
     return RB_OK;
 }

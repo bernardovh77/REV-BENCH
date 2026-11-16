@@ -27,8 +27,8 @@ test("a host is made and not running; it starts with the first engine at generat
 });
 
 test("each quality name makes the engine at its physics rate", async () => {
-  // rb_config_quality at 48 kHz: physics at 2x, 4x, 4x, 8x and 2x the sample rate
-  const expected = { low: 96000, medium: 192000, high: 192000, ultra: 384000, balanced: 96000 };
+  // rb_config_quality at 48 kHz: physics at 2x, 4x, 4x, 8x, 2x and 2x the sample rate
+  const expected = { low: 96000, medium: 192000, high: 192000, ultra: 384000, balanced: 96000, lean: 96000 };
   for (const [quality, hz] of Object.entries(expected)) {
     const { header } = await firstSnapshot(cheapConfig({ quality }));
     assert.equal(header.physicsHz, hz, `quality ${quality}`);
@@ -42,7 +42,7 @@ test("an engine built without a quality gets its preset's real-time default", as
     const bare = await firstSnapshot({ backend: "null", initial: { preset: preset.key } });
     assert.equal(bare.header.physicsHz, named.header.physicsHz, `${preset.key} (${preset.quality})`);
     // and presets() names the quality the engine really gets (rb_config_quality at 48 kHz)
-    const hz = { low: 96000, medium: 192000, high: 192000, ultra: 384000, balanced: 96000 };
+    const hz = { low: 96000, medium: 192000, high: 192000, ultra: 384000, balanced: 96000, lean: 96000 };
     assert.equal(bare.header.physicsHz, hz[preset.quality], `${preset.key}'s listed quality ${preset.quality}`);
     assert.equal(bare.header.buildId, named.header.buildId, preset.key);
   }

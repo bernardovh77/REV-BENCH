@@ -109,10 +109,10 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 066.** Open beside it: 118's stated misses (the four at idle, the V8s' speed),
-for a faster machine or core, or for Bernardo's choice of a cheaper V8 tier that stage 127's
-smoother brought close (docs/stage-127.md, "The V8s again"). Two decisions wait for Bernardo:
-that tier, and the project's licence (README, "Licence").
+**Next stage: 066.** Open beside it: 118's stated misses (the four 1.05 dB off at idle; the
+V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB stated in
+docs/stage-118.md and his blind listening of low against lean still to do, in 066's build).
+One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
 
@@ -126,7 +126,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [120](docs/roadmap/14-review-fixes.md#stage-120) | The workspace and toolset upkeep. The 4.7 GB zip and old renders moved into `renders/`. 29 stale planted bugs: 26 retargeted, 3 retired, and `plant_bugs.py --check` in the Python suite. The runner's pre-flight, time limits and `--keep-going`, written test first. The Makefile finds the venv. Current docs and hooks. | 119 |
 | ✅ | [121](docs/roadmap/07-app.md#stage-121) | The core's public engine API: driver controls, the car and its road load, a dyno the sim owns, settings, 24 telemetry values, snapshot-v2 and events, written test first. `rb_cli sound` on rb.h alone, its 11 drives bit-identical. 28 + 5 planted bugs caught. | 037, 120 |
 | ✅ | [122](docs/roadmap/07-app.md#stage-122) | The CMake build: MSVC 14.51 passes all 262 tests (one change: rb_bench's clock). Cross-compiler parity: bit-close before a random decision can flip, statistically the same after. CI green on Windows and Linux; the first macOS run still to come. | 120 |
-| 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), listened to by Bernardo; open for its stated misses: the four 1.05 dB off at idle, and the V8s, which need a faster machine than the i7-1355U (2026-11-13: no bit-identical speed-up left, slower pipes change the sound; 066 says so) | 121, 122 |
+| 🟡 | [118](docs/roadmap/07-app.md#stage-118) | A real-time tier for today's engine. Benchmark, profile and bit-identical speed-ups (+3–11 % with MSVC) done. Tier declared per preset (`rb_preset_quality`; new `RB_QUALITY_BALANCED` for the four), listened to by Bernardo; open for its stated misses: the four 1.05 dB off at idle, and the V8s' `RB_QUALITY_LEAN` (19.2 kHz pipes, smoothed; chosen 2026-11-16: about 1.5× on the i7-1355U, four cells outside 1 dB stated, blind listening in 066's build) | 121, 122 |
 | ✅ | [123](docs/roadmap/07-app.md#stage-123) | The real-time audio host (C): `host/`, 59 tests on MSVC and gcc (and under ThreadSanitizer), swaps with 16 ms fades, offline mode bit-identical to rb_cli, 39 planted bugs caught; 15 minutes on the real device with zero underruns | 121, 122 |
 | ✅ | [124](docs/roadmap/07-app.md#stage-124) | The application's foundation: Electron 45, the engine process with the Node-API add-on (64 tests), the sandboxed Svelte window on a provisional token design system, a generated snapshot decoder, e2e on the real add-on, an unsigned NSIS installer and zip; snapshots at 1 % of their budget. Icon: B (piston and crank). CI green (installer as an artifact); the installed app plays on Bernardo's real device | 122, 123 |
 | ✅ | [127](docs/roadmap/14-review-fixes.md#stage-127) | The 2026-11-15 review's fixes ([the review](docs/review-2026-11-15.md), [how to build a stage](docs/stage-playbook.md)). The listener reads slower pipes' flows between their steps: the false treble of pipes under 48 kHz is gone (16 kHz pipes: within 0.5 dB above 4 kHz, from +13 to +44), the high and balanced qualities bit for bit as before. `RB_PARAM_VARIANT`, the live A/B switch. macOS on every push (its first run found a Linux-only call), a weekly long fuzz, a push hook that runs the quick suites, CLAUDE.md split into rules and docs/architecture.md, a known engine (Honda F20C) in the reference catalog. 21 + 14 planted bugs caught. With the treble fixed, 19.2 kHz pipes bring the V8s to 1.5 times real time with small repetition misses: Bernardo's choice | 118, 123, 124 |

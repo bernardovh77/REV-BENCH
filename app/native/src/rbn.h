@@ -36,7 +36,7 @@ typedef struct rbn_name {
     int         value;
 } rbn_name;
 
-extern const rbn_name RBN_QUALITIES[];      /* "low" ... "balanced"          */
+extern const rbn_name RBN_QUALITIES[];      /* "low" ... "lean"              */
 extern const rbn_name RBN_SCENES[];         /* "asphalt" ... "cabin"         */
 extern const rbn_name RBN_BACKENDS[];       /* "null", "default"             */
 extern const rbn_name RBN_OUTCOMES[];       /* "ok", "stale", "refused", "busy" */

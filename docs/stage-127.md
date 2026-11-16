@@ -91,8 +91,8 @@ So at 16 kHz the treble is right but the idle is darker and quieter than the ref
 19.2 kHz the treble, the slope and the loudness are inside 1 dB everywhere, and four cells
 are outside: three repetition measures (+1.09, −1.64 and −2.55 dB; that kind of measure moves
 by up to 2.7 dB between two seeds of the same engine, though in two of these cells the floor
-is small) and the flat-plane's band above 1 kHz held, +1.03 dB. **This is Bernardo's decision, not taken
-here** (the card's stop rule): whether the V8s get a cheaper tier with these misses stated,
+is small) and the flat-plane's band above 1 kHz held, +1.03 dB. **This was Bernardo's decision, not taken
+here** (the card's stop rule; on 2026-11-16 he chose 19.2 kHz: `RB_QUALITY_LEAN`, docs/stage-118.md): whether the V8s get a cheaper tier with these misses stated,
 or keep low and the "needs a faster machine" of stage 118.
 
 The speed side, timed today with the gcc build (w64devkit, no LTO: slower than the MSVC

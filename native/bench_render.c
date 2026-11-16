@@ -131,7 +131,7 @@ static const char *const DRIVES[DRIVE_COUNT] = { "idle", "hold", "rev" };
  * (Its "os2", twice the sample rate, became RB_QUALITY_BALANCED.) */
 #define EXTRA_QUALITIES 1
 #define QUALITY_COUNT (RB_QUALITY_COUNT + EXTRA_QUALITIES)
-static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "os3" };
+static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean", "os3" };
 
 /* The pipes' rate over every quality's, Hz (--pipe-rate); 0: the quality's. */
 static double pipe_rate_override = 0.0;
@@ -405,7 +405,7 @@ int main(int argc, char **argv)
         } else if (!strcmp(a, "--wav-dir") && v) {
             wav_dir = argv[++i];
         } else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
-            printf("usage: rb_bench_render [PRESET...] [--quality low,medium,high,ultra,balanced,os3|all] "
+            printf("usage: rb_bench_render [PRESET...] [--quality low,medium,high,ultra,balanced,lean,os3|all] "
                    "[--drive idle,hold,rev|all] [--runs N] [--rate HZ] [--scene NAME]\n"
                    "                       [--affinity HEXMASK] [--ftz] [--csv FILE] [--wav-dir DIR]\n");
             return 0;

@@ -332,8 +332,8 @@ void test_core_preset_quality(void)
      * the baseline machine (docs/stage-118.md), and a sim built at it reads
      * that quality back. */
     static const struct { const char *key; int quality; } TIER[] = {
-        { "i4", RB_QUALITY_BALANCED }, { "i6", RB_QUALITY_LOW }, { "v8-cross", RB_QUALITY_LOW },
-        { "v8-flat", RB_QUALITY_LOW }, { "boxer4", RB_QUALITY_LOW },
+        { "i4", RB_QUALITY_BALANCED }, { "i6", RB_QUALITY_LOW }, { "v8-cross", RB_QUALITY_LEAN },
+        { "v8-flat", RB_QUALITY_LEAN }, { "boxer4", RB_QUALITY_LOW },
     };
     CHECK_EQ_INT(rb_preset_count(), (int)(sizeof TIER / sizeof TIER[0]));
     for (int i = 0; i < (int)(sizeof TIER / sizeof TIER[0]); i++) {
@@ -354,8 +354,8 @@ void test_core_quality(void)
 {
     /* Stage 13: the quality levels set the physics and pipe rates together;
      * high is the default. */
-    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8, 2 };
-    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0, 48000.0 };
+    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8, 2, 2 };
+    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0, 48000.0, 19200.0 };
     rb_config c, d;
     rb_sim *s;
 

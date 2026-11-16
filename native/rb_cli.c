@@ -222,7 +222,7 @@ void cli_usage(FILE *f)
         "      --trace FILE      the drive's command trace (host/include/rb_host_trace.h), which\n"
         "                        rb_host_render plays through the real-time host: the same bits\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
-        "      --quality Q       low, medium, high, ultra or balanced: physics/pipe rates\n"
+        "      --quality Q       low, medium, high, ultra, balanced or lean: physics/pipe rates\n"
         "                        together (rb.h: RB_QUALITY_*; high is the default)\n"
         "      --pipe-rate HZ    the pipes' rate over the quality's, 12000..96000 (a tier's\n"
         "                        search; can't be traced)\n"
@@ -247,7 +247,7 @@ const char *cli_take_value(int argc, char **argv, int *i)
 }
 
 /* The quality levels by name (rb.h: RB_QUALITY_*). */
-static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced" };
+static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean" };
 
 /* A quality level's number from its name, or -1. */
 int cli_quality_from(const char *name)

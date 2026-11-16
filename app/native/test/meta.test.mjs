@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { addon, throwsCode } from "./helpers.mjs";
 
-const QUALITIES = ["low", "medium", "high", "ultra", "balanced"];
+const QUALITIES = ["low", "medium", "high", "ultra", "balanced", "lean"];
 
 test("the module exports exactly the Addon of addon.ts", () => {
   assert.deepEqual(Object.keys(addon).sort(), ["createHost", "listDevices", "params", "presets", "telemetry", "version"]);

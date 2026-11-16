@@ -4,6 +4,16 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-16: The V8s' lean tier (Claude)
+
+- Bernardo chose 19.2 kHz pipes for the V8s (stage 127's "The V8s again"). New
+  `RB_QUALITY_LEAN` (appended: physics about 96 kHz, pipes 0.4 x 48 kHz, smoothed);
+  `rb_preset_quality` gives it for `v8-cross` and `v8-flat`. At 48 kHz it renders exactly
+  `tier_compare.py`'s `low-p19` (checked byte for byte), so stage 127's numbers are its own:
+  about 1.5x real time on the laptop, four cells outside 1 dB (docs/stage-118.md, "Since: the
+  V8s' lean tier"). Every tool that names qualities (rb_cli, rb_bench_render, rb_host_stress,
+  the add-on, the app) knows `lean`; cli_parity's 11 cases are byte-identical.
+
 ## 2026-11-15: Stage 127, the review's fixes (Claude)
 
 - docs/review-2026-11-15.md (the review), docs/stage-playbook.md (how to build a stage),

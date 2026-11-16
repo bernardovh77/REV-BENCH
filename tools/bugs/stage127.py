@@ -100,4 +100,17 @@ BUGS = {
         '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },',
         '{ "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT | CONTROL },',
         VARIANT, 300),
+    # 2026-11-16, the V8s' lean tier (docs/stage-118.md): its rates, and which presets get it
+    'lean-pipes-at-low-rate': ("core/src/rb_sim.c",
+        "quality == RB_QUALITY_LEAN ? 0.4 * RB_PIPE_RATE",
+        "quality == RB_QUALITY_LEAN ? 0.5 * RB_PIPE_RATE",
+        ["test_core_quality", "test_audio_sim_smooths_only_slow_pipes"], 300),
+    'lean-physics-at-high-rate': ("core/src/rb_sim.c",
+        "                            || quality == RB_QUALITY_LEAN) ? 96000.0",
+        "                            ) ? 96000.0",
+        ["test_core_quality"], 300),
+    'lean-v8-flat-at-low': ("core/src/presets.c",
+        "v8_flat, RB_QUALITY_LEAN }",
+        "v8_flat, RB_QUALITY_LOW }",
+        ["test_core_preset_quality"], 300),
 }

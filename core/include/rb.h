@@ -113,6 +113,8 @@ enum {
     RB_QUALITY_ULTRA,    /* optional: physics 384 kHz, pipes 96 kHz, finer grid */
     RB_QUALITY_BALANCED, /* physics at about 96 kHz, the pipes at 48 kHz (stage
                             118: the four's real-time default)               */
+    RB_QUALITY_LEAN,     /* physics at about 96 kHz, the pipes at 19.2 kHz,
+                            smoothed (2026-11-16: the V8s' real-time default) */
     RB_QUALITY_COUNT
 };
 

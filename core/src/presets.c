@@ -276,12 +276,13 @@ static void boxer4(rb_engine_desc *d)
 }
 
 /* The last column is each preset's real-time default quality (stage 118's
- * tier, on the baseline machine: docs/stage-118.md has what each misses). */
+ * tier, on the baseline machine: docs/stage-118.md has what each misses; the
+ * V8s' lean tier is Bernardo's choice of 2026-11-16, docs/stage-127.md). */
 static const preset_info PRESETS[] = {
     { "i4", "2.0 L inline-4", inline4, RB_QUALITY_BALANCED },
     { "i6", "3.0 L inline-6", inline6, RB_QUALITY_LOW },
-    { "v8-cross", "5.0 L cross-plane V8", v8_cross, RB_QUALITY_LOW },
-    { "v8-flat", "4.5 L flat-plane V8", v8_flat, RB_QUALITY_LOW },
+    { "v8-cross", "5.0 L cross-plane V8", v8_cross, RB_QUALITY_LEAN },
+    { "v8-flat", "4.5 L flat-plane V8", v8_flat, RB_QUALITY_LEAN },
     { "boxer4", "2.0 L flat-4 (boxer)", boxer4, RB_QUALITY_LOW },
 };
 enum { N_PRESETS = sizeof PRESETS / sizeof PRESETS[0] };

@@ -482,3 +482,21 @@ orders cell at the noise floor, as before; the four's balanced is bit for bit). 
 treble gone, 19.2 kHz pipes bring both V8s to about 1.5 times real time with four cells
 outside 1 dB (three repetition measures, the worst −2.55 dB, and one band at +1.03 dB): whether they get that tier is Bernardo's choice, and
 until he makes it they stay at low, short of 1.5.
+
+## Since: the V8s' lean tier (2026-11-16)
+
+Bernardo chose the 19.2 kHz pipes for the V8s, with stage 127's misses stated. It is a named
+quality now, `RB_QUALITY_LEAN` (appended: physics at about 96 kHz, the pipes at 0.4 times
+48 kHz, smoothed), and `rb_preset_quality` gives it for `v8-cross` and `v8-flat`. At 48 kHz it is
+exactly what `tools/tier_compare.py`'s `low-p19` measured; at 44.1 kHz the pipes run at 17.6 kHz
+(five physics steps a pipe step, as at 48). What it misses against the high quality, stated:
+
+| Preset | Cells outside 1 dB (of 30) |
+| --- | --- |
+| cross-plane V8 | repeat lo +1.09 dB (inside its floor of 1.89), repeat hi −1.64 dB at idle |
+| flat-plane V8 | above 1 kHz +1.03 dB held, repeat mid −2.55 dB held |
+
+Speed (gcc, held at 3000 rpm wide open, fast cores): the cross-plane 1.52, the flat-plane 1.53
+times real time, against 1.36 and 1.47 at low. The tolerances also ask for Bernardo's blind
+listening (app-design §15): low against lean on both V8s is for stage 066's build, where the
+app's quality picker plays either. The other presets' tiers are unchanged.

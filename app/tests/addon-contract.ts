@@ -43,7 +43,7 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       expect(new Set(presets.map((p) => p.key)).size).toBe(presets.length);
       for (const p of presets) {
         expect(p.name).toMatch(/\S/);
-        expect(["low", "medium", "high", "ultra", "balanced"]).toContain(p.quality);
+        expect(["low", "medium", "high", "ultra", "balanced", "lean"]).toContain(p.quality);
       }
     });
 

@@ -14,7 +14,8 @@
 /* Quality names are addon.ts's Quality; the values are rb.h's RB_QUALITY_*. */
 const rbn_name RBN_QUALITIES[] = {
     {"low", RB_QUALITY_LOW},       {"medium", RB_QUALITY_MEDIUM}, {"high", RB_QUALITY_HIGH},
-    {"ultra", RB_QUALITY_ULTRA},   {"balanced", RB_QUALITY_BALANCED}, {NULL, 0}};
+    {"ultra", RB_QUALITY_ULTRA},   {"balanced", RB_QUALITY_BALANCED},
+    {"lean", RB_QUALITY_LEAN},     {NULL, 0}};
 
 /* Scene names are RB_SCENE_* lowercased. */
 const rbn_name RBN_SCENES[] = {
