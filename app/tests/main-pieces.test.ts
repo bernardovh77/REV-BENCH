@@ -101,6 +101,20 @@ describe("autosave", () => {
     expect(new Autosave(file()).load()).toEqual({ preset: "i6" });
   });
 
+  it("keeps a stereo scene (stage 066), and drops one it doesn't know", () => {
+    new Autosave(file()).save({ preset: "v8-flat", quality: "lean", scene: "garage" });
+    expect(new Autosave(file()).load()).toEqual({ preset: "v8-flat", quality: "lean", scene: "garage" });
+    writeFileSync(file(), '{"version":1,"preset":"i6","scene":"moon"}');
+    expect(new Autosave(file()).load()).toEqual({ preset: "i6" });
+  });
+
+  it("keeps the latency setting, and drops one outside 10..80 ms", () => {
+    new Autosave(file()).save({ preset: "i4", latencyMs: 40 });
+    expect(new Autosave(file()).load()).toEqual({ preset: "i4", latencyMs: 40 });
+    writeFileSync(file(), '{"version":1,"preset":"i4","latencyMs":500}');
+    expect(new Autosave(file()).load()).toEqual({ preset: "i4" });
+  });
+
   it("has a default build: the 2.0 L four", () => {
     expect(DEFAULT_BUILD).toEqual({ preset: "i4" });
   });

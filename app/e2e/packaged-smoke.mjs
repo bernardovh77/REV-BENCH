@@ -68,9 +68,9 @@ try {
   }
   check(rpm > 500, `the real engine runs on its own (${rpm} rpm)`);
 
-  await page.locator(".topbar select").selectOption("v8-cross");
-  for (let i = 0; i < 200 && (await page.locator(".topbar select").inputValue()) !== "v8-cross"; i++) await sleep(100);
-  check((await page.locator(".topbar select").inputValue()) === "v8-cross", "another engine was chosen");
+  await page.locator(".topbar select").first().selectOption("v8-cross");
+  for (let i = 0; i < 200 && (await page.locator(".topbar select").first().inputValue()) !== "v8-cross"; i++) await sleep(100);
+  check((await page.locator(".topbar select").first().inputValue()) === "v8-cross", "another engine was chosen");
   const saved = join(userData, "session", "build.json");
   for (let i = 0; i < 100 && !(existsSync(saved) && readFileSync(saved, "utf8").includes("v8-cross")); i++) await sleep(100);
   check(existsSync(saved) && readFileSync(saved, "utf8").includes("v8-cross"), "the build was autosaved");

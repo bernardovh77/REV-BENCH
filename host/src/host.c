@@ -60,6 +60,9 @@ int rb_host_create(const rb_host_config *config, rb_host **out)
     if (cfg.target_fill_ms < 10 || cfg.target_fill_ms > 80) return RB_HOST_ERR_ARG;
     if (cfg.fade_ms < 10 || cfg.fade_ms > 20) return RB_HOST_ERR_ARG;
     if (cfg.snapshot_hz < 1 || cfg.snapshot_hz > 240) return RB_HOST_ERR_ARG;
+    if (cfg.capture_frames != 0
+        && (cfg.capture_frames < 1024 || cfg.capture_frames > (1 << 24) || !is_pow2((uint32_t)cfg.capture_frames)))
+        return RB_HOST_ERR_ARG;
     if (cfg.period_ms < 2 || cfg.period_ms > 100) return RB_HOST_ERR_ARG;
 
     int rate = cfg.sample_rate;
@@ -92,6 +95,7 @@ int rb_host_create(const rb_host_config *config, rb_host **out)
 
     int bad = 0;
     bad |= rbh_ring_init(&h->ring, h->ring_frames, RB_HOST_CHANNELS);
+    if (cfg.capture_frames) bad |= rbh_ring_init(&h->capture, (uint32_t)cfg.capture_frames, RB_HOST_CHANNELS);
     bad |= rbh_queue_init(&h->commands, RB_HOST_COMMAND_CAPACITY, sizeof(rbh_cmd));
     bad |= rbh_queue_init(&h->acks, RB_HOST_ACK_CAPACITY, sizeof(rb_host_ack));
     bad |= rbh_queue_init(&h->retired, RB_HOST_RETIRED_CAPACITY, sizeof(rbh_retired));
@@ -221,6 +225,7 @@ void rb_host_destroy(rb_host *h)
     if (h->run.tr_state == RBH_TR_OUT && h->run.tr_cmd.ptr) rbh_sim_destroy((rb_sim *)h->run.tr_cmd.ptr);
     rbh_sim_destroy(h->run.sim);
     rbh_ring_free(&h->ring);
+    if (h->capture.capacity) rbh_ring_free(&h->capture);
     rbh_queue_free(&h->commands);
     rbh_queue_free(&h->acks);
     rbh_queue_free(&h->retired);
@@ -602,9 +607,19 @@ int rb_host_offline_render(rb_host *h, float *out, int frames)
     for (int done = 0; done < frames;) {
         const int n = frames - done < RB_HOST_BLOCK_FRAMES ? frames - done : RB_HOST_BLOCK_FRAMES;
         rbh_run_block(h, out + 2 * done, n);
+        rbh_capture_block(h, out + 2 * done, n);
         done += n;
     }
     return frames;
+}
+
+int rb_host_capture_read(rb_host *h, float *out, int max, uint64_t *first_frame)
+{
+    if (!h || !out || max < 0) return RB_HOST_ERR_ARG;
+    if (!h->capture.capacity) return RB_HOST_ERR_STATE;
+    /* the first frame not yet read: what was read before it (drops aside) */
+    if (first_frame) *first_frame = rbh_ring_consumed(&h->capture);
+    return (int)rbh_ring_read(&h->capture, out, (uint32_t)max);
 }
 
 int rb_host_offline_has_scene(const rb_host *h)
@@ -647,6 +662,7 @@ int rb_host_get_stats(const rb_host *h, rb_host_stats *out)
     out->engines_freed = LOAD(engines_freed);
     out->events_lost = rbh_evring_lost(&h->events);
     out->device_events = LOAD(device_events);
+    out->capture_dropped = LOAD(capture_dropped);
 #undef LOAD
     out->frames_rendered = rbh_ring_written(&h->ring);
     {

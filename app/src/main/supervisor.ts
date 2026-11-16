@@ -112,13 +112,37 @@ export class EngineSupervisor<Port> {
     this.spawnEngine();
   }
 
-  /** Asks the engine to stop and doesn't restart it. */
-  stop(): void {
+  /** Passes the system's sleep and wake to the engine (stage 066). */
+  suspend(): void {
+    this.post({ type: "suspend" });
+  }
+
+  resume(): void {
+    this.post({ type: "resume" });
+  }
+
+  private post(message: MainToEngine): void {
+    try {
+      this.process?.postMessage(message);
+    } catch (e) {
+      this.log("warn", `could not send the engine "${message.type}": ${String(e)}`);
+    }
+  }
+
+  /**
+   * Asks the engine to stop (it fades the sound out first) and doesn't restart it. `stopped`
+   * runs once it has exited or been killed, or at once if there is no engine.
+   */
+  stop(stopped?: () => void): void {
     this.stopping = true;
     this.cancelRestart?.();
     this.cancelRestart = null;
     const process = this.process;
-    if (!process) return;
+    if (!process) {
+      stopped?.();
+      return;
+    }
+    if (stopped) process.onExit(() => stopped());
     try {
       process.postMessage({ type: "shutdown" });
     } catch (e) {

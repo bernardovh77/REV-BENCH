@@ -46,6 +46,10 @@ export interface ClientEvents {
   hello?(hello: Hello): void;
   snapshot?(snapshot: Snapshot, meta: SnapshotMeta): void;
   stats?(stats: HostStats): void;
+  /** the sound moved to another device (stage 066) */
+  device?(device: Extract<FromEngine, { type: "device" }>): void;
+  /** a capture-dump's files (tests only) */
+  capture?(capture: Extract<FromEngine, { type: "capture" }>): void;
   state?(state: EngineState, message?: string): void;
   /** the port went away (replaced, or the engine died) */
   detached?(reason: string): void;
@@ -132,6 +136,12 @@ export class EngineClient {
         return;
       case "stats":
         this.events.stats?.(message.stats);
+        return;
+      case "device":
+        this.events.device?.(message);
+        return;
+      case "capture":
+        this.events.capture?.(message);
         return;
       case "snapshot":
         try {

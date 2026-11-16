@@ -7,6 +7,7 @@
  *   connect  -> the window's port: attach the control loop to it
  *   shutdown -> stop the host and exit
  */
+import { join } from "node:path";
 import { EngineControl, type EnginePort } from "./control";
 import type { Addon } from "../shared/addon";
 import type { EngineInit, EngineToMain, MainToEngine } from "../shared/process-messages";
@@ -29,8 +30,12 @@ export interface ProcessDeps {
   loadAddon(kind: EngineInit["addon"]): Addon;
   /** the control loop's pump, every `pumpMs` */
   setInterval(callback: () => void, ms: number): unknown;
+  /** for the quit's fade; without it the engine stops at once */
+  setTimeout?(callback: () => void, ms: number): unknown;
   clearInterval(handle: unknown): void;
   exit(code: number): void;
+  /** writes a file (capture-dump, tests only); without it there is no capture-dump */
+  writeFile?(path: string, data: Uint8Array | string): void;
   pumpMs?: number;
 }
 
@@ -68,6 +73,16 @@ export function runEngineProcess(deps: ProcessDeps): { control: () => EngineCont
         config,
         onBuild: (choice) => say({ type: "build", ...choice }),
         log,
+        ...(config.captureDir && deps.writeFile
+          ? {
+              writeFile: (name: string, data: Uint8Array | string) => {
+                // a plain name joined with the folder the main process gave (no path from the window)
+                const path = join(config.captureDir!, name.replace(/[^A-Za-z0-9._-]/g, "_"));
+                deps.writeFile!(path, data);
+                return path;
+              },
+            }
+          : {}),
       });
       next.start();
       control = next;
@@ -103,9 +118,21 @@ export function runEngineProcess(deps: ProcessDeps): { control: () => EngineCont
         return init(message.config);
       case "connect":
         return connect(event.ports[0]);
-      case "shutdown":
-        stop();
-        return deps.exit(0);
+      case "shutdown": {
+        // the sound fades out before the host stops (stage 066): no click on quit
+        const ms = control?.fadeOut() ?? 0;
+        const finish = () => {
+          stop();
+          deps.exit(0);
+        };
+        if (ms > 0 && deps.setTimeout) deps.setTimeout(finish, ms);
+        else finish();
+        return;
+      }
+      case "suspend":
+        return control?.suspend();
+      case "resume":
+        return control?.resume();
       default:
         log("warn", "ignored a message from the main process");
     }

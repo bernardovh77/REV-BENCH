@@ -105,6 +105,7 @@ typedef struct rbh_stats {
     atomic_uint_least64_t commands_applied, commands_refused, commands_stale;
     atomic_uint_least64_t swaps_ok, swaps_stale, swaps_busy;
     atomic_uint_least64_t engines_freed, device_events;
+    atomic_uint_least64_t capture_dropped;
 } rbh_stats;
 
 struct rbh_device;
@@ -117,6 +118,8 @@ typedef struct rb_host {
 
     /* the channels */
     rbh_ring           ring;            /* render -> device, stereo frames         */
+    rbh_ring           capture;         /* render -> a reader: the capture tap,
+                                           capacity 0 when there is none          */
     rbh_queue          commands;        /* control -> render                       */
     rbh_queue          acks;            /* render -> control                       */
     rbh_queue          retired;         /* render -> control: engines to free      */
@@ -168,6 +171,8 @@ int     rbh_live_sims(void);
 uint64_t rbh_engine_tick(rb_sim *sim, void *scratch);
 
 /* ---- runner.c: the render thread's work --------------------------------------- */
+/* Copies a rendered block into the capture tap, if there is one (runner.c). */
+void rbh_capture_block(rb_host *h, const float *block, int frames);
 /* Renders one block (frames <= RB_HOST_BLOCK_FRAMES) of stereo: takes the
  * commands due, renders, fades, publishes, writes the clock. */
 /* The deadline histogram's bin for a block that took `ns` of a `budget` ns duration: tenths

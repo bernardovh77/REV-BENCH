@@ -378,6 +378,29 @@ describe("stopping", () => {
     expect(processes[0].killed).toBe(false);
   });
 
+  it("says when the engine has stopped, so the app can quit after the fade (stage 066)", () => {
+    const { supervisor, processes, advance } = setup();
+    supervisor.start();
+    let stopped = 0;
+    supervisor.stop(() => stopped++);
+    advance(100);
+    expect(stopped).toBe(0);
+    processes[0].die(0);
+    expect(stopped).toBe(1);
+    const other = setup();
+    let none = 0;
+    other.supervisor.stop(() => none++);
+    expect(none).toBe(1);
+  });
+
+  it("passes sleep and wake to the engine (stage 066)", () => {
+    const { supervisor, processes } = setup();
+    supervisor.start();
+    supervisor.suspend();
+    supervisor.resume();
+    expect(processes[0].sent.slice(-2).map((s) => s.message)).toEqual([{ type: "suspend" }, { type: "resume" }]);
+  });
+
   it("cancels a restart that was waiting", () => {
     const { supervisor, processes, advance } = setup();
     supervisor.start();

@@ -46,6 +46,10 @@ export interface PresetInfo {
 
 export type Quality = "low" | "medium" | "high" | "ultra" | "balanced" | "lean";
 
+/** The stereo scenes (RB_SCENE_* lowercased, the add-on's names). */
+export type Scene = "asphalt" | "grass" | "wall" | "garage" | "dyno" | "iso" | "passby" | "cabin";
+export const SCENES: readonly Scene[] = ["asphalt", "grass", "wall", "garage", "dyno", "iso", "passby", "cabin"];
+
 export interface ParamInfo {
   id: number;
   /** rb_param_name: "throttle", "ignition", ... */
@@ -88,6 +92,8 @@ export interface HostConfig {
   sampleRate?: number;
   /** the ring's fill target, 10..80 ms (default 20) */
   targetFillMs?: number;
+  /** the capture tap's ring, stereo frames, a power of two 1024..2^24; absent: no tap (stage 066) */
+  captureFrames?: number;
   /** the first engine */
   initial: BuildSpec;
 }
@@ -134,6 +140,10 @@ export interface HostStats {
   commandsRefused: number;
   swapsOk: number;
   eventsLost: number;
+  /** the device was lost or the system's default changed, and the host moved (stage 066) */
+  deviceEvents: number;
+  /** blocks that took a whole block's duration or more: the computer isn't keeping up */
+  deadlineMissed: number;
   /** the render thread's priority in words, and whether it got the boost */
   priority: string;
   boosted: boolean;
@@ -166,6 +176,12 @@ export interface Host {
   /** the newest snapshot nobody has read, or null */
   readSnapshot(): SnapshotRead | null;
   stats(): HostStats;
+  /**
+   * Up to `max` frames from the capture tap (stage 066): what the render thread gave the device,
+   * from frame 0 on. `dropped` counts blocks the tap had no room for (then there is a gap).
+   * Throws RB_HOST_ERR_STATE when the host was made without one.
+   */
+  captureRead(max: number): { samples: Float32Array; firstFrame: number; dropped: number };
 
   /** devices and power */
   selectDevice(index: number): void;

@@ -53,6 +53,9 @@ void test_render_thread_never_calls_the_c_libraries_allocator(void);
 #endif
 void test_host_deadline_bins_are_tenths_then_missed(void);
 void test_host_statistics_deadline_histogram_and_ring_fill(void);
+void test_host_capture_tap_is_what_the_device_was_given(void);
+void test_host_capture_tap_counts_the_blocks_it_drops(void);
+void test_host_capture_tap_only_when_asked_for(void);
 
 /* ---- swaps (test_swap.c) ---- */
 void test_swap_installs_the_new_engine_and_frees_the_old_one(void);
@@ -130,6 +133,9 @@ static const test_entry TESTS[] = {
 #endif
     T(test_host_deadline_bins_are_tenths_then_missed),
     T(test_host_statistics_deadline_histogram_and_ring_fill),
+    T(test_host_capture_tap_is_what_the_device_was_given),
+    T(test_host_capture_tap_counts_the_blocks_it_drops),
+    T(test_host_capture_tap_only_when_asked_for),
     T(test_swap_installs_the_new_engine_and_frees_the_old_one),
     T(test_swap_fades_without_a_click),
     T(test_swap_failed_preparation_leaves_the_running_engine_untouched),

@@ -210,6 +210,26 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       const stats = host.stats();
       expect(stats.forbiddenCalls).toBe(0);
       expect(stats.underruns).toBeGreaterThanOrEqual(0);
+      // stage 066: what the window says about the device and the computer's speed
+      expect(stats.deviceEvents).toBe(0);
+      expect(Number.isInteger(stats.deadlineMissed) && stats.deadlineMissed >= 0).toBe(true);
+      host.destroy();
+    });
+
+    it("has a capture tap only when asked for, read from frame 0 on (stage 066)", async () => {
+      const plain = hostOn(env.make());
+      expect(() => plain.captureRead(16)).toThrow(expect.objectContaining({ code: "RB_HOST_ERR_STATE" }));
+      plain.destroy();
+      const host = env.make().createHost({ backend: "null", sampleRate: 48000, captureFrames: 1 << 16, initial: { preset: "i4" } });
+      host.start();
+      await env.pass(200);
+      const first = host.captureRead(1 << 16);
+      expect(first.samples).toBeInstanceOf(Float32Array);
+      expect(first.samples.length % 2).toBe(0);
+      expect(first.firstFrame).toBe(0);
+      expect(first.dropped).toBe(0);
+      const next = host.captureRead(16);
+      expect(next.firstFrame).toBe(first.samples.length / 2);
       host.destroy();
     });
 

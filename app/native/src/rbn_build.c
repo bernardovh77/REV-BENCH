@@ -170,6 +170,14 @@ int rbn_parse_config(napi_env env, napi_value config, rb_host_config *out)
         out->target_fill_ms = (int32_t)ms;
     }
 
+    /* the capture tap (stage 066): its ring, in frames; rb_host_create checks it is a power of two */
+    if (rbn_get_prop(env, config, "captureFrames", &v, &present) != 0) return -1;
+    if (present) {
+        int64_t frames = 0;
+        if (rbn_get_int(env, v, "captureFrames", 0, 1 << 24, &frames) != 0) return -1;
+        out->capture_frames = (int32_t)frames;
+    }
+
     if (rbn_get_prop(env, config, "initial", &v, &present) != 0) return -1;
     if (!present) return rbn_throw(env, "RB_HOST_ERR_ARG", "config.initial is required"), -1;
     return rbn_parse_build(env, v, "initial", &out->initial);

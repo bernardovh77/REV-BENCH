@@ -80,7 +80,7 @@ export function engineStatus(page: Page): Promise<EngineStatus> {
 
 export const rpmShown = async (page: Page): Promise<number> => Number(await page.locator(".topbar .readout .value").first().innerText());
 
-export const preset = (page: Page) => page.locator(".topbar select").inputValue();
+export const preset = (page: Page) => page.locator(".topbar select").first().inputValue();
 
 export function readLog(userData: string): string {
   const file = join(userData, "logs", "rev-bench.log");

@@ -7,10 +7,14 @@
  * The window never waits for the engine: it asks for a snapshot every animation frame and shows
  * the newest it has (docs/app-design.md section 4).
  */
-import type { HostStats } from "../../shared/addon";
+import type { DeviceInfo, HostStats, Quality, Scene } from "../../shared/addon";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../../shared/bridge";
 import type { Snapshot } from "../../shared/snapshot-v2.generated";
+import type { FromEngine } from "../../shared/protocol";
 import { CommandError, EngineClient, fromMessagePort, type Hello } from "./engine-client";
+
+/** A capture-dump's result (protocol.ts). */
+export type CaptureInfo = Omit<Extract<FromEngine, { type: "capture" }>, "type">;
 
 /** What the top bar says about the engine. */
 export type EngineSummary = "no-shell" | "starting" | "connecting" | "running" | "restarting" | "failed";
@@ -44,10 +48,25 @@ export class EngineStore {
   connected = $state(false);
   /** the preset being played (what the engine last confirmed) */
   preset = $state<string | null>(null);
+  /** the quality chosen for it, or null: the preset's own tier */
+  quality = $state<Quality | null>(null);
+  /** the stereo scene, or null: the mono listener */
+  scene = $state<Scene | null>(null);
   rebuilding = $state(false);
   lastError = $state<string | null>(null);
   /** snapshots the decoder refused */
   refusedSnapshots = $state(0);
+  /** the playback devices, the one playing, and a notice when the sound moved by itself */
+  devices = $state.raw<DeviceInfo[]>([]);
+  playing = $state<string | null>(null);
+  deviceNotice = $state<string | null>(null);
+  /** the latency setting, ms */
+  latencyMs = $state(20);
+  /** the computer missed a block's deadline or the device ran dry since the last statistics:
+   *  the window says so and offers a lower quality, never switching by itself (app-design 11) */
+  fallingBehind = $state(false);
+  private lastLate = -1;
+  private captured: ((capture: CaptureInfo) => void) | null = null;
 
   summary: EngineSummary = $derived.by(() => {
     if (!this.deps.bridge) return "no-shell";
@@ -62,12 +81,25 @@ export class EngineStore {
   private frame: number | null = null;
   private frames = 0;
   private readonly onWindowMessage = (event: PortEvent) => this.receivePort(event);
+  private readonly frameListeners = new Set<() => void>();
+  /** the mono listener's place (RB_LISTENER_*, 1: 3 m behind, the core's default) */
+  listener = $state(1);
+  /** the volume, 0..2 (1: the app's level) */
+  volume = $state(1);
 
   constructor(private readonly deps: StoreDeps) {
     this.client = new EngineClient({
       hello: (hello) => {
         this.hello = hello;
         this.preset = hello.preset;
+        this.quality = hello.build?.quality ?? null;
+        this.scene = hello.build?.scene ?? null;
+        this.latencyMs = hello.build?.latencyMs ?? 20;
+        this.listener = hello.settings?.listener ?? 1;
+        this.volume = hello.settings?.volume ?? 1;
+        this.devices = hello.devices;
+        this.playing = hello.devices.find((d) => d.isDefault)?.name ?? hello.devices[0]?.name ?? null;
+        this.lastLate = -1;
         this.connected = true;
       },
       snapshot: (snapshot) => {
@@ -75,6 +107,18 @@ export class EngineStore {
       },
       stats: (stats) => {
         this.stats = stats;
+        const late = stats.deadlineMissed + stats.underruns;
+        this.fallingBehind = this.lastLate >= 0 && late > this.lastLate;
+        this.lastLate = late;
+      },
+      capture: ({ type: _type, ...capture }) => {
+        this.captured?.(capture);
+        this.captured = null;
+      },
+      device: (device) => {
+        this.devices = device.devices;
+        this.playing = device.playing;
+        if (device.reason === "lost") this.deviceNotice = `The sound device changed: now playing on ${device.playing}.`;
       },
       detached: () => {
         this.connected = false;
@@ -94,11 +138,24 @@ export class EngineStore {
       bridge.requestEnginePort();
     }
     const tick = () => {
+      for (const listener of this.frameListeners) listener();
       this.client.requestSnapshot();
       if (++this.frames % (this.deps.statsEveryFrames ?? 60) === 0) this.client.requestStats();
       this.frame = this.deps.requestFrame(tick);
     };
     this.frame = this.deps.requestFrame(tick);
+  }
+
+  /** Runs `listener` every animation frame (the driver's keys and controller); returns its remover. */
+  onFrame(listener: () => void): () => void {
+    this.frameListeners.add(listener);
+    return () => this.frameListeners.delete(listener);
+  }
+
+  /** Where the mono listener stands (RB_LISTENER_*): a live change, no rebuild. */
+  async setListener(place: number): Promise<void> {
+    await this.setParam("listener", place);
+    if (this.lastError === null) this.listener = place;
   }
 
   dispose(): void {
@@ -125,13 +182,89 @@ export class EngineStore {
     }
   }
 
-  /** Rebuilds with another preset: the old engine plays until the new one is swapped in. */
+  /**
+   * The driver's throttle (stage 066), sent without waiting: the beat of a live style sends it
+   * every 50 ms, and only a failure is worth saying.
+   */
+  sendThrottle(value: number, live: boolean): void {
+    this.client.command({ kind: "throttle", value, live }).catch((e: unknown) => {
+      this.lastError = describe(e);
+    });
+  }
+
+  /** Moves the sound to a device (-1: the system's default). */
+  async selectDevice(index: number): Promise<void> {
+    this.deviceNotice = null;
+    try {
+      await this.client.command({ kind: "select-device", index });
+      this.lastError = null;
+    } catch (e) {
+      this.lastError = describe(e);
+    }
+  }
+
+  /** The latency: the sound restarts with it (the engine greets the window again). */
+  async setLatency(ms: number): Promise<void> {
+    try {
+      await this.client.command({ kind: "set-latency", ms });
+      this.lastError = null;
+    } catch (e) {
+      this.lastError = describe(e);
+    }
+  }
+
+  /**
+   * Tests only: the engine writes its capture tap's audio and the drive's trace (when it was
+   * started with RB_CAPTURE_SECONDS) and says where. The end-to-end test calls it through
+   * window.__rbCaptureDump (main.ts).
+   */
+  async captureDump(): Promise<CaptureInfo> {
+    const arrived = new Promise<CaptureInfo>((resolve) => (this.captured = resolve));
+    await this.client.command({ kind: "capture-dump" });
+    return arrived;
+  }
+
+  dismissDeviceNotice(): void {
+    this.deviceNotice = null;
+  }
+
+  /** The volume, 0..2: 1 is the app's level (control.ts, APP_HEADROOM). */
+  async setVolume(value: number): Promise<void> {
+    try {
+      await this.client.command({ kind: "volume", value });
+      this.volume = value;
+      this.lastError = null;
+    } catch (e) {
+      this.lastError = describe(e);
+    }
+  }
+
+  /**
+   * Rebuilds with another preset: the old engine plays until the new one is swapped in. A new
+   * preset starts at its own tier, never at the last one's chosen quality; the scene is kept.
+   */
   async loadPreset(preset: string): Promise<void> {
+    await this.rebuild(preset, null, this.scene);
+  }
+
+  /** Rebuilds at a chosen quality (null: the preset's tier). Never done without being asked. */
+  async setQuality(quality: Quality | null): Promise<void> {
+    if (this.preset) await this.rebuild(this.preset, quality, this.scene);
+  }
+
+  /** Rebuilds with a stereo scene, or the mono listener (null). */
+  async setScene(scene: Scene | null): Promise<void> {
+    if (this.preset) await this.rebuild(this.preset, this.quality, scene);
+  }
+
+  private async rebuild(preset: string, quality: Quality | null, scene: Scene | null): Promise<void> {
     if (this.rebuilding) return;
     this.rebuilding = true;
     try {
-      await this.client.command({ kind: "load-preset", preset });
+      await this.client.command({ kind: "load-preset", preset, ...(quality ? { quality } : {}), scene });
       this.preset = preset;
+      this.quality = quality;
+      this.scene = scene;
       this.lastError = null;
     } catch (e) {
       this.lastError = describe(e);

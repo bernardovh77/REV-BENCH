@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ADDON_FILE, loadAddon, nativeAddonCandidates, type LoaderDeps } from "../src/engine/addon-loader";
 import { runEngineProcess, type ParentPortLike, type PortLike } from "../src/engine/process";
 import { createFakeAddon } from "../src/engine/fake-addon";
+import { QUIT_FADE_MS } from "../src/engine/control";
 import type { EngineInit, EngineToMain } from "../src/shared/process-messages";
 import type { FromEngine } from "../src/shared/protocol";
 
@@ -153,6 +154,53 @@ describe("the engine process", () => {
     parent.deliver({ type: "shutdown" });
     expect(cleared).toEqual(["timer"]);
     expect(exits).toEqual([0]);
+  });
+
+  it("fades the sound out before it stops, when it has a timer for it (stage 066)", () => {
+    const parent = new FakeParent();
+    const exits: number[] = [];
+    const timeouts: { cb: () => void; ms: number }[] = [];
+    let gain: number | undefined;
+    runEngineProcess({
+      parentPort: parent,
+      loadAddon: () => {
+        const addon = createFakeAddon();
+        const createHost = addon.createHost;
+        addon.createHost = (config) => {
+          const host = createHost(config);
+          const setParam = host.setParam.bind(host);
+          const gainId = addon.params().find((p) => p.name === "master_gain")!.id;
+          host.setParam = (id, value) => ((id === gainId ? (gain = value) : 0), setParam(id, value));
+          return host;
+        };
+        return addon;
+      },
+      setInterval: () => "timer",
+      clearInterval: () => {},
+      setTimeout: (cb, ms) => void timeouts.push({ cb, ms }),
+      exit: (code) => void exits.push(code),
+    });
+    parent.deliver({ type: "init", config: init });
+    parent.deliver({ type: "shutdown" });
+    expect(gain).toBe(0);
+    expect(exits).toEqual([]);
+    expect(timeouts[0].ms).toBe(QUIT_FADE_MS);
+    timeouts[0].cb();
+    expect(exits).toEqual([0]);
+  });
+
+  it("passes sleep and wake to the host (stage 066)", () => {
+    const { parent, process } = setup();
+    parent.deliver({ type: "init", config: init });
+    const control = process.control()!;
+    const calls: string[] = [];
+    const c = control as unknown as { suspend(): void; resume(): void };
+    const [s, r] = [c.suspend.bind(c), c.resume.bind(c)];
+    c.suspend = () => (calls.push("suspend"), s());
+    c.resume = () => (calls.push("resume"), r());
+    parent.deliver({ type: "suspend" });
+    parent.deliver({ type: "resume" });
+    expect(calls).toEqual(["suspend", "resume"]);
   });
 
   it("logs, and goes on, for a message it doesn't know", () => {

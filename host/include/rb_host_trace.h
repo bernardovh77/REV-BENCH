@@ -7,7 +7,7 @@
  *
  *   rbtrace 1
  *   rate 48000
- *   quality -1                  low, medium, high, ultra or -1 (the default)
+ *   quality -1                  low, medium, high, ultra, balanced, lean or -1 (the default)
  *   oversample 4
  *   preset i4                   a preset key
  *   edit header_length 0 0.5    an engine field (name, index, value), in order

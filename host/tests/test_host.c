@@ -692,3 +692,87 @@ void test_host_statistics_deadline_histogram_and_ring_fill(void)
     CHECK_EQ_INT(s.underruns, 0);                          /* the pump never let it run dry */
     rb_host_destroy(h);
 }
+
+/* ---- the capture tap (stage 066) ------------------------------------------------ */
+
+/* A started host on the manual backend with a capture tap of `capture` frames. */
+static rb_host *capture_host(int capture)
+{
+    rb_host_config c;
+    rb_host_config_default(&c);
+    c.backend = RB_HOST_BACKEND_MANUAL;
+    c.capture_frames = capture;
+    ht_engine_build(&c.initial, rb_preset_find("i4"), 1500.0, 0.3);
+    rb_host *h = NULL;
+    CHECK_EQ_INT(rb_host_create(&c, &h), RB_HOST_OK);
+    if (h) CHECK_EQ_INT(rb_host_start(h), RB_HOST_OK);
+    return h;
+}
+
+void test_host_capture_tap_is_what_the_device_was_given(void)
+{
+    /* the tap holds every frame from 0 on, in order: the device's pulls, bit for bit */
+    rb_host *h = capture_host(1 << 16);
+    CHECK(h != NULL);
+    if (!h) return;
+    ht_capture c;
+    ht_capture_init(&c, 48000);
+    CHECK(ht_pump(h, 12000, &c, 5000) >= 12000);
+    rb_host_stop(h);
+    float *tap = (float *)calloc(2u << 16, sizeof(float));
+    uint64_t first = 99;
+    const int n = rb_host_capture_read(h, tap, 1 << 16, &first);
+    CHECK_EQ_INT((long long)first, 0);
+    CHECK(n >= 12000);
+    int same = 1;
+    for (int i = 0; i < 12000; i++) same &= tap[2 * i] == c.left[i];
+    CHECK(same);
+    /* the next read goes on where this one stopped */
+    CHECK_EQ_INT(rb_host_capture_read(h, tap, 16, &first), 0);
+    CHECK_EQ_INT((long long)first, n);
+    rb_host_stats s;
+    CHECK_EQ_INT(rb_host_get_stats(h, &s), RB_HOST_OK);
+    CHECK_EQ_INT((long long)s.capture_dropped, 0);
+    free(tap);
+    ht_capture_free(&c);
+    rb_host_destroy(h);
+}
+
+void test_host_capture_tap_counts_the_blocks_it_drops(void)
+{
+    /* a reader too slow: whole blocks are dropped and counted, the render thread never waits */
+    rb_host *h = capture_host(1024);
+    CHECK(h != NULL);
+    if (!h) return;
+    CHECK(ht_pump(h, 6000, NULL, 5000) >= 6000);
+    rb_host_stop(h);
+    rb_host_stats s;
+    CHECK_EQ_INT(rb_host_get_stats(h, &s), RB_HOST_OK);
+    CHECK(s.capture_dropped >= (6000 - 1024) / RB_HOST_BLOCK_FRAMES);
+    float tap[2 * 1024];
+    CHECK_EQ_INT(rb_host_capture_read(h, tap, 1024, NULL), 1024);
+    rb_host_destroy(h);
+}
+
+void test_host_capture_tap_only_when_asked_for(void)
+{
+    rb_host_build b;
+    ht_tone_build(&b, 220.0);
+    rb_host *h = ht_make(RB_HOST_BACKEND_MANUAL, &b, 48000);
+    CHECK(h != NULL);
+    if (!h) return;
+    float out[2];
+    CHECK_EQ_INT(rb_host_capture_read(h, out, 1, NULL), RB_HOST_ERR_STATE);
+    CHECK_EQ_INT(rb_host_capture_read(NULL, out, 1, NULL), RB_HOST_ERR_ARG);
+    rb_host_destroy(h);
+    /* a size that isn't a power of two, or out of range, is refused */
+    static const int BAD[] = { 1000, 512, 1 << 25 };
+    for (int i = 0; i < 3; i++) {
+        rb_host_config c;
+        rb_host_config_default(&c);
+        c.capture_frames = BAD[i];
+        rb_host *x = NULL;
+        CHECK_EQ_INT(rb_host_create(&c, &x), RB_HOST_ERR_ARG);
+        CHECK(x == NULL);
+    }
+}

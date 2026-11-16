@@ -18,6 +18,8 @@ const store = new EngineStore({
   cancelFrame: (handle) => window.cancelAnimationFrame(handle),
 });
 store.start();
+// the end-to-end test's way to the capture tap (refused unless the engine runs with one)
+Object.defineProperty(window, "__rbCaptureDump", { value: () => store.captureDump() });
 
 const target = document.getElementById("app");
 if (!target) throw new Error("rev-bench: index.html has no #app");

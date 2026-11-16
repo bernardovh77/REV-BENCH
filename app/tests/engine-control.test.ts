@@ -3,9 +3,9 @@
  * rebuild, snapshots forwarded, errors.
  */
 import { describe, expect, it } from "vitest";
-import { EngineControl, PREPARE_TIMEOUT_MS, type EnginePort } from "../src/engine/control";
+import { APP_HEADROOM, EngineControl, PREPARE_TIMEOUT_MS, VOLUME_MAX, type EnginePort } from "../src/engine/control";
 import { createFakeAddon, addonError } from "../src/engine/fake-addon";
-import type { Addon, Host } from "../src/shared/addon";
+import type { Addon, BuildSpec, Host } from "../src/shared/addon";
 import type { BuildChoice, EngineInit } from "../src/shared/process-messages";
 import { PROTOCOL_VERSION, type Command, type FromEngine } from "../src/shared/protocol";
 import { decodeSnapshot } from "../src/shared/snapshot-v2.generated";
@@ -167,6 +167,78 @@ describe("commands", () => {
   });
 });
 
+describe("the throttle and the dead-man rule (stage 066)", () => {
+  /** the throttle the engine's newest snapshot shows (a detached test attaches its window again) */
+  function throttleNow(s: ReturnType<typeof setup>, reattach = false): number {
+    if (reattach) s.control.attach(s.port);
+    s.clock.step(10);
+    s.control.handle({ type: "snapshot-request" });
+    const snaps = s.port.of("snapshot");
+    return decodeSnapshot(snaps[snaps.length - 1].bytes).instruments.throttle;
+  }
+
+  it("sets the throttle and acknowledges it like set-param", () => {
+    const s = setup();
+    s.send(1, { kind: "throttle", value: 0.7, live: true });
+    s.run(10);
+    expect(s.port.replies(1)[0].ack).toMatchObject({ kind: "set-param", outcome: "ok" });
+    expect(throttleNow(s)).toBeCloseTo(0.7, 12);
+  });
+
+  it("holds a live throttle while the beat comes, every 50 ms", () => {
+    const s = setup();
+    for (let i = 0; i < 20; i++) {
+      s.send(100 + i, { kind: "throttle", value: 0.9, live: true });
+      s.run(50);
+    }
+    expect(throttleNow(s)).toBeCloseTo(0.9, 12);
+  });
+
+  it("ramps a live throttle to zero when the window's messages stop mid-pull", () => {
+    const s = setup();
+    s.send(1, { kind: "throttle", value: 1, live: true });
+    s.run(200);
+    expect(throttleNow(s)).toBe(1);
+    s.run(60); // 270 ms since the beat: falling
+    const falling = throttleNow(s);
+    expect(falling).toBeGreaterThan(0);
+    expect(falling).toBeLessThan(1);
+    s.run(200);
+    expect(throttleNow(s)).toBe(0);
+  });
+
+  it("ramps at once when the window detaches with a live throttle held", () => {
+    const s = setup();
+    s.send(1, { kind: "throttle", value: 0.8, live: true });
+    s.run(20);
+    s.control.detach();
+    s.run(120);
+    expect(throttleNow(s, true)).toBe(0);
+  });
+
+  it("leaves an on/off or latched throttle where it was, however long the silence", () => {
+    for (const command of [
+      { kind: "throttle", value: 1, live: false } as Command,
+      { kind: "set-param", name: "throttle", value: 0.4 } as Command,
+    ]) {
+      const s = setup();
+      s.send(1, command);
+      s.run(3000);
+      s.control.detach();
+      s.run(500);
+      expect(throttleNow(s, true)).toBeCloseTo(command.kind === "throttle" ? 1 : 0.4, 12);
+    }
+  });
+
+  it("refuses a throttle outside 0..1, or without its style", () => {
+    const s = setup();
+    s.send(1, { kind: "throttle", value: 1.5, live: true });
+    s.send(2, { kind: "throttle", value: Number.NaN, live: false });
+    s.send(3, { kind: "throttle", value: 0.5 } as unknown as Command);
+    for (const id of [1, 2, 3]) expect(s.port.replies(id)[0].error?.code).toBe("BAD_VALUE");
+  });
+});
+
 describe("a rebuild (load-preset)", () => {
   it("prepares without blocking, swaps when ready, and replies with the swap's ack", () => {
     const { send, port, run, builds } = setup();
@@ -299,6 +371,134 @@ describe("the app's driver defaults", () => {
     const addon: Addon = { ...real, params: () => real.params().filter((p) => p.name !== "hold") };
     const control = new EngineControl({ addon, config: config(), onBuild: () => {}, log: () => {} });
     expect(() => control.start()).not.toThrow();
+  });
+});
+
+describe("the level, the quality and the scene (stage 066)", () => {
+  /** an add-on that records every build it is asked for */
+  function recording() {
+    // ready at once: this add-on keeps the real clock, not the test's
+    const real = createFakeAddon({ prepareMs: 0 });
+    const specs: BuildSpec[] = [];
+    const addon: Addon = {
+      ...real,
+      createHost: (config) => {
+        specs.push(config.initial);
+        const host = real.createHost(config);
+        const prepare = host.prepare.bind(host);
+        host.prepare = (spec) => (specs.push(spec), prepare(spec));
+        return host;
+      },
+    };
+    return { addon, specs };
+  }
+  const gainOf = (spec: BuildSpec, addon: Addon) => spec.params?.find((p) => p.id === addon.params().find((q) => q.name === "master_gain")!.id)?.value;
+
+  it("builds every engine at the app's level, and at the volume after it changes", () => {
+    const { addon, specs } = recording();
+    const s = setup({ addon });
+    expect(gainOf(specs[0], addon)).toBe(APP_HEADROOM);
+    s.send(1, { kind: "volume", value: 0.5 });
+    s.run(10);
+    expect(s.port.replies(1)[0].ack?.outcome).toBe("ok");
+    s.send(2, { kind: "load-preset", preset: "v8-flat" });
+    s.run(200);
+    expect(gainOf(specs[1], addon)).toBeCloseTo(APP_HEADROOM * 0.5, 12);
+  });
+
+  it("refuses a volume outside 0..VOLUME_MAX", () => {
+    const s = setup();
+    for (const [id, value] of [[1, -0.1], [2, VOLUME_MAX + 0.01], [3, Number.NaN]] as const) {
+      s.send(id, { kind: "volume", value });
+      expect(s.port.replies(id)[0].error?.code).toBe("BAD_VALUE");
+    }
+  });
+
+  it("builds a chosen quality and scene, and autosaves them", () => {
+    const { addon, specs } = recording();
+    const s = setup({ addon });
+    s.send(1, { kind: "load-preset", preset: "v8-cross", quality: "lean", scene: "garage" });
+    s.run(200);
+    expect(specs[1]).toMatchObject({ preset: "v8-cross", quality: "lean", scene: "garage" });
+    expect(s.builds.at(-1)).toEqual({ preset: "v8-cross", quality: "lean", scene: "garage" });
+    s.send(2, { kind: "load-preset", preset: "v8-cross", scene: null });
+    s.run(200);
+    expect(specs[2].scene).toBeUndefined();
+    expect(s.builds.at(-1)).toEqual({ preset: "v8-cross" });
+  });
+
+  it("keeps the listener's place and the A/B variant for every later build, and says so in its greeting", () => {
+    const { addon, specs } = recording();
+    const s = setup({ addon });
+    s.send(1, { kind: "set-param", name: "listener", value: 4 });
+    s.send(2, { kind: "set-param", name: "variant", value: 3 });
+    s.send(3, { kind: "load-preset", preset: "i6" });
+    s.run(200);
+    const idOf = (name: string) => addon.params().find((p) => p.name === name)!.id;
+    const params = specs[1].params!;
+    expect(params.find((p) => p.id === idOf("listener"))?.value).toBe(4);
+    expect(params.find((p) => p.id === idOf("variant"))?.value).toBe(3);
+    s.control.attach(s.port);
+    expect(s.port.of("hello").at(-1)?.settings).toEqual({ volume: 1, listener: 4, variant: 3 });
+  });
+
+  it("refuses a scene it doesn't know", () => {
+    const s = setup();
+    s.send(1, { kind: "load-preset", preset: "i4", scene: "moon" as never });
+    expect(s.port.replies(1)[0].error?.code).toBe("BAD_SCENE");
+  });
+});
+
+describe("the latency (stage 066)", () => {
+  it("makes the host again with the new ring target, rebuilt as it was, and greets the window again", () => {
+    const real = createFakeAddon({ prepareMs: 0 });
+    const configs: { targetFillMs?: number; initial: BuildSpec }[] = [];
+    const addon: Addon = { ...real, createHost: (c) => (configs.push(c), real.createHost(c)) };
+    const s = setup({ addon, build: { preset: "v8-flat", scene: "garage" } });
+    s.send(1, { kind: "set-param", name: "ignition", value: 1 });
+    s.send(2, { kind: "set-latency", ms: 40 });
+    expect(configs).toHaveLength(2);
+    expect(configs[1]).toMatchObject({ targetFillMs: 40, initial: { preset: "v8-flat", scene: "garage" } });
+    expect(s.port.replies(1)[0].error?.code).toBe("RESTARTED");
+    expect(s.port.replies(2)).toEqual([{ type: "reply", id: 2 }]);
+    expect(s.port.of("hello")).toHaveLength(2);
+    expect(s.port.of("hello")[1].build).toMatchObject({ latencyMs: 40 });
+    expect(s.builds.at(-1)).toEqual({ preset: "v8-flat", scene: "garage", latencyMs: 40 });
+    // and a later rebuild keeps it
+    s.send(3, { kind: "load-preset", preset: "i4" });
+    s.run(100);
+    expect(s.builds.at(-1)).toEqual({ preset: "i4", latencyMs: 40 });
+  });
+
+  it("refuses a latency outside 10..80 ms, or not whole", () => {
+    const s = setup();
+    for (const [id, ms] of [[1, 5], [2, 81], [3, 20.5]] as const) {
+      s.send(id, { kind: "set-latency", ms });
+      expect(s.port.replies(id)[0].error?.code).toBe("BAD_VALUE");
+    }
+  });
+});
+
+describe("devices (stage 066)", () => {
+  it("tells the window which device now plays when the host moved off a lost one", () => {
+    const real = createFakeAddon();
+    let fake: { loseDevice(): void } | null = null;
+    const addon: Addon = { ...real, createHost: (c) => ((fake = real.createHost(c) as never), fake as never) };
+    const s = setup({ addon });
+    s.run(1000);
+    expect(s.port.of("device")).toEqual([]);
+    fake!.loseDevice();
+    s.run(1000);
+    const [notice] = s.port.of("device");
+    expect(notice).toMatchObject({ reason: "lost", playing: "Null device" });
+    s.run(2000);
+    expect(s.port.of("device")).toHaveLength(1);
+  });
+
+  it("says which device plays after the user selects one", () => {
+    const { send, port } = setup();
+    send(1, { kind: "select-device", index: 0 });
+    expect(port.of("device")[0]).toMatchObject({ reason: "selected", playing: "Null device" });
   });
 });
 

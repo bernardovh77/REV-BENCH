@@ -4,7 +4,7 @@
  * and the engine process talk over their own MessagePort. This file only wires the pieces,
  * each of which is tested apart (platform, autosave, logger, supervisor, window, config).
  */
-import { app, BrowserWindow, ipcMain, Menu, MessageChannelMain, type IpcMainEvent, type IpcMainInvokeEvent, type MessagePortMain } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, MessageChannelMain, powerMonitor, type IpcMainEvent, type IpcMainInvokeEvent, type MessagePortMain } from "electron";
 import { IPC } from "../shared/bridge";
 import { Autosave } from "./autosave";
 import { engineInitFromEnv } from "./config";
@@ -32,7 +32,10 @@ const supervisor = new EngineSupervisor<MessagePortMain>({
   spawn: () => spawnEngineProcess(paths.engine, logger),
   createChannel: () => new MessageChannelMain(),
   autosave,
-  engineInit: (build) => engineInitFromEnv(process.env, build),
+  engineInit: (build) => {
+    const init = engineInitFromEnv(process.env, build);
+    return init.captureSeconds ? { ...init, captureDir: folders.userData } : init;
+  },
   logger,
   schedule: (fn, ms) => {
     const timer = setTimeout(fn, ms);
@@ -91,11 +94,24 @@ if (!app.requestSingleInstanceLock()) {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  app.on("before-quit", () => supervisor.stop());
+  // Quitting fades the sound out: the first quit waits for the engine to stop (its fade, then
+  // its exit, or the supervisor's kill after shutdownMs), then quits for real.
+  let engineStopped = false;
+  app.on("before-quit", (event) => {
+    if (engineStopped) return;
+    event.preventDefault();
+    supervisor.stop(() => {
+      engineStopped = true;
+      app.quit();
+    });
+  });
   void app.whenReady().then(() => {
     Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate({ appName: APP_NAME, packaged: app.isPackaged })));
     logger.log("info", "main", `${APP_NAME} ${app.getVersion()} starting (Electron ${process.versions.electron}, ${platformName()})`);
     supervisor.start();
+    // sleep and wake: the host stops its device and restarts it after a flush (stage 066)
+    powerMonitor.on("suspend", () => supervisor.suspend());
+    powerMonitor.on("resume", () => supervisor.resume());
     createWindow();
   });
 }

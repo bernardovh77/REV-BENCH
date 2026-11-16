@@ -42,9 +42,9 @@ test("the snapshot path costs a small fraction of runtime-v1's budget, and a fra
   try {
     const { page, app } = run;
     await waitForState(page, "Engine running");
-    await page.locator(".topbar select").selectOption("v8-cross");
-    await until("the V8", () => page.locator(".topbar select").inputValue(), (p) => p === "v8-cross", 20_000);
-    await expect(page.locator(".topbar select")).toBeEnabled();
+    await page.locator(".topbar select").first().selectOption("v8-cross");
+    await until("the V8", () => page.locator(".topbar select").first().inputValue(), (p) => p === "v8-cross", 20_000);
+    await expect(page.locator(".topbar select").first()).toBeEnabled();
     // a running engine: ignition and the starter
     await page.getByRole("button", { name: "Ignition" }).click();
     await page.getByRole("button", { name: "Starter" }).dispatchEvent("pointerdown");

@@ -8,7 +8,7 @@
  */
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
-import type { Quality } from "../shared/addon";
+import { SCENES, type Quality } from "../shared/addon";
 import type { BuildChoice } from "../shared/process-messages";
 
 const QUALITIES: readonly string[] = ["low", "medium", "high", "ultra", "balanced", "lean"] satisfies Quality[];
@@ -26,11 +26,16 @@ export class Autosave {
       return null;
     }
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { version, preset, quality } = parsed as Record<string, unknown>;
+    const { version, preset, quality, scene, latencyMs } = parsed as Record<string, unknown>;
     if (version !== 1 || typeof preset !== "string" || preset === "") return null;
-    if (quality === undefined) return { preset };
-    if (typeof quality !== "string" || !QUALITIES.includes(quality)) return { preset };
-    return { preset, quality: quality as Quality };
+    // a quality or scene it doesn't know is dropped, the preset kept
+    const known = <T extends string>(v: unknown, list: readonly T[]): v is T => typeof v === "string" && (list as readonly string[]).includes(v);
+    return {
+      preset,
+      ...(known(quality, QUALITIES as readonly Quality[]) ? { quality } : {}),
+      ...(known(scene, SCENES) ? { scene } : {}),
+      ...(typeof latencyMs === "number" && Number.isInteger(latencyMs) && latencyMs >= 10 && latencyMs <= 80 ? { latencyMs } : {}),
+    };
   }
 
   save(choice: BuildChoice): void {

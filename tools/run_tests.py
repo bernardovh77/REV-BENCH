@@ -270,9 +270,15 @@ def suite_commands(name, state):
         env["RB_NATIVE_PATH"] = str(native)
         env["RB_E2E_OUTPUT"] = str(OUT / "app-e2e-results")
         env.pop("RB_FAKE_ADDON", None)
+        # stage 066's drive parity: rb_host_render from the add-on's own build (the same
+        # compiler and flags as the engine it is compared with)
+        exe = ".exe" if os.name == "nt" else ""
+        env["RB_HOST_RENDER"] = str(native.parent / f"rb_host_render{exe}")
+        msvc = [sys.executable, str(ROOT / "tools/msvc_env.py")] if os.name == "nt" else []
         required = dict(env, RB_REQUIRE_NATIVE="1")
         install = [] if (app / "node_modules").is_dir() else [[npm, "ci", "--no-audit", "--no-fund"]]
-        return (addon_build_commands(env) + install
+        return (addon_build_commands(env)
+                + [msvc + ["cmake", "--build", str(native.parent), "--target", "rb_host_render"]] + install
                 + [[npx, "install-electron"], [npm, "run", "build"],
                    ([npx, "vitest", "run", "tests/addon-real.test.ts"], required),
                    [npx, "playwright", "test"]]), app, env

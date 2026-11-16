@@ -13,7 +13,7 @@ test("starts on the real add-on and plays: ignition and the starter bring up the
     expect(await stateText(page)).toContain("Engine running");
     // the first engine is the default build, from the add-on's own list
     expect(await preset(page)).toBe("i4");
-    expect(await page.locator(".topbar select option").allInnerTexts()).toContain("5.0 L cross-plane V8");
+    expect(await page.locator(".topbar select").first().locator("option").allInnerTexts()).toContain("5.0 L cross-plane V8");
 
     await page.getByRole("button", { name: "Ignition" }).click();
     await expect(page.getByRole("button", { name: "Ignition" })).toHaveAttribute("aria-pressed", "true");
@@ -68,9 +68,9 @@ test("changes the engine, and the build is autosaved", async () => {
   try {
     const { page } = run;
     await waitForState(page, "Engine running");
-    await page.locator(".topbar select").selectOption("v8-cross");
+    await page.locator(".topbar select").first().selectOption("v8-cross");
     await until("the new engine", () => preset(page), (p) => p === "v8-cross");
-    await expect(page.locator(".topbar select")).toBeEnabled();
+    await expect(page.locator(".topbar select").first()).toBeEnabled();
     await until("the autosaved build", () => autosaved(run.userData), (b) => b?.preset === "v8-cross", 10_000);
     expect(run.problems).toEqual([]);
   } finally {
@@ -83,7 +83,7 @@ test("restarts after its process is killed, with the autosaved preset", async ()
   try {
     const { page } = run;
     await waitForState(page, "Engine running");
-    await page.locator(".topbar select").selectOption("v8-cross");
+    await page.locator(".topbar select").first().selectOption("v8-cross");
     await until("the autosaved build", () => autosaved(run.userData), (b) => b?.preset === "v8-cross", 15_000);
     const before = await engineStatus(page);
     expect(before.state).toBe("running");

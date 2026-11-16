@@ -38,7 +38,7 @@ test("stats() before and while the engine runs", async () => {
     await sleep(300);
     const s = host.stats();
     assert.deepEqual(Object.keys(s).sort(), [
-      "blocks", "boosted", "commandsApplied", "commandsRefused", "deadline", "eventsLost", "forbiddenCalls",
+      "blocks", "boosted", "commandsApplied", "commandsRefused", "deadline", "deadlineMissed", "deviceEvents", "eventsLost", "forbiddenCalls",
       "priority", "processMb", "renderMsMax", "renderMsMean", "ringFillMs", "ringTargetMs", "swapsOk", "underruns",
     ]);
     assert.ok(s.blocks >= 100);
@@ -136,7 +136,7 @@ test("every Host method on the prototype is covered by the destroyed check", () 
   const methods = Object.getOwnPropertyNames(Object.getPrototypeOf(host)).filter((n) => n !== "constructor");
   host.destroy();
   assert.deepEqual(methods.sort(), [
-    "destroy", "discard", "generation", "poll", "prepare", "prepareState", "readSnapshot", "sampleRate",
+    "captureRead", "destroy", "discard", "generation", "poll", "prepare", "prepareState", "readSnapshot", "sampleRate",
     "selectDevice", "setEngineLive", "setParam", "start", "stats", "stop", "suspend", "swap", "resume",
   ].sort());
   for (const name of methods) throwsCode(() => host[name](), "DESTROYED", name);

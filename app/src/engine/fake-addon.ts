@@ -75,6 +75,9 @@ const PARAM_ROWS: [string, string, number, number, number, string[]][] = [
   ["clutch", "", 0, 1, 0, ["integer", ...control]],
   ["variation", "", 0, 4, 0, live],
   ["seed", "", 0, 4294967295, 0, ["rebuild", "integer"]],
+  // stage 066's sticky settings (the core's ids differ; the fake's are its own)
+  ["listener", "", 0, 4, 1, ["integer"]],
+  ["variant", "", 0, 7, 0, ["integer"]],
 ];
 const PARAMS: ParamInfo[] = PARAM_ROWS.map(([name, unit, min, max, def, flags], id) => ({
   id,
@@ -384,11 +387,28 @@ class FakeHost implements Host {
       commandsRefused: this.refused,
       swapsOk: this.swaps,
       eventsLost: 0,
+      deviceEvents: this.deviceEvents,
+      deadlineMissed: this.deadlineMissed,
       priority: "fake",
       boosted: false,
       forbiddenCalls: 0,
       processMb: 0,
     };
+  }
+
+  /** The fake renders no sound: its tap, if it has one, stays empty. */
+  captureRead(max: number): { samples: Float32Array; firstFrame: number; dropped: number } {
+    this.live();
+    if (!this.config.captureFrames) throw addonError("RB_HOST_ERR_STATE", "no capture tap");
+    if (!Number.isInteger(max) || max < 0) throw addonError("RB_HOST_ERR_ARG", "max is a whole number");
+    return { samples: new Float32Array(0), firstFrame: 0, dropped: 0 };
+  }
+
+  /** Test hooks: the device was lost (the host moved to the default), and blocks ran late. */
+  deviceEvents = 0;
+  deadlineMissed = 0;
+  loseDevice(): void {
+    this.deviceEvents++;
   }
 
   selectDevice(index: number): void {

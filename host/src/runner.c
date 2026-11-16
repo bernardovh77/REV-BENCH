@@ -313,6 +313,19 @@ void rbh_run_block(rb_host *h, float *out, int frames)
         atomic_store_explicit(&h->stats.render_ns_max, ns, memory_order_relaxed);
 }
 
+/* The capture tap (stage 066): a copy of the block for a reader, whole or not
+ * at all (a dropped block is counted, so a reader knows its frames have a
+ * gap). No tap, nothing done. */
+void rbh_capture_block(rb_host *h, const float *block, int frames)
+{
+    if (!h->capture.capacity) return;
+    if (rbh_ring_space(&h->capture) < (uint32_t)frames) {
+        add(&h->stats.capture_dropped, 1);
+        return;
+    }
+    rbh_ring_write(&h->capture, block, (uint32_t)frames);
+}
+
 /* The render thread: keeps the ring filled to its target. */
 void rbh_render_thread_main(void *arg)
 {
@@ -339,6 +352,7 @@ void rbh_render_thread_main(void *arg)
             add(&h->stats.ring_fill_sum, fill);
             rbh_run_block(h, block, RB_HOST_BLOCK_FRAMES);
             rbh_ring_write(&h->ring, block, RB_HOST_BLOCK_FRAMES);
+            rbh_capture_block(h, block, RB_HOST_BLOCK_FRAMES);
         }
     }
     rbh_plat_render_leave();

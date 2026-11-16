@@ -133,6 +133,9 @@ typedef struct rb_host_config {
     int32_t         fade_ms;        /* a swap's fade out and in, 10..20; 0: 15 */
     int32_t         snapshot_hz;    /* 0: 60                                  */
     rb_host_build   initial;        /* the first engine                       */
+    int32_t         capture_frames; /* the capture tap's ring, stereo frames, a
+                                       power of two (1024..2^24); 0: no tap
+                                       (stage 066: rb_host_capture_read)      */
 } rb_host_config;
 
 /* The defaults: the null backend, 48 kHz, rb_host_build_default. */
@@ -336,6 +339,18 @@ int rb_host_offline_render(rb_host *h, float *out, int frames);
 /* 1 if the engine now playing has the stereo scene, else 0. */
 int rb_host_offline_has_scene(const rb_host *h);
 
+/* ---- the capture tap (stage 066) --------------------------------------- */
+/* With rb_host_config.capture_frames set, the render thread also copies every
+ * block it renders into a ring of its own, from the host's audio frame 0 on:
+ * what the device was given, before the device's own fades on an underrun.
+ * Takes up to `max` stereo frames (interleaved) from it, oldest first.
+ * *first_frame, if not NULL, gets the host's audio frame of out[0]. Blocks the
+ * render thread found no room for are dropped whole and counted in
+ * rb_host_stats.capture_dropped: once that is not 0 the frames read are no
+ * longer contiguous with frame 0. Returns how many frames, or
+ * RB_HOST_ERR_STATE without a tap. Any one thread may read it. */
+int rb_host_capture_read(rb_host *h, float *out, int max, uint64_t *first_frame);
+
 /* ---- instrumentation -------------------------------------------------- */
 typedef struct rb_host_priority {
     int32_t  applied;               /* the render thread asked the system for a boost */
@@ -365,6 +380,7 @@ typedef struct rb_host_stats {
     uint64_t swaps_ok, swaps_stale, swaps_busy;
     uint64_t retired_pending, engines_freed;
     uint64_t events_lost, device_events;
+    uint64_t capture_dropped;       /* blocks the capture tap had no room for  */
     uint64_t audit_alloc, audit_lock, audit_log;   /* forbidden calls made on the render thread */
     uint64_t process_bytes, process_peak_bytes;    /* the process's memory, 0 if unknown */
     rb_host_priority priority;

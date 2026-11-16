@@ -155,6 +155,12 @@ class AppE2eSuiteTests(FakeRepo, unittest.TestCase):
         self.assertIn("addon-build", env["RB_NATIVE_PATH"])
         self.assertNotIn("RB_FAKE_ADDON", env)   # the end-to-end tests are on the real add-on
         self.assertEqual(cwd.name, "app")
+        # stage 066: rb_host_render built in the add-on's own build, before playwright, and named
+        render = next(i for i, c in enumerate(text) if "--target rb_host_render" in c)
+        self.assertLess(next(i for i, c in enumerate(text) if "cmake-js" in c), render)
+        self.assertLess(render, next(i for i, c in enumerate(text) if "playwright" in c))
+        self.assertIn("addon-build", env["RB_HOST_RENDER"])
+        self.assertIn("rb_host_render", env["RB_HOST_RENDER"])
 
     def test_it_reuses_the_copy_the_app_suite_made(self):
         self.fake_repo()

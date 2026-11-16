@@ -318,6 +318,35 @@ static napi_value host_read_snapshot(napi_env env, napi_callback_info info)
     return result;
 }
 
+/* captureRead(max): up to `max` frames from the capture tap (stage 066), as
+ * { samples: Float32Array of 2 x frames (interleaved), firstFrame, dropped }. */
+static napi_value host_capture_read(napi_env env, napi_callback_info info)
+{
+    napi_value args[1];
+    size_t given = 0;
+    rbn_host *h = begin(env, info, 1, args, &given);
+    if (!h || need(env, given, 1, "captureRead") != 0) return NULL;
+    int64_t max = 0;
+    if (rbn_get_int(env, args[0], "max", 0, 1 << 24, &max) != 0) return NULL;
+    napi_value buffer;
+    void *data = NULL;
+    RBN_TRY(napi_create_arraybuffer(env, (size_t)max * 2 * sizeof(float) + sizeof(float), &data, &buffer));
+    uint64_t first = 0;
+    const int n = rb_host_capture_read(h->host, (float *)data, (int)max, &first);
+    if (n < 0) return rbn_throw_host(env, n, "captureRead");
+    rb_host_stats s;
+    const int rc = rb_host_get_stats(h->host, &s);
+    if (rc != RB_HOST_OK) return rbn_throw_host(env, rc, "captureRead");
+    napi_value samples, result;
+    RBN_TRY(napi_create_typedarray(env, napi_float32_array, (size_t)n * 2, buffer, 0, &samples));
+    RBN_TRY(napi_create_object(env, &result));
+    if (rbn_set_value(env, result, "samples", samples) != 0 ||
+        rbn_set_number(env, result, "firstFrame", (double)first) != 0 ||
+        rbn_set_number(env, result, "dropped", (double)s.capture_dropped) != 0)
+        return NULL;
+    return result;
+}
+
 static napi_value host_stats(napi_env env, napi_callback_info info)
 {
     rbn_host *h = begin(env, info, 0, NULL, NULL);
@@ -354,6 +383,8 @@ static napi_value host_stats(napi_env env, napi_callback_info info)
         rbn_set_number(env, result, "commandsRefused", (double)s.commands_refused) != 0 ||
         rbn_set_number(env, result, "swapsOk", (double)s.swaps_ok) != 0 ||
         rbn_set_number(env, result, "eventsLost", (double)s.events_lost) != 0 ||
+        rbn_set_number(env, result, "deviceEvents", (double)s.device_events) != 0 ||
+        rbn_set_number(env, result, "deadlineMissed", (double)s.deadline_missed) != 0 ||
         rbn_set_string(env, result, "priority", s.priority.policy) != 0 ||
         rbn_set_bool(env, result, "boosted", s.priority.boosted != 0) != 0 ||
         rbn_set_number(env, result, "forbiddenCalls", (double)(s.audit_alloc + s.audit_lock + s.audit_log)) != 0 ||
@@ -430,6 +461,7 @@ int rbn_host_class_init(napi_env env)
         {"poll", NULL, host_poll, NULL, NULL, NULL, napi_default_method, NULL},
         {"readSnapshot", NULL, host_read_snapshot, NULL, NULL, NULL, napi_default_method, NULL},
         {"stats", NULL, host_stats, NULL, NULL, NULL, napi_default_method, NULL},
+        {"captureRead", NULL, host_capture_read, NULL, NULL, NULL, napi_default_method, NULL},
         {"selectDevice", NULL, host_select_device, NULL, NULL, NULL, napi_default_method, NULL},
         {"suspend", NULL, host_suspend, NULL, NULL, NULL, napi_default_method, NULL},
         {"resume", NULL, host_resume, NULL, NULL, NULL, napi_default_method, NULL},

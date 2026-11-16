@@ -8,6 +8,8 @@
  *   RB_DEVICE=n              a device index (default backend)
  *   RB_NATIVE_PATH=file      where rb_native.node is (read by the engine process)
  *   RB_USER_DATA=folder      the user-data folder (tests use a temporary one)
+ *   RB_CAPTURE_SECONDS=n     the host's capture tap and the drive's trace, n seconds (1..600):
+ *                            the window's capture-dump writes them to the user-data folder
  */
 import type { BuildChoice, EngineInit } from "../shared/process-messages";
 
@@ -22,5 +24,7 @@ export function engineInitFromEnv(env: Record<string, string | undefined>, build
   if (backend === "null" && (rate === 44100 || rate === 48000)) init.sampleRate = rate;
   const device = env.RB_DEVICE === undefined || env.RB_DEVICE === "" ? NaN : Number(env.RB_DEVICE);
   if (backend === "default" && Number.isInteger(device) && device >= 0) init.device = device;
+  const capture = Number(env.RB_CAPTURE_SECONDS);
+  if (Number.isFinite(capture) && capture >= 1 && capture <= 600) init.captureSeconds = capture;
   return init;
 }

@@ -288,6 +288,95 @@ describe("commands", () => {
     await first;
   });
 
+  it("rebuilds at a chosen quality and scene, keeping the scene but not the quality across presets (stage 066)", async () => {
+    const { store, reply, port } = await connected();
+    let done = store.setQuality("lean");
+    expect(port.sent[0]).toMatchObject({ command: { kind: "load-preset", preset: "i4", quality: "lean", scene: null } });
+    reply(0, {});
+    await done;
+    expect(store.quality).toBe("lean");
+    done = store.setScene("garage");
+    expect(port.sent[1]).toMatchObject({ command: { kind: "load-preset", preset: "i4", quality: "lean", scene: "garage" } });
+    reply(1, {});
+    await done;
+    done = store.loadPreset("v8-flat");
+    expect(port.sent[2]).toMatchObject({ command: { kind: "load-preset", preset: "v8-flat", scene: "garage" } });
+    expect((port.sent[2] as { command: { quality?: string } }).command.quality).toBeUndefined();
+    reply(2, {});
+    await done;
+    expect(store.quality).toBeNull();
+    expect(store.scene).toBe("garage");
+  });
+
+  it("sends the throttle without waiting, and the volume (stage 066)", async () => {
+    const { store, reply, port } = await connected();
+    store.sendThrottle(0.5, true);
+    expect(port.sent[0]).toMatchObject({ command: { kind: "throttle", value: 0.5, live: true } });
+    const done = store.setVolume(0.7);
+    expect(port.sent[1]).toMatchObject({ command: { kind: "volume", value: 0.7 } });
+    reply(1, {});
+    await done;
+    reply(0, { error: { code: "BAD_VALUE", message: "no" } });
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(store.lastError).toContain("BAD_VALUE");
+  });
+
+  it("takes the quality and scene the engine says it built from its hello", async () => {
+    const { store, port } = await connected();
+    port.emit({ ...(hello() as Extract<FromEngine, { type: "hello" }>), build: { preset: "i4", quality: "high", scene: "wall" } });
+    expect(store.quality).toBe("high");
+    expect(store.scene).toBe("wall");
+  });
+
+  it("shows a notice naming the new device when the sound moved by itself (stage 066)", async () => {
+    const { store, port } = await connected();
+    const devices = [{ index: 0, name: "Speakers", isDefault: true, rate: 48000, nativeRate: 48000 }];
+    port.emit({ type: "device", reason: "lost", playing: "Speakers", devices });
+    expect(store.deviceNotice).toBe("The sound device changed: now playing on Speakers.");
+    expect(store.playing).toBe("Speakers");
+    store.dismissDeviceNotice();
+    port.emit({ type: "device", reason: "selected", playing: "Speakers", devices });
+    expect(store.deviceNotice).toBeNull();
+  });
+
+  it("says when the computer falls behind, from the statistics (stage 066)", async () => {
+    const { store, port } = await connected();
+    const stats = (deadlineMissed: number, underruns = 0) => port.emit({ type: "stats", stats: { deadlineMissed, underruns } as never });
+    stats(5);
+    expect(store.fallingBehind).toBe(false); // the first is only a baseline
+    stats(5);
+    expect(store.fallingBehind).toBe(false);
+    stats(9);
+    expect(store.fallingBehind).toBe(true);
+    stats(9, 1);
+    expect(store.fallingBehind).toBe(true);
+    stats(9, 1);
+    expect(store.fallingBehind).toBe(false);
+  });
+
+  it("sends the device and the latency (stage 066)", async () => {
+    const { store, port, reply } = await connected();
+    const a = store.selectDevice(1);
+    expect(port.sent[0]).toMatchObject({ command: { kind: "select-device", index: 1 } });
+    reply(0, {});
+    await a;
+    const b = store.setLatency(40);
+    expect(port.sent[1]).toMatchObject({ command: { kind: "set-latency", ms: 40 } });
+    reply(1, {});
+    await b;
+    expect(store.lastError).toBeNull();
+  });
+
+  it("asks for a capture dump and gives back where the engine wrote it (tests only)", async () => {
+    const { store, port, reply } = await connected();
+    const done = store.captureDump();
+    expect(port.sent[0]).toMatchObject({ command: { kind: "capture-dump" } });
+    reply(0, {});
+    port.emit({ type: "capture", audio: "a.f32", trace: "t.rbtrace", frames: 10, rate: 48000, dropped: 0, interrupted: false });
+    expect(await done).toEqual({ audio: "a.f32", trace: "t.rbtrace", frames: 10, rate: 48000, dropped: 0, interrupted: false });
+  });
+
   it("says plainly that the engine isn't there when a command is sent to nobody", async () => {
     const { store } = setup();
     store.start();

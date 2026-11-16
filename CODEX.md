@@ -4,6 +4,17 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-16: Stage 066, the playable engine (Claude)
+
+- docs/stage-066.md. The app drives like an engine: throttle styles (on/off, ramped, analog
+  key learned from Synapse's controller emulation, trigger, mouse) with the dead-man rule in
+  the engine process (`throttle-guard.ts`); quality, scene, listener, volume (app level
+  `APP_HEADROOM` 0.3), device notice, latency (host remade), sleep/wake, quit fade, the A/B key.
+- Host: a capture tap (`capture_frames`, `rb_host_capture_read`); the engine process records
+  the drive as a trace (`trace-recorder.ts`, `RB_CAPTURE_SECONDS`), and
+  `app/e2e/drive-parity.spec.ts` checks the UI's drive against `rb_host_render`.
+- 🟡 until Bernardo checks his devices and keyboard.
+
 ## 2026-11-16: The V8s' lean tier (Claude)
 
 - Bernardo chose 19.2 kHz pipes for the V8s (stage 127's "The V8s again"). New

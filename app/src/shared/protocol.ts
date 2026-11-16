@@ -8,7 +8,7 @@
  * snapshot once per animation frame, and draws the newest it has. Snapshot
  * bytes travel as a transferred ArrayBuffer (no copy on the way).
  */
-import type { Ack, DeviceInfo, HostStats, ParamInfo, PresetInfo, Quality, TelemetryInfo } from "./addon";
+import type { Ack, DeviceInfo, HostStats, ParamInfo, PresetInfo, Quality, Scene, TelemetryInfo } from "./addon";
 
 export const PROTOCOL_VERSION = 1;
 
@@ -17,8 +17,30 @@ export const PROTOCOL_VERSION = 1;
 export type Command =
   /** a driver's control or a setting, by the core's parameter name */
   | { kind: "set-param"; name: string; value: number }
-  /** a rebuild: prepared off the render thread, swapped in with a fade */
-  | { kind: "load-preset"; preset: string; quality?: Quality }
+  /**
+   * the driver's throttle, 0..1 (stage 066). `live` for the styles the dead-man rule covers (a
+   * ramped key, an analog key, a trigger): the window then sends it at a steady beat, and if
+   * none arrives for 250 ms the engine process ramps the throttle to zero over 100 ms. The
+   * on/off and latched styles send `live: false` and hold.
+   */
+  | { kind: "throttle"; value: number; live: boolean }
+  /**
+   * a rebuild: prepared off the render thread, swapped in with a fade. `quality` absent: the
+   * preset's own tier; `scene` absent or null: the mono listener (stage 066)
+   */
+  | { kind: "load-preset"; preset: string; quality?: Quality; scene?: Scene | null }
+  /**
+   * the volume, 0..VOLUME_MAX (1 is the app's level: real relative loudness between engines,
+   * with headroom). The engine process sets master_gain and keeps it for every rebuild.
+   */
+  | { kind: "volume"; value: number }
+  /** the latency, ms (10..80): the sound restarts with it, and the engine greets the window again */
+  | { kind: "set-latency"; ms: number }
+  /**
+   * tests only: writes the capture tap's audio and the drive's trace (EngineInit.captureSeconds),
+   * then sends a `capture` message; refused when the engine was started without them
+   */
+  | { kind: "capture-dump" }
   | { kind: "select-device"; index: number };
 
 export type ToEngine =
@@ -45,6 +67,10 @@ export type FromEngine =
       devices: DeviceInfo[];
       sampleRate: number;
       preset: string;
+      /** what is built now: the preset, and its quality and scene when chosen (stage 066) */
+      build?: { preset: string; quality?: Quality; scene?: Scene; latencyMs?: number };
+      /** the driver's live settings every build keeps: the volume, and the listener and variant once set */
+      settings?: { volume: number; listener?: number; variant?: number };
       generation: number;
     }
   /** a command's outcome: `ack` once the render thread took it (a rebuild's
@@ -58,4 +84,15 @@ export type FromEngine =
       audioFrame: number;
     }
   | { type: "stats"; stats: HostStats }
+  /**
+   * the sound moved to another device (stage 066): `lost`, the device went away or the system's
+   * default changed and the host followed it, and the window says so (app-design section 15);
+   * `selected`, the user chose it. `playing` names the device now playing.
+   */
+  | { type: "device"; reason: "lost" | "selected"; playing: string; devices: DeviceInfo[] }
+  /**
+   * capture-dump's result: the files written (in the user-data folder), the frames, the blocks
+   * the tap dropped, and whether a device change or sleep broke the trace
+   */
+  | { type: "capture"; audio: string; trace: string; frames: number; rate: number; dropped: number; interrupted: boolean }
   | { type: "state"; state: EngineState; message?: string };

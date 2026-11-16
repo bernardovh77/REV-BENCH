@@ -3,7 +3,7 @@
  * starts it from the main process with utilityProcess.fork; everything that matters is in
  * process.ts (testable) and control.ts.
  */
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { loadAddon } from "./addon-loader";
 import { runEngineProcess, type ParentPortLike } from "./process";
@@ -27,8 +27,10 @@ runEngineProcess({
       loadFake: () => (nodeRequire("./fake-addon.cjs") as { createFakeAddon(): ReturnType<typeof loadAddon> }).createFakeAddon(),
     }),
   setInterval: (callback, ms) => setInterval(callback, ms),
+  setTimeout: (callback, ms) => setTimeout(callback, ms),
   clearInterval: (handle) => clearInterval(handle as NodeJS.Timeout),
   exit: (code) => process.exit(code),
+  writeFile: (path, data) => writeFileSync(path, data),
 });
 
 process.on("uncaughtException", (error) => {
