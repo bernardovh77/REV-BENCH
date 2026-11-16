@@ -26,7 +26,8 @@
   .layout {
     display: grid;
     grid-template-columns: var(--rb-editor-width) 1fr;
-    grid-template-rows: var(--rb-topbar-height) 1fr var(--rb-bottom-height);
+    /* the top bar's row grows when its controls wrap onto a second line, never over the editor */
+    grid-template-rows: minmax(var(--rb-topbar-height), auto) 1fr var(--rb-bottom-height);
     grid-template-areas:
       "top top"
       "left centre"

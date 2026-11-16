@@ -93,6 +93,14 @@ async function launch(options: { bridge?: boolean; preset?: string } = {}) {
 }
 
 describe("the window", () => {
+  it("offers every stereo scene but the pass-by (2026-11-16)", async () => {
+    const { target, settle } = await launch();
+    await settle();
+    const scene = [...target.querySelectorAll("label.select")].find((l) => l.textContent?.includes("Scene"))!.querySelector("select")!;
+    const values = [...scene.options].map((o) => o.value);
+    expect(values).toEqual(["", "asphalt", "grass", "wall", "garage", "dyno", "iso", "cabin"]);
+  });
+
   it("has the four regions of the layout: top bar, editor, centre and charts", async () => {
     const { target } = await launch();
     expect(target.querySelector("header.topbar")).not.toBeNull();

@@ -154,16 +154,21 @@ test("the dead-man rule: a held ramped key lets go when the window is hidden, or
       const end = Date.now() + 1500; // the page's thread blocked: nothing is sent for 1.5 s
       while (Date.now() < end);
     });
-    await sleep(500); // the page beats again, the key still held
+    await sleep(500); // the page runs again, the key still held
     const after = readFileSync((await dump(page)).trace, "utf8");
-    await page.keyboard.up("KeyW");
-    // with W held throughout, the window only ever sent 1: the fall to 0 between is the engine's
+    // with W held, the window only ever sent 1 before the stall: the ramp to 0 is the engine's.
+    // After it the window lets go too (a frame after a long gap), and the throttle stays shut
     const throttles = after.split("\n").filter((l) => l.includes("set throttle")).slice(heldFrom).map((l) => Number(l.split(" ").at(-1)));
     const zero = throttles.indexOf(0);
     expect(zero, throttles.join(" ")).toBeGreaterThan(1);
-    const ramp = throttles.slice(0, zero);
-    expect(ramp.some((v) => v > 0 && v < 1), "a ramp, not a cut").toBe(true);
-    expect(throttles.slice(zero).includes(1), "the window's beat takes the throttle back").toBe(true);
+    expect(throttles.slice(0, zero).some((v) => v > 0 && v < 1), "a ramp, not a cut").toBe(true);
+    expect(throttles.slice(zero).every((v) => v === 0), `nothing reopens it: ${throttles.slice(zero).join(" ")}`).toBe(true);
+    expect(await throttleNow(page)).toBe(0);
+    // a fresh press opens it again
+    await page.keyboard.up("KeyW");
+    await page.keyboard.down("KeyW");
+    await until("pulling after a fresh press", () => throttleNow(page), (v) => v >= 99, 10_000);
+    await page.keyboard.up("KeyW");
 
     // 3. the on/off style holds through a hidden window
     await page.getByLabel("Throttle style").selectOption("onoff");

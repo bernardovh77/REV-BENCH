@@ -86,6 +86,25 @@ At 0.3 the flat-plane peaks about 0.65, 1.8 dB under the soft limiter's knee (0.
 1 m tailpipe place and in some scenes the loudest engines can still reach the limiter; the
 volume (up to 2) is the user's.
 
+**After Bernardo played 0.2.0 (2026-11-16):** the four was too quiet even at full volume, and
+the cabin scene quieter than he wanted, so the engine process trims them (`PRESET_TRIM`,
+`SCENE_TRIM`, the app's, not the core's: the reference renders don't move). The four +10 dB:
+its rev was 17 dB under the cross-plane V8's (90 against 107 dB SPL), and a real 2.0 L four sits
+nearer 8-12 dB under a V8; a stopgap until stage 128's "quiet four" fixes its own sound. The
+cabin scene +6 dB: it was 6 to 15 dB under the 3 m listener (13 dB on the cross-plane V8). The
+pass-by scene sounded wrong in the app and is no longer offered (still in the core). And the top
+bar's row now grows when its controls wrap, instead of spilling over the editor.
+
+**A race in the dead-man test, and what it showed.** It failed about one run in six: Chromium
+doesn't always deliver blur or "hidden" when the window is hidden. The engine still closed the
+throttle, but on showing the window the held key's auto-repeat counted as a press and the ramped
+key rose back to 100 % before the test looked. Fixed in the driver, not the test: a frame after a
+gap of over 250 ms (the window got no frames: hidden, minimised, stalled) lets go; an auto-repeat
+only counts while its own press is current, so after a let-go only a fresh press opens the
+throttle; and letting go drops a live throttle to 0 at once rather than ramping down from where
+the window last had it (which, after a stall, briefly reopened what the engine had closed). Then
+8 runs of 8 passed. The planted-bug tool has these two rules and the trims too: 19 bugs, all caught.
+
 ## The evidence
 
 | Card's evidence | How | Result |

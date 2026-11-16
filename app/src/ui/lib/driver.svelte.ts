@@ -51,6 +51,8 @@ export interface DriverDeps {
 }
 
 export const THROTTLE_KEYS: readonly string[] = ["KeyW", "ArrowUp"];
+/** A gap between frames this long means the window was away (hidden, minimised, stalled). */
+export const FRAME_GAP_MS = 250;
 export const IGNITION_KEY = "KeyI";
 export const STARTER_KEY = "KeyS";
 export const AB_KEY = "KeyB";
@@ -81,6 +83,10 @@ export class Driver {
   /** in blind mode, which variant each side plays: decided when blind mode starts */
   private blindB = 0;
   private starterHeld = false;
+  /** the throttle key's own press is current: after a let-go, only a fresh press counts */
+  private throttlePressed = false;
+  /** the last animation frame's time, to notice a window that stopped getting frames */
+  private lastFrame: number | null = null;
   private started = false;
   private readonly onKeyDown = (event: Event) => this.keyDown(event as unknown as KeyLike);
   private readonly onKeyUp = (event: Event) => this.keyUp(event as unknown as KeyLike);
@@ -146,6 +152,10 @@ export class Driver {
   /** Every animation frame: controllers, the ramped key, the beat. */
   frame(): void {
     const now = this.deps.now();
+    // Chromium gives a hidden or minimised window no frames, and its blur and visibility
+    // events don't always arrive: a frame after a long gap lets go of everything first
+    if (this.lastFrame !== null && now - this.lastFrame > FRAME_GAP_MS) this.letGo();
+    this.lastFrame = now;
     if (this.style === "trigger") {
       const v = this.gamepad.trigger();
       if (v !== null) this.input.analog(v, now);
@@ -206,6 +216,10 @@ export class Driver {
     const now = this.deps.now();
     if (THROTTLE_KEYS.includes(event.code)) {
       event.preventDefault?.();
+      // an auto-repeat of a press the app has let go of (blur, hide, a stalled window) is not a
+      // press: the key must be pressed again to open the throttle
+      if (event.repeat && !this.throttlePressed) return;
+      this.throttlePressed = true;
       this.input.keyDown(now);
     } else if (event.code === IGNITION_KEY && !event.repeat) {
       void this.deps.store.setParam("ignition", this.deps.store.ignition() === 1 ? 0 : 1);
@@ -219,7 +233,10 @@ export class Driver {
 
   private keyUp(event: KeyLike): void {
     const now = this.deps.now();
-    if (THROTTLE_KEYS.includes(event.code)) this.input.keyUp(now);
+    if (THROTTLE_KEYS.includes(event.code)) {
+      this.throttlePressed = false;
+      this.input.keyUp(now);
+    }
     else if (event.code === STARTER_KEY && this.starterHeld) this.releaseStarter();
   }
 
@@ -230,6 +247,7 @@ export class Driver {
 
   /** The window lost the focus or was hidden: let go of everything held. */
   private letGo(): void {
+    this.throttlePressed = false;
     this.input.blur(this.deps.now());
     if (this.starterHeld) this.releaseStarter();
   }

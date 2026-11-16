@@ -5,7 +5,7 @@
   (throttle-input.ts); the keys are the driver's (driver.svelte.ts).
 -->
 <script lang="ts">
-  import { SCENES, type Scene } from "../../shared/addon";
+  import { OFFERED_SCENES, type Scene } from "../../shared/addon";
   import Button from "../components/Button.svelte";
   import Readout from "../components/Readout.svelte";
   import Select from "../components/Select.svelte";
@@ -42,7 +42,7 @@
   let ready = $derived(store.summary === "running");
   let presets = $derived((store.hello?.presets ?? []).map((p) => ({ value: p.key, label: p.name })));
   let places = PLACES.map((label, i) => ({ value: String(i), label }));
-  let scenes = [{ value: "", label: "Mono (no scene)" }, ...SCENES.map((s) => ({ value: s, label: `Stereo: ${SCENE_NAMES[s]}` }))];
+  let scenes = [{ value: "", label: "Mono (no scene)" }, ...OFFERED_SCENES.map((s) => ({ value: s, label: `Stereo: ${SCENE_NAMES[s]}` }))];
 
   function onwheel(event: WheelEvent) {
     if (!ready) return;
@@ -117,9 +117,10 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: var(--rb-space-6);
-    height: 100%;
-    padding: 0 var(--rb-space-5);
+    gap: var(--rb-space-3) var(--rb-space-6);
+    box-sizing: border-box;
+    min-height: 100%;
+    padding: var(--rb-space-3) var(--rb-space-5);
     background: var(--rb-color-surface);
     border-bottom: var(--rb-border-width) solid var(--rb-color-border);
   }

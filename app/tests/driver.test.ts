@@ -50,7 +50,9 @@ function setup(options: { pads?: PadLike[]; random?: number } = {}) {
       driver.frame();
     }
   };
-  return { driver, throttles, params, win, doc, key, run };
+  /** time passes with no frames at all (a hidden window) */
+  const skip = (ms: number) => void (t += ms);
+  return { driver, throttles, params, win, doc, key, run, skip };
 }
 
 describe("keys", () => {
@@ -123,6 +125,37 @@ describe("letting go", () => {
     s.doc.visibilityState = "hidden";
     s.doc.fire("visibilitychange");
     expect(s.throttles.at(-1)).toEqual({ value: 0, live: true });
+  });
+});
+
+describe("when the window's events don't come (2026-11-16)", () => {
+  it("a frame after a long gap lets go, and the key's auto-repeat doesn't open it again", () => {
+    const s = setup();
+    s.key("keydown", "KeyW");
+    s.run(500);
+    expect(s.driver.throttle).toBe(1);
+    // hidden: no frames, no blur, no visibility event; the key still physically down
+    const t = s.driver;
+    s.skip(1500); // the next frame comes 1.5 s later
+    s.run(10);
+    s.key("keydown", "KeyW", { repeat: true });
+    s.run(500);
+    expect(t.throttle).toBe(0);
+    // a fresh press opens it
+    s.key("keyup", "KeyW");
+    s.key("keydown", "KeyW");
+    s.run(500);
+    expect(t.throttle).toBe(1);
+  });
+
+  it("an auto-repeat after a blur is not a press either", () => {
+    const s = setup();
+    s.key("keydown", "KeyW");
+    s.run(200);
+    s.win.fire("blur");
+    s.key("keydown", "KeyW", { repeat: true });
+    s.run(800);
+    expect(s.driver.throttle).toBe(0);
   });
 });
 

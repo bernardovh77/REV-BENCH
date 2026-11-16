@@ -3,7 +3,7 @@
  * rebuild, snapshots forwarded, errors.
  */
 import { describe, expect, it } from "vitest";
-import { APP_HEADROOM, EngineControl, PREPARE_TIMEOUT_MS, VOLUME_MAX, type EnginePort } from "../src/engine/control";
+import { APP_HEADROOM, EngineControl, PREPARE_TIMEOUT_MS, PRESET_TRIM, SCENE_TRIM, VOLUME_MAX, type EnginePort } from "../src/engine/control";
 import { createFakeAddon, addonError } from "../src/engine/fake-addon";
 import type { Addon, BuildSpec, Host } from "../src/shared/addon";
 import type { BuildChoice, EngineInit } from "../src/shared/process-messages";
@@ -396,7 +396,7 @@ describe("the level, the quality and the scene (stage 066)", () => {
 
   it("builds every engine at the app's level, and at the volume after it changes", () => {
     const { addon, specs } = recording();
-    const s = setup({ addon });
+    const s = setup({ addon, build: { preset: "i6" } });
     expect(gainOf(specs[0], addon)).toBe(APP_HEADROOM);
     s.send(1, { kind: "volume", value: 0.5 });
     s.run(10);
@@ -404,6 +404,22 @@ describe("the level, the quality and the scene (stage 066)", () => {
     s.send(2, { kind: "load-preset", preset: "v8-flat" });
     s.run(200);
     expect(gainOf(specs[1], addon)).toBeCloseTo(APP_HEADROOM * 0.5, 12);
+  });
+
+  it("trims the four up 10 dB and the cabin scene up 6 dB, at every volume (Bernardo, 2026-11-16)", () => {
+    const { addon, specs } = recording();
+    const s = setup({ addon });
+    expect(gainOf(specs[0], addon)).toBeCloseTo(APP_HEADROOM * 10 ** 0.5, 12); // the four
+    s.send(1, { kind: "volume", value: 2 });
+    s.run(10);
+    s.send(2, { kind: "load-preset", preset: "v8-cross", scene: "cabin" });
+    s.run(200);
+    expect(gainOf(specs[1], addon)).toBeCloseTo(APP_HEADROOM * 2 * 2, 12);
+    s.send(3, { kind: "load-preset", preset: "v8-cross", scene: "garage" });
+    s.run(200);
+    expect(gainOf(specs[2], addon)).toBeCloseTo(APP_HEADROOM * 2, 12);
+    expect(PRESET_TRIM.i4).toBeCloseTo(3.1623, 4);
+    expect(SCENE_TRIM.cabin).toBe(2);
   });
 
   it("refuses a volume outside 0..VOLUME_MAX", () => {

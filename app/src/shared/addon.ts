@@ -49,6 +49,9 @@ export type Quality = "low" | "medium" | "high" | "ultra" | "balanced" | "lean";
 /** The stereo scenes (RB_SCENE_* lowercased, the add-on's names). */
 export type Scene = "asphalt" | "grass" | "wall" | "garage" | "dyno" | "iso" | "passby" | "cabin";
 export const SCENES: readonly Scene[] = ["asphalt", "grass", "wall", "garage", "dyno", "iso", "passby", "cabin"];
+/** The scenes the interface offers: the pass-by is left out (Bernardo, 2026-11-16: it sounded
+ *  wrong in the app). It stays in the core, the add-on and the protocol. */
+export const OFFERED_SCENES: readonly Scene[] = SCENES.filter((s) => s !== "passby");
 
 export interface ParamInfo {
   id: number;

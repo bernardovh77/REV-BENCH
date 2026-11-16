@@ -6,7 +6,7 @@
  * Bernardo asked on 2026-11-13:
  *
  *   onoff    a key snaps the throttle 0 <-> 100 % on each press; it holds
- *   ramped   held, the throttle rises at a set rate; released, it falls
+ *   ramped   held, the throttle rises at a set rate; released, it falls (let go of on blur or a stall: zero at once)
  *   analog   an analog key's travel
  *   trigger  a controller's analog trigger
  *   latched  the mouse: the slider and the wheel set it; it holds
@@ -104,10 +104,12 @@ export class ThrottleInput {
     this.emit(now);
   }
 
-  /** The window lost focus or was hidden: held keys and analog travel let go. */
+  /** The window lost focus, was hidden or stalled: a live throttle (a held key, analog travel)
+   *  goes to zero at once. Not a ramp: after a stall the engine has already closed it, and a
+   *  fall from where the window last had it would open it again for a moment. */
   blur(now: number): void {
     this.held = false;
-    if (this.style === "analog" || this.style === "trigger") {
+    if (this.live && this.value > 0) {
       this.value = 0;
       this.emit(now);
     }

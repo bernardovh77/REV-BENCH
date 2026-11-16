@@ -17,13 +17,16 @@ BUGS = [
  ("blur-keeps-analog", "src/ui/lib/throttle-input.ts", "      this.value = 0;\n      this.emit(now);\n    }\n  }\n\n  /** Every frame", "    }\n  }\n\n  /** Every frame", "tests/throttle-input.test.ts tests/driver.test.ts"),
  ("no-beat", "src/ui/lib/throttle-input.ts", "if (this.live && this.value > 0 && now - this.lastSent >= BEAT_MS) this.emit(now);", "", "tests/throttle-input.test.ts"),
  ("sticky-not-built", "src/engine/control.ts", "{ ...APP_BUILD_PARAMS, ...this.sticky, master_gain", "{ ...APP_BUILD_PARAMS, master_gain", "tests/engine-control.test.ts"),
- ("volume-not-built", "src/engine/control.ts", "master_gain: APP_HEADROOM * this.volume };", "master_gain: APP_HEADROOM };", "tests/engine-control.test.ts"),
+ ("volume-not-built", "src/engine/control.ts", "master_gain: this.gainFor(choice, this.volume) };", "master_gain: this.gainFor(choice, 1) };", "tests/engine-control.test.ts"),
  ("recorder-keeps-stale", "src/engine/trace-recorder.ts", "    if (ack.outcome !== \"ok\") return;\n", "", "tests/trace-recorder.test.ts"),
  ("swap-at-ack-frame", "src/engine/trace-recorder.ts", "ack.audioFrame - swapFadeFrames(this.rate)", "ack.audioFrame", "tests/trace-recorder.test.ts"),
  ("device-loss-silent", "src/engine/control.ts", "    this.postDevice(\"lost\", -1);\n", "", "tests/engine-control.test.ts"),
  ("no-quit-fade", "src/engine/control.ts", "      host.setParam(param.id, 0);\n    } catch (e) {\n      this.deps.log(\"warn\", `the quit's", "    } catch (e) {\n      this.deps.log(\"warn\", `the quit's", "tests/engine-process.test.ts"),
  ("letgo-on-hide-missing", "src/ui/lib/driver.svelte.ts", "if (this.deps.document.visibilityState !== \"visible\") this.letGo();", "", "tests/driver.test.ts"),
  ("blind-not-blind", "src/ui/lib/driver.svelte.ts", "const candidateSide = this.blind ? (this.blindB ? \"B\" : \"A\") : \"B\";", "const candidateSide = \"B\";", "tests/driver.test.ts"),
+ ("trims-ignored", "src/engine/control.ts", "(PRESET_TRIM[choice.preset] ?? 1)", "1", "tests/engine-control.test.ts"),
+ ("frame-gap-ignored", "src/ui/lib/driver.svelte.ts", "if (this.lastFrame !== null && now - this.lastFrame > FRAME_GAP_MS) this.letGo();", "", "tests/driver.test.ts"),
+ ("repeat-reopens", "src/ui/lib/driver.svelte.ts", "if (event.repeat && !this.throttlePressed) return;", "", "tests/driver.test.ts"),
  ("learn-keeps-pressed", "src/ui/lib/gamepad.ts", "if (pad.buttons[i].value - (rest.buttons[i] ?? 0) >= LEARN_THRESHOLD)", "if (pad.buttons[i].value >= LEARN_THRESHOLD)", "tests/gamepad.test.ts"),
 ]
 

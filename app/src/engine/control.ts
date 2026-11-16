@@ -74,6 +74,16 @@ export const APP_HEADROOM = 0.3;
 export const STICKY_PARAMS: readonly string[] = ["listener", "variant"];
 /** The volume's top: twice the app's level, +6 dB (the loudest engines then reach the limiter). */
 export const VOLUME_MAX = 2;
+/**
+ * Level trims on top of the app's level, by preset and by stereo scene (Bernardo, 2026-11-16,
+ * after playing 0.2.0). They are the app's, not the core's: the reference renders don't change.
+ *   i4     +10 dB: its rev was 17 dB under the cross-plane V8's (90 against 107 dB SPL at 3 m),
+ *          too quiet to hear even at full volume; real 2.0 L fours sit nearer 8-12 dB under a V8.
+ *          A stopgap until stage 128 ("the quiet four") fixes the four's own sound.
+ *   cabin  +6 dB: the cabin scene was 6 to 15 dB under the 3 m listener (13 on the V8).
+ */
+export const PRESET_TRIM: Readonly<Record<string, number>> = { i4: 10 ** (10 / 20) };
+export const SCENE_TRIM: Readonly<Record<string, number>> = { cabin: 2 };
 const QUALITIES: readonly Quality[] = ["low", "medium", "high", "ultra", "balanced", "lean"];
 
 interface Pending {
@@ -239,7 +249,7 @@ export class EngineControl {
 
   /** The add-on's build for a choice: the preset and quality, and the app's driver defaults. */
   private buildSpec(choice: BuildChoice): BuildSpec {
-    const wanted: Record<string, number> = { ...APP_BUILD_PARAMS, ...this.sticky, master_gain: APP_HEADROOM * this.volume };
+    const wanted: Record<string, number> = { ...APP_BUILD_PARAMS, ...this.sticky, master_gain: this.gainFor(choice, this.volume) };
     const params = this.params.filter((p) => p.name in wanted).map((p) => ({ id: p.id, value: wanted[p.name] }));
     return {
       preset: choice.preset,
@@ -364,7 +374,7 @@ export class EngineControl {
           }
           if (!param) return this.reply(id, { error: { code: "UNKNOWN_PARAM", message: 'no parameter "master_gain"' } });
           this.volume = value;
-          const request = host.setParam(param.id, APP_HEADROOM * value);
+          const request = host.setParam(param.id, this.gainFor(this.choice, value));
           this.pending.set(request, { id, epoch: this.epoch });
           return;
         }
@@ -451,6 +461,11 @@ export class EngineControl {
     const devices = this.deps.addon.listDevices(this.deps.config.backend);
     const playing = devices.find((d) => (index >= 0 ? d.index === index : d.isDefault)) ?? devices[0];
     this.port?.post({ type: "device", reason, playing: playing?.name ?? "no device", devices });
+  }
+
+  /** master_gain for a build at a volume: the app's level, and the preset's and scene's trims. */
+  private gainFor(choice: BuildChoice, volume: number): number {
+    return APP_HEADROOM * volume * (PRESET_TRIM[choice.preset] ?? 1) * (choice.scene ? (SCENE_TRIM[choice.scene] ?? 1) : 1);
   }
 
   /** Quitting: the sound fades out; how long to wait before stopping the host (QUIT_FADE_MS). */
