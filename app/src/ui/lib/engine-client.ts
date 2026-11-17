@@ -48,6 +48,8 @@ export interface ClientEvents {
   stats?(stats: HostStats): void;
   /** the sound moved to another device (stage 066) */
   device?(device: Extract<FromEngine, { type: "device" }>): void;
+  /** an engine's values (stage 067): the one playing (request 0) or a describe's answer */
+  description?(description: Extract<FromEngine, { type: "description" }>): void;
   /** a capture-dump's files (tests only) */
   capture?(capture: Extract<FromEngine, { type: "capture" }>): void;
   state?(state: EngineState, message?: string): void;
@@ -107,13 +109,19 @@ export class EngineClient {
 
   /** Sends a command. Resolves with the host's ack (none for a device switch); rejects with a CommandError. */
   command(command: Command): Promise<Ack | undefined> {
+    return this.commandWithId(command).done;
+  }
+
+  /** The same, with the id it was sent with: a message that answers it (a description) names it. */
+  commandWithId(command: Command): { id: number; done: Promise<Ack | undefined> } {
     const port = this.port;
-    if (!port) return Promise.reject(new CommandError("DETACHED", "the engine is not connected"));
     const id = this.nextId++;
-    return new Promise((resolve, reject) => {
+    if (!port) return { id, done: Promise.reject(new CommandError("DETACHED", "the engine is not connected")) };
+    const done = new Promise<Ack | undefined>((resolve, reject) => {
       this.waiting.set(id, { resolve, reject });
       port.postMessage({ type: "command", id, command });
     });
+    return { id, done };
   }
 
   requestSnapshot(): void {
@@ -142,6 +150,9 @@ export class EngineClient {
         return;
       case "capture":
         this.events.capture?.(message);
+        return;
+      case "description":
+        this.events.description?.(message);
         return;
       case "snapshot":
         try {

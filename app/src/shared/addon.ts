@@ -65,6 +65,20 @@ export interface ParamInfo {
   flags: string[];
 }
 
+/** One field of the core's engine description (rb_engine_field_*, stage 067). */
+export interface EngineFieldInfo {
+  id: number;
+  /** rb_engine_field_name: "bore", "header_length", ... */
+  name: string;
+  /** SI: "m", "m^3", "deg", "rpm", ...; "" when it has none */
+  unit: string;
+  /** the range a control offers; null for a read-only field */
+  min: number | null;
+  max: number | null;
+  /** "readonly", "integer", "per-bank", "per-cylinder", "in-order", "live" */
+  flags: string[];
+}
+
 export interface TelemetryInfo {
   id: number;
   name: string;
@@ -201,4 +215,13 @@ export interface Addon {
   telemetry(): TelemetryInfo[];
   listDevices(backend: Backend): DeviceInfo[];
   createHost(config: HostConfig): Host;
+  /** the core's engine fields, in id order (stage 067) */
+  engineFields(): EngineFieldInfo[];
+  /**
+   * The engine a build makes, built as a prepare builds it but never played: each field's
+   * values by id (one value, or one per bank, cylinder or place in the firing order). Throws an
+   * AddonError with the core's code ("RB_ERR_VALUE", "RB_ERR_READONLY", ...) when it can't be
+   * built: one refused edit refuses the whole build.
+   */
+  describe(spec: BuildSpec): number[][];
 }

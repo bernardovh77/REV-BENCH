@@ -261,6 +261,15 @@ int rb_host_prepare_status(rb_host *h, uint64_t prepare_id, int *state, int *cod
 int rb_host_prepare_wait(rb_host *h, uint64_t prepare_id, unsigned timeout_ms);
 /* Throws a READY or FAILED build away. */
 int rb_host_prepare_discard(rb_host *h, uint64_t prepare_id);
+/* Builds `spec` at `rate` exactly as a prepare does (the same edits in the same
+ * order, refused whole if any edit is), without a host and without playing it,
+ * so a caller can read the engine it describes (rb_get_engine, ...) or learn
+ * that it can't be built: stage 067's editor checks a set of edits this way
+ * before asking for the rebuild. NULL, with the core's code and why, when it
+ * can't be built. Free it with rb_host_engine_free. Any thread but the render
+ * thread (it allocates). */
+rb_sim *rb_host_engine_build(const rb_host_build *spec, int rate, int *code, char *why, size_t why_size);
+void    rb_host_engine_free(rb_sim *sim);
 /* Sends "swap in build N". expected_generation 0 means the generation that
  * was active when the build began (so a swap that lost a race is stale);
  * RB_HOST_ANY_GENERATION skips the check. */

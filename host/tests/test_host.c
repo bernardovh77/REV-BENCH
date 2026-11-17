@@ -781,3 +781,39 @@ void test_host_capture_tap_only_when_asked_for(void)
         CHECK(x == NULL);
     }
 }
+
+/* ---- an engine built for reading (stage 067) --------------------------------------- */
+
+void test_host_engine_build_reads_a_build_or_refuses_it_whole(void)
+{
+    /* a build's engine, with its edits, read without a host */
+    rb_host_build b;
+    rb_host_build_default(&b);
+    b.preset = rb_preset_find("i6");
+    b.quality = RB_QUALITY_LOW;
+    rb_host_build_edit(&b, RB_ENG_BORE, 0, 0.090);
+    rb_host_build_edit(&b, RB_ENG_HEADER_LENGTH, 2, 0.75);
+    const int before = rb_host_debug_live_sims();
+    int code = 99;
+    char why[128];
+    rb_sim *sim = rb_host_engine_build(&b, 48000, &code, why, sizeof why);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK_EQ_INT(code, 0);
+    CHECK_NEAR(rb_get_engine(sim, RB_ENG_BORE, 0), 0.090, 0.0);
+    CHECK_NEAR(rb_get_engine(sim, RB_ENG_HEADER_LENGTH, 2), 0.75, 0.0);
+    CHECK_EQ_INT((int)rb_get_engine(sim, RB_ENG_CYLINDERS, 0), 6);
+    CHECK_EQ_INT(rb_host_debug_live_sims(), before + 1);
+    rb_host_engine_free(sim);
+    CHECK_EQ_INT(rb_host_debug_live_sims(), before);
+
+    /* one impossible edit among good ones: no engine at all, and why */
+    rb_host_build_edit(&b, RB_ENG_STROKE, 0, NAN);
+    sim = rb_host_engine_build(&b, 48000, &code, why, sizeof why);
+    CHECK(sim == NULL);
+    CHECK_EQ_INT(code, RB_ERR_VALUE);
+    CHECK(strstr(why, "edit 2") != NULL);
+    CHECK_EQ_INT(rb_host_debug_live_sims(), before);
+    CHECK(rb_host_engine_build(&b, 96000, &code, why, sizeof why) == NULL);
+    CHECK_EQ_INT(code, RB_ERR_ARG);
+}

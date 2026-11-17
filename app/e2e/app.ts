@@ -87,7 +87,9 @@ export function readLog(userData: string): string {
   return existsSync(file) ? readFileSync(file, "utf8") : "";
 }
 
-export function autosaved(userData: string): { version: number; preset: string; quality?: string } | null {
+export function autosaved(
+  userData: string,
+): { version: number; preset: string; quality?: string; scene?: string; edits?: { field: string; index: number; value: number }[] } | null {
   const file = join(userData, "session", "build.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
 }

@@ -18,6 +18,7 @@ import type {
   Backend,
   BuildSpec,
   DeviceInfo,
+  EngineFieldInfo,
   Host,
   HostConfig,
   HostStats,
@@ -78,6 +79,10 @@ const PARAM_ROWS: [string, string, number, number, number, string[]][] = [
   // stage 066's sticky settings (the core's ids differ; the fake's are its own)
   ["listener", "", 0, 4, 1, ["integer"]],
   ["variant", "", 0, 7, 0, ["integer"]],
+  ["layers", "", 1, 7, 7, ["integer"]],
+  // stage 067's engine-computer settings
+  ["afr", "", 10, 20, 14.596, []],
+  ["spark_offset", "deg", -15, 15, 0, []],
 ];
 const PARAMS: ParamInfo[] = PARAM_ROWS.map(([name, unit, min, max, def, flags], id) => ({
   id,
@@ -93,6 +98,40 @@ const TELEMETRY_UNITS: Record<string, string> = {
   spark: "deg", throttle_area: "m^2", overrun_time: "s", load_torque: "N m", crank_inertia: "kg m^2",
   air_flow: "kg/s", fuel_flow: "kg/s", exhaust_temperature: "K", tailpipe_temperature: "K",
 };
+/** A few of the core's engine fields, as the fake knows them (its ids are its own). */
+const ENGINE_FIELDS: EngineFieldInfo[] = (
+  [
+    ["cylinders", "", null, null, ["readonly", "integer"]],
+    ["bore", "m", 0.04, 0.15, []],
+    ["stroke", "m", 0.04, 0.15, []],
+    ["compression_ratio", "", 6, 16, []],
+    ["displacement", "m^3", null, null, ["readonly"]],
+    ["header_length", "m", 0.1, 2.5, ["per-cylinder"]],
+    ["idle_rpm", "rpm", 0, 2000, ["live"]],
+    ["rev_limit", "rpm", 1000, 12000, ["live"]],
+    ["muffler_type", "", 0, 2, ["integer"]],
+  ] as const
+).map(([name, unit, min, max, flags], id) => ({ id, name, unit, min, max, flags: [...flags] }));
+
+/** The fake's engine: the preset's cylinders, the rest the same for every preset. */
+function fakeDescribe(spec: BuildSpec): number[][] {
+  if (!PRESETS.some((p) => p.key === spec.preset)) throw addonError("RB_ERR_ID", `no preset "${spec.preset}"`);
+  const n = CYLINDERS[spec.preset];
+  const values: number[][] = [[n], [0.086], [0.086], [10.5], [0], new Array(n).fill(0.5), [800], [6800], [1]];
+  for (const e of spec.edits ?? []) {
+    const field = ENGINE_FIELDS[e.field];
+    if (!field) throw addonError("RB_ERR_ID", `no engine field ${e.field}`);
+    if (field.flags.includes("readonly")) throw addonError("RB_ERR_READONLY", `${field.name} is read-only`);
+    if (!Number.isFinite(e.value) || (field.flags.includes("integer") && !Number.isInteger(e.value))) {
+      throw addonError("RB_ERR_VALUE", `${field.name}: ${e.value}`);
+    }
+    if (!(e.index >= 0 && e.index < values[e.field].length)) throw addonError("RB_ERR_ARG", `${field.name}[${e.index}]`);
+    values[e.field][e.index] = Math.min(field.max!, Math.max(field.min!, e.value));
+  }
+  values[4] = [(Math.PI / 4) * values[1][0] ** 2 * values[2][0] * n];
+  return values;
+}
+
 const TELEMETRY: TelemetryInfo[] = INSTRUMENT_NAMES.map((name, id) => ({
   id,
   name,
@@ -451,6 +490,8 @@ export function createFakeAddon(options: FakeOptions = {}): Addon {
     presets: () => PRESETS.map((p) => ({ ...p })),
     params: () => PARAMS.map((p) => ({ ...p, flags: [...p.flags] })),
     telemetry: () => TELEMETRY.map((t) => ({ ...t })),
+    engineFields: () => ENGINE_FIELDS.map((f) => ({ ...f, flags: [...f.flags] })),
+    describe: (spec) => fakeDescribe(spec),
     listDevices: (backend) => devicesFor(backend).map((d) => ({ ...d })),
     createHost(config: HostConfig): Host {
       if (!PRESETS.some((p) => p.key === config.initial.preset)) {

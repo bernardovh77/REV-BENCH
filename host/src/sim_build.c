@@ -91,6 +91,21 @@ rb_sim *rbh_build_sim(const rb_host_build *spec, double rate, int *code, char *w
     return sim;
 }
 
+rb_sim *rb_host_engine_build(const rb_host_build *spec, int rate, int *code, char *why, size_t why_size)
+{
+    if (rate != 44100 && rate != 48000) {
+        if (code) *code = RB_ERR_ARG;
+        if (why && why_size) snprintf(why, why_size, "a rate of %d: 44100 or 48000", rate);
+        return NULL;
+    }
+    return rbh_build_sim(spec, (double)rate, code, why, why_size);
+}
+
+void rb_host_engine_free(rb_sim *sim)
+{
+    rbh_sim_destroy(sim);
+}
+
 void rbh_sim_destroy(rb_sim *sim)
 {
     if (!sim) return;

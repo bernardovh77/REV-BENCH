@@ -56,6 +56,7 @@ void test_host_statistics_deadline_histogram_and_ring_fill(void);
 void test_host_capture_tap_is_what_the_device_was_given(void);
 void test_host_capture_tap_counts_the_blocks_it_drops(void);
 void test_host_capture_tap_only_when_asked_for(void);
+void test_host_engine_build_reads_a_build_or_refuses_it_whole(void);
 
 /* ---- swaps (test_swap.c) ---- */
 void test_swap_installs_the_new_engine_and_frees_the_old_one(void);
@@ -136,6 +137,7 @@ static const test_entry TESTS[] = {
     T(test_host_capture_tap_is_what_the_device_was_given),
     T(test_host_capture_tap_counts_the_blocks_it_drops),
     T(test_host_capture_tap_only_when_asked_for),
+    T(test_host_engine_build_reads_a_build_or_refuses_it_whole),
     T(test_swap_installs_the_new_engine_and_frees_the_old_one),
     T(test_swap_fades_without_a_click),
     T(test_swap_failed_preparation_leaves_the_running_engine_untouched),

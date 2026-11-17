@@ -205,7 +205,9 @@ export class EngineSupervisor<Port> {
         this.setStatus("running");
         return;
       case "build": {
-        const choice: BuildChoice = { preset: message.preset, ...(message.quality ? { quality: message.quality } : {}) };
+        // the whole build: preset, quality, scene, latency and the editor's edits (until 2026-11-17
+        // only the preset and quality were kept, so a restart lost the scene and latency)
+        const { type: _type, ...choice } = message;
         try {
           this.deps.autosave.save(choice);
         } catch (e) {

@@ -10,7 +10,7 @@ import { addon, throwsCode } from "./helpers.mjs";
 const QUALITIES = ["low", "medium", "high", "ultra", "balanced", "lean"];
 
 test("the module exports exactly the Addon of addon.ts", () => {
-  assert.deepEqual(Object.keys(addon).sort(), ["createHost", "listDevices", "params", "presets", "telemetry", "version"]);
+  assert.deepEqual(Object.keys(addon).sort(), ["createHost", "describe", "engineFields", "listDevices", "params", "presets", "telemetry", "version"]);
   for (const name of Object.keys(addon)) assert.equal(typeof addon[name], "function", name);
 });
 

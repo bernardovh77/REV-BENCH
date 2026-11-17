@@ -507,6 +507,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     e->afr = RB_AFR_STOICH;
     e->spark = RB_SPARK_DEFAULT;
     e->spark_map = 1;
+    e->spark_offset = 0.0;
     e->throttle_area_pos = NAN;   /* not computed yet */
     rb_gas_init(&e->fuel_gas, FUEL);
     e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));
@@ -964,12 +965,11 @@ static double idle_heading(const rb_engine *e)
 #define IDLE_SPARK_GAIN 0.3       /* deg more per rpm below it                   */
 #define IDLE_SPARK_BAND 400.0     /* rpm above the idle speed where idling ends  */
 
-/* The spark advance the engine computer chooses for a cycle. */
-static double computer_spark(const rb_engine *e, double duration, double kernel_delay, double rpm)
+/* The spark advance the engine computer's map gives for a cycle: at idle,
+ * on the overrun, or the best torque's. */
+static double mapped_spark(const rb_engine *e, double duration, double kernel_delay)
 {
     const rb_engine_desc *d = &e->desc;
-    if (!e->hold_speed && rpm < d->cranking_rpm) return d->cranking_spark;
-    if (!e->spark_map) return e->spark;
     const double best = mbt_advance(e, duration, kernel_delay);
     if (!e->hold_speed && d->idle_rpm > 0.0 && e->throttle_pos < 0.01
         && e->rpm_smooth < d->idle_rpm + IDLE_SPARK_BAND) {
@@ -983,6 +983,18 @@ static double computer_spark(const rb_engine *e, double duration, double kernel_
     const double phase = e->overrun_transition > 0.0
                        ? fmin(e->overrun_time / e->overrun_transition, 1.0) : 0.0;
     return best - e->overrun_retard * phase;
+}
+
+/* The spark advance the engine computer chooses for a cycle: the cranking
+ * spark while the starter turns it, the fixed spark with the map off, else
+ * the map's plus the driver's offset (RB_PARAM_SPARK_OFFSET). */
+static double computer_spark(const rb_engine *e, double duration, double kernel_delay, double rpm)
+{
+    const rb_engine_desc *d = &e->desc;
+    if (!e->hold_speed && rpm < d->cranking_rpm) return d->cranking_spark;
+    if (!e->spark_map) return e->spark;
+    const double mapped = mapped_spark(e, duration, kernel_delay);
+    return e->spark_offset != 0.0 ? mapped + e->spark_offset : mapped;
 }
 
 /* Intake valve closing: the charge is trapped. Inject the fuel for the

@@ -237,6 +237,9 @@ void test_api_snapshot(void);
 void test_api_events(void);
 void test_api_events_share_a_step(void);
 void test_api_variant(void);
+void test_api_afr_and_spark_offset(void);
+void test_editor_every_field_has_an_effect(void);
+void test_api_listen_changes_restart_the_histories(void);
 /* ---- layouts, presets and the engine API (tests/test_presets.c) ---- */
 void test_presets_table(void);
 void test_presets_fire_where_the_layout_says(void);
@@ -535,6 +538,9 @@ static const struct {
     T(test_api_cylinder_state),
     T(test_api_pipes),
     T(test_api_variant),
+    T(test_api_afr_and_spark_offset),
+    T(test_editor_every_field_has_an_effect),
+    T(test_api_listen_changes_restart_the_histories),
     T(test_dyno_holds_a_speed),
     T(test_dyno_sweeps),
     T(test_dyno_only_absorbs),

@@ -25,6 +25,8 @@ NAPI_MODULE_INIT()
         export_function(env, exports, "params", rbn_params) != 0 ||
         export_function(env, exports, "telemetry", rbn_telemetry) != 0 ||
         export_function(env, exports, "listDevices", rbn_list_devices) != 0 ||
+        export_function(env, exports, "engineFields", rbn_engine_fields) != 0 ||
+        export_function(env, exports, "describe", rbn_describe) != 0 ||
         export_function(env, exports, "createHost", rbn_create_host) != 0)
         return NULL;
     return exports;

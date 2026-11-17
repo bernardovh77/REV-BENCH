@@ -36,6 +36,41 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       expect(v.nodeApi).toBeGreaterThan(0);
     });
 
+    it("lists the engine's fields from the core, each with a unit, a range or none, and flags (stage 067)", () => {
+      const fields = env.make().engineFields();
+      const byName = new Map(fields.map((f) => [f.name, f]));
+      fields.forEach((f, i) => expect(f.id).toBe(i));
+      for (const name of ["cylinders", "bore", "stroke", "compression_ratio", "displacement", "header_length", "idle_rpm", "rev_limit"]) {
+        expect(byName.has(name), name).toBe(true);
+      }
+      expect(byName.get("bore")).toMatchObject({ unit: "m", flags: [] });
+      expect(byName.get("bore")!.min!).toBeLessThan(byName.get("bore")!.max!);
+      expect(byName.get("displacement")).toMatchObject({ min: null, max: null });
+      expect(byName.get("displacement")!.flags).toContain("readonly");
+      expect(byName.get("header_length")!.flags).toContain("per-cylinder");
+      expect(byName.get("idle_rpm")!.flags).toContain("live");
+    });
+
+    it("describes a build's engine with its edits, or refuses the whole build (stage 067)", () => {
+      const addon = env.make();
+      const id = (name: string) => addon.engineFields().find((f) => f.name === name)!.id;
+      const plain = addon.describe({ preset: "i6" });
+      expect(plain[id("cylinders")]).toEqual([6]);
+      expect(plain[id("header_length")]).toHaveLength(6);
+      const edited = addon.describe({ preset: "i6", edits: [{ field: id("bore"), index: 0, value: 0.09 }, { field: id("header_length"), index: 3, value: 0.8 }] });
+      expect(edited[id("bore")][0]).toBe(0.09);
+      expect(edited[id("header_length")][3]).toBe(0.8);
+      expect(edited[id("displacement")][0]).toBeGreaterThan(plain[id("displacement")][0]);
+      // a value past the range is clamped to its end
+      const big = addon.describe({ preset: "i6", edits: [{ field: id("bore"), index: 0, value: 9 }] });
+      expect(big[id("bore")][0]).toBe(addon.engineFields()[id("bore")].max);
+      // one bad edit among good ones: the build is refused whole, with the core's code
+      expect(() => addon.describe({ preset: "i6", edits: [{ field: id("bore"), index: 0, value: 0.09 }, { field: id("stroke"), index: 0, value: Number.NaN }] }))
+        .toThrow(expect.objectContaining({ code: "RB_ERR_VALUE" }));
+      expect(() => addon.describe({ preset: "i6", edits: [{ field: id("displacement"), index: 0, value: 0.003 }] }))
+        .toThrow(expect.objectContaining({ code: "RB_ERR_READONLY" }));
+    });
+
     it("lists the presets, with a key, a name and a quality each", () => {
       const presets = env.make().presets();
       expect(presets.length).toBeGreaterThan(0);

@@ -287,6 +287,23 @@ Where this file and the code disagree, the code is right and this file is fixed.
     (`test_api_variant`).
   - `rb_bench_render --cores` pins with `sched_setaffinity` on Linux only; macOS has no such
     call, and there it says it could not set the affinity.
+- **Stage 067** (the editor, docs/stage-067.md):
+  - **`RB_PARAM_AFR`** (10..20, live, a setting rebuilds keep; default 14.596, the
+    stoichiometric) into the engine's `afr`, the injectors' target; **`RB_PARAM_SPARK_OFFSET`**
+    (deg, −15..15, live, a setting; default 0) into `spark_offset`, which `engine.c`'s
+    `computer_spark` adds to the map's advance (idle and overrun included, the cranking spark
+    and a fixed `spark` not). At 0 the map's value comes back untouched, so renders are bit for
+    bit (`cli_parity`: 11 of 11). `test_api_afr_and_spark_offset`.
+  - **Every editable field has an effect** (`tests/test_editor_fields.c`, the core's own field
+    list on a cross-plane V8 and a four): a measured change of sound, torque, idle speed or
+    limiter cuts; a valid range; the old value back restores the description; the geometry
+    holds. Fixed by the layout (no single change accepted): a cylinder's `bank`, and
+    `exhaust_systems`. No effect, stated and held to: `position` (for the 3D view), and
+    `bank_angle` on one bank. Context: the muffler's volume and length need a muffler.
+  - The listener's histories restart on a live change of place or layers (`rb_sim_listen`
+    primes them): `test_api_listen_changes_restart_the_histories`.
+  - The host's `rb_host_engine_build`/`rb_host_engine_free`: an engine built exactly as a
+    prepare builds it, for reading (the editor's preview and the add-on's `describe`).
 
 ## Tools and charts
 

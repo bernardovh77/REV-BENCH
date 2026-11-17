@@ -152,3 +152,91 @@ napi_value rbn_list_devices(napi_env env, napi_callback_info info)
     }
     return list;
 }
+
+/* ---- the engine's description (stage 067) ------------------------------------------- */
+
+/* An engine field's flags as words (addon.ts's EngineFieldInfo.flags). */
+static napi_value engine_flag_words(napi_env env, int flags)
+{
+    napi_value list;
+    RBN_TRY(napi_create_array(env, &list));
+    uint32_t n = 0;
+    static const struct {
+        int         bit;
+        const char *word;
+    } WORDS[] = {{RB_EF_READONLY, "readonly"},       {RB_EF_INTEGER, "integer"},
+                 {RB_EF_PER_BANK, "per-bank"},       {RB_EF_PER_CYLINDER, "per-cylinder"},
+                 {RB_EF_IN_ORDER, "in-order"},       {RB_EF_LIVE, "live"}};
+    for (size_t i = 0; i < sizeof WORDS / sizeof WORDS[0]; i++) {
+        if (!(flags & WORDS[i].bit)) continue;
+        napi_value word;
+        RBN_TRY(napi_create_string_utf8(env, WORDS[i].word, NAPI_AUTO_LENGTH, &word));
+        RBN_TRY(napi_set_element(env, list, n++, word));
+    }
+    return list;
+}
+
+/* engineFields(): every field the core describes an engine by, with its unit,
+ * range (null for a read-only one) and flags, in id order. */
+napi_value rbn_engine_fields(napi_env env, napi_callback_info info)
+{
+    (void)info;
+    const int count = rb_engine_field_count();
+    napi_value list;
+    RBN_TRY(napi_create_array_with_length(env, (size_t)count, &list));
+    for (int id = 0; id < count; id++) {
+        const char *name = rb_engine_field_name(id);
+        if (!name) return rbn_throw_core(env, RB_ERR_ID, "reading an engine field");
+        napi_value item;
+        RBN_TRY(napi_create_object(env, &item));
+        if (rbn_set_number(env, item, "id", id) != 0 || rbn_set_string(env, item, "name", name) != 0 ||
+            rbn_set_string(env, item, "unit", rb_engine_field_unit(id)) != 0)
+            return NULL;
+        const double lo = rb_engine_field_min(id), hi = rb_engine_field_max(id);
+        if (lo == lo && hi == hi) {   /* not NaN: the field can be set */
+            if (rbn_set_number(env, item, "min", lo) != 0 || rbn_set_number(env, item, "max", hi) != 0) return NULL;
+        } else if (rbn_set_null(env, item, "min") != 0 || rbn_set_null(env, item, "max") != 0) {
+            return NULL;
+        }
+        napi_value flags = engine_flag_words(env, rb_engine_field_flags(id));
+        if (!flags || rbn_set_value(env, item, "flags", flags) != 0) return NULL;
+        RBN_TRY(napi_set_element(env, list, (uint32_t)id, item));
+    }
+    return list;
+}
+
+/* describe(spec): the engine a build makes, built as the host's prepare builds
+ * it (rb_host_engine_build) but never played: every field's values, by id, as
+ * [[v0, v1, ...], ...]. A build that can't be made throws, with the core's code
+ * and why, and nothing anywhere has changed. */
+napi_value rbn_describe(napi_env env, napi_callback_info info)
+{
+    napi_value args[1];
+    size_t given = 0;
+    if (rbn_get_args(env, info, 1, args, &given, NULL) != 0) return NULL;
+    if (given < 1) return rbn_throw(env, "RB_HOST_ERR_ARG", "describe needs a build");
+    rb_host_build spec;
+    if (rbn_parse_build(env, args[0], "spec", &spec) != 0) return NULL;
+    int code = 0;
+    char why[160];
+    rb_sim *sim = rb_host_engine_build(&spec, 48000, &code, why, sizeof why);
+    if (!sim) return rbn_throw(env, rbn_core_code_name(code), "the engine can't be built: %s", why);
+    const int count = rb_engine_field_count();
+    napi_value list;
+    if (napi_create_array_with_length(env, (size_t)count, &list) != napi_ok) {
+        rb_host_engine_free(sim);
+        return NULL;
+    }
+    for (int id = 0; id < count; id++) {
+        const int size = rb_engine_field_size(sim, id);
+        napi_value values;
+        if (napi_create_array_with_length(env, (size_t)(size > 0 ? size : 0), &values) != napi_ok) break;
+        for (int k = 0; k < size; k++) {
+            napi_value v = rbn_number(env, rb_get_engine(sim, id, k));
+            if (!v || napi_set_element(env, values, (uint32_t)k, v) != napi_ok) break;
+        }
+        if (napi_set_element(env, list, (uint32_t)id, values) != napi_ok) break;
+    }
+    rb_host_engine_free(sim);
+    return list;
+}

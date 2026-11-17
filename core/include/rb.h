@@ -164,6 +164,13 @@ typedef enum rb_param {
                                    number no candidate uses plays the
                                    accepted sound. Live: it switches while
                                    the engine runs, for A/B listening      */
+    RB_PARAM_AFR,               /* the air-fuel ratio (by mass) the
+                                   injectors aim for; 14.596, the
+                                   stoichiometric, by default (stage 067) */
+    RB_PARAM_SPARK_OFFSET,      /* deg added to the spark advance the
+                                   engine computer chooses (its map, idle
+                                   and overrun); 0 by default. Not the
+                                   cranking spark (stage 067)             */
     RB_PARAM_COUNT
 } rb_param;
 

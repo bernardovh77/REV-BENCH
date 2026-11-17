@@ -296,6 +296,8 @@ typedef struct rb_engine {
                              * 0: the spark comes at `spark`                          */
     double spark;           /* spark advance, crank degrees before firing TDC, used
                              * when spark_map is 0                                     */
+    double spark_offset;    /* degrees added to the advance the engine computer chooses
+                             * (stage 067: the editor's spark-map offset; 0 default)   */
     double theta;           /* degrees, cylinder 1's crank angle in the cycle          */
     long   cycles;          /* cycles completed since rb_engine_init                    */
     rb_engine_cycle result; /* the last completed cycle                                */

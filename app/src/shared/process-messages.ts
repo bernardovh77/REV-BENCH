@@ -6,6 +6,15 @@
  */
 import type { Backend, Quality, Scene } from "./addon";
 
+/** One change to the engine's description, by the core's field name (stage 067): names stay
+ *  meaningful across versions, where ids may not. `index` is the bank, cylinder or place in the
+ *  firing order for the fields that have one value each, else 0. */
+export interface EngineEdit {
+  field: string;
+  index: number;
+  value: number;
+}
+
 /** What the engine process builds first (and what the autosave keeps). */
 export interface BuildChoice {
   preset: string;
@@ -15,6 +24,8 @@ export interface BuildChoice {
   /** the latency setting, ms (the host's ring target); absent: the host's 20. An audio setting
    *  rather than part of the engine, kept with the build so a restart comes back with it. */
   latencyMs?: number;
+  /** the editor's changes to the preset's engine, in the order they were made (stage 067) */
+  edits?: EngineEdit[];
 }
 
 export interface EngineInit {

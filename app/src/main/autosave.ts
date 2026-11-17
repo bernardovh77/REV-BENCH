@@ -9,11 +9,17 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { SCENES, type Quality } from "../shared/addon";
-import type { BuildChoice } from "../shared/process-messages";
+import type { BuildChoice, EngineEdit } from "../shared/process-messages";
 
 const QUALITIES: readonly string[] = ["low", "medium", "high", "ultra", "balanced", "lean"] satisfies Quality[];
 
 export const DEFAULT_BUILD: BuildChoice = { preset: "i4" };
+
+function isEdit(e: unknown): boolean {
+  const x = e as Partial<EngineEdit> | null;
+  return typeof x === "object" && x !== null && typeof x.field === "string" && Number.isInteger(x.index)
+    && (x.index as number) >= 0 && typeof x.value === "number" && Number.isFinite(x.value);
+}
 
 export class Autosave {
   constructor(private readonly file: string) {}
@@ -26,7 +32,7 @@ export class Autosave {
       return null;
     }
     if (typeof parsed !== "object" || parsed === null) return null;
-    const { version, preset, quality, scene, latencyMs } = parsed as Record<string, unknown>;
+    const { version, preset, quality, scene, latencyMs, edits } = parsed as Record<string, unknown>;
     if (version !== 1 || typeof preset !== "string" || preset === "") return null;
     // a quality or scene it doesn't know is dropped, the preset kept
     const known = <T extends string>(v: unknown, list: readonly T[]): v is T => typeof v === "string" && (list as readonly string[]).includes(v);
@@ -35,6 +41,9 @@ export class Autosave {
       ...(known(quality, QUALITIES as readonly Quality[]) ? { quality } : {}),
       ...(known(scene, SCENES) ? { scene } : {}),
       ...(typeof latencyMs === "number" && Number.isInteger(latencyMs) && latencyMs >= 10 && latencyMs <= 80 ? { latencyMs } : {}),
+      // the editor's edits, if every one is well formed (whether the core still takes them is the
+      // engine's to say when it builds)
+      ...(Array.isArray(edits) && edits.length && edits.every(isEdit) ? { edits: edits as EngineEdit[] } : {}),
     };
   }
 

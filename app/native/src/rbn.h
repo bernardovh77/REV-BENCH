@@ -127,6 +127,9 @@ napi_value rbn_presets(napi_env env, napi_callback_info info);
 napi_value rbn_params(napi_env env, napi_callback_info info);
 napi_value rbn_telemetry(napi_env env, napi_callback_info info);
 napi_value rbn_list_devices(napi_env env, napi_callback_info info);
+/* The engine's fields (rb_engine_field_*) and a build's description (stage 067). */
+napi_value rbn_engine_fields(napi_env env, napi_callback_info info);
+napi_value rbn_describe(napi_env env, napi_callback_info info);
 
 /* The Host class and createHost (rbn_host.c). */
 napi_value rbn_create_host(napi_env env, napi_callback_info info);

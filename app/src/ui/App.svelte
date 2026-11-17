@@ -8,6 +8,7 @@
   import { untrack } from "svelte";
   import AppLayout from "./layout/AppLayout.svelte";
   import { Driver } from "./lib/driver.svelte";
+  import { Editor } from "./lib/editor.svelte";
   import type { EngineStore } from "./lib/engine-store.svelte";
   import type { PadLike } from "./lib/gamepad";
   import BottomPanel from "./panels/BottomPanel.svelte";
@@ -37,6 +38,25 @@
     now: () => performance.now(),
   });
 
+  // the engine editor's draft, history and units (stage 067)
+  const editor = new Editor({
+    get engineFields() {
+      return store.engineFields;
+    },
+    get engineValues() {
+      return store.engineValues;
+    },
+    get engineEdits() {
+      return store.engineEdits;
+    },
+    get preset() {
+      return store.preset;
+    },
+    applyEdits: (edits) => store.applyEdits(edits),
+    editLive: (edit) => store.editLive(edit),
+    describeEdits: (edits) => store.describeEdits(edits),
+  });
+
   $effect(() => {
     document.documentElement.dataset.theme = theme;
   });
@@ -59,7 +79,7 @@
     <TopBar {store} {driver} {theme} ontoggletheme={() => (theme = theme === "dark" ? "light" : "dark")} />
   {/snippet}
   {#snippet left()}
-    <EditorPanel />
+    <EditorPanel {store} {editor} />
   {/snippet}
   {#snippet centre()}
     <CentrePanel {store} {driver} />

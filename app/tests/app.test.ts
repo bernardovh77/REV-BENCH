@@ -109,6 +109,61 @@ describe("the window", () => {
     expect(button("Use Lean")).toBeDefined(); // the six's tier is low: lean is the next cheaper
   });
 
+  it("edits the engine: a draft applied as one rebuild, a live field at once, undo (stage 067)", async () => {
+    const { target, settle, store } = await launch({ preset: "i6" });
+    await settle(100);
+    const editor = target.querySelector("aside")!;
+    const field = (name: string) => editor.querySelector(`[data-field="${name}"]`)!;
+    const input = (name: string, i = 0) => field(name).querySelectorAll("input")[i] as HTMLInputElement;
+    // the core's values, in the editor's units: an 86 mm bore
+    expect(input("bore").value).toBe("86");
+    expect(field("bore").textContent).toContain("rebuild");
+    expect(field("idle_rpm").textContent).toContain("live");
+    // a rebuild field joins the draft; nothing changes until Apply
+    input("bore").value = "90";
+    input("bore").dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(50);
+    expect(editor.textContent).toContain("1 change waits for a rebuild");
+    expect(store.engineEdits).toEqual([]);
+    const button = (name: string) => [...editor.querySelectorAll("button")].find((b) => b.textContent?.trim() === name)!;
+    button("Apply").click();
+    await settle(400);
+    expect(store.engineEdits).toEqual([{ field: "bore", index: 0, value: 0.09 }]);
+    expect(editor.textContent).not.toContain("waits for a rebuild");
+    // a live field changes the running engine at once
+    input("idle_rpm").value = "950";
+    input("idle_rpm").dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(50);
+    expect(store.engineEdits).toContainEqual({ field: "idle_rpm", index: 0, value: 950 });
+    // undo: the idle speed, then the bore
+    button("Undo").click();
+    await settle(400);
+    expect(store.engineEdits).toEqual([{ field: "bore", index: 0, value: 0.09 }]);
+    button("Undo").click();
+    await settle(400);
+    expect(store.engineEdits).toEqual([]);
+    expect(input("bore").value).toBe("86");
+  });
+
+  it("shows imperial units on request, sending SI all the same", async () => {
+    const { target, settle, store } = await launch({ preset: "i6" });
+    await settle(100);
+    const editor = target.querySelector("aside")!;
+    const units = editor.querySelector("select")!;
+    units.value = "imperial";
+    units.dispatchEvent(new Event("change", { bubbles: true }));
+    flushSync();
+    const bore = editor.querySelector('[data-field="bore"] input') as HTMLInputElement;
+    expect(bore.value).toBe("3.39"); // 86 mm
+    bore.value = "3.5";
+    bore.dispatchEvent(new Event("change", { bubbles: true }));
+    await settle(50);
+    const button = [...editor.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Apply")!;
+    button.click();
+    await settle(400);
+    expect(store.engineEdits[0].value).toBeCloseTo(3.5 * 0.0254, 12);
+  });
+
   it("offers nothing cheaper when the engine already plays at the cheapest quality", async () => {
     const { target, settle, store } = await launch({ preset: "v8-flat" }); // its tier: lean
     await settle();

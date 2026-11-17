@@ -161,6 +161,8 @@ int rb_sim_apply(rb_sim *sim, int id)
     case RB_PARAM_VARIANT:
         sim->variant = (int)v;
         break;
+    case RB_PARAM_AFR:          e->afr = v; break;
+    case RB_PARAM_SPARK_OFFSET: e->spark_offset = v; break;
     default: break;   /* the gain and the test tone: read where they're used */
     }
     return RB_OK;

@@ -89,9 +89,11 @@
   /* the top bar's status slot (the "can't keep up" warning): fixed, so it never moves the bar */
   --rb-status-width: 240px;
   --rb-topbar-height: 64px;
-  --rb-editor-width: 280px;
+  --rb-editor-width: 340px;
   --rb-bottom-height: 220px;
   --rb-slider-width: 160px;
+  /* the editor's number entries (stage 067) */
+  --rb-number-width: 76px;
   --rb-readout-width: 88px;
   --rb-select-width: 200px;
   --rb-notice-max-width: 640px;

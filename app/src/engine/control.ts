@@ -13,8 +13,8 @@
  * add-on. The window's port is an `EnginePort`, so Electron's MessagePortMain and the tests'
  * in-memory ports both fit.
  */
-import { SCENES, type Ack, type Addon, type BuildSpec, type Host, type ParamInfo, type PresetInfo, type Quality, type Scene } from "../shared/addon";
-import type { BuildChoice, EngineInit } from "../shared/process-messages";
+import { SCENES, type Ack, type Addon, type BuildSpec, type EngineFieldInfo, type Host, type ParamInfo, type PresetInfo, type Quality, type Scene } from "../shared/addon";
+import type { BuildChoice, EngineEdit, EngineInit } from "../shared/process-messages";
 import { PROTOCOL_VERSION, type Command, type FromEngine, type ToEngine } from "../shared/protocol";
 import { ThrottleGuard } from "./throttle-guard";
 import { TraceRecorder } from "./trace-recorder";
@@ -68,10 +68,11 @@ export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };
 export const APP_HEADROOM = 0.3;
 /**
  * Settings the driver changes live that every later build keeps (stage 066): where the mono
- * listener stands, and the A/B switch's variant. A rebuild would otherwise put them back to the
- * core's defaults without anyone asking.
+ * listener stands, and the A/B switch's variant; since stage 067 the editor's air-fuel ratio and
+ * spark offset, and the layers heard. A rebuild would otherwise put them back to the core's
+ * defaults without anyone asking.
  */
-export const STICKY_PARAMS: readonly string[] = ["listener", "variant"];
+export const STICKY_PARAMS: readonly string[] = ["listener", "variant", "afr", "spark_offset", "layers"];
 /** The volume's top: twice the app's level, +6 dB (the loudest engines then reach the limiter). */
 export const VOLUME_MAX = 2;
 /**
@@ -93,6 +94,8 @@ interface Pending {
   epoch: number;
   /** a rebuild's swap request: its ack also finishes the rebuild */
   rebuild?: BuildChoice;
+  /** a live edit's request: its ack keeps the edit in the build */
+  liveEdit?: EngineEdit;
 }
 
 interface Rebuild {
@@ -117,6 +120,7 @@ export class EngineControl {
   private epoch = 0;
   private params: ParamInfo[] = [];
   private presets: PresetInfo[] = [];
+  private fields: EngineFieldInfo[] = [];
   private choice: BuildChoice;
   private readonly pending = new Map<number, Pending>();
   private rebuild: Rebuild | null = null;
@@ -146,6 +150,7 @@ export class EngineControl {
     const { addon, config } = this.deps;
     this.presets = addon.presets();
     this.params = addon.params();
+    this.fields = addon.engineFields();
     if (!this.presets.some((p) => p.key === config.build.preset)) {
       throw new Error(`no preset "${config.build.preset}"`);
     }
@@ -251,12 +256,66 @@ export class EngineControl {
   private buildSpec(choice: BuildChoice): BuildSpec {
     const wanted: Record<string, number> = { ...APP_BUILD_PARAMS, ...this.sticky, master_gain: this.gainFor(choice, this.volume) };
     const params = this.params.filter((p) => p.name in wanted).map((p) => ({ id: p.id, value: wanted[p.name] }));
+    const edits = this.editsById(choice.edits ?? []);
     return {
       preset: choice.preset,
       ...(choice.quality ? { quality: choice.quality } : {}),
       ...(choice.scene ? { scene: choice.scene } : {}),
+      ...(edits.length ? { edits } : {}),
       ...(params.length ? { params } : {}),
     };
+  }
+
+  /** Edits by name as the add-on's ids; a name the core no longer has (an old autosave) is left
+   *  out and logged, never guessed at. */
+  private editsById(edits: EngineEdit[]): { field: number; index: number; value: number }[] {
+    const out: { field: number; index: number; value: number }[] = [];
+    for (const e of edits) {
+      const field = this.fields.find((f) => f.name === e.field);
+      if (field) out.push({ field: field.id, index: e.index, value: e.value });
+      else this.deps.log("warn", `left out an edit of "${e.field}": the engine has no such field`);
+    }
+    return out;
+  }
+
+  /** What's wrong with an edit's shape, before the core sees it, or null. */
+  private badEdit(e: unknown): string | null {
+    const edit = e as Partial<EngineEdit> | null;
+    if (typeof edit !== "object" || edit === null) return "an edit is {field, index, value}";
+    if (typeof edit.field !== "string" || !this.fields.some((f) => f.name === edit.field)) return `no engine field "${String(edit.field)}"`;
+    if (typeof edit.index !== "number" || !Number.isInteger(edit.index) || edit.index < 0) return "an edit's index is a whole number from 0";
+    if (typeof edit.value !== "number" || !Number.isFinite(edit.value)) return "an edit's value is a finite number";
+    return null;
+  }
+
+  /** The first problem in a list of edits, or null. */
+  private badEdits(edits: unknown): string | null {
+    if (!Array.isArray(edits)) return "edits is a list";
+    for (const e of edits) {
+      const bad = this.badEdit(e);
+      if (bad) return bad;
+    }
+    return null;
+  }
+
+  private safeDescribe(choice: BuildChoice): number[][] | undefined {
+    try {
+      return this.describeChoice(choice);
+    } catch (e) {
+      this.deps.log("warn", `the engine could not be described: ${errorOf(e).message}`);
+      return undefined;
+    }
+  }
+
+  /** The values of the engine `choice` makes (addon.describe); throws the add-on's refusal. */
+  private describeChoice(choice: BuildChoice): number[][] {
+    return this.deps.addon.describe(this.buildSpec(choice));
+  }
+
+  /** Tells the window the values of the engine now playing (request 0). */
+  private postPlaying(): void {
+    const values = this.safeDescribe(this.choice);
+    if (values) this.port?.post({ type: "description", request: 0, preset: this.choice.preset, edits: this.choice.edits ?? [], values });
   }
 
   /** The window's port: says hello on it. A later attach replaces it (a reloaded window). */
@@ -277,6 +336,8 @@ export class EngineControl {
       sampleRate: host.sampleRate(),
       preset: this.choice.preset,
       build: { ...this.choice },
+      engineFields: this.fields,
+      description: this.safeDescribe(this.choice),
       settings: { volume: this.volume, ...this.sticky },
       generation: host.generation(),
     });
@@ -361,7 +422,20 @@ export class EngineControl {
           return;
         }
         case "load-preset":
-          return this.loadPreset(id, command.preset, command.quality, command.scene);
+          return this.loadPreset(id, command.preset, command.quality, command.scene, command.edits);
+        case "apply-edits":
+          return this.applyEdits(id, command.edits);
+        case "edit-live":
+          return this.editLive(id, command.edit);
+        case "describe": {
+          const bad = this.badEdits(command.edits);
+          if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
+          const choice = { ...this.choice, edits: command.edits };
+          const values = this.describeChoice(choice); // the add-on's refusal is the reply's error
+          this.reply(id, {});
+          this.port?.post({ type: "description", request: id, preset: choice.preset, edits: command.edits, values });
+          return;
+        }
         case "set-latency":
           return this.setLatency(id, command.ms);
         case "capture-dump":
@@ -397,9 +471,40 @@ export class EngineControl {
     }
   }
 
-  private loadPreset(id: number, preset: string, quality: Quality | undefined, scene: Scene | null | undefined): void {
+  /** The current preset, quality and scene, rebuilt with exactly these edits: checked whole first. */
+  private applyEdits(id: number, edits: EngineEdit[]): void {
+    const bad = this.badEdits(edits);
+    if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
+    const { preset, quality, scene } = this.choice;
+    this.loadPreset(id, preset, quality, scene ?? null, edits);
+  }
+
+  /** A live field on the running engine; the edit joins the build once the render thread took it. */
+  private editLive(id: number, edit: EngineEdit): void {
+    const bad = this.badEdit(edit);
+    if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
+    const field = this.fields.find((f) => f.name === edit.field)!;
+    // during a rebuild the edit would reach the engine on its way out and miss the new one
+    if (this.rebuild) return this.reply(id, { error: { code: "BUSY", message: "a rebuild is in progress" } });
+    if (!field.flags.includes("live")) {
+      return this.reply(id, { error: { code: "NOT_LIVE", message: `"${field.name}" changes only with a rebuild: use apply-edits` } });
+    }
+    const request = this.requireHost().setEngineLive(field.id, edit.index, edit.value);
+    this.pending.set(request, { id, epoch: this.epoch, liveEdit: edit });
+  }
+
+  /** The build's edits with `edit` in place of an earlier one of the same field and index. */
+  private static withEdit(edits: EngineEdit[], edit: EngineEdit): EngineEdit[] {
+    return [...edits.filter((e) => e.field !== edit.field || e.index !== edit.index), edit];
+  }
+
+  private loadPreset(id: number, preset: string, quality: Quality | undefined, scene: Scene | null | undefined, edits?: EngineEdit[]): void {
     if (this.rebuild) {
       return this.reply(id, { error: { code: "BUSY", message: "another rebuild is in progress" } });
+    }
+    // a live edit not yet taken by the render thread isn't in the build yet: the rebuild would lose it
+    for (const p of this.pending.values()) {
+      if (p.liveEdit) return this.reply(id, { error: { code: "BUSY", message: "a live edit is still on its way" } });
     }
     if (!this.presets.some((p) => p.key === preset)) {
       return this.reply(id, { error: { code: "UNKNOWN_PRESET", message: `no preset "${String(preset)}"` } });
@@ -410,8 +515,23 @@ export class EngineControl {
     if (scene !== undefined && scene !== null && !SCENES.includes(scene)) {
       return this.reply(id, { error: { code: "BAD_SCENE", message: `no scene "${String(scene)}"` } });
     }
+    if (edits !== undefined) {
+      const bad = this.badEdits(edits);
+      if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
+    }
+    // the edits belong to a preset: the same preset keeps them unless new ones are given, another starts plain
+    const kept = edits ?? (preset === this.choice.preset ? this.choice.edits : undefined);
     const { latencyMs } = this.choice;
-    const choice: BuildChoice = { preset, ...(quality ? { quality } : {}), ...(scene ? { scene } : {}), ...(latencyMs === undefined ? {} : { latencyMs }) };
+    const choice: BuildChoice = {
+      preset,
+      ...(quality ? { quality } : {}),
+      ...(scene ? { scene } : {}),
+      ...(latencyMs === undefined ? {} : { latencyMs }),
+      ...(kept && kept.length ? { edits: kept } : {}),
+    };
+    // checked whole before anything starts: one refused edit refuses the build, and the engine
+    // playing is untouched (the add-on's error is the reply's)
+    if (kept && kept.length) this.describeChoice(choice);
     const prepareId = this.requireHost().prepare(this.buildSpec(choice));
     this.rebuild = { id, epoch: this.epoch, prepareId, choice, startedAt: this.now() };
   }
@@ -523,7 +643,13 @@ export class EngineControl {
         if (ack.outcome === "ok") {
           this.choice = pending.rebuild;
           this.deps.onBuild(pending.rebuild);
+          this.postPlaying();
         }
+      }
+      if (pending.liveEdit && ack.outcome === "ok") {
+        this.choice = { ...this.choice, edits: EngineControl.withEdit(this.choice.edits ?? [], pending.liveEdit) };
+        this.deps.onBuild(this.choice);
+        this.postPlaying();
       }
       if (pending.epoch === this.epoch) this.reply(pending.id, { ack });
     }

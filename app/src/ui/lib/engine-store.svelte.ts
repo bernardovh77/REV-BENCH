@@ -7,7 +7,8 @@
  * The window never waits for the engine: it asks for a snapshot every animation frame and shows
  * the newest it has (docs/app-design.md section 4).
  */
-import type { DeviceInfo, HostStats, Quality, Scene } from "../../shared/addon";
+import type { DeviceInfo, EngineFieldInfo, HostStats, Quality, Scene } from "../../shared/addon";
+import type { EngineEdit } from "../../shared/process-messages";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../../shared/bridge";
 import type { Snapshot } from "../../shared/snapshot-v2.generated";
 import type { FromEngine } from "../../shared/protocol";
@@ -70,7 +71,12 @@ export class EngineStore {
    *  KEEP_UP_QUIET_STATS statistics in a row (about 10 s) have nothing late, so a computer that
    *  is late now and then gets one steady warning, not one that blinks every second */
   fallingBehind = $state(false);
+  /** the core's engine fields, and the engine playing: its values and the edits it was built with */
+  engineFields = $state.raw<EngineFieldInfo[]>([]);
+  engineValues = $state.raw<number[][] | null>(null);
+  engineEdits = $state.raw<EngineEdit[]>([]);
   private lastLate = -1;
+  private readonly described = new Map<number, (values: number[][]) => void>();
   private quietStats = 0;
   private captured: ((capture: CaptureInfo) => void) | null = null;
 
@@ -90,6 +96,8 @@ export class EngineStore {
   private readonly frameListeners = new Set<() => void>();
   /** the mono listener's place (RB_LISTENER_*, 1: 3 m behind, the core's default) */
   listener = $state(1);
+  /** the editor's engine-computer and audition settings (stage 067): afr, spark_offset, layers */
+  settings = $state<Record<string, number>>({});
   /** the volume, 0..2 (1: the app's level) */
   volume = $state(1);
 
@@ -101,8 +109,18 @@ export class EngineStore {
         this.quality = hello.build?.quality ?? null;
         this.scene = hello.build?.scene ?? null;
         this.latencyMs = hello.build?.latencyMs ?? 20;
+        this.engineFields = hello.engineFields ?? [];
+        this.engineValues = hello.description ?? null;
+        this.engineEdits = hello.build?.edits ?? [];
         this.listener = hello.settings?.listener ?? 1;
         this.volume = hello.settings?.volume ?? 1;
+        // the editor's settings: what the engine says it keeps, else the core's defaults
+        const byName = (name: string) => hello.params.find((p) => p.name === name)?.default ?? 0;
+        this.settings = {
+          afr: hello.settings?.afr ?? byName("afr"),
+          spark_offset: hello.settings?.spark_offset ?? byName("spark_offset"),
+          layers: hello.settings?.layers ?? byName("layers"),
+        };
         this.devices = hello.devices;
         this.playing = hello.devices.find((d) => d.isDefault)?.name ?? hello.devices[0]?.name ?? null;
         this.lastLate = -1;
@@ -123,6 +141,16 @@ export class EngineStore {
           this.fallingBehind = false;
         }
         this.lastLate = late;
+      },
+      description: (d) => {
+        if (d.request === 0) {
+          this.engineValues = d.values;
+          this.engineEdits = d.edits;
+          this.preset = d.preset;
+          return;
+        }
+        this.described.get(d.request)?.(d.values);
+        this.described.delete(d.request);
       },
       capture: ({ type: _type, ...capture }) => {
         this.captured?.(capture);
@@ -189,6 +217,7 @@ export class EngineStore {
   async setParam(name: string, value: number): Promise<void> {
     try {
       await this.client.command({ kind: "set-param", name, value });
+      if (name in this.settings) this.settings = { ...this.settings, [name]: value };
       this.lastError = null;
     } catch (e) {
       this.lastError = describe(e);
@@ -235,6 +264,40 @@ export class EngineStore {
     const arrived = new Promise<CaptureInfo>((resolve) => (this.captured = resolve));
     await this.client.command({ kind: "capture-dump" });
     return arrived;
+  }
+
+  /**
+   * Stage 067: the preset rebuilt with exactly these edits, as one transaction. Resolves once
+   * the new engine plays; rejects (with the engine's reason) and changes nothing if any edit is
+   * refused. Unlike the other commands it throws, so the editor can keep its draft.
+   */
+  async applyEdits(edits: EngineEdit[]): Promise<void> {
+    if (this.rebuilding) throw new CommandError("BUSY", "a rebuild is in progress");
+    this.rebuilding = true;
+    try {
+      await this.client.command({ kind: "apply-edits", edits });
+      this.lastError = null;
+    } finally {
+      this.rebuilding = false;
+    }
+  }
+
+  /** A live field on the running engine (its flags say "live"); rejects with the reason. */
+  async editLive(edit: EngineEdit): Promise<void> {
+    await this.client.command({ kind: "edit-live", edit });
+    this.lastError = null;
+  }
+
+  /** The values these edits would give, without building them; rejects with the reason. */
+  describeEdits(edits: EngineEdit[]): Promise<number[][]> {
+    return new Promise<number[][]>((resolve, reject) => {
+      const sent = this.client.commandWithId({ kind: "describe", edits });
+      this.described.set(sent.id, resolve);
+      sent.done.catch((e: unknown) => {
+        this.described.delete(sent.id);
+        reject(e);
+      });
+    });
   }
 
   dismissDeviceNotice(): void {

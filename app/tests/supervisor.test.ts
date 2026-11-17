@@ -191,6 +191,17 @@ describe("a dying engine", () => {
     expect(processes[1].init?.build).toEqual({ preset: "v8-flat", quality: "low" });
   });
 
+  it("saves the whole build: scene, latency and the editor's edits too (2026-11-17)", () => {
+    const { supervisor, processes, advance, saves } = setup();
+    supervisor.start();
+    const build = { preset: "i6", quality: "low", scene: "garage", latencyMs: 40, edits: [{ field: "bore", index: 0, value: 0.09 }] } as const;
+    processes[0].say({ type: "build", ...build, edits: [...build.edits] });
+    expect(saves.at(-1)).toEqual(build);
+    processes[0].die(1);
+    advance(200);
+    expect(processes[1].init?.build).toEqual(build);
+  });
+
   it("is told the new port after the restart, if the window had asked", () => {
     const { supervisor, processes, window, ports, advance } = setup();
     supervisor.attachWindow(window);

@@ -49,6 +49,8 @@ static const param_info PARAMS[RB_PARAM_COUNT] = {
     [RB_PARAM_MOMENTUM_ORDER]  = { "momentum_order",  "",   1.0,   2.0,     2.0,    REBUILD | INT },
     [RB_PARAM_EVENTS]          = { "events",          "",   0.0,   1.0,     0.0,    LIVE | INT },
     [RB_PARAM_VARIANT]         = { "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },
+    [RB_PARAM_AFR]             = { "afr",             "",   10.0,  20.0,    RB_AFR_STOICH, LIVE },
+    [RB_PARAM_SPARK_OFFSET]    = { "spark_offset",    "deg", -15.0, 15.0,   0.0,    LIVE },
 };
 
 typedef struct telemetry_info {

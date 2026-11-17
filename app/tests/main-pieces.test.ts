@@ -115,6 +115,14 @@ describe("autosave", () => {
     expect(new Autosave(file()).load()).toEqual({ preset: "i4" });
   });
 
+  it("keeps the editor's edits, and drops a list with one that isn't an edit (stage 067)", () => {
+    const edits = [{ field: "bore", index: 0, value: 0.09 }, { field: "header_length", index: 2, value: 0.7 }];
+    new Autosave(file()).save({ preset: "i6", edits });
+    expect(new Autosave(file()).load()).toEqual({ preset: "i6", edits });
+    writeFileSync(file(), JSON.stringify({ version: 1, preset: "i6", edits: [...edits, { field: "bore", index: -1, value: 1 }] }));
+    expect(new Autosave(file()).load()).toEqual({ preset: "i6" });
+  });
+
   it("has a default build: the 2.0 L four", () => {
     expect(DEFAULT_BUILD).toEqual({ preset: "i4" });
   });

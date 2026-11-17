@@ -4,6 +4,18 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-17: Stage 067, the engine editor (Claude)
+
+- docs/stage-067.md. The left panel edits the engine from the core's description (add-on
+  `engineFields()`, `describe(spec)`; host `rb_host_engine_build`): drafts of rebuild fields
+  applied as one transaction (`apply-edits`), live fields at once (`edit-live`), undo/redo,
+  metric/imperial. Edits are kept by field name in the build and the autosave.
+- Core: `RB_PARAM_AFR`, `RB_PARAM_SPARK_OFFSET` (appended; bit for bit at their defaults).
+  `tests/test_editor_fields.c` proves every editable field has a measured effect, or states why
+  not (`position`, `bank_angle` on one bank: hidden in the editor).
+- Fixed on the way: the supervisor autosaved only preset and quality (066's scene and latency
+  were lost on restart).
+
 ## 2026-11-16: Stage 066, the playable engine (Claude)
 
 - docs/stage-066.md. The app drives like an engine: throttle styles (on/off, ramped, analog

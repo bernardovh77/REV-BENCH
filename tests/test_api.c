@@ -7,6 +7,7 @@
 #include "rb_test.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -574,4 +575,106 @@ void test_api_variant(void)
     for (int n = 0; n < HEARD; n++) power += (double)a[n] * a[n];
     CHECK(power > 0.0);   /* and it is a sound */
     rb_destroy(sim);
+}
+
+/* Runs an engine for `seconds` of sound (blocks of 0.1 s at the default 48 kHz). */
+static void run_seconds(rb_sim *sim, double seconds)
+{
+    static float out[4800];
+    for (int i = 0; i < (int)(seconds * 10.0 + 0.5); i++) rb_render_block(sim, out, 4800);
+}
+
+void test_api_afr_and_spark_offset(void)
+{
+    /* Stage 067's two engine-computer settings: live, kept by a rebuild, and
+     * each with its physical effect. At their defaults nothing changes. */
+    CHECK(strcmp(rb_param_name(RB_PARAM_AFR), "afr") == 0);
+    CHECK(strcmp(rb_param_name(RB_PARAM_SPARK_OFFSET), "spark_offset") == 0);
+    CHECK(strcmp(rb_param_unit(RB_PARAM_SPARK_OFFSET), "deg") == 0);
+    for (int id = RB_PARAM_AFR; id <= RB_PARAM_SPARK_OFFSET; id++) {
+        CHECK(rb_param_flags(id) & RB_PF_LIVE);
+        CHECK(!(rb_param_flags(id) & (RB_PF_REBUILD | RB_PF_CONTROL | RB_PF_INTEGER)));
+    }
+    CHECK_NEAR(rb_param_default(RB_PARAM_AFR), 14.596, 1e-12);
+    CHECK(rb_param_default(RB_PARAM_SPARK_OFFSET) == 0.0);
+
+    /* the effects, at 3000 rpm wide open, held */
+    double lambda[3], spark[3], torque[3];
+    static const double AFR[3] = { 14.596, 12.0, 14.596 };
+    static const double OFFSET[3] = { 0.0, 0.0, -10.0 };
+    for (int k = 0; k < 3; k++) {
+        rb_sim *sim = rb_create(NULL);
+        CHECK(sim != NULL);
+        if (!sim) return;
+        rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);   /* not the test tone */
+        rb_set_param(sim, RB_PARAM_IGNITION, 1);
+        rb_set_param(sim, RB_PARAM_HOLD_RPM, 3000);
+        rb_set_param(sim, RB_PARAM_THROTTLE, 1);
+        CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_AFR, AFR[k]), RB_OK);
+        CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_SPARK_OFFSET, OFFSET[k]), RB_OK);
+        run_seconds(sim, 1.0);              /* about 25 cycles at 3000 rpm */
+        lambda[k] = rb_get_telemetry(sim, RB_TLM_LAMBDA);
+        spark[k] = rb_get_telemetry(sim, RB_TLM_SPARK);
+        torque[k] = rb_get_telemetry(sim, RB_TLM_TORQUE);
+        rb_destroy(sim);
+    }
+    CHECK_NEAR(lambda[0], 1.0, 0.02);
+    CHECK_NEAR(lambda[1], 12.0 / 14.596, 0.02);                  /* richer, as asked */
+    CHECK_NEAR(spark[2], spark[0] - 10.0, 0.5);                  /* 10 degrees later */
+    CHECK(torque[2] < torque[0] - 2.0);                          /* off the best torque: less */
+    CHECK(fabs(spark[1] - spark[0]) < 3.0);
+
+    /* settings, not controls: a rebuild keeps them */
+    rb_sim *sim = rb_create(NULL);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_AFR, 13.0), RB_OK);
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_SPARK_OFFSET, 4.0), RB_OK);
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("v8-cross")), RB_OK);
+    CHECK(rb_get_param(sim, RB_PARAM_AFR) == 13.0);
+    CHECK(rb_get_param(sim, RB_PARAM_SPARK_OFFSET) == 4.0);
+    CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_SPARK_OFFSET, 40.0), RB_CLAMPED);
+    CHECK(rb_get_param(sim, RB_PARAM_SPARK_OFFSET) == 15.0);
+    rb_destroy(sim);
+}
+
+/* The largest step between two samples in out[from, to). */
+static double max_step(const float *out, int from, int to)
+{
+    double m = 0.0;
+    for (int i = from + 1; i < to; i++) {
+        const double d = fabs((double)out[i] - (double)out[i - 1]);
+        if (d > m) m = d;
+    }
+    return m;
+}
+
+void test_api_listen_changes_restart_the_histories(void)
+{
+    /* Stage 067's editor auditions the sound's layers and the listener's place live: each change
+     * starts the listener's histories afresh from the flows now (rb_sim_listen primes them), so
+     * nothing jumps. A scene change is a rebuild, a new engine behind the host's fade. */
+    enum { STEADY = 9600, AFTER = 960 };
+    static float before[STEADY], after[AFTER];
+    for (int change = 0; change < 2; change++) {
+        rb_sim *sim = rb_create(NULL);
+        CHECK(sim != NULL);
+        if (!sim) return;
+        rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+        rb_set_param(sim, RB_PARAM_IGNITION, 1);
+        rb_set_param(sim, RB_PARAM_HOLD_RPM, 3000);
+        rb_set_param(sim, RB_PARAM_THROTTLE, 1);
+        for (int i = 0; i < 5; i++) rb_render_block(sim, before, STEADY);   /* 1 s to settle */
+        const double steady = max_step(before, 0, STEADY);
+        if (change == 0) CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_LAYERS, RB_LAYER_FLOW | RB_LAYER_ENGINE), RB_OK);
+        else CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_LISTENER, RB_LISTENER_TAILPIPE), RB_OK);
+        rb_render_block(sim, after, AFTER);
+        /* the first samples after the change step no further than the engine's own sound did;
+         * the tailpipe's place is louder, so it gets the ratio of the places' distances */
+        const double allowed = change == 0 ? 1.5 * steady : 6.0 * steady;
+        const double step = fmax(fabs((double)after[0] - (double)before[STEADY - 1]), max_step(after, 0, 48));
+        if (!(step <= allowed)) printf("        change %d: a step of %g after it, %g before\n", change, step, steady);
+        CHECK(step <= allowed);
+        rb_destroy(sim);
+    }
 }
