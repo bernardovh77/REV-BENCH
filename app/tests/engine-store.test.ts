@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../src/shared/bridge";
 import type { FromEngine, ToEngine } from "../src/shared/protocol";
 import { INSTRUMENT_NAMES, encodeSnapshot, type Snapshot } from "../src/shared/snapshot-v2.generated";
-import { EngineStore, type PortEvent, type WindowLike } from "../src/ui/lib/engine-store.svelte";
+import { EngineStore, KEEP_UP_QUIET_STATS, type PortEvent, type WindowLike } from "../src/ui/lib/engine-store.svelte";
 
 /** A DOM MessagePort made by hand. */
 class FakeDomPort {
@@ -351,7 +351,15 @@ describe("commands", () => {
     expect(store.fallingBehind).toBe(true);
     stats(9, 1);
     expect(store.fallingBehind).toBe(true);
-    stats(9, 1);
+    // late now and then: one steady warning, not one that blinks every second (2026-11-17)
+    for (let i = 0; i < KEEP_UP_QUIET_STATS - 1; i++) {
+      stats(9, 1);
+      expect(store.fallingBehind).toBe(true);
+    }
+    stats(10, 1); // late again: the quiet count starts over
+    for (let i = 0; i < KEEP_UP_QUIET_STATS - 1; i++) stats(10, 1);
+    expect(store.fallingBehind).toBe(true);
+    stats(10, 1);
     expect(store.fallingBehind).toBe(false);
   });
 

@@ -93,6 +93,31 @@ async function launch(options: { bridge?: boolean; preset?: string } = {}) {
 }
 
 describe("the window", () => {
+  it("says it can't keep up in the top bar's own slot, which is there all along (2026-11-17)", async () => {
+    const { target, settle, store, button } = await launch({ preset: "i6" });
+    await settle();
+    const slot = target.querySelector(".topbar .keep-up")!;
+    expect(slot).not.toBeNull();
+    expect(slot.classList.contains("on")).toBe(false);
+    store.fallingBehind = true;
+    flushSync();
+    // the same element, now showing: nothing was added to the bar or the panels
+    expect(target.querySelector(".topbar .keep-up")).toBe(slot);
+    expect(slot.classList.contains("on")).toBe(true);
+    expect(slot.textContent).toContain("Can't keep up");
+    expect(target.querySelector("main")!.textContent).not.toContain("keep up");
+    expect(button("Use Lean")).toBeDefined(); // the six's tier is low: lean is the next cheaper
+  });
+
+  it("offers nothing cheaper when the engine already plays at the cheapest quality", async () => {
+    const { target, settle, store } = await launch({ preset: "v8-flat" }); // its tier: lean
+    await settle();
+    store.fallingBehind = true;
+    flushSync();
+    expect(target.querySelector(".topbar .keep-up")!.textContent).toContain("Can't keep up");
+    expect(target.querySelector(".topbar .keep-up button")).toBeNull();
+  });
+
   it("offers every stereo scene but the pass-by (2026-11-16)", async () => {
     const { target, settle } = await launch();
     await settle();

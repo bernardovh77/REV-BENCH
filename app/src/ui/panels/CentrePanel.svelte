@@ -1,8 +1,8 @@
 <!--
   CentrePanel - the middle region: the engine process's messages (restarting, stopped) when there
   is no engine to show, and otherwise the driving and sound settings and a minimal readout
-  (stage 066) until the instruments and the 3D view take the space. Nothing here changes the
-  quality by itself: falling behind is said, and a lower quality offered (app-design section 11).
+  (stage 066) until the instruments and the 3D view take the space. Falling behind is said in
+  the top bar's own slot (TopBar.svelte), where it moves nothing else.
 -->
 <script lang="ts">
   import type { Quality } from "../../shared/addon";
@@ -14,6 +14,7 @@
   import Slider from "../components/Slider.svelte";
   import { VARIANT_MAX, type Driver } from "../lib/driver.svelte";
   import type { EngineStore } from "../lib/engine-store.svelte";
+  import { QUALITY_COST, QUALITY_NAMES } from "../lib/qualities";
   import { THROTTLE_STYLES, type ThrottleStyle } from "../lib/throttle-input";
 
   interface Props {
@@ -30,24 +31,13 @@
     trigger: "Controller trigger",
     latched: "Mouse (the slider and the wheel)",
   };
-  const QUALITY_NAMES: Record<Quality, string> = {
-    low: "Low", medium: "Medium", high: "High (the reference)", ultra: "Ultra", balanced: "Balanced", lean: "Lean",
-  };
-  /** from the cheapest to the dearest, for "offer a lower quality" */
-  const COST: Quality[] = ["lean", "low", "balanced", "medium", "high", "ultra"];
   const LATENCIES = [10, 20, 30, 40, 60, 80];
 
   let ready = $derived(store.summary === "running");
   let tier = $derived(store.hello?.presets.find((p) => p.key === store.preset)?.quality ?? null);
-  let playingQuality = $derived(store.quality ?? tier);
-  let lower = $derived.by(() => {
-    if (!playingQuality) return null;
-    const i = COST.indexOf(playingQuality);
-    return i > 0 ? COST[i - 1] : null;
-  });
   let qualities = $derived([
     { value: "", label: tier ? `This engine's tier (${QUALITY_NAMES[tier]})` : "This engine's tier" },
-    ...COST.map((q) => ({ value: q, label: QUALITY_NAMES[q] })),
+    ...QUALITY_COST.map((q) => ({ value: q, label: QUALITY_NAMES[q] })),
   ]);
   let styles = THROTTLE_STYLES.map((s) => ({ value: s, label: STYLE_NAMES[s] }));
   let devices = $derived([{ value: "-1", label: "The system's default" }, ...store.devices.map((d) => ({ value: String(d.index), label: d.name }))]);
@@ -80,14 +70,6 @@
         <Notice tone="info">
           {store.deviceNotice}
           <Button onclick={() => store.dismissDeviceNotice()}>Dismiss</Button>
-        </Notice>
-      {/if}
-      {#if store.fallingBehind}
-        <Notice tone="warning">
-          This computer isn't keeping up with this engine at the {playingQuality ? QUALITY_NAMES[playingQuality] : ""} quality: the sound may break up.
-          {#if lower}
-            <Button onclick={() => void store.setQuality(lower)}>Use {QUALITY_NAMES[lower]}</Button>
-          {/if}
         </Notice>
       {/if}
 

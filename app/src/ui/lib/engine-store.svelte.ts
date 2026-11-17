@@ -13,6 +13,9 @@ import type { Snapshot } from "../../shared/snapshot-v2.generated";
 import type { FromEngine } from "../../shared/protocol";
 import { CommandError, EngineClient, fromMessagePort, type Hello } from "./engine-client";
 
+/** Statistics in a row with nothing late before the "can't keep up" warning goes (one a second). */
+export const KEEP_UP_QUIET_STATS = 10;
+
 /** A capture-dump's result (protocol.ts). */
 export type CaptureInfo = Omit<Extract<FromEngine, { type: "capture" }>, "type">;
 
@@ -62,10 +65,13 @@ export class EngineStore {
   deviceNotice = $state<string | null>(null);
   /** the latency setting, ms */
   latencyMs = $state(20);
-  /** the computer missed a block's deadline or the device ran dry since the last statistics:
-   *  the window says so and offers a lower quality, never switching by itself (app-design 11) */
+  /** the computer missed a block's deadline or the device ran dry lately: the window says so
+   *  and offers a lower quality, never switching by itself (app-design 11). It stays up until
+   *  KEEP_UP_QUIET_STATS statistics in a row (about 10 s) have nothing late, so a computer that
+   *  is late now and then gets one steady warning, not one that blinks every second */
   fallingBehind = $state(false);
   private lastLate = -1;
+  private quietStats = 0;
   private captured: ((capture: CaptureInfo) => void) | null = null;
 
   summary: EngineSummary = $derived.by(() => {
@@ -100,6 +106,8 @@ export class EngineStore {
         this.devices = hello.devices;
         this.playing = hello.devices.find((d) => d.isDefault)?.name ?? hello.devices[0]?.name ?? null;
         this.lastLate = -1;
+        this.quietStats = 0;
+        this.fallingBehind = false;
         this.connected = true;
       },
       snapshot: (snapshot) => {
@@ -108,7 +116,12 @@ export class EngineStore {
       stats: (stats) => {
         this.stats = stats;
         const late = stats.deadlineMissed + stats.underruns;
-        this.fallingBehind = this.lastLate >= 0 && late > this.lastLate;
+        if (this.lastLate >= 0 && late > this.lastLate) {
+          this.fallingBehind = true;
+          this.quietStats = 0;
+        } else if (this.fallingBehind && ++this.quietStats >= KEEP_UP_QUIET_STATS) {
+          this.fallingBehind = false;
+        }
         this.lastLate = late;
       },
       capture: ({ type: _type, ...capture }) => {

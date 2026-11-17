@@ -86,6 +86,8 @@
 
   /* sizes of the parts of the window */
   --rb-control-height: 32px;
+  /* the top bar's status slot (the "can't keep up" warning): fixed, so it never moves the bar */
+  --rb-status-width: 240px;
   --rb-topbar-height: 64px;
   --rb-editor-width: 280px;
   --rb-bottom-height: 220px;

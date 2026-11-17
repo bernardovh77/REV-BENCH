@@ -12,6 +12,7 @@
   import Slider from "../components/Slider.svelte";
   import type { Driver } from "../lib/driver.svelte";
   import type { EngineStore, EngineSummary } from "../lib/engine-store.svelte";
+  import { QUALITY_NAMES, cheaperQuality } from "../lib/qualities";
 
   interface Props {
     store: EngineStore;
@@ -39,6 +40,9 @@
   };
 
   let instruments = $derived(store.snapshot?.instruments ?? null);
+  // the quality playing (chosen, or the preset's tier) and the next cheaper one, for the warning
+  let playing = $derived(store.quality ?? store.hello?.presets.find((p) => p.key === store.preset)?.quality ?? null);
+  let cheaper = $derived(cheaperQuality(playing));
   let ready = $derived(store.summary === "running");
   let presets = $derived((store.hello?.presets ?? []).map((p) => ({ value: p.key, label: p.name })));
   let places = PLACES.map((label, i) => ({ value: String(i), label }));
@@ -55,6 +59,19 @@
   <div class="state" data-state={store.summary}>
     <span class="dot" aria-hidden="true"></span>
     <span class="state-text">{SUMMARY_TEXT[store.summary]}</span>
+  </div>
+
+  <!-- The "can't keep up" warning's own slot: its space is kept while it's hidden, so it never
+       moves the rest of the bar; it stays up ~10 s after the last late block (the store). -->
+  <div class="keep-up" class:on={store.fallingBehind} role="status" aria-live="polite">
+    {#if store.fallingBehind}
+      <span class="keep-up-text" title="This computer isn't keeping up with this engine at the {playing ? QUALITY_NAMES[playing] : ''} quality: the sound may break up.">
+        Can't keep up
+      </span>
+      {#if cheaper}
+        <span class="keep-up-action"><Button onclick={() => void store.setQuality(cheaper)}>Use {QUALITY_NAMES[cheaper]}</Button></span>
+      {/if}
+    {/if}
   </div>
 
   <Select
@@ -152,6 +169,33 @@
 
   .state[data-state="failed"] .dot {
     background: var(--rb-color-danger);
+  }
+
+  .keep-up {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--rb-space-3);
+    box-sizing: border-box;
+    width: var(--rb-status-width);
+    height: var(--rb-control-height);
+    padding: 0 var(--rb-space-3);
+    border-radius: var(--rb-radius-md);
+    font-size: var(--rb-font-size-sm);
+    color: var(--rb-color-warning);
+    visibility: hidden;
+  }
+
+  .keep-up.on {
+    visibility: visible;
+    border: var(--rb-border-width) solid var(--rb-color-warning);
+  }
+
+  .keep-up-text {
+    white-space: nowrap;
+  }
+
+  .keep-up-action {
+    margin-left: auto;
   }
 
   .controls {
