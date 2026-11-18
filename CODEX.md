@@ -4,6 +4,15 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-18: App 0.2.3, the warning, the draft bar, the names (Claude)
+
+- The top bar's "can't keep up" slot: a tinted box with a dot and a compact action
+  (`Button size="sm"`, token `--rb-control-height-sm`), which no longer overflows the box.
+- The editor's draft bar (and the preview's refusal) is stuck to the panel's bottom edge,
+  so it moves nothing when it comes and goes.
+- The presets' names lose their sizes, which the editor now changes: "Inline 4", "Inline 6",
+  "V8 cross-plane", "V8 flat-plane", "Boxer 4" (`core/src/presets.c`; keys unchanged).
+
 ## 2026-11-17: Stage 067, the engine editor (Claude)
 
 - docs/stage-067.md. The left panel edits the engine from the core's description (add-on

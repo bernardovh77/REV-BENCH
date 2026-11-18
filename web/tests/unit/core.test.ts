@@ -257,7 +257,7 @@ describe('the engine through the API (stage 8)', () => {
   it('lists the presets and the engine and cylinder fields, with units', () => {
     const info = core.info();
     expect(info.presets.map((p) => p.key)).toEqual(['i4', 'i6', 'v8-cross', 'v8-flat', 'boxer4']);
-    expect(info.presets[2]?.name).toBe('5.0 L cross-plane V8');
+    expect(info.presets[2]?.name).toBe('V8 cross-plane');
     const f = (name: string) => info.engineFields.find((x) => x.name === name);
     expect(f('bore')).toMatchObject({ unit: 'm', flags: 0, min: 0.04, max: 0.15 });
     expect(f('displacement')).toMatchObject({ unit: 'm^3', flags: RB_EF_READONLY });

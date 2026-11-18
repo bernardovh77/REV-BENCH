@@ -13,7 +13,7 @@ test("starts on the real add-on and plays: ignition and the starter bring up the
     expect(await stateText(page)).toContain("Engine running");
     // the first engine is the default build, from the add-on's own list
     expect(await preset(page)).toBe("i4");
-    expect(await page.locator(".topbar select").first().locator("option").allInnerTexts()).toContain("5.0 L cross-plane V8");
+    expect(await page.locator(".topbar select").first().locator("option").allInnerTexts()).toContain("V8 cross-plane");
 
     await page.getByRole("button", { name: "Ignition" }).click();
     await expect(page.getByRole("button", { name: "Ignition" })).toHaveAttribute("aria-pressed", "true");

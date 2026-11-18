@@ -39,7 +39,7 @@ test("presets() lists the core's presets with a real-time quality each", () => {
   assert.equal(new Set(presets.map((p) => p.key)).size, presets.length, "keys are unique");
   const keys = presets.map((p) => p.key);
   for (const key of ["i4", "i6", "v8-cross"]) assert.ok(keys.includes(key), `preset ${key}`);
-  assert.equal(presets.find((p) => p.key === "i4").name, "2.0 L inline-4");
+  assert.equal(presets.find((p) => p.key === "i4").name, "Inline 4");
 });
 
 test("params() carries the core's parameter table, with its units, ranges and flags", () => {

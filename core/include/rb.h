@@ -434,7 +434,7 @@ uint64_t    rb_events_lost(const rb_sim *sim);
  * engine, at rest. */
 int         rb_preset_count(void);
 const char *rb_preset_key(int preset);    /* "i4", "v8-cross", ...; NULL if unknown */
-const char *rb_preset_name(int preset);   /* "2.0 L inline-4", ...; NULL if unknown */
+const char *rb_preset_name(int preset);   /* "Inline 4", "V8 cross-plane", ...; NULL if unknown */
 int         rb_preset_find(const char *key);           /* preset number, or RB_ERR_ID */
 /* The preset's real-time default quality (RB_QUALITY_*, stage 118's tier,
  * chosen on the baseline machine: docs/stage-118.md says what each one

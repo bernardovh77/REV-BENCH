@@ -38,7 +38,7 @@ export interface PresetInfo {
   index: number;
   /** "i4", "v8-cross", ... (rb_preset_key) */
   key: string;
-  /** "2.0 L inline-4", ... (rb_preset_name) */
+  /** "Inline 4", "V8 cross-plane", ... (rb_preset_name) */
   name: string;
   /** its real-time default quality (rb_preset_quality): a QUALITY name */
   quality: Quality;

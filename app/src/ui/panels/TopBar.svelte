@@ -65,11 +65,12 @@
        moves the rest of the bar; it stays up ~10 s after the last late block (the store). -->
   <div class="keep-up" class:on={store.fallingBehind} role="status" aria-live="polite">
     {#if store.fallingBehind}
+      <span class="keep-up-dot" aria-hidden="true"></span>
       <span class="keep-up-text" title="This computer isn't keeping up with this engine at the {playing ? QUALITY_NAMES[playing] : ''} quality: the sound may break up.">
         Can't keep up
       </span>
       {#if cheaper}
-        <span class="keep-up-action"><Button onclick={() => void store.setQuality(cheaper)}>Use {QUALITY_NAMES[cheaper]}</Button></span>
+        <span class="keep-up-action"><Button size="sm" onclick={() => void store.setQuality(cheaper)}>Use {QUALITY_NAMES[cheaper]}</Button></span>
       {/if}
     {/if}
   </div>
@@ -178,7 +179,7 @@
     box-sizing: border-box;
     width: var(--rb-status-width);
     height: var(--rb-control-height);
-    padding: 0 var(--rb-space-3);
+    padding: 0 var(--rb-space-2) 0 var(--rb-space-4);
     border-radius: var(--rb-radius-md);
     font-size: var(--rb-font-size-sm);
     color: var(--rb-color-warning);
@@ -188,10 +189,20 @@
   .keep-up.on {
     visibility: visible;
     border: var(--rb-border-width) solid var(--rb-color-warning);
+    background: var(--rb-color-warning-tint);
+  }
+
+  .keep-up-dot {
+    flex: none;
+    width: var(--rb-space-3);
+    height: var(--rb-space-3);
+    border-radius: var(--rb-radius-round);
+    background: var(--rb-color-warning);
   }
 
   .keep-up-text {
     white-space: nowrap;
+    font-weight: var(--rb-weight-medium);
   }
 
   .keep-up-action {

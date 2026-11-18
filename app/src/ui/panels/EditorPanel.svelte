@@ -77,21 +77,6 @@
       <Button disabled={!ready || !editor.canRedo} onclick={() => void editor.redo()} title="Redo what was undone">Redo</Button>
     </div>
 
-    {#if editor.draftCount}
-      <div class="draft" role="status">
-        <span>{editor.draftCount} {editor.draftCount === 1 ? "change waits" : "changes wait"} for a rebuild</span>
-        <div class="row">
-          <Button variant="primary" disabled={!ready || editor.busy || store.rebuilding || editor.previewError !== null} onclick={() => void editor.apply()}>Apply</Button>
-          <Button disabled={editor.busy} onclick={() => editor.discard()}>Discard</Button>
-        </div>
-      </div>
-    {/if}
-    {#if editor.previewError}
-      <Notice tone="warning">This engine can't be built: {editor.previewError}</Notice>
-    {/if}
-    {#if editor.error}
-      <Notice tone="warning">{editor.error}</Notice>
-    {/if}
 
     {#if !ready}
       <p class="empty">The editor opens once the engine runs.</p>
@@ -182,6 +167,28 @@
         </div>
       </details>
     {/if}
+
+    <!-- The draft's bar: stuck to the panel's bottom edge, over the fields, so it moves nothing
+         when it comes and goes. -->
+    {#if editor.draftCount || editor.previewError || editor.error}
+      <div class="draft" role="status">
+        {#if editor.draftCount}
+          <div class="draft-line">
+            <span>{editor.draftCount} {editor.draftCount === 1 ? "change waits" : "changes wait"} for a rebuild</span>
+            <span class="draft-actions">
+              <Button size="sm" disabled={editor.busy} onclick={() => editor.discard()}>Discard</Button>
+              <Button size="sm" variant="primary" disabled={!ready || editor.busy || store.rebuilding || editor.previewError !== null} onclick={() => void editor.apply()}>Apply</Button>
+            </span>
+          </div>
+        {/if}
+        {#if editor.previewError}
+          <Notice tone="warning">This engine can't be built: {editor.previewError}</Notice>
+        {/if}
+        {#if editor.error}
+          <Notice tone="warning">{editor.error}</Notice>
+        {/if}
+      </div>
+    {/if}
   </div>
 </Panel>
 
@@ -200,13 +207,31 @@
   }
 
   .draft {
+    position: sticky;
+    bottom: 0;
     display: flex;
     flex-direction: column;
     gap: var(--rb-space-3);
     padding: var(--rb-space-3);
     border: var(--rb-border-width) solid var(--rb-color-accent);
     border-radius: var(--rb-radius-md);
+    background: var(--rb-color-surface-raised);
+    /* the panel's colour all round it, so the fields scrolling behind never peek out under it */
+    box-shadow: 0 0 0 var(--rb-space-4) var(--rb-color-surface);
     font-size: var(--rb-font-size-sm);
+  }
+
+  .draft-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rb-space-3);
+  }
+
+  .draft-actions {
+    display: flex;
+    flex: none;
+    gap: var(--rb-space-2);
   }
 
   .section summary {

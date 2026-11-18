@@ -1,5 +1,6 @@
 <!--
-  Button - the base button. `pressed` makes it a toggle (aria-pressed); `variant` picks its tone.
+  Button - the base button. `pressed` makes it a toggle (aria-pressed); `variant` picks its tone;
+  `size` "sm" is the compact one that sits inside another control (the top bar's warning).
   Other attributes (onclick, onpointerdown, disabled, title, ...) go to the <button>.
 -->
 <script lang="ts">
@@ -9,13 +10,14 @@
   interface Props extends HTMLButtonAttributes {
     variant?: "default" | "primary" | "danger";
     pressed?: boolean | undefined;
+    size?: "md" | "sm";
     children?: Snippet;
   }
 
-  let { variant = "default", pressed = undefined, children, ...rest }: Props = $props();
+  let { variant = "default", pressed = undefined, size = "md", children, ...rest }: Props = $props();
 </script>
 
-<button type="button" class="button {variant}" aria-pressed={pressed} {...rest}>
+<button type="button" class="button {variant} {size}" aria-pressed={pressed} {...rest}>
   {@render children?.()}
 </button>
 
@@ -31,6 +33,13 @@
     font-weight: var(--rb-weight-medium);
     cursor: pointer;
     transition: background var(--rb-duration-fast);
+  }
+
+  .sm {
+    height: var(--rb-control-height-sm);
+    padding: 0 var(--rb-space-3);
+    border-radius: var(--rb-radius-sm);
+    font-size: var(--rb-font-size-sm);
   }
 
   .button:hover:not(:disabled) {

@@ -25,6 +25,7 @@
   --rb-color-accent-text: #07101c;
   --rb-color-danger: #ff6b6b;
   --rb-color-warning: #f5b94a;
+  --rb-color-warning-tint: #2a2316;
   --rb-color-success: #4cc38a;
   --rb-color-focus: #8dc1ff;
 }
@@ -44,6 +45,7 @@
   --rb-color-accent-text: #ffffff;
   --rb-color-danger: #c62f2f;
   --rb-color-warning: #8a5a00;
+  --rb-color-warning-tint: #fbf1dc;
   --rb-color-success: #1c7a4f;
   --rb-color-focus: #1a6fd6;
 }
@@ -86,6 +88,8 @@
 
   /* sizes of the parts of the window */
   --rb-control-height: 32px;
+  /* a button inside another control, like the warning's action */
+  --rb-control-height-sm: 24px;
   /* the top bar's status slot (the "can't keep up" warning): fixed, so it never moves the bar */
   --rb-status-width: 240px;
   --rb-topbar-height: 64px;
