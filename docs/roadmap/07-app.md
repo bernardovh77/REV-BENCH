@@ -366,6 +366,72 @@ is claimed physically credible just because it was accepted.
 
 **Execution record:** `docs/stage-067.md`.
 
+<a id="stage-131"></a>
+## Stage 131 — Engine layouts: any family and cylinder count
+
+**Dependencies:** [067](#stage-067), [118](#stage-118), [123](#stage-123)
+
+**Why:** Bernardo's request (2026-11-18): engines chosen by configuration (inline, V, boxer) and
+cylinder count, not only by the five presets. The core already holds 1 to 16 cylinders in one
+or two banks at any bank angle, with each cylinder's own pin, firing order, header and
+collector; what's missing is something that designs a coherent engine from a family and a
+count, and the tuning each preset got by hand. `cylinders` and `banks` are read-only today
+because changing one alone leaves every per-cylinder list incoherent.
+
+**Deliverable:**
+- **The families and counts:**
+  - inline: 1 to 6 cylinders (8 later, its own follow-up: a crank that long is a stated limit);
+  - V: 2 to 16, even counts, with the bank angle in a range per count;
+  - boxer: 2, 4 and 6 (8 later, as for the inline).
+- **The crank where a count has several:** the V8's cross-plane and flat-plane, the V6's 60°
+  even-firing, 90° odd-firing and 90° split-pin, the V-twin's angle; for the rest, the even
+  firing rule (pins and firing order so the cylinders fire every 720/n degrees, primary and
+  secondary balance stated), with a table of known real layouts taking precedence.
+- **The core:** a new public function that fills a whole description from family, count, crank
+  and bank angle: banks, pins, firing order, positions along the crank, headers grouped into
+  collectors (one exhaust or one per bank), valve and runner sizes for the bore, and the
+  running set (flywheel, starter, accessories, idle valve and gains, rev limit) worked out from
+  the displacement and count instead of hand-tuned. Appended to rb.h, `WASM_EXPORTS` and the
+  add-on; refusals stated with a reason, never a truncated engine.
+- **The presets stay** as named starting points: each is a layout plus its own tuned values.
+  Choosing another layout from one keeps the edits that still make sense (bore, stroke, cams,
+  compression) and says which it drops.
+- **The app:** a Layout control at the top of the editor (family, count, crank, bank angle),
+  applied as one rebuild through 067's transaction, with the preview (the core's description
+  before the build), undo, the autosave and BUSY rules; the real-time tier picked per layout
+  from its measured cost.
+- **Labelling:** a generated engine is generic ("V10, generic"), never presented as a real
+  engine; 090–093 add researched, calibrated engines on top of this.
+
+**Required exit evidence:**
+- **Every supported combination** (each family, count and crank): the core's own events fire
+  in the generated order at the stated intervals; pins, banks and firing order agree with the
+  kinematics; it starts, idles 30 s without hunting (within the presets' idle tolerance), takes
+  a blip and a 10 N m load, revs to its limit and stops, in bounded tests; `rb_cli fuzz` on each.
+- **The five presets unchanged:** regenerating each preset's layout gives its own pins, banks
+  and firing order, and the presets render bit for bit as before (`cli_parity`).
+- **Capacity at 16 cylinders:** snapshots, telemetry, the add-on and the window handle every
+  count up to 16, per-cylinder state included; stable IDs.
+- **Speed:** each combination's cost per tier measured on the i7-1355U; the default tier for
+  each plays live there, or the combination states that it can't.
+- **The app:** e2e on Windows: a layout and count changed while playing, a refusal kept out,
+  undo back to the preset; never half-applied.
+- **The sound check:** idle and a rev of each family at a few counts rendered for Bernardo; his
+  listening informs, it doesn't certify (phase B and 094 calibrate).
+- Planted bugs in the generator (a wrong firing interval, a pin off, a bank swapped, the idle
+  gains not scaled, a count silently clamped) caught by the tests.
+
+**Stop/reject rule:** A generated engine is generic: no claim that it sounds like a real one.
+No combination offered that the core can't build or run; no silent truncation or clamping of
+the count. Hand-tuned presets aren't rewritten to fit the generator.
+
+**Legacy coverage:** 23 (layouts, as a generator).
+
+**Starting evidence/specification:** [docs/stage-067.md](../stage-067.md) ("What is left":
+layout-fixed fields), `core/src/presets.c`, [docs/architecture.md](../architecture.md).
+
+**Execution record:** `docs/stage-131.md`.
+
 <a id="stage-068"></a>
 ## Stage 068 — Live instruments, telemetry and the core's dyno
 

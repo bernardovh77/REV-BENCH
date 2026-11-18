@@ -7,7 +7,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-090"></a>
 ## Stage 090 — Additional inline and single-cylinder engines
 
-**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087)
+**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087), [131](07-app.md#stage-131) (the generic layout it starts from; this stage adds the researched calibration)
 
 **Deliverable:** Add I3, I5 and motorcycle-single configurations with their own dimensions, firing/valve data, suitable exhaust layouts and referenced or explicitly generic calibration assumptions.
 
@@ -24,7 +24,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-091"></a>
 ## Stage 091 — 60-degree and 90-degree V6 engines
 
-**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087)
+**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087), [131](07-app.md#stage-131) (the generic layout it starts from; this stage adds the researched calibration)
 
 **Deliverable:** Implement both V6 bank/crank/firing variants and model-specific intake/exhaust configuration with consistent spatial and acoustic identity.
 
@@ -41,7 +41,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-092"></a>
 ## Stage 092 — V10 and V12 engines
 
-**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087)
+**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087), [131](07-app.md#stage-131) (the generic layout it starts from; this stage adds the researched calibration)
 
 **Deliverable:** Add researched or explicitly generic V10/V12 bank/pin/firing and full exhaust descriptions. Prepare larger engine capacities and runtime/geometry budgets explicitly.
 
@@ -58,7 +58,7 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 <a id="stage-093"></a>
 ## Stage 093 — Boxer-six engine
 
-**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087)
+**Dependencies:** [009](../../docs/roadmap/01-foundations.md#stage-009), [071](../../docs/roadmap/08-3d.md#stage-071), [073](../../docs/roadmap/08-3d.md#stage-073), [087](../../docs/roadmap/10-limits.md#stage-087), [131](07-app.md#stage-131) (the generic layout it starts from; this stage adds the researched calibration)
 
 **Deliverable:** Add opposed-cylinder crank, layout, intake/exhaust and distinctive supported calibration with the same physical/visual descriptor.
 
