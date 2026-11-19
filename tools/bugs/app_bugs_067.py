@@ -12,7 +12,7 @@ import sys
 
 BUGS = [
     # the engine side: one transaction, never half-applied
-    ("set-not-checked-first", "src/engine/control.ts", "    if (kept && kept.length) this.describeChoice(choice);\n", "",
+    ("set-not-checked-first", "src/engine/control.ts", "    if ((kept && kept.length) || keptLayout) this.describeChoice(choice);\n", "",
      "tests/engine-editor.test.ts"),
     ("live-during-rebuild", "src/engine/control.ts",
      '    // during a rebuild the edit would reach the engine on its way out and miss the new one\n'

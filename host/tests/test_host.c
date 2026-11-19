@@ -817,3 +817,53 @@ void test_host_engine_build_reads_a_build_or_refuses_it_whole(void)
     CHECK(rb_host_engine_build(&b, 96000, &code, why, sizeof why) == NULL);
     CHECK_EQ_INT(code, RB_ERR_ARG);
 }
+
+void test_host_engine_build_takes_a_layout(void)
+{
+    /* stage 131: a layout from the preset, then the edits on it; the core's own engine */
+    rb_host_build b;
+    rb_host_build_default(&b);
+    b.preset = rb_preset_find("v8-cross");
+    b.quality = RB_QUALITY_LOW;
+    b.layout_family = RB_FAMILY_V;
+    b.layout_cylinders = 12;
+    b.layout_crank = RB_CRANK_EVEN;
+    b.layout_bank_angle = 60.0;
+    rb_host_build_edit(&b, RB_ENG_HEADER_LENGTH, 11, 0.61);
+    const int before = rb_host_debug_live_sims();
+    int code = 99;
+    char why[160];
+    rb_sim *sim = rb_host_engine_build(&b, 48000, &code, why, sizeof why);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    CHECK_EQ_INT((int)rb_get_engine(sim, RB_ENG_CYLINDERS, 0), 12);
+    CHECK_NEAR(rb_get_engine(sim, RB_ENG_HEADER_LENGTH, 11), 0.61, 0.0);
+    CHECK_EQ_INT((int)rb_get_layout(sim, RB_LAYOUT_GENERATED), 1);
+    CHECK_EQ_INT(rb_get_preset(sim), rb_preset_find("v8-cross"));
+
+    rb_config cfg;
+    rb_config_default(&cfg);
+    cfg.sample_rate = 48000.0;
+    rb_config_quality(&cfg, RB_QUALITY_LOW);
+    rb_sim *own = rb_create(&cfg);
+    CHECK(own != NULL);
+    if (own) {
+        rb_load_preset(own, rb_preset_find("v8-cross"));
+        CHECK_EQ_INT(rb_load_layout(own, rb_preset_find("v8-cross"), RB_FAMILY_V, 12, RB_CRANK_EVEN, 60.0), RB_OK);
+        rb_set_engine(own, RB_ENG_HEADER_LENGTH, 11, 0.61);
+        for (int i = 0; i < b.n_params; i++) rb_set_param(own, b.params[i].id, b.params[i].value);
+        static float x[4800], y[4800];
+        rb_render_block(sim, x, 4800);
+        rb_render_block(own, y, 4800);
+        CHECK(memcmp(x, y, sizeof x) == 0);
+        rb_destroy(own);
+    }
+    rb_host_engine_free(sim);
+
+    /* a layout not offered: no engine, and why */
+    b.layout_cylinders = 9;
+    CHECK(rb_host_engine_build(&b, 48000, &code, why, sizeof why) == NULL);
+    CHECK_EQ_INT(code, RB_ERR_VALUE);
+    CHECK(strstr(why, "layout") != NULL && strstr(why, "even number") != NULL);
+    CHECK_EQ_INT(rb_host_debug_live_sims(), before);
+}

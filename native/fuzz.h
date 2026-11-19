@@ -35,6 +35,9 @@ typedef struct rb_fuzz_result {
     int    tries;          /* fields it tried to change: change[0..tries-1]       */
     rb_fuzz_change change[RB_FUZZ_MAX_CHANGES];
     int    cylinders;      /* the engine it ran                                    */
+    int    layout_family;  /* the layout it was built as (stage 131), -1: the preset's own */
+    int    layout_crank;
+    double layout_angle;
     int    hear;           /* where the listener stood (RB_HEAR_*, audio.h)       */
     double variation;      /* how much no two cycles were alike (stage 12c)       */
     double max_rpm;        /* the extremes it reached                              */
@@ -49,6 +52,11 @@ typedef struct rb_fuzz_result {
  * default rate). Returns 1 if it passed, 0 if not (r->what says why). */
 int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int quality,
                 rb_fuzz_result *r);
+/* As rb_fuzz_run; with `layouts` 1 (stage 131) the preset is first rebuilt as a random layout
+ * the core offers (family, count, crank, any bank angle in range), drawn from a stream of its
+ * own, so that with `layouts` 0 a seed makes the engine it always made. */
+int rb_fuzz_run_layouts(unsigned long long seed, double seconds, int oversample, int quality, int layouts,
+                        rb_fuzz_result *r);
 struct rb_engine;
 int rb_fuzz_inspect_engine(rb_fuzz_result *r,const struct rb_engine *e,double time);
 

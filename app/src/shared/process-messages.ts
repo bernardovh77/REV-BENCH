@@ -4,7 +4,7 @@
  * The main process never reads a snapshot or a command: it starts the engine, hands it
  * the window's port, learns what build is running (for the autosave) and hears its logs.
  */
-import type { Backend, Quality, Scene } from "./addon";
+import type { Backend, LayoutSpec, Quality, Scene } from "./addon";
 
 /** One change to the engine's description, by the core's field name (stage 067): names stay
  *  meaningful across versions, where ids may not. `index` is the bank, cylinder or place in the
@@ -26,6 +26,8 @@ export interface BuildChoice {
   latencyMs?: number;
   /** the editor's changes to the preset's engine, in the order they were made (stage 067) */
   edits?: EngineEdit[];
+  /** the engine as this layout, started from the preset (stage 131); absent: the preset's own */
+  layout?: LayoutSpec;
 }
 
 export interface EngineInit {

@@ -110,7 +110,7 @@ BUGS = {
         "                            ) ? 96000.0",
         ["test_core_quality"], 300),
     'lean-v8-flat-at-low': ("core/src/presets.c",
-        "v8_flat, RB_QUALITY_LEAN }",
-        "v8_flat, RB_QUALITY_LOW }",
+        "v8_flat, RB_QUALITY_LEAN, ",   # stage 131: the row ends with its layout
+        "v8_flat, RB_QUALITY_LOW, ",
         ["test_core_preset_quality"], 300),
 }

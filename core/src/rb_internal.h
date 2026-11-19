@@ -14,6 +14,7 @@
 #include "engine.h"
 #include "ignition.h"
 #include "injection.h"
+#include "layouts.h"
 #include "noise.h"
 #include "scene.h"
 
@@ -91,6 +92,8 @@ struct rb_sim {
      * which stage 14 does for the browser. Its description (engine.desc) is
      * always a possible engine. */
     int       preset;       /* the preset it was built from               */
+    rb_layout layout;       /* the layout it was built as (stage 131)     */
+    int       generated;    /* 1: rb_load_layout made it, not its preset's own */
     rb_engine engine;       /* stays where rb_init put it (see engine.h)  */
     rb_dyno  *dyno;         /* stage 12c: a dyno on the crank, stepped
                              * before the engine every physics step; a

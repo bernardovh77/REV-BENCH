@@ -8,7 +8,7 @@
  * snapshot once per animation frame, and draws the newest it has. Snapshot
  * bytes travel as a transferred ArrayBuffer (no copy on the way).
  */
-import type { Ack, DeviceInfo, EngineFieldInfo, HostStats, ParamInfo, PresetInfo, Quality, Scene, TelemetryInfo } from "./addon";
+import type { Ack, DeviceInfo, EngineFieldInfo, HostStats, LayoutInfo, LayoutSpec, ParamInfo, PresetInfo, Quality, Scene, TelemetryInfo } from "./addon";
 import type { EngineEdit } from "./process-messages";
 
 export const PROTOCOL_VERSION = 1;
@@ -34,12 +34,20 @@ export type Command =
    * stage 067: the current preset rebuilt with exactly these edits (its quality and scene kept),
    * as one transaction: checked first, then prepared and swapped in with the fade. If any edit is
    * refused nothing changes and the reply says why. An empty list is the preset as it comes.
+   * With `layout` (stage 131) the engine is rebuilt as that layout too (null: the preset's own),
+   * exactly these edits on it: how the editor's undo brings back a layout with its own edits.
    */
-  | { kind: "apply-edits"; edits: EngineEdit[] }
+  | { kind: "apply-edits"; edits: EngineEdit[]; layout?: LayoutSpec | null }
   /** a live field (its flags say "live") changed on the running engine, and kept for rebuilds */
   | { kind: "edit-live"; edit: EngineEdit }
-  /** the engine these edits would make, without building it: a `description` message answers */
-  | { kind: "describe"; edits: EngineEdit[] }
+  /** the engine these edits would make, without building it: a `description` message answers;
+   *  with `layout` (stage 131), on that layout instead (null: the preset's own) */
+  | { kind: "describe"; edits: EngineEdit[]; layout?: LayoutSpec | null }
+  /**
+   * stage 131: the current preset rebuilt as this layout (null: the preset's own), its quality,
+   * scene and the edits a new layout keeps (layout-edits.ts), as one transaction like apply-edits
+   */
+  | { kind: "set-layout"; layout: LayoutSpec | null }
   /**
    * the volume, 0..VOLUME_MAX (1 is the app's level: real relative loudness between engines,
    * with headroom). The engine process sets master_gain and keeps it for every rebuild.
@@ -79,10 +87,12 @@ export type FromEngine =
       sampleRate: number;
       preset: string;
       /** what is built now: the preset, and its quality and scene when chosen (stage 066) */
-      build?: { preset: string; quality?: Quality; scene?: Scene; latencyMs?: number; edits?: EngineEdit[] };
+      build?: { preset: string; quality?: Quality; scene?: Scene; latencyMs?: number; edits?: EngineEdit[]; layout?: LayoutSpec };
       /** the core's engine fields, and the values of the engine playing (stage 067) */
       engineFields?: EngineFieldInfo[];
       description?: number[][];
+      /** the layouts the core builds (stage 131) */
+      layouts?: LayoutInfo[];
       /** the driver's live settings every build keeps: the volume, and the listener and variant once set */
       settings?: { volume: number; listener?: number; variant?: number; afr?: number; spark_offset?: number; layers?: number };
       generation: number;
@@ -109,7 +119,7 @@ export type FromEngine =
    * id, or 0 for the engine now playing (sent after every rebuild and live edit). `edits` are the
    * ones it was described with.
    */
-  | { type: "description"; request: number; preset: string; edits: EngineEdit[]; values: number[][] }
+  | { type: "description"; request: number; preset: string; edits: EngineEdit[]; values: number[][]; layout?: LayoutSpec }
   /**
    * capture-dump's result: the files written (in the user-data folder), the frames, the blocks
    * the tap dropped, and whether a device change or sleep broke the trace

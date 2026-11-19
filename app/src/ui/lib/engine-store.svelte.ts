@@ -7,7 +7,7 @@
  * The window never waits for the engine: it asks for a snapshot every animation frame and shows
  * the newest it has (docs/app-design.md section 4).
  */
-import type { DeviceInfo, EngineFieldInfo, HostStats, Quality, Scene } from "../../shared/addon";
+import type { DeviceInfo, EngineFieldInfo, HostStats, LayoutInfo, LayoutSpec, Quality, Scene } from "../../shared/addon";
 import type { EngineEdit } from "../../shared/process-messages";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../../shared/bridge";
 import type { Snapshot } from "../../shared/snapshot-v2.generated";
@@ -75,6 +75,13 @@ export class EngineStore {
   engineFields = $state.raw<EngineFieldInfo[]>([]);
   engineValues = $state.raw<number[][] | null>(null);
   engineEdits = $state.raw<EngineEdit[]>([]);
+  /** the layouts the core builds, and the playing engine's layout (null: its preset's own) (stage 131) */
+  layouts = $state.raw<LayoutInfo[]>([]);
+  layout = $state.raw<LayoutSpec | null>(null);
+  /** the playing preset's own layout */
+  get presetLayout(): LayoutSpec | null {
+    return this.hello?.presets.find((p) => p.key === this.preset)?.layout ?? null;
+  }
   private lastLate = -1;
   private readonly described = new Map<number, (values: number[][]) => void>();
   private quietStats = 0;
@@ -112,6 +119,8 @@ export class EngineStore {
         this.engineFields = hello.engineFields ?? [];
         this.engineValues = hello.description ?? null;
         this.engineEdits = hello.build?.edits ?? [];
+        this.layouts = hello.layouts ?? [];
+        this.layout = hello.build?.layout ?? null;
         this.listener = hello.settings?.listener ?? 1;
         this.volume = hello.settings?.volume ?? 1;
         // the editor's settings: what the engine says it keeps, else the core's defaults
@@ -147,6 +156,7 @@ export class EngineStore {
           this.engineValues = d.values;
           this.engineEdits = d.edits;
           this.preset = d.preset;
+          this.layout = d.layout ?? null;
           return;
         }
         this.described.get(d.request)?.(d.values);
@@ -267,15 +277,16 @@ export class EngineStore {
   }
 
   /**
-   * Stage 067: the preset rebuilt with exactly these edits, as one transaction. Resolves once
+   * Stage 067: the preset rebuilt with exactly these edits (and, stage 131, as `layout`: null
+   * its own, absent the one playing), as one transaction. Resolves once
    * the new engine plays; rejects (with the engine's reason) and changes nothing if any edit is
    * refused. Unlike the other commands it throws, so the editor can keep its draft.
    */
-  async applyEdits(edits: EngineEdit[]): Promise<void> {
+  async applyEdits(edits: EngineEdit[], layout?: LayoutSpec | null): Promise<void> {
     if (this.rebuilding) throw new CommandError("BUSY", "a rebuild is in progress");
     this.rebuilding = true;
     try {
-      await this.client.command({ kind: "apply-edits", edits });
+      await this.client.command({ kind: "apply-edits", edits, ...(layout === undefined ? {} : { layout }) });
       this.lastError = null;
     } finally {
       this.rebuilding = false;
@@ -289,9 +300,9 @@ export class EngineStore {
   }
 
   /** The values these edits would give, without building them; rejects with the reason. */
-  describeEdits(edits: EngineEdit[]): Promise<number[][]> {
+  describeEdits(edits: EngineEdit[], layout?: LayoutSpec | null): Promise<number[][]> {
     return new Promise<number[][]>((resolve, reject) => {
-      const sent = this.client.commandWithId({ kind: "describe", edits });
+      const sent = this.client.commandWithId({ kind: "describe", edits, ...(layout === undefined ? {} : { layout }) });
       this.described.set(sent.id, resolve);
       sent.done.catch((e: unknown) => {
         this.described.delete(sent.id);

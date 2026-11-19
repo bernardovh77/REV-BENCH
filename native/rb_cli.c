@@ -175,6 +175,11 @@ void cli_usage(FILE *f)
         "sound options (a listener around the car, the anti-alias filter, DC blocker and soft\n"
         "limiter; full scale is 40 Pa, 126 dB SPL):\n"
         "      --preset KEY      the engine                 (default i4)\n"
+        "      --layout F:N[:CRANK[:ANGLE]]  the engine as this layout, from the preset (stage\n"
+        "                        131): F inline, v or boxer; CRANK even, common, cross, twin180\n"
+        "                        or twin270; ANGLE a V's bank angle (deg); the usual ones if left out\n",
+        f);
+    fputs(   /* split: C99 compilers need only take string literals up to 4095 characters */
         "      --idle            started with the key, then left to idle (the default)\n"
         "      --sweep           wide open from 1000 rpm (held there for 1.5 s first) into the\n"
         "                        rev limiter with a car's inertia and the road's load on the\n"
@@ -233,6 +238,7 @@ void cli_usage(FILE *f)
         "      --sets N          how many random engines    (default 20)\n"
         "  -s, --seconds S       each one's run             (default 10)\n"
         "      --seed K          the first one's seed; the others follow (default 1)\n"
+        "      --layouts         each preset rebuilt as a random layout first (stage 131)\n"
         "  -x, --oversample N    physics substeps per 48 kHz sample (default 4)\n"
         "      --quality Q       low, medium, high or ultra, as for sound\n",
         f);
@@ -1888,7 +1894,7 @@ static const char *const LISTENERS[RB_LISTENER_COUNT] = { "tailpipe", "behind", 
 static int cmd_fuzz(int argc, char **argv)
 {
     double sets = 20.0, seconds = 10.0, seed = 1.0, os = 4.0;
-    int quality = -1;
+    int quality = -1, layouts = 0;
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
         int ok = 1;
@@ -1902,6 +1908,8 @@ static int cmd_fuzz(int argc, char **argv)
             ok = !cli_to_double(cli_take_value(argc, argv, &i), &os);
         else if (!strcmp(a, "--quality"))
             ok = (quality = cli_quality_from(cli_take_value(argc, argv, &i))) >= 0;
+        else if (!strcmp(a, "--layouts"))
+            layouts = 1;
         else if (!strcmp(a, "-h") || !strcmp(a, "--help")) {
             cli_usage(stdout);
             return 0;
@@ -1925,12 +1933,15 @@ static int cmd_fuzz(int argc, char **argv)
         const unsigned long long sd = (unsigned long long)seed + (unsigned long long)k;
         rb_fuzz_result r;
         const clock_t c0 = clock();
-        const int ok = rb_fuzz_run(sd, seconds, (int)os, quality, &r);
+        const int ok = rb_fuzz_run_layouts(sd, seconds, (int)os, quality, layouts, &r);
         const double cpu = (double)(clock() - c0) / CLOCKS_PER_SEC;
         printf("%8llu  %-9s %4d %4d %-8s %4.1f %8.0f %9.1f %7.0f %8ld %7.1f  %s\n", sd,
                r.preset >= 0 ? rb_preset_key(r.preset) : "?", r.cylinders, r.changes,
                (r.hear >= 0 && r.hear < RB_LISTENER_COUNT) ? LISTENERS[r.hear] : "?", r.variation, r.max_rpm,
                r.max_p / 1e5, r.max_T, r.repairs, cpu, ok ? "ok" : r.what);
+        if (r.layout_family >= 0)
+            printf("            as %s %d, %s, %.1f deg\n", rb_family_name(r.layout_family), r.cylinders,
+                   rb_crank_name(r.layout_crank), r.layout_angle);
         if (!ok)   /* what it changed, to make it again */
             for (int j = 0; j < r.tries; j++) {
                 const rb_fuzz_change *c = &r.change[j];

@@ -49,7 +49,8 @@ void test_trace_parses_a_build_and_its_commands(void)
         "quality -1\n"
         "oversample 4\n"
         "preset v8-cross\n"
-        "edit header_length 2 0.55\n"
+        "layout 1 12 0 60\n"
+        "edit header_length 11 0.55\n"
         "param ignition 1\n"
         "scene 6\n"
         "scene_time -1.5\n"
@@ -97,6 +98,8 @@ void test_trace_errors_name_the_line(void)
         { "rbtrace 1\nparam throttle abc\n", "line 2" },
         { "rbtrace 1\npreset nothing\n", "line 2" },
         { "rbtrace 1\nedit bore 0\n", "line 2" },
+        { "rbtrace 1\nlayout 1 9 0 90\n", "line 2" },
+        { "rbtrace 1\nlayout 1 8\n", "line 2" },
         { "rbtrace 1\nquality ultraviolet\n", "line 2" },
         { "rbtrace 1\nscene 99\n", "line 2" },
         { "rbtrace 1\nframes -3\n", "line 2" },

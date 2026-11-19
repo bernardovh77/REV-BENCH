@@ -52,9 +52,18 @@
     get preset() {
       return store.preset;
     },
-    applyEdits: (edits) => store.applyEdits(edits),
+    get layouts() {
+      return store.layouts;
+    },
+    get layout() {
+      return store.layout;
+    },
+    get presetLayout() {
+      return store.presetLayout;
+    },
+    applyEdits: (edits, layout) => store.applyEdits(edits, layout),
     editLive: (edit) => store.editLive(edit),
-    describeEdits: (edits) => store.describeEdits(edits),
+    describeEdits: (edits, layout) => store.describeEdits(edits, layout),
   });
 
   $effect(() => {

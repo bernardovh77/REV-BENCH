@@ -10,7 +10,7 @@ import { addon, throwsCode } from "./helpers.mjs";
 const QUALITIES = ["low", "medium", "high", "ultra", "balanced", "lean"];
 
 test("the module exports exactly the Addon of addon.ts", () => {
-  assert.deepEqual(Object.keys(addon).sort(), ["createHost", "describe", "engineFields", "listDevices", "params", "presets", "telemetry", "version"]);
+  assert.deepEqual(Object.keys(addon).sort(), ["createHost", "describe", "engineFields", "layouts", "listDevices", "params", "presets", "telemetry", "version"]);
   for (const name of Object.keys(addon)) assert.equal(typeof addon[name], "function", name);
 });
 
@@ -30,7 +30,8 @@ test("presets() lists the core's presets with a real-time quality each", () => {
   const presets = addon.presets();
   assert.ok(presets.length >= 5, `${presets.length} presets`);
   presets.forEach((p, i) => {
-    assert.deepEqual(Object.keys(p).sort(), ["index", "key", "name", "quality"]);
+    assert.deepEqual(Object.keys(p).sort(), ["index", "key", "layout", "name", "quality"]);
+    assert.deepEqual(Object.keys(p.layout).sort(), ["bankAngle", "crank", "cylinders", "family"]);
     assert.equal(p.index, i);
     assert.match(p.key, /^[a-z0-9][a-z0-9-]*$/);
     assert.ok(p.name.length > 3, `name of ${p.key}`);

@@ -110,10 +110,14 @@ typedef struct rb_host_build {
     int32_t       n_edits, n_params;
     rb_host_edit  edits[RB_HOST_MAX_EDITS];
     rb_host_param params[RB_HOST_MAX_PARAMS];
+    /* The engine as a layout started from the preset (stage 131: rb.h's
+     * rb_load_layout), before the edits; layout_family -1: the preset's own. */
+    int32_t       layout_family, layout_cylinders, layout_crank;
+    double        layout_bank_angle;
 } rb_host_build;
 
-/* Preset 0, the default quality, the mono listener, and the engine as the
- * source (RB_PARAM_SOURCE). */
+/* Preset 0 as it comes (no layout), the default quality, the mono listener,
+ * and the engine as the source (RB_PARAM_SOURCE). */
 void rb_host_build_default(rb_host_build *b);
 /* Appends an edit or a parameter: RB_HOST_OK or RB_HOST_ERR_FULL. */
 int  rb_host_build_edit(rb_host_build *b, int field, int index, double value);

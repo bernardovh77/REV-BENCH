@@ -89,9 +89,37 @@ static long repairs(const rb_engine *e)
 int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int quality,
                 rb_fuzz_result *r)
 {
+    return rb_fuzz_run_layouts(seed, seconds, oversample, quality, 0, r);
+}
+
+/* A random layout the core offers (stage 131), drawn from `s`: tries counts and cranks until
+ * one is offered. Returns 1 and sets the result's layout, or 0 if none was found. */
+static int random_layout(unsigned long long *s, int preset, rb_sim *sim, rb_fuzz_result *r)
+{
+    for (int tries = 0; tries < 64; tries++) {
+        const int family = (int)(uniform(s) * RB_FAMILY_COUNT);
+        const int cylinders = 1 + (int)(uniform(s) * 16.0);
+        const int crank = (int)(uniform(s) * RB_CRANK_COUNT);
+        const double lo = rb_layout_angle(family, cylinders, crank, RB_ANGLE_MIN);
+        const double hi = rb_layout_angle(family, cylinders, crank, RB_ANGLE_MAX);
+        if (lo != lo || hi != hi) continue;   /* NaN: not offered */
+        const double angle = lo + uniform(s) * (hi - lo);
+        if (rb_load_layout(sim, preset, family, cylinders, crank, angle) != RB_OK) continue;
+        r->layout_family = family;
+        r->layout_crank = crank;
+        r->layout_angle = angle;
+        return 1;
+    }
+    return 0;
+}
+
+int rb_fuzz_run_layouts(unsigned long long seed, double seconds, int oversample, int quality, int layouts,
+                        rb_fuzz_result *r)
+{
     memset(r, 0, sizeof *r);
     r->ok = 1;
     r->preset = -1;
+    r->layout_family = -1;
     unsigned long long s = seed_state(seed);
     rb_sim *sim = (quality >= 0) ? rb_create_with_quality(AUDIO_RATE, quality)
                                  : rb_create_with(AUDIO_RATE, oversample);
@@ -100,6 +128,10 @@ int rb_fuzz_run(unsigned long long seed, double seconds, int oversample, int qua
     /* The engine: a preset with a few fields changed, anywhere in their ranges. */
     r->preset = (int)(uniform(&s) * rb_preset_count());
     rb_load_preset(sim, r->preset);
+    if (layouts) {
+        unsigned long long ls = seed_state(seed ^ 0x5A17A5A17ULL);   /* its own stream */
+        if (!random_layout(&ls, r->preset, sim, r)) return fail(r, "no layout found for seed %llu", seed);
+    }
     const int tries = 1 + (int)(uniform(&s) * 12.0);
     for (int k = 0; k < tries && k < RB_FUZZ_MAX_CHANGES; k++) {
         const int f = (int)(uniform(&s) * rb_engine_field_count());

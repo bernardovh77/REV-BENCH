@@ -89,7 +89,7 @@ export function readLog(userData: string): string {
 
 export function autosaved(
   userData: string,
-): { version: number; preset: string; quality?: string; scene?: string; edits?: { field: string; index: number; value: number }[] } | null {
+): { version: number; preset: string; quality?: string; scene?: string; edits?: { field: string; index: number; value: number }[]; layout?: { family: string; cylinders: number; crank: string; bankAngle: number } } | null {
   const file = join(userData, "session", "build.json");
   return existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : null;
 }

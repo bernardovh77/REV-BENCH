@@ -10,10 +10,13 @@
  * all the app sends today. A device change or a sleep starts a new epoch the trace can't hold;
  * the recorder notes it, and a trace with one is not evidence (`interrupted`).
  */
-import { SCENES, type Ack, type BuildSpec, type Host, type ParamInfo, type PresetInfo, type Quality } from "../shared/addon";
+import { SCENES, type Ack, type BuildSpec, type Crank, type EngineFieldInfo, type Family, type Host, type ParamInfo, type PresetInfo, type Quality } from "../shared/addon";
 
 /** RB_QUALITY_*, in order: the trace's names (host/src/trace.c). */
 const QUALITY_INDEX: Record<Quality, number> = { low: 0, medium: 1, high: 2, ultra: 3, balanced: 4, lean: 5 };
+/** rb.h's RB_FAMILY_* and RB_CRANK_* in order (stage 131) */
+const FAMILY_INDEX: readonly Family[] = ["inline", "v", "boxer"];
+const CRANK_INDEX: readonly Crank[] = ["even", "common-pin", "cross-plane", "twin-180", "twin-270"];
 
 /** A number written so it reads back exactly (rb_host_trace.h: 17 digits). */
 function exact(v: number): string {
@@ -49,6 +52,8 @@ export class TraceRecorder {
     private readonly presets: PresetInfo[],
     private readonly rate: number,
     initial: BuildSpec,
+    /** the engine fields, for the builds' edits by name (stage 067) */
+    private readonly fields: EngineFieldInfo[] = [],
   ) {
     this.header = ["rbtrace 1", `rate ${rate}`, ...this.buildLines(initial), "skip 0"];
   }
@@ -129,6 +134,15 @@ export class TraceRecorder {
   private buildLines(spec: BuildSpec): string[] {
     const quality = spec.quality ?? this.presets.find((p) => p.key === spec.preset)?.quality;
     const lines = [`preset ${spec.preset}`, `quality ${quality === undefined ? -1 : QUALITY_INDEX[quality]}`];
+    // the layout (stage 131) by the core's numbers, then the edits by name, as rb_cli writes them
+    if (spec.layout) {
+      const l = spec.layout;
+      lines.push(`layout ${FAMILY_INDEX.indexOf(l.family)} ${l.cylinders} ${CRANK_INDEX.indexOf(l.crank)} ${exact(l.bankAngle)}`);
+    }
+    for (const e of spec.edits ?? []) {
+      const name = this.fields.find((f) => f.id === e.field)?.name;
+      if (name) lines.push(`edit ${name} ${e.index} ${exact(e.value)}`);
+    }
     for (const p of spec.params ?? []) {
       const name = this.params.find((q) => q.id === p.id)?.name;
       if (name) lines.push(`param ${name} ${exact(p.value)}`);

@@ -239,6 +239,13 @@ void test_api_events_share_a_step(void);
 void test_api_variant(void);
 void test_api_afr_and_spark_offset(void);
 void test_editor_every_field_has_an_effect(void);
+void test_layout_offers_the_stated_set(void);
+void test_layout_presets_are_their_own_layouts(void);
+void test_layout_fires_as_stated(void);
+void test_layout_keeps_the_presets_part(void);
+void test_layout_api(void);
+void test_layout_every_combination_runs(void);
+void test_layout_refuses_an_exhaust_far_wider_than_its_headers(void);
 void test_api_listen_changes_restart_the_histories(void);
 /* ---- layouts, presets and the engine API (tests/test_presets.c) ---- */
 void test_presets_table(void);
@@ -540,6 +547,13 @@ static const struct {
     T(test_api_variant),
     T(test_api_afr_and_spark_offset),
     T(test_editor_every_field_has_an_effect),
+    T(test_layout_offers_the_stated_set),
+    T(test_layout_presets_are_their_own_layouts),
+    T(test_layout_fires_as_stated),
+    T(test_layout_keeps_the_presets_part),
+    T(test_layout_api),
+    T(test_layout_every_combination_runs),
+    T(test_layout_refuses_an_exhaust_far_wider_than_its_headers),
     T(test_api_listen_changes_restart_the_histories),
     T(test_dyno_holds_a_speed),
     T(test_dyno_sweeps),

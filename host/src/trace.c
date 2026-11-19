@@ -114,7 +114,7 @@ static int add_command(rb_trace *t, const trace_command *c)
     return 1;
 }
 
-/* One build line (preset, edit, param, scene, scene_time, settle, quality, oversample) into `b`;
+/* One build line (preset, layout, edit, param, scene, scene_time, settle, quality, oversample) into `b`;
  * 1 if it was one and fine, 0 if it wasn't one, -1 if it was and wrong (`why` says what). */
 static int build_line(rb_host_build *b, const char *const *tok, int n, const char **why)
 {
@@ -125,6 +125,19 @@ static int build_line(rb_host_build *b, const char *const *tok, int n, const cha
             *why = "needs the key of a preset";
             return -1;
         }
+        return 1;
+    }
+    if (!strcmp(tok[0], "layout")) {   /* stage 131: family, cylinders, crank, bank angle */
+        long long f, c, k;
+        if (n != 5 || !integer(tok[1], &f) || !integer(tok[2], &c) || !integer(tok[3], &k) || !number(tok[4], &v)
+            || rb_layout_check((int)f, (int)c, (int)k, v) != RB_OK) {
+            *why = "needs a layout rb_layout_check takes: family, cylinders, crank, bank angle";
+            return -1;
+        }
+        b->layout_family = (int)f;
+        b->layout_cylinders = (int)c;
+        b->layout_crank = (int)k;
+        b->layout_bank_angle = v;
         return 1;
     }
     if (!strcmp(tok[0], "quality")) {

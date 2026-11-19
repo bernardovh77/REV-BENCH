@@ -445,6 +445,76 @@ int         rb_load_preset(rb_sim *sim, int preset);   /* RB_OK, RB_ERR_ARG or R
  * it), or RB_ERR_ARG. */
 int         rb_get_preset(const rb_sim *sim);
 
+/* Engine layouts (stage 131): an engine built from a family, a cylinder
+ * count, a crank and the angle between a V's banks. It is a generic engine,
+ * not any real one. It keeps what the preset it starts from has that doesn't
+ * depend on the layout (bore, stroke, rod, compression, cams, the burn,
+ * friction, the rev limit, the kinds of muffler and pipes) and works out the
+ * rest from its size: the crank and firing order, the headers and their
+ * collectors, the intake's and the exhaust's sizes, the flywheel, the
+ * starter, the accessories and the idle's air valve and gains. A preset's
+ * own layout gives the preset itself.
+ *
+ * Offered: inline 1 to 6 cylinders; V 2 to 16, even counts, banks 30 to 120
+ * degrees apart; boxer 2, 4 and 6. */
+typedef enum rb_family {
+    RB_FAMILY_INLINE = 0,
+    RB_FAMILY_V,
+    RB_FAMILY_BOXER,
+    RB_FAMILY_COUNT
+} rb_family;
+
+typedef enum rb_crank {
+    RB_CRANK_EVEN = 0,      /* fires every 720/n degrees; a V's pins split as
+                               its bank angle needs (a V12 at 60, a V10 at 72
+                               and a V8 at 90 need none)                    */
+    RB_CRANK_COMMON_PIN,    /* V: each row's two cylinders on one pin, the
+                               crank of an inline engine of one bank: it
+                               fires as the bank angle makes it (a 90-degree
+                               V6 90/150, a 45-degree V-twin 315/405)       */
+    RB_CRANK_CROSS_PLANE,   /* V8: pins at 0, 90, 270 and 180 degrees       */
+    RB_CRANK_TWIN_180,      /* inline 2: pins 180 apart, fires 180/540      */
+    RB_CRANK_TWIN_270,      /* inline 2: fires 270/450                      */
+    RB_CRANK_COUNT
+} rb_crank;
+
+const char *rb_family_name(int family);   /* "Inline", "V", "Boxer"; NULL if unknown */
+const char *rb_crank_name(int crank);     /* "Even firing", ...; NULL if unknown */
+/* RB_OK if REV-BENCH builds the layout; RB_ERR_ID for an unknown family or
+ * crank; RB_ERR_VALUE for one it doesn't offer (rb_layout_why says why). An
+ * inline's or a boxer's bank angle is 0. */
+int         rb_layout_check(int family, int cylinders, int crank, double bank_angle);
+const char *rb_layout_why(int family, int cylinders, int crank, double bank_angle); /* NULL if offered */
+/* The crank a family and count usually have (a V-twin's common pin, the V8's
+ * cross-plane, the others even), or RB_ERR_VALUE for a count not offered. */
+int         rb_layout_usual_crank(int family, int cylinders);
+/* The bank angles offered (deg): RB_ANGLE_MIN, _MAX and _USUAL; 0 for an
+ * inline or a boxer; NaN for a layout not offered. */
+typedef enum rb_angle_which { RB_ANGLE_MIN = 0, RB_ANGLE_MAX, RB_ANGLE_USUAL } rb_angle_which;
+double      rb_layout_angle(int family, int cylinders, int crank, int which);
+/* The real-time default quality (RB_QUALITY_*) for the count, chosen on the
+ * baseline machine (docs/stage-131.md says which ones it can't play live), or
+ * RB_ERR_VALUE. */
+int         rb_layout_quality(int family, int cylinders, int crank);
+/* Rebuilds the engine, at rest, as this layout started from `preset`.
+ * RB_OK, RB_ERR_ARG (NULL sim), RB_ERR_ID (unknown preset, family or crank)
+ * or RB_ERR_VALUE (a layout not offered). rb_get_preset then gives `preset`. */
+int         rb_load_layout(rb_sim *sim, int preset, int family, int cylinders, int crank, double bank_angle);
+
+/* The layout the engine was built from, or a preset's own (as doubles; NaN
+ * if unknown). RB_LAYOUT_GENERATED is 1 for an engine rb_load_layout built
+ * that isn't its preset's own layout, else 0. */
+typedef enum rb_layout_field {
+    RB_LAYOUT_FAMILY = 0,
+    RB_LAYOUT_CYLINDERS,
+    RB_LAYOUT_CRANK,
+    RB_LAYOUT_BANK_ANGLE,
+    RB_LAYOUT_GENERATED,
+    RB_LAYOUT_COUNT
+} rb_layout_field;
+double      rb_get_layout(const rb_sim *sim, int what);
+double      rb_preset_layout(int preset, int what);
+
 /* The engine's description, field by field. Append new ids just before
  * RB_ENG_COUNT and add a row to the table in core/src/rb_engine_api.c. */
 typedef enum rb_engine_field {

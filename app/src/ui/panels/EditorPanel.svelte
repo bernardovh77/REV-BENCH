@@ -4,7 +4,9 @@
   from the core (editor.svelte.ts); this file lays them out. Fields that need a rebuild go into
   a draft, applied together as one rebuild or discarded; live fields change the engine at once.
   The listener's audition controls (which layers are heard) sit apart from the physical tuning:
-  they change what you hear, not the engine.
+  they change what you hear, not the engine. The layout (stage 131) comes first: the family,
+  the cylinders, the crank and a V's bank angle, only what the core builds; a change joins the
+  draft, and the draft bar says which edits the new layout drops.
 -->
 <script lang="ts">
   import type { EngineFieldInfo, ParamInfo } from "../../shared/addon";
@@ -14,6 +16,7 @@
   import Panel from "../components/Panel.svelte";
   import Select from "../components/Select.svelte";
   import { CHOICES, labelOf, type Editor } from "../lib/editor.svelte";
+  import { layoutName } from "../../shared/layout-edits";
   import type { EngineStore } from "../lib/engine-store.svelte";
   import { displayUnit, fromDisplay, toDisplay, type UnitSystem } from "../lib/units";
 
@@ -36,6 +39,19 @@
   ];
 
   let ready = $derived(store.summary === "running" && store.engineValues !== null);
+
+  /* the layout's choices: the families, the counts of the one shown, its cranks */
+  let layoutShown = $derived(editor.shownLayout);
+  let familyChoices = $derived(
+    [...new Map(store.layouts.map((l) => [l.family, l.familyName])).entries()].map(([value, label]) => ({ value, label })),
+  );
+  let countChoices = $derived(
+    store.layouts.filter((l) => l.family === layoutShown?.family).map((l) => ({ value: String(l.cylinders), label: String(l.cylinders) })),
+  );
+  let crankEntry = $derived(store.layouts.find((l) => l.family === layoutShown?.family && l.cylinders === layoutShown?.cylinders));
+  let crankChoices = $derived(crankEntry?.cranks.map((c) => ({ value: c.crank, label: c.name })) ?? []);
+  let crankShown = $derived(crankEntry?.cranks.find((c) => c.crank === layoutShown?.crank));
+  let generated = $derived(store.layout !== null);
   /** which sections are open: the user's choice, kept through rebuilds (Engine at first) */
   let opened = $state<Record<string, boolean>>({ Engine: true });
   let sections = $derived(editor.sections());
@@ -81,6 +97,31 @@
     {#if !ready}
       <p class="empty">The editor opens once the engine runs.</p>
     {:else}
+      {#if layoutShown && store.layouts.length}
+        <details class="section layout" open={opened.Layout ?? true} ontoggle={(e) => (opened.Layout = e.currentTarget.open)}>
+          <summary>Layout{generated ? `: ${layoutName(store.layout!)}, generic` : ""}</summary>
+          <div class="row">
+            <Select label="Family" options={familyChoices} value={layoutShown.family} disabled={store.rebuilding}
+              onchange={(v) => void editor.chooseLayout({ family: v as typeof layoutShown.family })} />
+            <Select label="Cylinders" options={countChoices} value={String(layoutShown.cylinders)} disabled={store.rebuilding}
+              onchange={(v) => void editor.chooseLayout({ cylinders: Number(v) })} />
+            <Select label="Crank" options={crankChoices} value={layoutShown.crank} disabled={store.rebuilding || crankChoices.length < 2}
+              onchange={(v) => void editor.chooseLayout({ crank: v as typeof layoutShown.crank })} />
+            {#if layoutShown.family === "v" && crankShown}
+              <NumberField label="Bank angle" value={layoutShown.bankAngle} unit="°" min={crankShown.angleMin} max={crankShown.angleMax}
+                digits={1} onchange={(v) => void editor.chooseLayout({ bankAngle: v })} />
+            {/if}
+          </div>
+          <p class="note">
+            {#if generated || editor.layoutChanging}
+              A generic engine worked out from {store.hello?.presets.find((p) => p.key === store.preset)?.name ?? "the preset"}: its
+              cylinder, cams and limits, with the crank, exhaust and idle made for this layout. Not any real engine.
+            {:else}
+              The preset's own layout. Another builds a generic engine from this preset's cylinder, cams and limits.
+            {/if}
+          </p>
+        </details>
+      {/if}
       {#each sections as section (section.title)}
         <details class="section" open={opened[section.title] ?? false} ontoggle={(e) => (opened[section.title] = e.currentTarget.open)}>
           <summary>{section.title}</summary>
@@ -174,12 +215,19 @@
       <div class="draft" role="status">
         {#if editor.draftCount}
           <div class="draft-line">
-            <span>{editor.draftCount} {editor.draftCount === 1 ? "change waits" : "changes wait"} for a rebuild</span>
+            <span>{editor.draftCount} {editor.draftCount === 1 ? "change waits" : "changes wait"} for a rebuild{editor.layoutChanging
+                ? ` (as ${layoutName(editor.layoutDraft!)})` : ""}</span>
             <span class="draft-actions">
               <Button size="sm" disabled={editor.busy} onclick={() => editor.discard()}>Discard</Button>
               <Button size="sm" variant="primary" disabled={!ready || editor.busy || store.rebuilding || editor.previewError !== null} onclick={() => void editor.apply()}>Apply</Button>
             </span>
           </div>
+        {/if}
+        {#if editor.dropped.length}
+          <p class="dropped">
+            The new layout drops {editor.dropped.length === 1 ? "an edit" : `${editor.dropped.length} edits`} made per cylinder:
+            {[...new Set(editor.dropped.map((e) => labelOf(e.field).toLowerCase()))].join(", ")}.
+          </p>
         {/if}
         {#if editor.previewError}
           <Notice tone="warning">This engine can't be built: {editor.previewError}</Notice>
@@ -226,6 +274,17 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--rb-space-3);
+  }
+
+  .note,
+  .dropped {
+    margin: 0;
+    color: var(--rb-color-text-muted);
+    font-size: var(--rb-font-size-xs);
+  }
+
+  .dropped {
+    color: var(--rb-color-warning);
   }
 
   .draft-actions {

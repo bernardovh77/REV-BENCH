@@ -67,8 +67,8 @@ BUGS = {
         "",
         SETTINGS + SNAP, 300),
     'quality-forgets-the-engine': ("core/src/rb_sim.c",
-        "    sim->preset = preset;\n    sim->generation = generation;",
-        "    sim->preset = 0;\n    sim->generation = generation;",
+        "    sim->preset = preset;\n    sim->layout = layout;",   # stage 131 keeps the layout beside it
+        "    sim->preset = 0;\n    sim->layout = layout;",
         SETTINGS, 300),
     # the dyno
     # both ways a rebuild takes it off: directly, and when the reset hold

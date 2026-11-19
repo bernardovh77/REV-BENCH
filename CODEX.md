@@ -4,6 +4,18 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-18: Stage 131, engine layouts (Claude)
+
+- docs/stage-131.md. `core/src/layouts.c`: an engine from family, count, crank and bank angle
+  (`rb_load_layout`), started from a preset; the presets are their own layouts, bit for bit.
+  Every combination's drive is `tests/test_layouts.c`'s, run by the new `layouts` suite in
+  parallel shares (`RB_LAYOUT_SHARD`; weekly in CI, skipped on push).
+- Core checks added: a collector's pipe at most 6x its headers' area (the fuzz's finding);
+  valves built by `rb_valve_make` (zeroed padding; MSVC's leftovers broke a memcmp test).
+- App: `set-layout`, a layout on `apply-edits`/`describe`, the editor's Layout section; edits
+  indexed by cylinder are dropped on a layout change (`shared/layout-edits.ts`). The trace
+  recorder now writes the build's edits and layout.
+
 ## 2026-11-18: App 0.2.3, the warning, the draft bar, the names (Claude)
 
 - The top bar's "can't keep up" slot: a tinted box with a dot and a compact action

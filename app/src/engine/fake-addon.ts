@@ -22,9 +22,12 @@ import type {
   Host,
   HostConfig,
   HostStats,
+  LayoutInfo,
+  LayoutSpec,
   ParamInfo,
   PrepareState,
   PresetInfo,
+  Quality,
   SnapshotRead,
   TelemetryInfo,
 } from "../shared/addon";
@@ -52,13 +55,49 @@ export function addonError(code: string, message: string): AddonError {
 }
 
 const PRESETS: PresetInfo[] = [
-  { index: 0, key: "i4", name: "Inline 4", quality: "balanced" },
-  { index: 1, key: "i6", name: "Inline 6", quality: "low" },
-  { index: 2, key: "v8-cross", name: "V8 cross-plane", quality: "lean" },
-  { index: 3, key: "v8-flat", name: "V8 flat-plane", quality: "lean" },
-  { index: 4, key: "boxer4", name: "Boxer 4", quality: "low" },
+  { index: 0, key: "i4", name: "Inline 4", quality: "balanced", layout: { family: "inline", cylinders: 4, crank: "even", bankAngle: 0 } },
+  { index: 1, key: "i6", name: "Inline 6", quality: "low", layout: { family: "inline", cylinders: 6, crank: "even", bankAngle: 0 } },
+  { index: 2, key: "v8-cross", name: "V8 cross-plane", quality: "lean", layout: { family: "v", cylinders: 8, crank: "cross-plane", bankAngle: 90 } },
+  { index: 3, key: "v8-flat", name: "V8 flat-plane", quality: "lean", layout: { family: "v", cylinders: 8, crank: "common-pin", bankAngle: 90 } },
+  { index: 4, key: "boxer4", name: "Boxer 4", quality: "low", layout: { family: "boxer", cylinders: 4, crank: "even", bankAngle: 0 } },
 ];
 const CYLINDERS: Record<string, number> = { i4: 4, i6: 6, "v8-cross": 8, "v8-flat": 8, boxer4: 4 };
+
+/** The layouts the fake builds: the core's set (rb.h, stage 131), written out again. */
+const FAKE_LAYOUTS: LayoutInfo[] = (() => {
+  const out: LayoutInfo[] = [];
+  const quality = (n: number): Quality => (n <= 4 ? "balanced" : n <= 6 ? "low" : "lean");
+  const vAngle = (n: number) => (n === 6 || n === 12 ? 60 : n === 10 ? 72 : n >= 14 ? 720 / n : 90);
+  for (let n = 1; n <= 6; n++) {
+    const cranks: LayoutInfo["cranks"] = [{ crank: "even", name: "Even firing", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) }];
+    if (n === 2) {
+      cranks.push({ crank: "twin-180", name: "180-degree twin", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) });
+      cranks.push({ crank: "twin-270", name: "270-degree twin", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) });
+    }
+    out.push({ family: "inline", familyName: "Inline", cylinders: n, usualCrank: "even", cranks });
+  }
+  for (let n = 2; n <= 16; n += 2) {
+    const a = { angleMin: 30, angleMax: 120, angleUsual: vAngle(n), quality: quality(n) };
+    const cranks: LayoutInfo["cranks"] = [{ crank: "even", name: "Even firing", ...a }, { crank: "common-pin", name: "Common pins", ...a }];
+    if (n === 8) cranks.push({ crank: "cross-plane", name: "Cross-plane", ...a });
+    out.push({ family: "v", familyName: "V", cylinders: n, usualCrank: n === 2 ? "common-pin" : n === 8 ? "cross-plane" : "even", cranks });
+  }
+  for (const n of [2, 4, 6]) {
+    out.push({ family: "boxer", familyName: "Boxer", cylinders: n, usualCrank: "even",
+      cranks: [{ crank: "even", name: "Even firing", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) }] });
+  }
+  return out;
+})();
+
+/** Why the fake doesn't build a layout, or null if it does (as rb_layout_why, briefly). */
+export function fakeLayoutRefusal(layout: LayoutSpec): string | null {
+  const entry = FAKE_LAYOUTS.find((l) => l.family === layout.family && l.cylinders === layout.cylinders);
+  if (!entry) return `no ${layout.family} engine of ${layout.cylinders} cylinders`;
+  const crank = entry.cranks.find((c) => c.crank === layout.crank);
+  if (!crank) return `no ${layout.crank} crank on that engine`;
+  if (!(layout.bankAngle >= crank.angleMin && layout.bankAngle <= crank.angleMax)) return `a bank angle outside ${crank.angleMin}..${crank.angleMax}`;
+  return null;
+}
 
 const control = ["control"];
 const live: string[] = [];
@@ -116,7 +155,9 @@ const ENGINE_FIELDS: EngineFieldInfo[] = (
 /** The fake's engine: the preset's cylinders, the rest the same for every preset. */
 function fakeDescribe(spec: BuildSpec): number[][] {
   if (!PRESETS.some((p) => p.key === spec.preset)) throw addonError("RB_ERR_ID", `no preset "${spec.preset}"`);
-  const n = CYLINDERS[spec.preset];
+  const refusal = spec.layout ? fakeLayoutRefusal(spec.layout) : null;
+  if (refusal) throw addonError("RB_ERR_VALUE", `that layout isn't built: ${refusal}`);
+  const n = spec.layout ? spec.layout.cylinders : CYLINDERS[spec.preset];
   const values: number[][] = [[n], [0.086], [0.086], [10.5], [0], new Array(n).fill(0.5), [800], [6800], [1]];
   for (const e of spec.edits ?? []) {
     const field = ENGINE_FIELDS[e.field];
@@ -273,6 +314,8 @@ class FakeHost implements Host {
     if (!PRESETS.some((p) => p.key === spec.preset)) {
       throw addonError("RB_HOST_ERR_ARG", `no preset "${spec.preset}"`);
     }
+    const refusal = spec.layout ? fakeLayoutRefusal(spec.layout) : null;
+    if (refusal) throw addonError("RB_ERR_VALUE", `that layout isn't built: ${refusal}`);
     const id = this.nextPrepare++;
     this.prepares.set(id, {
       spec,
@@ -492,6 +535,7 @@ export function createFakeAddon(options: FakeOptions = {}): Addon {
     telemetry: () => TELEMETRY.map((t) => ({ ...t })),
     engineFields: () => ENGINE_FIELDS.map((f) => ({ ...f, flags: [...f.flags] })),
     describe: (spec) => fakeDescribe(spec),
+    layouts: () => FAKE_LAYOUTS.map((l) => ({ ...l, cranks: l.cranks.map((c) => ({ ...c })) })),
     listDevices: (backend) => devicesFor(backend).map((d) => ({ ...d })),
     createHost(config: HostConfig): Host {
       if (!PRESETS.some((p) => p.key === config.initial.preset)) {

@@ -42,6 +42,33 @@ export interface PresetInfo {
   name: string;
   /** its real-time default quality (rb_preset_quality): a QUALITY name */
   quality: Quality;
+  /** the layout it is (stage 131: rb_preset_layout) */
+  layout: LayoutSpec;
+}
+
+/** An engine's family (stage 131: RB_FAMILY_*, the add-on's names). */
+export type Family = "inline" | "v" | "boxer";
+/** Its crank (RB_CRANK_*): even firing, a V's common pins, the V8's cross-plane, a twin's 180 or 270. */
+export type Crank = "even" | "common-pin" | "cross-plane" | "twin-180" | "twin-270";
+
+/** A layout: an engine built from a family, a count, a crank and a V's bank angle (rb_load_layout). */
+export interface LayoutSpec {
+  family: Family;
+  cylinders: number;
+  crank: Crank;
+  /** degrees between a V's banks; 0 for an inline or a boxer */
+  bankAngle: number;
+}
+
+/** What the core builds for one family and count (layouts()). */
+export interface LayoutInfo {
+  family: Family;
+  /** "Inline", "V", "Boxer" (rb_family_name) */
+  familyName: string;
+  cylinders: number;
+  /** the crank this count usually has */
+  usualCrank: Crank;
+  cranks: { crank: Crank; name: string; angleMin: number; angleMax: number; angleUsual: number; quality: Quality }[];
 }
 
 export type Quality = "low" | "medium" | "high" | "ultra" | "balanced" | "lean";
@@ -89,7 +116,9 @@ export interface TelemetryInfo {
 export interface BuildSpec {
   /** a preset key */
   preset: string;
-  /** the quality; default: the preset's real-time default */
+  /** the engine as this layout started from the preset (stage 131); default: the preset's own */
+  layout?: LayoutSpec;
+  /** the quality; default: the preset's (or the layout's) real-time default */
   quality?: Quality;
   /** a stereo scene, RB_SCENE_* lowercased ("asphalt", ..., "passby", "cabin"), or none for the mono listener */
   scene?: string;
@@ -224,4 +253,6 @@ export interface Addon {
    * built: one refused edit refuses the whole build.
    */
   describe(spec: BuildSpec): number[][];
+  /** the layouts the core builds, a family and count each, in family then count order (stage 131) */
+  layouts(): LayoutInfo[];
 }

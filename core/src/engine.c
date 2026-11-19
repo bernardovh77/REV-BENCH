@@ -103,8 +103,8 @@ void rb_engine_desc_default(rb_engine_desc *d)
      * centerlines 110 degrees either side of overlap TDC. The intake opens
      * 15 degrees before overlap TDC and closes 55 after BDC; the exhaust opens
      * 55 before BDC and closes 15 after overlap TDC: 30 degrees of overlap. */
-    d->intake = (rb_valve){ 2, 0.033, 0.85 * 0.033, 0.0095, 250.0, 360.0 + 110.0, 0.7 };
-    d->exhaust = (rb_valve){ 2, 0.028, 0.85 * 0.028, 0.0090, 250.0, 360.0 - 110.0, 0.7 };
+    d->intake = rb_valve_make(2, 0.033, 0.85 * 0.033, 0.0095, 250.0, 360.0 + 110.0, 0.7);
+    d->exhaust = rb_valve_make(2, 0.028, 0.85 * 0.028, 0.0090, 250.0, 360.0 - 110.0, 0.7);
 
     /* An 8 L air box behind a 35 cm snorkel of 70 mm (stage 12), then the
      * throttle and the plenum. */
@@ -297,6 +297,13 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->header_diameter > 0.01 && d->header_diameter < 0.3)) return -1;
     if (!(d->exhaust_pipe_length >= 0.05 && d->exhaust_pipe_length <= 10.0)) return -1;
     if (!(d->exhaust_pipe_diameter > 0.01 && d->exhaust_pipe_diameter < 0.5)) return -1;
+    /* Each collector's pipe at most 6 times the area of the headers joining it (stage 131):
+     * real collectors are 1 to 2 times their primaries. Past it a twin's pipes lost their state
+     * at the slow pipe rates (fuzz seeds 131019, 132032, 132055: 6.6 to 8.6 times); the
+     * presets reach 5.7 at most within the editor's ranges. */
+    for (int c = 0; c < RB_MAX_COLLECTORS; c++)
+        if (joined[c] && !(d->exhaust_pipe_diameter * d->exhaust_pipe_diameter
+                           <= 6.0 * joined[c] * d->header_diameter * d->header_diameter)) return -1;
     if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2
         && (joined[1] || d->junction_volume > 0.0)))) return -1;
     if (!(d->center_length >= 0.0 && d->center_length <= 3.0)

@@ -7,14 +7,19 @@
  *             one transaction (apply-edits), or discarded. A preview of the engine they would
  *             make (describe) shows worked-out fields (the displacement) and any refusal first.
  *   live      a live field (idle speed, rev limit, ...) changes the running engine at once.
+ *   layout    (stage 131) the engine's family, cylinders, crank and a V's bank angle: a change
+ *             joins the draft, the preview shows what it makes and which edits it drops (those
+ *             indexed by the old layout's cylinders, layout-edits.ts), and it lands with the rest.
  *   history   each applied change, live or not, can be undone and redone: undo rebuilds the
- *             preset with the edits it had before. A new preset starts a new history.
+ *             preset as the layout and with the edits it had before. A new preset starts a new
+ *             history.
  *   units     metric or imperial, for display only (units.ts).
  *
  * What fields go in which section, their labels and the names of a few integer choices are
  * presentation, kept here; a field the core adds later still shows, under "Other".
  */
-import type { EngineFieldInfo } from "../../shared/addon";
+import type { EngineFieldInfo, LayoutInfo, LayoutSpec } from "../../shared/addon";
+import { editsForLayout, keptAcrossLayouts, sameLayout } from "../../shared/layout-edits";
 import type { EngineEdit } from "../../shared/process-messages";
 import type { UnitSystem } from "./units";
 
@@ -24,9 +29,20 @@ export interface EditorStore {
   readonly engineValues: number[][] | null;
   readonly engineEdits: EngineEdit[];
   readonly preset: string | null;
-  applyEdits(edits: EngineEdit[]): Promise<void>;
+  /** stage 131: the layouts the core builds, the playing one (null: the preset's own) and the preset's own */
+  readonly layouts: LayoutInfo[];
+  readonly layout: LayoutSpec | null;
+  readonly presetLayout: LayoutSpec | null;
+  /** `layout`: absent keeps the one playing, null is the preset's own */
+  applyEdits(edits: EngineEdit[], layout?: LayoutSpec | null): Promise<void>;
   editLive(edit: EngineEdit): Promise<void>;
-  describeEdits(edits: EngineEdit[]): Promise<number[][]>;
+  describeEdits(edits: EngineEdit[], layout?: LayoutSpec | null): Promise<number[][]>;
+}
+
+/** One step of the history: the edits and the layout (null: the preset's own) a build had. */
+interface Built {
+  edits: EngineEdit[];
+  layout: LayoutSpec | null;
 }
 
 /** The editor's sections, in order, by the core's field names. */
@@ -98,8 +114,10 @@ export class Editor {
   /** the last apply's or undo's refusal */
   error = $state<string | null>(null);
   busy = $state(false);
-  private undoStack = $state.raw<EngineEdit[][]>([]);
-  private redoStack = $state.raw<EngineEdit[][]>([]);
+  /** the layout the draft would build (null: no change of layout) */
+  layoutDraft = $state.raw<LayoutSpec | null>(null);
+  private undoStack = $state.raw<Built[]>([]);
+  private redoStack = $state.raw<Built[]>([]);
   /** the preset the history and draft belong to (state: the getters depend on it) */
   private historyPreset = $state<string | null>(null);
   private previewSeq = 0;
@@ -120,7 +138,58 @@ export class Editor {
   }
 
   get draftCount(): number {
-    return this.samePreset ? Object.keys(this.draft).length : 0;
+    return this.samePreset ? Object.keys(this.draft).length + (this.layoutChanging ? 1 : 0) : 0;
+  }
+
+  /** The layout playing: its own when the store has none. */
+  get currentLayout(): LayoutSpec | null {
+    return this.store.layout ?? this.store.presetLayout;
+  }
+
+  /** The layout shown: the draft's, else the one playing. */
+  get shownLayout(): LayoutSpec | null {
+    return this.layoutDraft ?? this.currentLayout;
+  }
+
+  /** The draft changes the layout. */
+  get layoutChanging(): boolean {
+    const own = this.store.presetLayout;
+    return this.samePreset && own !== null && this.layoutDraft !== null && !sameLayout(this.layoutDraft, this.store.layout ?? undefined, own);
+  }
+
+  /** The edits (applied or in the draft) the draft's new layout would drop: indexed by cylinder. */
+  get dropped(): EngineEdit[] {
+    if (!this.layoutChanging) return [];
+    return editsForLayout(mergeEdits(this.store.engineEdits, Object.values(this.draft)), this.store.engineFields).dropped;
+  }
+
+  /**
+   * The user picked part of a layout: a family, a count, a crank or a bank angle. The rest
+   * follows what the core builds: a family's count kept if it has it (else its nearest), the
+   * crank kept if the count has it (else the usual one), a V's angle kept in its range (else the
+   * usual one). Back to the layout playing, it leaves the draft.
+   */
+  async chooseLayout(change: Partial<LayoutSpec>): Promise<void> {
+    const from = this.shownLayout;
+    if (!from) return;
+    this.followPreset();
+    const family = change.family ?? from.family;
+    const counts = this.store.layouts.filter((l) => l.family === family);
+    if (!counts.length) return;
+    const wanted = change.cylinders ?? from.cylinders;
+    const entry = counts.reduce((best, l) => (Math.abs(l.cylinders - wanted) < Math.abs(best.cylinders - wanted) ? l : best), counts[0]);
+    const crankName = change.crank ?? from.crank;
+    const crank = entry.cranks.find((c) => c.crank === crankName) ?? entry.cranks.find((c) => c.crank === entry.usualCrank) ?? entry.cranks[0];
+    let bankAngle = crank.angleUsual;
+    if (family === "v") {
+      const asked = change.bankAngle ?? (from.family === "v" ? from.bankAngle : crank.angleUsual);
+      bankAngle = asked >= crank.angleMin && asked <= crank.angleMax ? asked : crank.angleUsual;
+      if (change.cylinders !== undefined && change.bankAngle === undefined) bankAngle = crank.angleUsual;
+    }
+    const next: LayoutSpec = { family, cylinders: entry.cylinders, crank: crank.crank, bankAngle };
+    const own = this.store.presetLayout;
+    this.layoutDraft = own && sameLayout(next, this.store.layout ?? undefined, own) ? null : next;
+    await this.refreshPreview();
   }
 
   /** The fields by section; one the sections don't name goes under "Other". */
@@ -144,6 +213,8 @@ export class Editor {
     const source = (this.draftCount && this.preview) || this.store.engineValues;
     const base = source?.[field.id] ?? [];
     if (!this.samePreset) return base;
+    // with a new layout, a draft value indexed by the old layout's cylinders isn't shown
+    if (this.layoutChanging && !keptAcrossLayouts(field)) return base;
     return base.map((v, i) => this.draft[key(field.name, i)]?.value ?? v);
   }
 
@@ -153,7 +224,7 @@ export class Editor {
     const edit: EngineEdit = { field: field.name, index, value };
     if (field.flags.includes("live")) {
       this.followPreset();
-      const before = this.store.engineEdits;
+      const before = this.built();
       try {
         await this.store.editLive(edit);
         this.remember(before);
@@ -184,6 +255,7 @@ export class Editor {
 
   discard(): void {
     this.draft = {};
+    this.layoutDraft = null;
     this.preview = null;
     this.previewError = null;
     this.previewSeq++;
@@ -193,11 +265,11 @@ export class Editor {
   async apply(): Promise<void> {
     if (!this.draftCount || this.busy) return;
     this.followPreset();
-    const before = this.store.engineEdits;
-    const edits = mergeEdits(before, Object.values(this.draft));
+    const before = this.built();
+    const { edits, layout } = this.drafted();
     this.busy = true;
     try {
-      await this.store.applyEdits(edits);
+      await this.store.applyEdits(edits, layout);
       this.remember(before);
       this.discard();
       this.error = null;
@@ -220,13 +292,13 @@ export class Editor {
     await this.travel(this.redoStack, (s) => (this.redoStack = s), (e) => (this.undoStack = [...this.undoStack, e]));
   }
 
-  /** Rebuilds with the top of `from`; on success the edits it replaced go to the other stack. */
-  private async travel(from: EngineEdit[][], setFrom: (s: EngineEdit[][]) => void, pushOther: (e: EngineEdit[]) => void): Promise<void> {
+  /** Rebuilds with the top of `from`; on success the build it replaced goes to the other stack. */
+  private async travel(from: Built[], setFrom: (s: Built[]) => void, pushOther: (e: Built) => void): Promise<void> {
     const target = from[from.length - 1];
-    const current = this.store.engineEdits;
+    const current = this.built();
     this.busy = true;
     try {
-      await this.store.applyEdits(target);
+      await this.store.applyEdits(target.edits, target.layout);
       setFrom(from.slice(0, -1));
       pushOther(current);
       this.discard();
@@ -238,9 +310,24 @@ export class Editor {
     }
   }
 
-  private remember(before: EngineEdit[]): void {
+  private remember(before: Built): void {
     this.undoStack = [...this.undoStack, before];
     this.redoStack = [];
+  }
+
+  /** What plays now, as a step of the history. */
+  private built(): Built {
+    return { edits: this.store.engineEdits, layout: this.store.layout };
+  }
+
+  /** The build the draft makes: its edits on the playing ones (without those a new layout drops),
+   *  and the layout (absent: unchanged; null: the preset's own). */
+  private drafted(): { edits: EngineEdit[]; layout?: LayoutSpec | null } {
+    const edits = mergeEdits(this.store.engineEdits, Object.values(this.draft));
+    if (!this.layoutChanging) return { edits };
+    const own = this.store.presetLayout!;
+    const layout = sameLayout(this.layoutDraft!, undefined, own) ? null : this.layoutDraft;
+    return { edits: editsForLayout(edits, this.store.engineFields).kept, layout };
   }
 
   /** Another preset is playing: its own history and no draft (called from actions only). */
@@ -250,15 +337,21 @@ export class Editor {
     this.undoStack = [];
     this.redoStack = [];
     this.draft = {};
+    this.layoutDraft = null;
     this.preview = null;
     this.previewError = null;
   }
 
   private async refreshPreview(): Promise<void> {
     const seq = ++this.previewSeq;
-    const edits = mergeEdits(this.store.engineEdits, Object.values(this.draft));
+    const { edits, layout } = this.drafted();
+    if (!this.draftCount) {
+      this.preview = null;
+      this.previewError = null;
+      return;
+    }
     try {
-      const values = await this.store.describeEdits(edits);
+      const values = await this.store.describeEdits(edits, layout);
       if (seq !== this.previewSeq) return; // a newer change asked again meanwhile
       this.preview = values;
       this.previewError = null;

@@ -28,7 +28,7 @@ class FakeDomPort {
 }
 
 const hello = (preset = "i4"): FromEngine => ({
-  type: "hello", protocol: 1, addonVersion: "fake", snapshotVersion: 2, presets: [{ index: 0, key: "i4", name: "Inline 4", quality: "balanced" }],
+  type: "hello", protocol: 1, addonVersion: "fake", snapshotVersion: 2, presets: [{ index: 0, key: "i4", name: "Inline 4", quality: "balanced", layout: { family: "inline", cylinders: 4, crank: "even", bankAngle: 0 } }],
   params: [], telemetry: [], devices: [], sampleRate: 48000, preset, generation: 1,
 });
 

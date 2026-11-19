@@ -23,6 +23,14 @@ const rbn_name RBN_SCENES[] = {
     {"garage", RB_SCENE_GARAGE},   {"dyno", RB_SCENE_DYNO},   {"iso", RB_SCENE_ISO},
     {"passby", RB_SCENE_PASSBY},   {"cabin", RB_SCENE_CABIN}, {NULL, 0}};
 
+/* Stage 131's layouts: rb.h's RB_FAMILY_* and RB_CRANK_*. */
+const rbn_name RBN_FAMILIES[] = {
+    {"inline", RB_FAMILY_INLINE}, {"v", RB_FAMILY_V}, {"boxer", RB_FAMILY_BOXER}, {NULL, 0}};
+
+const rbn_name RBN_CRANKS[] = {
+    {"even", RB_CRANK_EVEN},         {"common-pin", RB_CRANK_COMMON_PIN}, {"cross-plane", RB_CRANK_CROSS_PLANE},
+    {"twin-180", RB_CRANK_TWIN_180}, {"twin-270", RB_CRANK_TWIN_270},     {NULL, 0}};
+
 const rbn_name RBN_BACKENDS[] = {
     {"null", RB_HOST_BACKEND_NULL}, {"default", RB_HOST_BACKEND_DEFAULT}, {NULL, 0}};
 

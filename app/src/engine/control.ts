@@ -13,7 +13,8 @@
  * add-on. The window's port is an `EnginePort`, so Electron's MessagePortMain and the tests'
  * in-memory ports both fit.
  */
-import { SCENES, type Ack, type Addon, type BuildSpec, type EngineFieldInfo, type Host, type ParamInfo, type PresetInfo, type Quality, type Scene } from "../shared/addon";
+import { SCENES, type Ack, type Addon, type BuildSpec, type EngineFieldInfo, type Host, type LayoutInfo, type LayoutSpec, type ParamInfo, type PresetInfo, type Quality, type Scene } from "../shared/addon";
+import { badLayout, editsForLayout, sameLayout } from "../shared/layout-edits";
 import type { BuildChoice, EngineEdit, EngineInit } from "../shared/process-messages";
 import { PROTOCOL_VERSION, type Command, type FromEngine, type ToEngine } from "../shared/protocol";
 import { ThrottleGuard } from "./throttle-guard";
@@ -121,6 +122,8 @@ export class EngineControl {
   private params: ParamInfo[] = [];
   private presets: PresetInfo[] = [];
   private fields: EngineFieldInfo[] = [];
+  /** the layouts the core builds (stage 131) */
+  private layouts: LayoutInfo[] = [];
   private choice: BuildChoice;
   private readonly pending = new Map<number, Pending>();
   private rebuild: Rebuild | null = null;
@@ -151,8 +154,19 @@ export class EngineControl {
     this.presets = addon.presets();
     this.params = addon.params();
     this.fields = addon.engineFields();
+    this.layouts = addon.layouts();
     if (!this.presets.some((p) => p.key === config.build.preset)) {
       throw new Error(`no preset "${config.build.preset}"`);
+    }
+    // a saved layout or edits the core no longer builds: the preset as it comes, rather than no engine
+    if (this.choice.layout || this.choice.edits?.length) {
+      try {
+        this.describeChoice(this.choice);
+      } catch (e) {
+        this.deps.log("warn", `the saved engine was refused (${errorOf(e).message}): starting the preset as it comes`);
+        const { layout: _layout, edits: _edits, ...plain } = this.choice;
+        this.choice = plain;
+      }
     }
     this.host = this.createHost(this.choice);
     this.host.start();
@@ -175,7 +189,7 @@ export class EngineControl {
       this.recorder = null;
       return host;
     }
-    this.recorder = new TraceRecorder(this.params, this.presets, host.sampleRate(), initial);
+    this.recorder = new TraceRecorder(this.params, this.presets, host.sampleRate(), initial, this.fields);
     return this.recorder.wrap(host);
   }
 
@@ -259,11 +273,18 @@ export class EngineControl {
     const edits = this.editsById(choice.edits ?? []);
     return {
       preset: choice.preset,
-      ...(choice.quality ? { quality: choice.quality } : {}),
+      ...(choice.layout ? { layout: { ...choice.layout } } : {}),
+      ...(choice.quality ? { quality: choice.quality } : choice.layout ? { quality: this.layoutQuality(choice.layout) } : {}),
       ...(choice.scene ? { scene: choice.scene } : {}),
       ...(edits.length ? { edits } : {}),
       ...(params.length ? { params } : {}),
     };
+  }
+
+  /** A layout's real-time default quality (the add-on's layouts()), or the preset's lowest cost one. */
+  private layoutQuality(layout: LayoutSpec): Quality {
+    const entry = this.layouts.find((l) => l.family === layout.family && l.cylinders === layout.cylinders);
+    return entry?.cranks.find((c) => c.crank === layout.crank)?.quality ?? "lean";
   }
 
   /** Edits by name as the add-on's ids; a name the core no longer has (an old autosave) is left
@@ -315,7 +336,12 @@ export class EngineControl {
   /** Tells the window the values of the engine now playing (request 0). */
   private postPlaying(): void {
     const values = this.safeDescribe(this.choice);
-    if (values) this.port?.post({ type: "description", request: 0, preset: this.choice.preset, edits: this.choice.edits ?? [], values });
+    if (values) {
+      this.port?.post({
+        type: "description", request: 0, preset: this.choice.preset, edits: this.choice.edits ?? [], values,
+        ...(this.choice.layout ? { layout: { ...this.choice.layout } } : {}),
+      });
+    }
   }
 
   /** The window's port: says hello on it. A later attach replaces it (a reloaded window). */
@@ -338,6 +364,7 @@ export class EngineControl {
       build: { ...this.choice },
       engineFields: this.fields,
       description: this.safeDescribe(this.choice),
+      layouts: this.layouts,
       settings: { volume: this.volume, ...this.sticky },
       generation: host.generation(),
     });
@@ -424,18 +451,27 @@ export class EngineControl {
         case "load-preset":
           return this.loadPreset(id, command.preset, command.quality, command.scene, command.edits);
         case "apply-edits":
-          return this.applyEdits(id, command.edits);
+          return this.applyEdits(id, command.edits, command.layout);
         case "edit-live":
           return this.editLive(id, command.edit);
         case "describe": {
-          const bad = this.badEdits(command.edits);
+          const bad = this.badEdits(command.edits) ?? (command.layout ? badLayout(command.layout) : null);
           if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
-          const choice = { ...this.choice, edits: command.edits };
+          const choice: BuildChoice = { ...this.choice, edits: command.edits };
+          if (command.layout !== undefined) {
+            delete choice.layout;
+            if (command.layout) choice.layout = { ...command.layout };
+          }
           const values = this.describeChoice(choice); // the add-on's refusal is the reply's error
           this.reply(id, {});
-          this.port?.post({ type: "description", request: id, preset: choice.preset, edits: command.edits, values });
+          this.port?.post({
+            type: "description", request: id, preset: choice.preset, edits: command.edits, values,
+            ...(choice.layout ? { layout: { ...choice.layout } } : {}),
+          });
           return;
         }
+        case "set-layout":
+          return this.setLayout(id, command.layout);
         case "set-latency":
           return this.setLatency(id, command.ms);
         case "capture-dump":
@@ -472,11 +508,32 @@ export class EngineControl {
   }
 
   /** The current preset, quality and scene, rebuilt with exactly these edits: checked whole first. */
-  private applyEdits(id: number, edits: EngineEdit[]): void {
-    const bad = this.badEdits(edits);
-    if (bad) return this.reply(id, { error: { code: "BAD_EDIT", message: bad } });
+  private applyEdits(id: number, edits: EngineEdit[], layout?: LayoutSpec | null): void {
+    const bad = this.badEdits(edits) ?? (layout ? badLayout(layout) : null);
+    if (bad) return this.reply(id, { error: { code: layout && badLayout(layout) ? "BAD_LAYOUT" : "BAD_EDIT", message: bad } });
     const { preset, quality, scene } = this.choice;
-    this.loadPreset(id, preset, quality, scene ?? null, edits);
+    this.loadPreset(id, preset, quality, scene ?? null, edits, layout === undefined ? undefined : this.ownOrNull(layout));
+  }
+
+  /** The preset's own layout is no layout at all (the preset as it comes): null for it. */
+  private ownOrNull(layout: LayoutSpec | null): LayoutSpec | null {
+    const own = this.presets.find((p) => p.key === this.choice.preset)!.layout;
+    return layout && !sameLayout(layout, undefined, own) ? layout : null;
+  }
+
+  /**
+   * The current preset rebuilt as `layout` (null: its own), with its quality and scene and the
+   * edits a new layout keeps; the ones indexed by the old layout's cylinders are dropped.
+   */
+  private setLayout(id: number, layout: LayoutSpec | null): void {
+    const bad = layout === null ? null : badLayout(layout);
+    if (bad) return this.reply(id, { error: { code: "BAD_LAYOUT", message: bad } });
+    const own = this.presets.find((p) => p.key === this.choice.preset)!.layout;
+    const wanted = this.ownOrNull(layout);
+    const edits = this.choice.edits ?? [];
+    const kept = sameLayout(wanted ?? undefined, this.choice.layout, own) ? edits : editsForLayout(edits, this.fields).kept;
+    const { preset, quality, scene } = this.choice;
+    this.loadPreset(id, preset, quality, scene ?? null, kept, wanted);
   }
 
   /** A live field on the running engine; the edit joins the build once the render thread took it. */
@@ -498,7 +555,11 @@ export class EngineControl {
     return [...edits.filter((e) => e.field !== edit.field || e.index !== edit.index), edit];
   }
 
-  private loadPreset(id: number, preset: string, quality: Quality | undefined, scene: Scene | null | undefined, edits?: EngineEdit[]): void {
+  /** `layout`: undefined keeps the current one for the same preset (another starts as its own); null is the preset's own. */
+  private loadPreset(
+    id: number, preset: string, quality: Quality | undefined, scene: Scene | null | undefined, edits?: EngineEdit[],
+    layout?: LayoutSpec | null,
+  ): void {
     if (this.rebuild) {
       return this.reply(id, { error: { code: "BUSY", message: "another rebuild is in progress" } });
     }
@@ -521,9 +582,13 @@ export class EngineControl {
     }
     // the edits belong to a preset: the same preset keeps them unless new ones are given, another starts plain
     const kept = edits ?? (preset === this.choice.preset ? this.choice.edits : undefined);
+    const shape = layout === undefined || layout === null ? null : badLayout(layout);
+    if (shape) return this.reply(id, { error: { code: "BAD_LAYOUT", message: shape } });
+    const keptLayout = layout === undefined ? (preset === this.choice.preset ? this.choice.layout : undefined) : (layout ?? undefined);
     const { latencyMs } = this.choice;
     const choice: BuildChoice = {
       preset,
+      ...(keptLayout ? { layout: { ...keptLayout } } : {}),
       ...(quality ? { quality } : {}),
       ...(scene ? { scene } : {}),
       ...(latencyMs === undefined ? {} : { latencyMs }),
@@ -531,7 +596,7 @@ export class EngineControl {
     };
     // checked whole before anything starts: one refused edit refuses the build, and the engine
     // playing is untouched (the add-on's error is the reply's)
-    if (kept && kept.length) this.describeChoice(choice);
+    if ((kept && kept.length) || keptLayout) this.describeChoice(choice);
     const prepareId = this.requireHost().prepare(this.buildSpec(choice));
     this.rebuild = { id, epoch: this.epoch, prepareId, choice, startedAt: this.now() };
   }
@@ -585,7 +650,14 @@ export class EngineControl {
 
   /** master_gain for a build at a volume: the app's level, and the preset's and scene's trims. */
   private gainFor(choice: BuildChoice, volume: number): number {
-    return APP_HEADROOM * volume * (PRESET_TRIM[choice.preset] ?? 1) * (choice.scene ? (SCENE_TRIM[choice.scene] ?? 1) : 1);
+    return APP_HEADROOM * volume * EngineControl.trimFor(choice) * (choice.scene ? (SCENE_TRIM[choice.scene] ?? 1) : 1);
+  }
+
+  /** A preset's own trim; a layout's from its size (stage 131): four cylinders or fewer as the
+   *  four is (quiet otherwise), more as the six and the V8s, untrimmed. */
+  static trimFor(choice: BuildChoice): number {
+    if (choice.layout) return choice.layout.cylinders <= 4 ? PRESET_TRIM.i4 : 1;
+    return PRESET_TRIM[choice.preset] ?? 1;
   }
 
   /** Quitting: the sound fades out; how long to wait before stopping the host (QUIT_FADE_MS). */

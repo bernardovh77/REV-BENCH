@@ -57,6 +57,12 @@ typedef struct rb_valve {
 /* 0 if every field is sensible, -1 otherwise. */
 int    rb_valve_check(const rb_valve *v);
 
+/* A valve with these fields and its padding (between `count` and `diameter`) zeroed, so two
+ * descriptions built alike are alike byte for byte: a compound literal leaves the padding to
+ * the compiler, and under MSVC it held the stack's leftovers (stage 131). */
+rb_valve rb_valve_make(int count, double diameter, double port_diameter, double max_lift, double duration,
+                       double center, double cd);
+
 /* Lift (m) at crank angle theta (degrees, any value: wrapped to the cycle). */
 double rb_valve_lift(const rb_valve *v, double theta_deg);
 

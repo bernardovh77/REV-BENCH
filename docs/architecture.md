@@ -304,6 +304,35 @@ Where this file and the code disagree, the code is right and this file is fixed.
     primes them): `test_api_listen_changes_restart_the_histories`.
   - The host's `rb_host_engine_build`/`rb_host_engine_free`: an engine built exactly as a
     prepare builds it, for reading (the editor's preview and the add-on's `describe`).
+- **Stage 131** (engine layouts, docs/stage-131.md): `layouts.c`/`.h`, the public
+  `rb_load_layout` and its metadata (`rb_layout_check`/`_why`/`_usual_crank`/`_angle`/
+  `_quality`, `rb_family_name`, `rb_crank_name`, `rb_get_layout`, `rb_preset_layout`):
+  - **What's offered:** inline 1-6, V 2-16 even (banks 30-120 degrees apart), boxer 2/4/6, with
+    the crank where a count has several (even firing; a V's common pins; the V8's cross-plane;
+    a twin's 180 or 270). Inline and boxer 8 are refused with "planned". On common pins a bank
+    angle where two cylinders would fire at once is refused, with that reason.
+  - **The crank:** an even engine is made from its firing times, each pin worked out so the
+    piston is at TDC then (`pins_from_targets`), so any bank angle fires evenly (the pins split
+    where they must). `rb_layout_crank_into` checks that `rb_engine_layout` gives back exactly
+    those times. A preset's own layout regenerates its pins, banks and firing order, and
+    `rb_layout_desc` returns the preset itself for it, whole.
+  - **The rest:** kept from the preset it starts from (bore, stroke, rod, compression, cams,
+    burn, friction, rev limit, the kinds of muffler and pipes); worked out for the layout
+    (headers into one collector or one per bank or half, the systems, the flows' sizes scaled by
+    displacement, the running set from size: flywheel 0.08 kg m^2 per litre, starter, accessories,
+    idle speed by count, idle valve 47 mm^2 (V/2)^0.8 and gains keeping gain x valve / inertia
+    the four's). The formulas are fitted to the five presets: retune them when the idle's torque
+    response moves (the burn, friction, pipes, cams), and run the `layouts` suite.
+  - **The sim** keeps the layout it was built as (`sim->layout`, `sim->generated`) across
+    resets and quality changes; `rb_load_preset` sets the preset's own.
+  - **The host:** `rb_host_build.layout_*` (family -1: none), applied after the preset and
+    before the edits; traces carry a `layout F N C ANGLE` line (rb_cli sound `--layout`).
+  - **Checks it brought:** a collector's pipe at most 6 times the area of the headers joining
+    it (`rb_engine_desc_check`); valves are made by `rb_valve_make`, never a compound literal,
+    so a description's padding is zero and two built alike compare equal byte for byte.
+  - **Tests:** `tests/test_layouts.c`; the drive of every combination
+    (`test_layout_every_combination_runs`) runs only with `RB_LAYOUT_SHARD=k/N`, which the
+    `layouts` suite of tools/run_tests.py sets for parallel shares (tools/layout_shards.py).
 
 ## Tools and charts
 

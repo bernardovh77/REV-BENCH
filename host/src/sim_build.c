@@ -17,6 +17,7 @@ void rb_host_build_default(rb_host_build *b)
     b->preset = 0;
     b->quality = RB_QUALITY_HIGH;
     b->scene = -1;
+    b->layout_family = -1;
     rb_host_build_param(b, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
 }
 
@@ -68,6 +69,18 @@ rb_sim *rbh_build_sim(const rb_host_build *spec, double rate, int *code, char *w
 
     int rc = rb_load_preset(sim, spec->preset);
     if (rc != RB_OK) return fail(sim, code, rc, why, why_size, "no preset %d", spec->preset);
+    if (spec->layout_family >= 0) {
+        rc = rb_load_layout(sim, spec->preset, spec->layout_family, spec->layout_cylinders, spec->layout_crank,
+                            spec->layout_bank_angle);
+        if (rc != RB_OK) {
+            const char *reason = rb_layout_why(spec->layout_family, spec->layout_cylinders, spec->layout_crank,
+                                               spec->layout_bank_angle);
+            if (code) *code = rc;
+            if (why && why_size) snprintf(why, why_size, "the layout: %s", reason ? reason : "its engine was refused");
+            rbh_sim_destroy(sim);
+            return NULL;
+        }
+    }
     for (int i = 0; i < spec->n_edits; i++) {
         rc = rb_set_engine(sim, spec->edits[i].field, spec->edits[i].index, spec->edits[i].value);
         if (rc < 0) return fail(sim, code, rc, why, why_size, "edit %d was refused", i);

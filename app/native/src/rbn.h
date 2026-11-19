@@ -42,6 +42,8 @@ extern const rbn_name RBN_BACKENDS[];       /* "null", "default"             */
 extern const rbn_name RBN_OUTCOMES[];       /* "ok", "stale", "refused", "busy" */
 extern const rbn_name RBN_COMMANDS[];       /* the acknowledgments' kinds    */
 extern const rbn_name RBN_PREPARE_STATES[]; /* "pending", "ready", "failed"  */
+extern const rbn_name RBN_FAMILIES[];       /* "inline", "v", "boxer" (stage 131) */
+extern const rbn_name RBN_CRANKS[];         /* "even", "common-pin", ...      */
 
 /* The value of a name, or -1 when the table has none. */
 int         rbn_name_value(const rbn_name *table, const char *name);
@@ -130,6 +132,7 @@ napi_value rbn_list_devices(napi_env env, napi_callback_info info);
 /* The engine's fields (rb_engine_field_*) and a build's description (stage 067). */
 napi_value rbn_engine_fields(napi_env env, napi_callback_info info);
 napi_value rbn_describe(napi_env env, napi_callback_info info);
+napi_value rbn_layouts(napi_env env, napi_callback_info info);
 
 /* The Host class and createHost (rbn_host.c). */
 napi_value rbn_create_host(napi_env env, napi_callback_info info);

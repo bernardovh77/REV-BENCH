@@ -45,6 +45,39 @@ static int read_edit(napi_env env, napi_value item, rb_host_build *out)
     return 0;
 }
 
+/* A layout {family, cylinders, crank, bankAngle} (stage 131), checked by the core. */
+static int read_layout(napi_env env, napi_value layout, rb_host_build *out)
+{
+    if (rbn_expect_object(env, layout, "layout") != 0) return -1;
+    napi_value v;
+    int present;
+    char text[32];
+    int64_t cylinders = 0;
+    double angle = 0.0;
+    if (rbn_get_prop(env, layout, "family", &v, &present) != 0) return -1;
+    if (!present) return rbn_throw(env, "RB_HOST_ERR_ARG", "a layout needs a family"), -1;
+    if (rbn_get_string(env, v, "layout.family", text, sizeof text) != 0) return -1;
+    const int family = rbn_name_value(RBN_FAMILIES, text);
+    if (family < 0) return rbn_throw(env, "RB_ERR_ID", "no family \"%s\"", text), -1;
+    if (rbn_get_prop(env, layout, "cylinders", &v, &present) != 0) return -1;
+    if (!present) return rbn_throw(env, "RB_HOST_ERR_ARG", "a layout needs cylinders"), -1;
+    if (rbn_get_int(env, v, "layout.cylinders", 0, RBN_MAX_ID_VALUE, &cylinders) != 0) return -1;
+    if (rbn_get_prop(env, layout, "crank", &v, &present) != 0) return -1;
+    if (!present) return rbn_throw(env, "RB_HOST_ERR_ARG", "a layout needs a crank"), -1;
+    if (rbn_get_string(env, v, "layout.crank", text, sizeof text) != 0) return -1;
+    const int crank = rbn_name_value(RBN_CRANKS, text);
+    if (crank < 0) return rbn_throw(env, "RB_ERR_ID", "no crank \"%s\"", text), -1;
+    if (rbn_get_prop(env, layout, "bankAngle", &v, &present) != 0) return -1;
+    if (present && rbn_get_double(env, v, "layout.bankAngle", &angle) != 0) return -1;
+    const char *why = rb_layout_why(family, (int)cylinders, crank, angle);
+    if (why) return rbn_throw(env, "RB_ERR_VALUE", "that layout isn't built: %s", why), -1;
+    out->layout_family = family;
+    out->layout_cylinders = (int32_t)cylinders;
+    out->layout_crank = crank;
+    out->layout_bank_angle = angle;
+    return 0;
+}
+
 /* One {id, value}. */
 static int read_param(napi_env env, napi_value item, rb_host_build *out)
 {
@@ -102,8 +135,14 @@ int rbn_parse_build(napi_env env, napi_value spec, const char *what, rb_host_bui
     if (preset < 0) return rbn_throw(env, "RB_ERR_ID", "no preset \"%s\"", text), -1;
     out->preset = preset;
 
-    /* the quality: the preset's real-time default unless given */
-    out->quality = rb_preset_quality(preset);
+    /* the layout (stage 131): {family, cylinders, crank, bankAngle}, or the preset's own */
+    if (rbn_get_prop(env, spec, "layout", &v, &present) != 0) return -1;
+    if (present && read_layout(env, v, out) != 0) return -1;
+
+    /* the quality: the preset's (or the layout's) real-time default unless given */
+    out->quality = out->layout_family >= 0
+                 ? rb_layout_quality(out->layout_family, out->layout_cylinders, out->layout_crank)
+                 : rb_preset_quality(preset);
     if (optional_name(env, spec, "quality", text, sizeof text, &present) != 0) return -1;
     if (present) {
         const int quality = rbn_name_value(RBN_QUALITIES, text);

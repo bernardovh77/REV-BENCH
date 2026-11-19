@@ -105,6 +105,8 @@ int rb_init(rb_sim *sim, const rb_config *cfg)
         sim->param[i] = rb_param_default(i);
 
     sim->preset = 0;
+    rb_preset_layout_of(0, &sim->layout);
+    sim->generated = 0;
     rb_preset_desc(0, &sim->engine.desc);   /* rb_reset builds the engine from it */
 
     rb_reset(sim);
@@ -117,6 +119,8 @@ int rb_sim_reconfigure(rb_sim *sim, const rb_config *cfg)
     memcpy(param, sim->param, sizeof param);
     const rb_engine_desc d = rb_sim_desc(sim);
     const int preset = sim->preset, scene = sim->scene_active ? sim->scene.kind : -1;
+    const rb_layout layout = sim->layout;
+    const int generated = sim->generated;
     const uint64_t generation = sim->generation, frames = sim->frames;
     rb_config c = *cfg;
     if (c.pipe_rate == 0.0) c.pipe_rate = RB_PIPE_RATE;
@@ -124,6 +128,8 @@ int rb_sim_reconfigure(rb_sim *sim, const rb_config *cfg)
     rb_init(sim, &c);
     memcpy(sim->param, param, sizeof param);
     sim->preset = preset;
+    sim->layout = layout;
+    sim->generated = generated;
     sim->generation = generation;   /* rb_reset below makes it one more */
     sim->frames = frames;           /* the audio clock goes on (runtime-v1) */
     sim->engine.desc = d;

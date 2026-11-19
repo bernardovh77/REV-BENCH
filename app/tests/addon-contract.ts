@@ -71,6 +71,48 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
         .toThrow(expect.objectContaining({ code: "RB_ERR_READONLY" }));
     });
 
+    it("lists the layouts it builds, and each preset's own (stage 131)", () => {
+      const addon = env.make();
+      const layouts = addon.layouts();
+      const count = (family: string) => layouts.filter((l) => l.family === family).map((l) => l.cylinders);
+      expect(count("inline")).toEqual([1, 2, 3, 4, 5, 6]);
+      expect(count("v")).toEqual([2, 4, 6, 8, 10, 12, 14, 16]);
+      expect(count("boxer")).toEqual([2, 4, 6]);
+      const v8 = layouts.find((l) => l.family === "v" && l.cylinders === 8)!;
+      expect(v8.cranks.map((c) => c.crank)).toEqual(["even", "common-pin", "cross-plane"]);
+      expect(v8.usualCrank).toBe("cross-plane");
+      expect(v8.cranks[0]).toMatchObject({ angleMin: 30, angleMax: 120, angleUsual: 90 });
+      const twin = layouts.find((l) => l.family === "inline" && l.cylinders === 2)!;
+      expect(twin.cranks.map((c) => c.crank)).toEqual(["even", "twin-180", "twin-270"]);
+      for (const l of layouts) for (const c of l.cranks) expect(["low", "balanced", "lean"]).toContain(c.quality);
+      const presets = addon.presets();
+      expect(presets.find((p) => p.key === "i4")!.layout).toEqual({ family: "inline", cylinders: 4, crank: "even", bankAngle: 0 });
+      expect(presets.find((p) => p.key === "v8-cross")!.layout).toEqual({ family: "v", cylinders: 8, crank: "cross-plane", bankAngle: 90 });
+    });
+
+    it("describes a layout's engine, edits on top, and refuses a layout it doesn't build (stage 131)", () => {
+      const addon = env.make();
+      const id = (name: string) => addon.engineFields().find((f) => f.name === name)!.id;
+      const v12 = addon.describe({ preset: "v8-cross", layout: { family: "v", cylinders: 12, crank: "even", bankAngle: 60 } });
+      expect(v12[id("cylinders")]).toEqual([12]);
+      expect(v12[id("header_length")]).toHaveLength(12);
+      const edited = addon.describe({ preset: "i4", layout: { family: "inline", cylinders: 3, crank: "even", bankAngle: 0 },
+        edits: [{ field: id("header_length"), index: 2, value: 0.7 }] });
+      expect(edited[id("header_length")]).toHaveLength(3);
+      expect(edited[id("header_length")][2]).toBe(0.7);
+      for (const layout of [
+        { family: "v", cylinders: 9, crank: "even", bankAngle: 90 },
+        { family: "inline", cylinders: 8, crank: "even", bankAngle: 0 },
+        { family: "boxer", cylinders: 4, crank: "cross-plane", bankAngle: 0 },
+        { family: "v", cylinders: 6, crank: "even", bankAngle: 150 },
+      ] as const) {
+        expect(() => addon.describe({ preset: "i4", layout }), JSON.stringify(layout)).toThrow(expect.objectContaining({ code: "RB_ERR_VALUE" }));
+      }
+      // an index past the layout's cylinders is the core's own refusal
+      expect(() => addon.describe({ preset: "i4", layout: { family: "inline", cylinders: 3, crank: "even", bankAngle: 0 },
+        edits: [{ field: id("header_length"), index: 3, value: 0.7 }] })).toThrow();
+    });
+
     it("lists the presets, with a key, a name and a quality each", () => {
       const presets = env.make().presets();
       expect(presets.length).toBeGreaterThan(0);

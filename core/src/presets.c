@@ -8,6 +8,7 @@
  */
 #include "presets.h"
 #include "exhaust_models.h"
+#include "layouts.h"
 
 #include "rb.h"
 
@@ -20,6 +21,7 @@ typedef struct preset_info {
     const char *name;    /* for people                                */
     void (*build)(rb_engine_desc *d);
     int quality;         /* the real-time default (RB_QUALITY_*)    */
+    rb_layout layout;    /* the layout it is (stage 131)             */
 } preset_info;
 
 /* Valves: count per cylinder, head diameter, lift, duration, and the lobe
@@ -28,8 +30,8 @@ typedef struct preset_info {
 static rb_valve valve(int count, double diameter, double lift, double duration, double centerline,
                       int intake)
 {
-    return (rb_valve){ count, diameter, 0.85 * diameter, lift, duration,
-                       intake ? 360.0 + centerline : 360.0 - centerline, 0.7 };
+    return rb_valve_make(count, diameter, 0.85 * diameter, lift, duration,
+                         intake ? 360.0 + centerline : 360.0 - centerline, 0.7);
 }
 
 /* The layout: bank angles, then for each cylinder its bank, pin and position,
@@ -275,15 +277,16 @@ static void boxer4(rb_engine_desc *d)
             2.6e-4 * 43.0 / 46.0, 3.1e-4 * 43.0 / 46.0, 6500.0);
 }
 
-/* The last column is each preset's real-time default quality (stage 118's
- * tier, on the baseline machine: docs/stage-118.md has what each misses; the
- * V8s' lean tier is Bernardo's choice of 2026-11-16, docs/stage-127.md). */
+/* The last two columns: each preset's real-time default quality (stage
+ * 118's tier, on the baseline machine: docs/stage-118.md has what each
+ * misses; the V8s' lean tier is Bernardo's choice of 2026-11-16,
+ * docs/stage-127.md), and the layout it is (stage 131, layouts.c). */
 static const preset_info PRESETS[] = {
-    { "i4", "Inline 4", inline4, RB_QUALITY_BALANCED },
-    { "i6", "Inline 6", inline6, RB_QUALITY_LOW },
-    { "v8-cross", "V8 cross-plane", v8_cross, RB_QUALITY_LEAN },
-    { "v8-flat", "V8 flat-plane", v8_flat, RB_QUALITY_LEAN },
-    { "boxer4", "Boxer 4", boxer4, RB_QUALITY_LOW },
+    { "i4", "Inline 4", inline4, RB_QUALITY_BALANCED, { RB_FAMILY_INLINE, 4, RB_CRANK_EVEN, 0.0 } },
+    { "i6", "Inline 6", inline6, RB_QUALITY_LOW, { RB_FAMILY_INLINE, 6, RB_CRANK_EVEN, 0.0 } },
+    { "v8-cross", "V8 cross-plane", v8_cross, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_CROSS_PLANE, 90.0 } },
+    { "v8-flat", "V8 flat-plane", v8_flat, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_COMMON_PIN, 90.0 } },
+    { "boxer4", "Boxer 4", boxer4, RB_QUALITY_LOW, { RB_FAMILY_BOXER, 4, RB_CRANK_EVEN, 0.0 } },
 };
 enum { N_PRESETS = sizeof PRESETS / sizeof PRESETS[0] };
 
@@ -313,6 +316,13 @@ int rb_preset_find(const char *key)
     for (int i = 0; i < N_PRESETS; i++)
         if (!strcmp(key, PRESETS[i].key)) return i;
     return RB_ERR_ID;
+}
+
+int rb_preset_layout_of(int preset, rb_layout *out)
+{
+    if (!out || preset < 0 || preset >= N_PRESETS) return -1;
+    *out = PRESETS[preset].layout;
+    return 0;
 }
 
 int rb_preset_desc(int preset, rb_engine_desc *d)

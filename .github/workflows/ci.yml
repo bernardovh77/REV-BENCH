@@ -63,7 +63,7 @@ jobs:
       - name: Every suite but the browser test (MSVC, w64devkit)
         run: |
           export PATH="$W64DEVKIT_BIN:$PATH"
-          python tools/run_tests.py --keep-going --skip e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
+          python tools/run_tests.py --keep-going --skip e2e layouts 2>&1 | tee "$RUNNER_TEMP/run.log" \
             || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
       - name: MSVC and gcc agree
         run: |
@@ -123,7 +123,7 @@ jobs:
       # Windows's alone until stage 126.
       - name: Every suite but the browser tests (gcc)
         run: |
-          python tools/run_tests.py --keep-going --skip e2e app-e2e 2>&1 | tee "$RUNNER_TEMP/run.log" \
+          python tools/run_tests.py --keep-going --skip e2e app-e2e layouts 2>&1 | tee "$RUNNER_TEMP/run.log" \
             || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
 
   linux-sanitizers:
@@ -180,6 +180,24 @@ jobs:
           python tools/compiler_parity.py check "$HOME/rb-build/tests/cmake/rb_cli" "$HOME/rb-build/gcc/rb_cli" "$HOME/rb-build/parity" \
             2>&1 | tee "$RUNNER_TEMP/parity.log" || { tools/ci_summary.sh "$RUNNER_TEMP/parity.log"; exit 1; }
 
+  # Every engine layout's drive (stage 131): each family, count and crank started, idled 30 s,
+  # loaded, revved and stopped. Too long for every push (about an hour on four cores); weekly
+  # and on demand, and in every full run of tools/run_tests.py on a stage's last day.
+  layouts:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0   # v7.1.0
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Python tools
+        run: python -m pip install -r tools/requirements-dev.txt
+      - name: The layouts suite
+        run: |
+          python tools/run_tests.py layouts 2>&1 | tee "$RUNNER_TEMP/run.log" \
+            || { tools/ci_summary.sh "$RUNNER_TEMP/run.log"; exit 1; }
   # The long fuzz (stage 127): random engines with their fields anywhere in the ranges the
   # editor will offer (rb_engine_field_min/max), far more of them than `make fuzz` or the test
   # suite run. Weekly and on demand; each run starts from new seeds. An engine that fails names
@@ -193,12 +211,13 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1   # v7.0.1
       - name: rb_cli
         run: make -j4 BUILD="$HOME/rb-build/fuzz" "$HOME/rb-build/fuzz/rb_cli"
-      - name: 240 random engines at the real-time qualities, 60 at the high one
+      - name: 240 random engines at the real-time qualities, 60 at the high one, 120 as random layouts
         run: |
           seed=$(( GITHUB_RUN_NUMBER * 1000 ))
           cli="$HOME/rb-build/fuzz/rb_cli"
           {
             "$cli" fuzz --sets 120 --seconds 10 --seed "$seed" --quality low &&
             "$cli" fuzz --sets 120 --seconds 10 --seed "$(( seed + 200 ))" -x 2 &&
-            "$cli" fuzz --sets 60 --seconds 10 --seed "$(( seed + 400 ))" --quality high
+            "$cli" fuzz --sets 60 --seconds 10 --seed "$(( seed + 400 ))" --quality high &&
+            "$cli" fuzz --sets 120 --seconds 10 --seed "$(( seed + 600 ))" --quality lean --layouts
           } 2>&1 | tee "$RUNNER_TEMP/fuzz.log" || { tools/ci_summary.sh "$RUNNER_TEMP/fuzz.log"; exit 1; }

@@ -27,6 +27,19 @@ napi_value rbn_version(napi_env env, napi_callback_info info)
     return result;
 }
 
+/* A layout as {family, cylinders, crank, bankAngle} (stage 131), or NULL after a throw. */
+static napi_value layout_object(napi_env env, int family, int cylinders, int crank, double angle)
+{
+    const char *family_name = rbn_name_of(RBN_FAMILIES, family), *crank_name = rbn_name_of(RBN_CRANKS, crank);
+    if (!family_name || !crank_name) return rbn_throw_core(env, RB_ERR_ID, "reading a layout"), NULL;
+    napi_value item;
+    RBN_TRY(napi_create_object(env, &item));
+    if (rbn_set_string(env, item, "family", family_name) != 0 || rbn_set_number(env, item, "cylinders", cylinders) != 0 ||
+        rbn_set_string(env, item, "crank", crank_name) != 0 || rbn_set_number(env, item, "bankAngle", angle) != 0)
+        return NULL;
+    return item;
+}
+
 napi_value rbn_presets(napi_env env, napi_callback_info info)
 {
     (void)info;
@@ -45,6 +58,10 @@ napi_value rbn_presets(napi_env env, napi_callback_info info)
         if (rbn_set_number(env, item, "index", i) != 0 || rbn_set_string(env, item, "key", key) != 0 ||
             rbn_set_string(env, item, "name", name) != 0 || rbn_set_string(env, item, "quality", quality_name) != 0)
             return NULL;
+        napi_value layout = layout_object(env, (int)rb_preset_layout(i, RB_LAYOUT_FAMILY), (int)rb_preset_layout(i, RB_LAYOUT_CYLINDERS),
+                                          (int)rb_preset_layout(i, RB_LAYOUT_CRANK), rb_preset_layout(i, RB_LAYOUT_BANK_ANGLE));
+        if (!layout) return NULL;
+        RBN_TRY(napi_set_named_property(env, item, "layout", layout));
         RBN_TRY(napi_set_element(env, list, (uint32_t)i, item));
     }
     return list;
@@ -238,5 +255,49 @@ napi_value rbn_describe(napi_env env, napi_callback_info info)
         if (napi_set_element(env, list, (uint32_t)id, values) != napi_ok) break;
     }
     rb_host_engine_free(sim);
+    return list;
+}
+
+/* layouts() (stage 131): what the core builds, a family and count at a time:
+ * [{family, familyName, cylinders, usualCrank, cranks: [{crank, name, angleMin,
+ * angleMax, angleUsual, quality}]}], from rb_layout_* (nothing listed here). */
+napi_value rbn_layouts(napi_env env, napi_callback_info info)
+{
+    (void)info;
+    napi_value list;
+    RBN_TRY(napi_create_array(env, &list));
+    uint32_t n = 0;
+    for (int family = 0; family < RB_FAMILY_COUNT; family++) {
+        for (int cylinders = 1; cylinders <= 16; cylinders++) {
+            const int usual = rb_layout_usual_crank(family, cylinders);
+            if (usual < 0) continue;
+            napi_value item, cranks;
+            RBN_TRY(napi_create_object(env, &item));
+            RBN_TRY(napi_create_array(env, &cranks));
+            uint32_t k = 0;
+            for (int crank = 0; crank < RB_CRANK_COUNT; crank++) {
+                const double usual_angle = rb_layout_angle(family, cylinders, crank, RB_ANGLE_USUAL);
+                if (usual_angle != usual_angle) continue;   /* NaN: not this count's */
+                const char *quality = rbn_name_of(RBN_QUALITIES, rb_layout_quality(family, cylinders, crank));
+                napi_value c;
+                RBN_TRY(napi_create_object(env, &c));
+                if (rbn_set_string(env, c, "crank", rbn_name_of(RBN_CRANKS, crank)) != 0 ||
+                    rbn_set_string(env, c, "name", rb_crank_name(crank)) != 0 ||
+                    rbn_set_number(env, c, "angleMin", rb_layout_angle(family, cylinders, crank, RB_ANGLE_MIN)) != 0 ||
+                    rbn_set_number(env, c, "angleMax", rb_layout_angle(family, cylinders, crank, RB_ANGLE_MAX)) != 0 ||
+                    rbn_set_number(env, c, "angleUsual", usual_angle) != 0 ||
+                    rbn_set_string(env, c, "quality", quality ? quality : "low") != 0)
+                    return NULL;
+                RBN_TRY(napi_set_element(env, cranks, k++, c));
+            }
+            if (rbn_set_string(env, item, "family", rbn_name_of(RBN_FAMILIES, family)) != 0 ||
+                rbn_set_string(env, item, "familyName", rb_family_name(family)) != 0 ||
+                rbn_set_number(env, item, "cylinders", cylinders) != 0 ||
+                rbn_set_string(env, item, "usualCrank", rbn_name_of(RBN_CRANKS, usual)) != 0)
+                return NULL;
+            RBN_TRY(napi_set_named_property(env, item, "cranks", cranks));
+            RBN_TRY(napi_set_element(env, list, n++, item));
+        }
+    }
     return list;
 }

@@ -5,8 +5,24 @@
 #include "fastmath.h"
 
 #include <math.h>
+#include <string.h>
 
 static const double PI = 3.14159265358979323846;
+
+rb_valve rb_valve_make(int count, double diameter, double port_diameter, double max_lift, double duration,
+                       double center, double cd)
+{
+    rb_valve v;
+    memset(&v, 0, sizeof v);
+    v.count = count;
+    v.diameter = diameter;
+    v.port_diameter = port_diameter;
+    v.max_lift = max_lift;
+    v.duration = duration;
+    v.center = center;
+    v.cd = cd;
+    return v;
+}
 
 int rb_valve_check(const rb_valve *v)
 {

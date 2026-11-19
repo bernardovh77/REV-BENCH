@@ -116,8 +116,8 @@ BUGS = {
         '{"low", RB_QUALITY_MEDIUM}',
         ["create.test.mjs"]),
     'quality-default-ignores-the-preset': (BUILD,
-        "    out->quality = rb_preset_quality(preset);\n",
-        "    out->quality = RB_QUALITY_HIGH;\n",
+        "                 : rb_preset_quality(preset);\n",   # stage 131: a layout's tier otherwise
+        "                 : RB_QUALITY_HIGH;\n",
         ["create.test.mjs"]),
     'full-code-misnamed': (UTIL,
         '    case RB_HOST_ERR_FULL:    return "RB_HOST_ERR_FULL";',

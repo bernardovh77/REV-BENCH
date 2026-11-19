@@ -148,12 +148,58 @@ int rb_load_preset(rb_sim *sim, int preset)
     if (rb_preset_desc(preset, &d) != 0) return RB_ERR_ID;
     rb_sim_build(sim, &d);   /* presets are possible engines; no jump in the flows */
     sim->preset = preset;
+    rb_preset_layout_of(preset, &sim->layout);
+    sim->generated = 0;
     return RB_OK;
 }
 
 int rb_get_preset(const rb_sim *sim)
 {
     return sim ? sim->preset : RB_ERR_ARG;
+}
+
+/* ---- layouts (stage 131) ---- */
+
+int rb_load_layout(rb_sim *sim, int preset, int family, int cylinders, int crank, double bank_angle)
+{
+    const rb_layout l = { family, cylinders, crank, bank_angle };
+    rb_layout own;
+    rb_engine_desc d;
+    if (!sim) return RB_ERR_ARG;
+    if (rb_preset_layout_of(preset, &own) != 0) return RB_ERR_ID;
+    const int check = rb_layout_check(family, cylinders, crank, bank_angle);
+    if (check != RB_OK) return check;
+    if (rb_layout_desc(preset, &l, &d) != 0) return RB_ERR_VALUE;
+    rb_sim_build(sim, &d);   /* a checked description: no jump in the flows */
+    sim->preset = preset;
+    sim->layout = l;
+    sim->generated = !(own.family == family && own.cylinders == cylinders && own.crank == crank
+                       && fabs(own.bank_angle - bank_angle) < 1e-9);
+    return RB_OK;
+}
+
+/* A layout's field as a double. */
+static double layout_field(const rb_layout *l, int generated, int what)
+{
+    switch (what) {
+    case RB_LAYOUT_FAMILY:     return l->family;
+    case RB_LAYOUT_CYLINDERS:  return l->cylinders;
+    case RB_LAYOUT_CRANK:      return l->crank;
+    case RB_LAYOUT_BANK_ANGLE: return l->bank_angle;
+    case RB_LAYOUT_GENERATED:  return generated;
+    default:                   return NAN;
+    }
+}
+
+double rb_get_layout(const rb_sim *sim, int what)
+{
+    return sim ? layout_field(&sim->layout, sim->generated, what) : NAN;
+}
+
+double rb_preset_layout(int preset, int what)
+{
+    rb_layout l;
+    return rb_preset_layout_of(preset, &l) == 0 ? layout_field(&l, 0, what) : NAN;
 }
 
 /* ---- the description ---- */

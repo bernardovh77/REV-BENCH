@@ -3,7 +3,7 @@
  * reason, live fields at once, the preview, undo and redo, sections from the core's fields.
  */
 import { describe, expect, it } from "vitest";
-import type { EngineFieldInfo } from "../src/shared/addon";
+import type { EngineFieldInfo, LayoutInfo, LayoutSpec } from "../src/shared/addon";
 import type { EngineEdit } from "../src/shared/process-messages";
 import { CHOICES, Editor, labelOf, mergeEdits, type EditorStore } from "../src/ui/lib/editor.svelte";
 
@@ -17,14 +17,30 @@ const FIELDS: EngineFieldInfo[] = [
 ];
 const f = (name: string) => FIELDS.find((x) => x.name === name)!;
 
-/** A store that describes as the core would (bore drives displacement) and records commands. */
+const I4: LayoutSpec = { family: "inline", cylinders: 4, crank: "even", bankAngle: 0 };
+const even = (angleMin: number, angleMax: number, angleUsual: number) =>
+  ({ crank: "even", name: "Even firing", angleMin, angleMax, angleUsual, quality: "lean" }) as const;
+/** A few of the core's layouts (stage 131). */
+const LAYOUTS: LayoutInfo[] = [
+  { family: "inline", familyName: "Inline", cylinders: 3, usualCrank: "even", cranks: [even(0, 0, 0)] },
+  { family: "inline", familyName: "Inline", cylinders: 4, usualCrank: "even", cranks: [even(0, 0, 0)] },
+  { family: "inline", familyName: "Inline", cylinders: 6, usualCrank: "even", cranks: [even(0, 0, 0)] },
+  { family: "v", familyName: "V", cylinders: 6, usualCrank: "even", cranks: [even(30, 120, 60)] },
+  { family: "v", familyName: "V", cylinders: 8, usualCrank: "cross-plane",
+    cranks: [even(30, 120, 90), { crank: "cross-plane", name: "Cross-plane", angleMin: 30, angleMax: 120, angleUsual: 90, quality: "lean" }] },
+  { family: "boxer", familyName: "Boxer", cylinders: 4, usualCrank: "even", cranks: [even(0, 0, 0)] },
+];
+
+/** A store that describes as the core would (bore drives displacement; a layout, the count) and records commands. */
 function fakeStore(options: { refuse?: (edits: EngineEdit[]) => string | null } = {}) {
   const applied: EngineEdit[][] = [];
+  const layoutsApplied: (LayoutSpec | null | undefined)[] = [];
   const live: EngineEdit[] = [];
-  const describe = (edits: EngineEdit[]): number[][] => {
-    const v = [[4], [0.086], [0], [0.5, 0.5, 0.5, 0.5], [800], [0]];
+  const describe = (edits: EngineEdit[], layout: LayoutSpec | null = null): number[][] => {
+    const n = (layout ?? I4).cylinders;
+    const v = [[n], [0.086], [0], new Array(n).fill(0.5), [800], [0]];
     for (const e of edits) v[FIELDS.find((x) => x.name === e.field)!.id][e.index] = e.value;
-    v[2] = [Math.PI / 4 * v[1][0] ** 2 * 0.086 * 4];
+    v[2] = [Math.PI / 4 * v[1][0] ** 2 * 0.086 * n];
     return v;
   };
   const store = {
@@ -32,25 +48,30 @@ function fakeStore(options: { refuse?: (edits: EngineEdit[]) => string | null } 
     engineEdits: [] as EngineEdit[],
     engineValues: describe([]) as number[][] | null,
     preset: "i4" as string | null,
-    async applyEdits(edits: EngineEdit[]) {
+    layouts: LAYOUTS,
+    layout: null as LayoutSpec | null,
+    presetLayout: I4 as LayoutSpec | null,
+    async applyEdits(edits: EngineEdit[], layout?: LayoutSpec | null) {
       const why = options.refuse?.(edits);
       if (why) throw Object.assign(new Error(why), { code: "RB_ERR_VALUE" });
       applied.push(edits);
+      layoutsApplied.push(layout);
+      if (layout !== undefined) store.layout = layout;
       store.engineEdits = edits;
-      store.engineValues = describe(edits);
+      store.engineValues = describe(edits, store.layout);
     },
     async editLive(edit: EngineEdit) {
       live.push(edit);
       store.engineEdits = mergeEdits(store.engineEdits, [edit]);
       store.engineValues = describe(store.engineEdits);
     },
-    async describeEdits(edits: EngineEdit[]) {
+    async describeEdits(edits: EngineEdit[], layout?: LayoutSpec | null): Promise<number[][]> {
       const why = options.refuse?.(edits);
       if (why) throw Object.assign(new Error(why), { code: "RB_ERR_VALUE" });
-      return describe(edits);
+      return describe(edits, layout === undefined ? store.layout : layout);
     },
   } satisfies EditorStore;
-  return { store, applied, live, editor: new Editor(store) };
+  return { store, applied, layoutsApplied, live, editor: new Editor(store) };
 }
 
 describe("sections", () => {
@@ -205,5 +226,72 @@ describe("undo and redo", () => {
     store.preset = "v8-cross";
     expect(editor.canUndo).toBe(false);
     expect(editor.draftCount).toBe(0);
+  });
+});
+
+describe("the layout (stage 131)", () => {
+  it("a family keeps the nearest count it has, the usual crank and angle; the change joins the draft and is previewed", async () => {
+    const { editor } = fakeStore();
+    expect(editor.shownLayout).toEqual(I4);
+    await editor.chooseLayout({ family: "v" });
+    expect(editor.layoutDraft).toEqual({ family: "v", cylinders: 6, crank: "even", bankAngle: 60 });
+    expect(editor.layoutChanging).toBe(true);
+    expect(editor.draftCount).toBe(1);
+    expect(editor.values(f("cylinders"))).toEqual([6]);
+    expect(editor.values(f("header_length"))).toHaveLength(6);
+    await editor.chooseLayout({ cylinders: 8 });
+    expect(editor.layoutDraft).toEqual({ family: "v", cylinders: 8, crank: "even", bankAngle: 90 });
+    await editor.chooseLayout({ crank: "cross-plane" });
+    expect(editor.layoutDraft!.crank).toBe("cross-plane");
+    await editor.chooseLayout({ bankAngle: 150 });   // outside 30..120: the usual one
+    expect(editor.layoutDraft!.bankAngle).toBe(90);
+    await editor.chooseLayout({ bankAngle: 75 });
+    expect(editor.layoutDraft!.bankAngle).toBe(75);
+    await editor.chooseLayout({ family: "inline", cylinders: 4 });   // back to the one playing: out of the draft
+    expect(editor.layoutDraft).toBeNull();
+    expect(editor.draftCount).toBe(0);
+  });
+
+  it("applies with the edits a layout keeps, says which it drops, and undo brings back the layout with its edits", async () => {
+    const { editor, store, applied, layoutsApplied } = fakeStore();
+    await editor.set(f("bore"), 0, 0.09);
+    await editor.set(f("header_length"), 3, 0.8);
+    await editor.apply();
+    expect(store.engineEdits).toHaveLength(2);
+    await editor.chooseLayout({ family: "inline", cylinders: 6 });
+    await editor.set(f("header_length"), 5, 0.9);   // made on the new layout's draft: indexed, dropped too
+    expect(editor.dropped.map((e) => e.field)).toEqual(["header_length", "header_length"]);
+    expect(editor.values(f("header_length"))).toEqual([0.5, 0.5, 0.5, 0.5, 0.5, 0.5]);
+    await editor.apply();
+    expect(applied.at(-1)).toEqual([{ field: "bore", index: 0, value: 0.09 }]);
+    expect(layoutsApplied.at(-1)).toEqual({ family: "inline", cylinders: 6, crank: "even", bankAngle: 0 });
+    expect(store.layout?.cylinders).toBe(6);
+    expect(editor.draftCount).toBe(0);
+    await editor.undo();
+    expect(layoutsApplied.at(-1)).toBeNull();   // the preset's own
+    expect(store.engineEdits).toEqual([{ field: "bore", index: 0, value: 0.09 }, { field: "header_length", index: 3, value: 0.8 }]);
+    await editor.redo();
+    expect(store.layout?.cylinders).toBe(6);
+    expect(store.engineEdits).toEqual([{ field: "bore", index: 0, value: 0.09 }]);
+  });
+
+  it("back to the preset's own layout is sent as none", async () => {
+    const { editor, store, layoutsApplied } = fakeStore();
+    store.layout = { family: "boxer", cylinders: 4, crank: "even", bankAngle: 0 };
+    await editor.chooseLayout({ family: "inline", cylinders: 4 });
+    expect(editor.layoutChanging).toBe(true);
+    await editor.apply();
+    expect(layoutsApplied.at(-1)).toBeNull();
+  });
+
+  it("discard and another preset drop the layout draft", async () => {
+    const { editor, store } = fakeStore();
+    await editor.chooseLayout({ family: "boxer" });
+    editor.discard();
+    expect(editor.layoutDraft).toBeNull();
+    await editor.chooseLayout({ family: "boxer" });
+    store.preset = "i6";
+    await editor.chooseLayout({ family: "boxer" });   // followPreset: a fresh draft for the new preset
+    expect(editor.draftCount).toBe(1);
   });
 });

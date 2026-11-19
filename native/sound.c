@@ -152,7 +152,37 @@ typedef struct sound_options {
     double rate;
     double pipe_rate;      /* Hz; 0: the quality's (or the default)                    */
     const char *headers;   /* each header's length, m, comma-separated; NULL: the preset's */
+    int layout_family, layout_cylinders, layout_crank;   /* --layout (stage 131); family -1: none */
+    double layout_angle;
 } sound_options;
+
+/* --layout FAMILY:N[:CRANK[:ANGLE]] (stage 131): inline, v or boxer; even,
+ * common, cross, twin180 or twin270; the V's bank angle in degrees. The
+ * crank and the angle default to the usual ones. 0, or -1 if it isn't one. */
+static int parse_layout(const char *text, sound_options *o)
+{
+    char family[16] = "", crank[16] = "";
+    int n = 0;
+    double angle = NAN;
+    if (!text) return -1;
+    const int got = sscanf(text, "%15[a-z]:%d:%15[a-z0-9]:%lf", family, &n, crank, &angle);
+    if (got < 2) return -1;
+    if (!strcmp(family, "inline") || !strcmp(family, "i")) o->layout_family = RB_FAMILY_INLINE;
+    else if (!strcmp(family, "v")) o->layout_family = RB_FAMILY_V;
+    else if (!strcmp(family, "boxer") || !strcmp(family, "b")) o->layout_family = RB_FAMILY_BOXER;
+    else return -1;
+    o->layout_cylinders = n;
+    if (got < 3) o->layout_crank = rb_layout_usual_crank(o->layout_family, n);
+    else if (!strcmp(crank, "even")) o->layout_crank = RB_CRANK_EVEN;
+    else if (!strcmp(crank, "common")) o->layout_crank = RB_CRANK_COMMON_PIN;
+    else if (!strcmp(crank, "cross")) o->layout_crank = RB_CRANK_CROSS_PLANE;
+    else if (!strcmp(crank, "twin180")) o->layout_crank = RB_CRANK_TWIN_180;
+    else if (!strcmp(crank, "twin270")) o->layout_crank = RB_CRANK_TWIN_270;
+    else return -1;
+    if (o->layout_crank < 0) return -1;
+    o->layout_angle = (got < 4) ? rb_layout_angle(o->layout_family, n, o->layout_crank, RB_ANGLE_USUAL) : angle;
+    return isnan(o->layout_angle) ? -1 : 0;
+}
 
 /* Reads the options; 0, or 2 after an error (said), or 1 for --help. */
 static int read_options(int argc, char **argv, sound_options *o)
@@ -164,7 +194,7 @@ static int read_options(int argc, char **argv, sound_options *o)
         .coast_seconds = SWEEP_LIFT, .burn_model = RB_BURN_MODEL_CHARGE,
         .drive = DRIVE_IDLE, .where = RB_LISTENER_BEHIND, .quality = -1,
         .layers = RB_LAYER_ALL, .scene = -1, .momentum_order = 2,
-        .outlet_radiation = -1, .muffler = -1, .rate = 48000.0,
+        .outlet_radiation = -1, .muffler = -1, .rate = 48000.0, .layout_family = -1,
     };
     for (int i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -179,6 +209,8 @@ static int read_options(int argc, char **argv, sound_options *o)
             ok = (o->trace_path = cli_take_value(argc, argv, &i)) != NULL;
         else if (!strcmp(a, "--preset"))
             ok = (o->preset = cli_take_value(argc, argv, &i)) != NULL;
+        else if (!strcmp(a, "--layout"))
+            ok = !parse_layout(cli_take_value(argc, argv, &i), o);
         else if (!strcmp(a, "--idle"))
             o->drive = DRIVE_IDLE;
         else if (!strcmp(a, "--sweep"))
@@ -322,6 +354,18 @@ static int build_engine(rb_sim *sim, const sound_options *o)
     }
     rb_load_preset(sim, preset);
     if (trace_on) trace_put(&trace_build_text, "preset %s\n", rb_preset_key(preset));
+    if (o->layout_family >= 0) {
+        const int rc = rb_load_layout(sim, preset, o->layout_family, o->layout_cylinders, o->layout_crank,
+                                      o->layout_angle);
+        if (rc != RB_OK) {
+            const char *why = rb_layout_why(o->layout_family, o->layout_cylinders, o->layout_crank, o->layout_angle);
+            fprintf(stderr, "rb_cli sound: that layout isn't built: %s\n", why ? why : "its engine is refused");
+            return 2;
+        }
+        if (trace_on)
+            trace_put(&trace_build_text, "layout %d %d %d %.17g\n", o->layout_family, o->layout_cylinders,
+                      o->layout_crank, o->layout_angle);
+    }
     int bad = 0;
     if (o->muffler >= 0) bad |= edit(sim, RB_ENG_MUFFLER_TYPE, 0, o->muffler) < 0;
     if (o->outlet_radiation >= 0)

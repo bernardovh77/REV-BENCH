@@ -35,6 +35,8 @@ zig builds the WebAssembly). The suites:
            rb_native.node, then e2e/*.spec.ts on the real add-on and the null audio backend
            (start and play, a swap, a killed engine process, quitting, a missing add-on, the
            snapshot path's measurements -> <out>/app-e2e-results)
+  layouts  stage 131: every engine layout started, idled 30 s, loaded, revved and stopped
+           (tests/test_layouts.c), in parallel shares (tools/layout_shards.py): 20-40 min
 
 Builds go to ~/rb-build/tests (or $RB_TESTS_OUT), never into the repo. Needs a C compiler and
 make (w64devkit on Windows), Node 22+ (npm on PATH, or ~/.local/node22) and,
@@ -52,11 +54,12 @@ import sys
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app", "app-e2e")
+SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app", "app-e2e", "layouts")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
 TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
-            "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200, "app-e2e": 1800}
+            "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200, "app-e2e": 1800,
+            "layouts": 5400}
 OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")
 COPY_IGNORE = shutil.ignore_patterns("node_modules", "dist", "test-results", "build", "build-*",
                                      "renders", ".git", "graphify-out", ".venv*", "*.zip", "*.webm", "*.wav",
@@ -86,7 +89,7 @@ def tool(name, env):
 NEEDS = {"native": ["make"], "wasm": ["make"], "wasm-c": ["make", "node"],
          "web": ["node", "npm"], "e2e": ["node", "npm", "npx"], "cmake": ["cmake", "ninja"],
          "host": ["cmake", "ninja"], "addon": ["node", "npm", "cmake", "ninja"], "app": ["node", "npm"],
-         "app-e2e": ["node", "npm", "npx", "cmake", "ninja"]}
+         "app-e2e": ["node", "npm", "npx", "cmake", "ninja"], "layouts": ["make"]}
 NODE_MAJOR = 22
 CMAKE_LEAST = (3, 25)   # CMakeLists.txt's cmake_minimum_required
 
@@ -301,6 +304,10 @@ def suite_commands(name, state):
                  f"{build}/rb_host_render{exe}", (OUT / "host-parity").as_posix()]], ROOT, env
     if name == "addon":
         return addon_commands(env), ROOT, addon_env(env)
+    if name == "layouts":   # stage 131: every layout's drive, in parallel shares
+        exe = ".exe" if os.name == "nt" else ""
+        return [make(f"{OUT.as_posix()}/rb_tests"),
+                [sys.executable, str(ROOT / "tools/layout_shards.py"), f"{OUT.as_posix()}/rb_tests{exe}"]], ROOT, env
     if name == "e2e":
         web = state.get("web") or web_copy()
         npm, npx = tool("npm", env), tool("npx", env)

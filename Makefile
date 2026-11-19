@@ -346,6 +346,8 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_dyno_attach rb_dyno_release rb_dyno_attached rb_dyno_set_sweep rb_dyno_clear rb_get_dyno \
     rb_snapshot_size rb_get_snapshot rb_event_kind_name rb_read_events rb_events_lost \
     rb_preset_count rb_preset_key rb_preset_name rb_preset_find rb_preset_quality rb_load_preset rb_get_preset \
+    rb_family_name rb_crank_name rb_layout_check rb_layout_why rb_layout_usual_crank rb_layout_angle \
+    rb_layout_quality rb_load_layout rb_get_layout rb_preset_layout \
     rb_get_engine rb_set_engine rb_engine_field_size rb_engine_field_count \
     rb_engine_field_name rb_engine_field_unit rb_engine_field_flags \
     rb_engine_field_min rb_engine_field_max rb_engine_field_find \
