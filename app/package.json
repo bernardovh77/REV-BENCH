@@ -1,7 +1,7 @@
 {
   "name": "rev-bench-app",
   "private": true,
-  "version": "0.2.4",
+  "version": "0.2.5",
   "productName": "Rev-Bench",
   "description": "Rev-Bench: the C engine simulation as a desktop application",
   "author": "bernardovh77",
