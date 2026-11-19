@@ -3,11 +3,12 @@
  * without Electron. preload.ts hands it the real ipcRenderer. The preload exposes only these
  * few functions: no `ipcRenderer`, no `send` with a channel the page chooses.
  */
-import { ENGINE_PORT_MESSAGE, IPC, type EnginePortMessage, type EngineStatus, type RevBenchBridge } from "../shared/bridge";
+import { ENGINE_PORT_MESSAGE, IPC, type EnginePortMessage, type EngineStatus, type RevBenchBridge, type SaveResult } from "../shared/bridge";
+import type { SavedBuild, SavedBuildSummary } from "../shared/builds";
 
 /** The slice of Electron's ipcRenderer the bridge uses. */
 export interface IpcLike {
-  invoke(channel: string): Promise<unknown>;
+  invoke(channel: string, ...args: unknown[]): Promise<unknown>;
   send(channel: string): void;
   on(channel: string, listener: (event: { ports: MessagePort[] }, payload: unknown) => void): void;
   removeListener(channel: string, listener: (event: { ports: MessagePort[] }, payload: unknown) => void): void;
@@ -53,6 +54,17 @@ export function makeBridge(env: BridgeEnv): RevBenchBridge {
     },
     restartEngine() {
       env.ipc.send(IPC.restartEngine);
+    },
+    // the saved builds: the main process checks every argument again, and answers by id only
+    builds: {
+      list: async () => {
+        const list = await env.ipc.invoke(IPC.listBuilds);
+        return Array.isArray(list) ? (list as SavedBuildSummary[]) : [];
+      },
+      read: async (id) => ((await env.ipc.invoke(IPC.readBuild, id)) as SavedBuild | null) ?? null,
+      save: async (name, build, settings, replace) =>
+        ((await env.ipc.invoke(IPC.saveBuild, name, build, settings, replace)) as SaveResult | null) ?? { ok: false, reason: "bad-build" },
+      remove: async (id) => (await env.ipc.invoke(IPC.deleteBuild, id)) === true,
     },
   };
 }

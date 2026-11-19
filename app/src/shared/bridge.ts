@@ -4,6 +4,7 @@
  * IPC channels behind it. The engine itself is not here: the window talks to the engine
  * process over a MessagePort (protocol.ts), which the preload hands to the page.
  */
+import type { SavedBuild, SavedBuildSummary, SavedEngine, SavedSettings } from "./builds";
 
 /** The engine process, as the main process sees it. */
 export type EngineProcessState = "starting" | "running" | "restarting" | "failed";
@@ -31,7 +32,18 @@ export interface RevBenchBridge {
   requestEnginePort(): void;
   /** after "failed": the user's request to try the engine again */
   restartEngine(): void;
+  /** the saved builds (the build saver): the files are the main process's (main/library.ts) */
+  builds?: {
+    list(): Promise<SavedBuildSummary[]>;
+    read(id: string): Promise<SavedBuild | null>;
+    save(name: string, build: SavedEngine, settings: SavedSettings, replace: boolean): Promise<SaveResult>;
+    remove(id: string): Promise<boolean>;
+  };
 }
+
+/** What saving a build says: its id, or why not ("exists": that name is saved, and replacing
+ *  wasn't asked). */
+export type SaveResult = { ok: true; id: string } | { ok: false; reason: "exists" | "bad-name" | "bad-build" };
 
 declare global {
   interface Window {
@@ -59,4 +71,9 @@ export const IPC = {
   requestEnginePort: "rb:request-engine-port",
   /** window -> main: try the engine again */
   restartEngine: "rb:restart-engine",
+  /** window -> main (invoke): the saved builds; one by id; save one; delete one */
+  listBuilds: "rb:list-builds",
+  readBuild: "rb:read-build",
+  saveBuild: "rb:save-build",
+  deleteBuild: "rb:delete-build",
 } as const;

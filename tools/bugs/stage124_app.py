@@ -126,7 +126,7 @@ BUGS = {
         "app/src/preload/bridge-impl.ts",
         "    platform: env.platform,",
         "    ipc: env.ipc,\n    platform: env.platform,",
-        "tests/preload.test.ts", "exposes only the five names the type promises"),
+        "tests/preload.test.ts", "exposes only the six names the type promises"),
     "client-ignores-detach": (
         "app/src/ui/lib/engine-client.ts",
         '      waiting.reject(new CommandError("DETACHED", reason));',

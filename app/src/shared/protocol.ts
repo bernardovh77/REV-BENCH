@@ -29,7 +29,7 @@ export type Command =
    * a rebuild: prepared off the render thread, swapped in with a fade. `quality` absent: the
    * preset's own tier; `scene` absent or null: the mono listener (stage 066)
    */
-  | { kind: "load-preset"; preset: string; quality?: Quality; scene?: Scene | null; edits?: EngineEdit[] }
+  | { kind: "load-preset"; preset: string; quality?: Quality; scene?: Scene | null; edits?: EngineEdit[]; layout?: LayoutSpec | null }
   /**
    * stage 067: the current preset rebuilt with exactly these edits (its quality and scene kept),
    * as one transaction: checked first, then prepared and swapped in with the fade. If any edit is

@@ -449,7 +449,8 @@ export class EngineControl {
           return;
         }
         case "load-preset":
-          return this.loadPreset(id, command.preset, command.quality, command.scene, command.edits);
+          return this.loadPreset(id, command.preset, command.quality, command.scene, command.edits,
+            command.layout === undefined ? undefined : this.ownOrNullFor(command.preset, command.layout));
         case "apply-edits":
           return this.applyEdits(id, command.edits, command.layout);
         case "edit-live":
@@ -517,8 +518,13 @@ export class EngineControl {
 
   /** The preset's own layout is no layout at all (the preset as it comes): null for it. */
   private ownOrNull(layout: LayoutSpec | null): LayoutSpec | null {
-    const own = this.presets.find((p) => p.key === this.choice.preset)!.layout;
-    return layout && !sameLayout(layout, undefined, own) ? layout : null;
+    return this.ownOrNullFor(this.choice.preset, layout);
+  }
+
+  /** As ownOrNull, for any preset (an unknown one: the layout as given, for loadPreset to refuse). */
+  private ownOrNullFor(preset: string, layout: LayoutSpec | null): LayoutSpec | null {
+    const own = this.presets.find((p) => p.key === preset)?.layout;
+    return layout && !(own && badLayout(layout) === null && sameLayout(layout, undefined, own)) ? layout : null;
   }
 
   /**

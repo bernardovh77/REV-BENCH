@@ -40,8 +40,36 @@ describe("the preload's API", () => {
     expect(bridge.versions).toEqual({ electron: "45.0.0", chrome: "140" });
   });
 
-  it("exposes only the five names the type promises, no ipc object", () => {
-    expect(Object.keys(setup().bridge).sort()).toEqual(["onEngineStatus", "platform", "requestEnginePort", "restartEngine", "versions"]);
+  it("exposes only the six names the type promises, no ipc object", () => {
+    expect(Object.keys(setup().bridge).sort()).toEqual(["builds", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "versions"]);
+    expect(Object.keys(setup().bridge.builds!).sort()).toEqual(["list", "read", "remove", "save"]);
+  });
+
+  it("asks for the saved builds on their own channels, and takes only what fits the type back", async () => {
+    const calls: unknown[][] = [];
+    const answers: Record<string, unknown> = {
+      [IPC.listBuilds]: "not a list",
+      [IPC.readBuild]: undefined,
+      [IPC.saveBuild]: null,
+      [IPC.deleteBuild]: "yes",
+    };
+    const ipc: IpcLike = {
+      invoke: async (channel, ...args) => (calls.push([channel, ...args]), answers[channel]),
+      send: () => {},
+      on: () => {},
+      removeListener: () => {},
+    };
+    const builds = makeBridge({ ipc, platform: "win32", versions: { electron: "", chrome: "" }, postToPage: () => {} }).builds!;
+    expect(await builds.list()).toEqual([]);
+    expect(await builds.read("ls7")).toBeNull();
+    expect(await builds.save("LS7", { preset: "v8-cross" }, { afr: 14 }, false)).toEqual({ ok: false, reason: "bad-build" });
+    expect(await builds.remove("ls7")).toBe(false);
+    expect(calls).toEqual([
+      [IPC.listBuilds],
+      [IPC.readBuild, "ls7"],
+      [IPC.saveBuild, "LS7", { preset: "v8-cross" }, { afr: 14 }, false],
+      [IPC.deleteBuild, "ls7"],
+    ]);
   });
 
   it("asks the main process for a port, and for a restart, on fixed channels", () => {

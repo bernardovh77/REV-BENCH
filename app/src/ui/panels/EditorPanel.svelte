@@ -6,13 +6,17 @@
   The listener's audition controls (which layers are heard) sit apart from the physical tuning:
   they change what you hear, not the engine. The layout (stage 131) comes first: the family,
   the cylinders, the crank and a V's bank angle, only what the core builds; a change joins the
-  draft, and the draft bar says which edits the new layout drops.
+  draft, and the draft bar says which edits the new layout drops. The saved builds (the build
+  saver) come first of all: the engine playing saved under a name, and the ones saved, each
+  loaded back or deleted (asked twice).
 -->
 <script lang="ts">
   import type { EngineFieldInfo, ParamInfo } from "../../shared/addon";
   import Button from "../components/Button.svelte";
   import Notice from "../components/Notice.svelte";
   import NumberField from "../components/NumberField.svelte";
+  import TextField from "../components/TextField.svelte";
+  import { NAME_MAX, type SavedBuilds } from "../lib/builds.svelte";
   import Panel from "../components/Panel.svelte";
   import Select from "../components/Select.svelte";
   import { CHOICES, labelOf, type Editor } from "../lib/editor.svelte";
@@ -23,9 +27,19 @@
   interface Props {
     store: EngineStore;
     editor: Editor;
+    /** the build saver (absent outside the app) */
+    builds?: SavedBuilds;
   }
 
-  let { store, editor }: Props = $props();
+  let { store, editor, builds }: Props = $props();
+
+  /** A saved build's line under its name: what it is and when it was saved. */
+  function savedWhat(b: { preset: string; layout?: { family: string; cylinders: number }; edits: number; savedAt: string }): string {
+    const preset = store.hello?.presets.find((p) => p.key === b.preset)?.name ?? b.preset;
+    const what = b.layout ? `${layoutName(b.layout as Parameters<typeof layoutName>[0])} from ${preset}` : preset;
+    const changes = b.edits === 1 ? "1 change" : `${b.edits} changes`;
+    return `${what}, ${changes}, ${new Date(b.savedAt).toLocaleString()}`;
+  }
 
   /** RB_LAYER_* bits */
   const LAYERS = [
@@ -97,6 +111,40 @@
     {#if !ready}
       <p class="empty">The editor opens once the engine runs.</p>
     {:else}
+      {#if builds?.available}
+        <details class="section saved" open={opened.Saved ?? true} ontoggle={(e) => (opened.Saved = e.currentTarget.open)}>
+          <summary>Saved builds</summary>
+          <div class="row save-row">
+            <TextField label="Name this build" value={builds.name} maxlength={NAME_MAX} disabled={builds.busy}
+              oninput={(v) => (builds.name = v)} onenter={() => void builds.save()} />
+            <Button disabled={!builds.canSave || editor.draftCount > 0} onclick={() => void builds.save()}
+              title={editor.draftCount > 0 ? "Apply or discard the draft first: a build saves what plays" : "Save the engine playing"}>
+              {builds.replaces ? "Replace" : "Save"}
+            </Button>
+          </div>
+          {#if builds.message}<p class="note">{builds.message}</p>{/if}
+          {#if builds.list.length === 0}
+            <p class="note">No builds saved yet.</p>
+          {:else}
+            <ul class="saved-list">
+              {#each builds.list as b (b.id)}
+                <li class="saved-item" data-build={b.id}>
+                  <div class="saved-text">
+                    <span class="saved-name">{b.name}</span>
+                    <span class="note">{savedWhat(b)}</span>
+                  </div>
+                  <span class="draft-actions">
+                    <Button size="sm" disabled={builds.busy || store.rebuilding} onclick={() => void builds.load(b.id)}>Load</Button>
+                    <Button size="sm" variant="danger" disabled={builds.busy} onclick={() => void builds.remove(b.id)}>
+                      {builds.confirmDelete === b.id ? "Sure?" : "Delete"}
+                    </Button>
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          {/if}
+        </details>
+      {/if}
       {#if layoutShown && store.layouts.length}
         <details class="section layout" open={opened.Layout ?? true} ontoggle={(e) => (opened.Layout = e.currentTarget.open)}>
           <summary>Layout{generated ? `: ${layoutName(store.layout!)}, generic` : ""}</summary>
@@ -274,6 +322,40 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--rb-space-3);
+  }
+
+  .saved-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--rb-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .saved-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--rb-space-3);
+    padding: var(--rb-space-2) 0;
+    border-bottom: var(--rb-border-width) solid var(--rb-color-border);
+  }
+
+  .saved-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .saved-name {
+    font-size: var(--rb-font-size-sm);
+    font-weight: var(--rb-weight-medium);
+  }
+
+  .save-row {
+    flex-wrap: nowrap;
+    align-items: center;
   }
 
   .note,

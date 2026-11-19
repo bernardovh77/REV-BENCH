@@ -231,3 +231,20 @@ describe("the autosave and the trace keep the layout", () => {
     expect(Number(edit?.[1])).toBe(0.09); // written to 17 digits, as rb_cli writes it
   });
 });
+
+describe("a saved build loaded (the build saver)", () => {
+  it("is another preset with its layout and edits, as one rebuild; null is that preset's own", () => {
+    const s = setup({ preset: "i4", edits: [bore(0.09)] });
+    s.send(1, { kind: "load-preset", preset: "v8-cross", edits: [bore(0.1)], layout: V10 });
+    s.run(200);
+    expect(s.port.reply(1)?.ack?.outcome).toBe("ok");
+    expect(s.builds.at(-1)).toMatchObject({ preset: "v8-cross", layout: V10, edits: [bore(0.1)] });
+    expect(s.specs.at(-1)!.layout).toEqual(V10);
+    s.send(2, { kind: "load-preset", preset: "i6", edits: [], layout: { family: "inline", cylinders: 6, crank: "even", bankAngle: 0 } });
+    s.run(200);
+    expect(s.builds.at(-1)!.layout).toBeUndefined();   // the six's own: the six as it comes
+    s.send(3, { kind: "load-preset", preset: "i6", edits: [], layout: { family: "v", cylinders: 9, crank: "even", bankAngle: 90 } });
+    expect(s.port.reply(3)?.error?.code).toBe("RB_ERR_VALUE");
+    expect(s.builds.at(-1)!.preset).toBe("i6");
+  });
+});

@@ -7,6 +7,7 @@
 import { app, BrowserWindow, ipcMain, Menu, MessageChannelMain, powerMonitor, type IpcMainEvent, type IpcMainInvokeEvent, type MessagePortMain } from "electron";
 import { IPC } from "../shared/bridge";
 import { Autosave } from "./autosave";
+import { BuildLibrary } from "./library";
 import { engineInitFromEnv } from "./config";
 import { spawnEngineProcess } from "./engine-spawn";
 import { createFileLogger } from "./logger";
@@ -24,6 +25,7 @@ const folders = appFolders(app);
 const paths = buildPaths(app.getAppPath());
 const logger = createFileLogger(folders.logFile);
 const autosave = new Autosave(folders.autosaveFile);
+const library = new BuildLibrary(folders.builds);
 const log = (message: string) => logger.log("info", "main", message);
 
 let window: BrowserWindow | null = null;
@@ -78,6 +80,12 @@ ipcMain.on(IPC.requestEnginePort, (event) => {
 ipcMain.on(IPC.restartEngine, (event) => {
   if (trusted(event)) supervisor.restartNow();
 });
+// the saved builds: by id only (the library checks every argument; never a path)
+ipcMain.handle(IPC.listBuilds, (event) => (trusted(event) ? library.list() : []));
+ipcMain.handle(IPC.readBuild, (event, id: unknown) => (trusted(event) ? library.read(id) : null));
+ipcMain.handle(IPC.saveBuild, (event, name: unknown, build: unknown, settings: unknown, replace: unknown) =>
+  trusted(event) ? library.save(name, build, settings, replace === true) : { ok: false, reason: "bad-build" });
+ipcMain.handle(IPC.deleteBuild, (event, id: unknown) => (trusted(event) ? library.remove(id) : false));
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

@@ -24,6 +24,8 @@ export interface AppFolders {
   /** the folder of the current session: the autosaved build */
   session: string;
   autosaveFile: string;
+  /** the build saver's files, one per saved build */
+  builds: string;
 }
 
 /** The user-data folder and the files in it, built with the path module, never by hand. */
@@ -37,6 +39,7 @@ export function appFolders(source: PathSource): AppFolders {
     logFile: join(logs, "rev-bench.log"),
     session,
     autosaveFile: join(session, "build.json"),
+    builds: join(userData, "builds"),
   };
 }
 

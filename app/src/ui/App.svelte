@@ -7,6 +7,7 @@
 <script lang="ts">
   import { untrack } from "svelte";
   import AppLayout from "./layout/AppLayout.svelte";
+  import { SavedBuilds } from "./lib/builds.svelte";
   import { Driver } from "./lib/driver.svelte";
   import { Editor } from "./lib/editor.svelte";
   import type { EngineStore } from "./lib/engine-store.svelte";
@@ -66,6 +67,30 @@
     describeEdits: (edits, layout) => store.describeEdits(edits, layout),
   });
 
+  // the build saver: through the app's bridge (none in a plain browser page)
+  const builds = new SavedBuilds(window.revbench?.builds ?? null, {
+    get preset() {
+      return store.preset;
+    },
+    get layout() {
+      return store.layout;
+    },
+    get engineEdits() {
+      return store.engineEdits;
+    },
+    get settings() {
+      return store.settings;
+    },
+    settingDefault: (name) => store.settingDefault(name),
+    loadBuild: (build) => store.loadBuild(build),
+    setParam: (name, value) => store.setParam(name, value),
+  });
+  $effect(() =>
+    untrack(() => {
+      void builds.refresh();
+    }),
+  );
+
   $effect(() => {
     document.documentElement.dataset.theme = theme;
   });
@@ -88,7 +113,7 @@
     <TopBar {store} {driver} {theme} ontoggletheme={() => (theme = theme === "dark" ? "light" : "dark")} />
   {/snippet}
   {#snippet left()}
-    <EditorPanel {store} {editor} />
+    <EditorPanel {store} {editor} {builds} />
   {/snippet}
   {#snippet centre()}
     <CentrePanel {store} {driver} />

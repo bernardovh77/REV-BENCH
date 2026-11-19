@@ -432,6 +432,27 @@ layout-fixed fields), `core/src/presets.c`, [docs/architecture.md](../architectu
 
 **Execution record:** `docs/stage-131.md`.
 
+<a id="stage-132"></a>
+## Stage 132 — The build saver
+
+**Dependencies:** [067](#stage-067), [131](#stage-131)
+
+**Why:** Bernardo's request (2026-11-18): keep the engines he makes and come back to them. It
+pulls the saved-builds part of [095](12-release.md#stage-095) forward; 095 keeps import,
+export, sharing and migration.
+
+**Deliverable:** builds saved under a name (the preset, its layout and edits, the engine
+computer's settings), listed, loaded back as one rebuild, replaced only when asked and deleted
+after asking; the files the main process's alone, reached by id, never by path.
+
+**Required exit evidence:** the files' and the window's behaviour tested; hand-edited and
+foreign files neither listed nor deleted; e2e on Windows; planted bugs caught.
+
+**Stop/reject rule:** the window never names a file path; a refused build leaves the engine
+playing.
+
+**Execution record:** `docs/stage-132.md`.
+
 <a id="stage-068"></a>
 ## Stage 068 — Live instruments, telemetry and the core's dyno
 

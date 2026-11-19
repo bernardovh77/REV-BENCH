@@ -8,6 +8,7 @@
  * the newest it has (docs/app-design.md section 4).
  */
 import type { DeviceInfo, EngineFieldInfo, HostStats, LayoutInfo, LayoutSpec, Quality, Scene } from "../../shared/addon";
+import type { SavedEngine } from "../../shared/builds";
 import type { EngineEdit } from "../../shared/process-messages";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../../shared/bridge";
 import type { Snapshot } from "../../shared/snapshot-v2.generated";
@@ -332,6 +333,29 @@ export class EngineStore {
    */
   async loadPreset(preset: string): Promise<void> {
     await this.rebuild(preset, null, this.scene);
+  }
+
+  /**
+   * The build saver: a saved engine (its preset, layout and edits) as one rebuild, at its
+   * preset's tier and the scene playing. Resolves once it plays; rejects with the engine's
+   * reason, the old engine playing on.
+   */
+  async loadBuild(build: SavedEngine): Promise<void> {
+    if (this.rebuilding) throw new CommandError("BUSY", "a rebuild is in progress");
+    this.rebuilding = true;
+    try {
+      await this.client.command({ kind: "load-preset", preset: build.preset, scene: this.scene, edits: build.edits ?? [], layout: build.layout ?? null });
+      this.preset = build.preset;
+      this.quality = null;
+      this.lastError = null;
+    } finally {
+      this.rebuilding = false;
+    }
+  }
+
+  /** A setting's default, the core's (an engine computer's setting a saved build may lack). */
+  settingDefault(name: string): number {
+    return this.hello?.params.find((p) => p.name === name)?.default ?? 0;
   }
 
   /** Rebuilds at a chosen quality (null: the preset's tier). Never done without being asked. */

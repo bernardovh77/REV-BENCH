@@ -4,6 +4,13 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-19: Stage 132, the build saver (Claude)
+
+- docs/stage-132.md. `app/src/main/library.ts` keeps saved builds (`%APPDATA%/Rev-Bench/builds`,
+  one JSON each, format in `shared/builds.ts`); `window.revbench.builds` reaches it by id;
+  the editor's "Saved builds" section saves, loads (`load-preset` now takes a layout),
+  replaces and deletes. Bernardo's LS7 (`ls7-chop-tune.json`) is the first file.
+
 ## 2026-11-18: Stage 131, engine layouts (Claude)
 
 - docs/stage-131.md. `core/src/layouts.c`: an engine from family, count, crank and bank angle
