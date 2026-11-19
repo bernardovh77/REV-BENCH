@@ -1,5 +1,5 @@
 // The snapshot seam (stage 124): readSnapshot() gives the newest snapshot
-// nobody has read as a fresh ArrayBuffer of the core's snapshot-v2 bytes, with
+// nobody has read as a fresh ArrayBuffer of the core's snapshot-v3 bytes, with
 // the host's own numbers beside it, or null when there is none.
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -16,18 +16,18 @@ test("there is no snapshot before the host runs, and none twice in a row", async
   });
 });
 
-test("the bytes are snapshot-v2: magic, version, size and the engine's shape", async () => {
+test("the bytes are snapshot-v3: magic, version, size and the engine's shape", async () => {
   await withHost(cheapConfig({ preset: "v8-cross" }), async (host) => {
     host.start();
     const snap = await nextSnapshot(host);
     assert.ok(snap.bytes instanceof ArrayBuffer);
     const { header } = readSnapshotBytes(snap.bytes);
-    assert.equal(header.magic, SNAPSHOT_MAGIC, "RBS2");
-    assert.equal(header.version, 2);
+    assert.equal(header.magic, SNAPSHOT_MAGIC, "RBS3");
+    assert.equal(header.version, 3);
     assert.equal(header.size, snap.bytes.byteLength);
-    assert.equal(snap.bytes.byteLength, 304 + 40 * 8, "the V8's 624 bytes");
+    assert.equal(snap.bytes.byteLength, 360 + 40 * 8, "the V8's 680 bytes");
     assert.equal(header.cylinders, 8);
-    assert.equal(header.instruments, 24);
+    assert.equal(header.instruments, 31);
     assert.equal(header.cylinderFields, 5);
     assert.equal(header.audioHz, 48000);
     assert.ok(header.physicsHz > 0);
@@ -39,7 +39,8 @@ test("the info beside the bytes says which snapshot it is", async () => {
   await withHost(cheapConfig(), async (host) => {
     host.start();
     const a = await nextSnapshot(host);
-    assert.deepEqual(Object.keys(a).sort(), ["audioFrame", "bytes", "generation", "physicsTick", "sequence"]);
+    assert.deepEqual(Object.keys(a).sort(), ["audioFrame", "bytes", "generation", "outPeak", "outRms", "physicsTick", "sequence"]);
+    assert.ok(a.outPeak >= 0 && a.outPeak <= 1 && a.outRms >= 0 && a.outRms <= a.outPeak + 1e-6, "the meter's peak and RMS");
     assert.equal(a.generation, 1, "the host's generation, not the core's builds");
     assert.ok(Number.isInteger(a.sequence) && a.sequence >= 1);
     assert.ok(Number.isInteger(a.audioFrame) && a.audioFrame > 0);

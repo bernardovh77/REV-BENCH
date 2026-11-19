@@ -1,5 +1,5 @@
 /*
- * The generated snapshot-v2 decoder, against what tools/snapshot_v2.py reads from the same
+ * The generated snapshot-v3 decoder, against what tools/snapshot_v3.py reads from the same
  * bytes (the golden JSON, made by tools/gen_snapshot_ts.py) and against the contract's rules.
  */
 import { readFileSync } from "node:fs";
@@ -12,15 +12,15 @@ import {
   encodeSnapshot,
   snapshotSize,
   type Snapshot,
-} from "../src/shared/snapshot-v2.generated";
+} from "../src/shared/snapshot-v3.generated";
 
 interface GoldenSnapshot extends Omit<Snapshot, "build_id"> {
   build_id: string;
 }
 
-const example = readFileSync(new URL("../../contracts/examples/snapshot-v2-i4-idle.bin", import.meta.url));
+const example = readFileSync(new URL("../../contracts/examples/snapshot-v3-i4-idle.bin", import.meta.url));
 const golden: GoldenSnapshot[] = JSON.parse(
-  readFileSync(new URL("./golden/snapshot-v2-i4-idle.json", import.meta.url), "utf8"),
+  readFileSync(new URL("./golden/snapshot-v3-i4-idle.json", import.meta.url), "utf8"),
 );
 
 /** The example's snapshots, cut apart by the sizes the golden file says they have. */
@@ -45,12 +45,12 @@ function copyOfFirst(): ArrayBuffer {
   return bytes.slice().buffer;
 }
 
-describe("decoding the real example (contracts/examples/snapshot-v2-i4-idle.bin)", () => {
+describe("decoding the real example (contracts/examples/snapshot-v3-i4-idle.bin)", () => {
   it("has the snapshots the golden file lists", () => {
     expect(golden.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("reads every value as snapshot_v2.py does", () => {
+  it("reads every value as snapshot_v3.py does", () => {
     exampleSnapshots().forEach((bytes, i) => {
       const { build_id, ...rest } = decodeSnapshot(bytes);
       const { build_id: goldenBuildId, ...goldenRest } = golden[i];
@@ -59,10 +59,10 @@ describe("decoding the real example (contracts/examples/snapshot-v2-i4-idle.bin)
     });
   });
 
-  it("reads the instruments by name, all of the contract's 24", () => {
+  it("reads the instruments by name, all of the contract's 31", () => {
     const s = firstSnapshot();
     expect(Object.keys(s.instruments)).toEqual([...INSTRUMENT_NAMES]);
-    expect(INSTRUMENT_NAMES).toHaveLength(24);
+    expect(INSTRUMENT_NAMES).toHaveLength(31);
     expect(s.instruments.ignition).toBe(1);
   });
 
@@ -95,8 +95,8 @@ describe("encoding", () => {
   });
 
   it("makes the size the contract says: 304 + 40 n bytes", () => {
-    expect(snapshotSize(4)).toBe(464);
-    expect(snapshotSize(8)).toBe(624);
+    expect(snapshotSize(4)).toBe(520);
+    expect(snapshotSize(8)).toBe(680);
   });
 });
 
@@ -118,13 +118,13 @@ describe("the contract's rules: what a reader refuses", () => {
   it("refuses a wrong magic", () => {
     const b = copyOfFirst();
     new DataView(b).setUint32(0, 0x12345678, true); // the magic is the first word
-    refused(b, /not RBS2/);
+    refused(b, /not RBS3/);
   });
 
-  it("refuses a version that is not 2", () => {
+  it("refuses a version that is not 3", () => {
     const b = copyOfFirst();
-    new DataView(b).setUint32(4, 3, true); // the version is the second word
-    refused(b, /version 3/);
+    new DataView(b).setUint32(4, 2, true); // the version is the second word
+    refused(b, /version 2/);
   });
 
   it("refuses a size that disagrees with the layout", () => {

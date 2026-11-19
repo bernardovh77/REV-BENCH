@@ -11,7 +11,7 @@ import { describe, expect, it } from "vitest";
 import type { Addon } from "../src/shared/addon";
 import { describeAddonContract } from "./addon-contract";
 import { createFakeAddon } from "../src/engine/fake-addon";
-import { decodeSnapshot } from "../src/shared/snapshot-v2.generated";
+import { decodeSnapshot } from "../src/shared/snapshot-v3.generated";
 
 const path = process.env.RB_NATIVE_PATH;
 const required = process.env.RB_REQUIRE_NATIVE === "1";

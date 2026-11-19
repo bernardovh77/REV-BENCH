@@ -34,6 +34,11 @@ export function displayUnit(siUnit: string, system: UnitSystem): DisplayUnit {
       return system === "metric" ? { label: "kW", factor: 1 / 1000, digits: 2 } : { label: "hp", factor: 1 / 745.69987158227, digits: 2 };
     case "deg":
       return { label: "°", factor: 1, digits: 1 };
+    // stage 068's instruments: torque and pressure
+    case "N m":
+      return system === "metric" ? { label: "N·m", factor: 1, digits: 1 } : { label: "lb·ft", factor: 1 / 1.3558179483314, digits: 1 };
+    case "Pa":
+      return system === "metric" ? { label: "kPa", factor: 1 / 1000, digits: 1 } : { label: "psi", factor: 1 / 6894.757293168, digits: 2 };
     case "rpm":
       return { label: "rpm", factor: 1, digits: 0 };
     default:

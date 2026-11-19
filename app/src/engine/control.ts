@@ -436,6 +436,21 @@ export class EngineControl {
           if (param.name === "throttle" && command.value >= 0 && command.value <= 1) this.guard.beat(command.value, false, this.now());
           return;
         }
+        case "dyno-attach":
+        case "dyno-sweep":
+        case "dyno-clear":
+        case "dyno-release": {
+          const bad = EngineControl.badDyno(command);
+          if (bad) return this.reply(id, { error: { code: "BAD_VALUE", message: bad } });
+          if (this.rebuild) return this.reply(id, { error: { code: "BUSY", message: "a rebuild is in progress" } });
+          const request =
+            command.kind === "dyno-attach" ? host.dynoAttach(command.rpm)
+            : command.kind === "dyno-sweep" ? host.dynoSweep(command.toRpm, command.rate)
+            : command.kind === "dyno-clear" ? host.dynoClear()
+            : host.dynoRelease();
+          this.pending.set(request, { id, epoch: this.epoch });
+          return;
+        }
         case "throttle": {
           const param = this.params.find((p) => p.name === "throttle");
           if (!param) return this.reply(id, { error: { code: "UNKNOWN_PARAM", message: 'no parameter "throttle"' } });
@@ -514,6 +529,20 @@ export class EngineControl {
     if (bad) return this.reply(id, { error: { code: layout && badLayout(layout) ? "BAD_LAYOUT" : "BAD_EDIT", message: bad } });
     const { preset, quality, scene } = this.choice;
     this.loadPreset(id, preset, quality, scene ?? null, edits, layout === undefined ? undefined : this.ownOrNull(layout));
+  }
+
+  /** What's wrong with a dyno command's numbers, or null: a speed of 300..20000 rpm, a rate 0..5000 rpm/s. */
+  private static badDyno(command: Command): string | null {
+    if (command.kind === "dyno-attach") {
+      const { rpm } = command;
+      return typeof rpm === "number" && rpm >= 300 && rpm <= 20000 ? null : "the dyno holds 300 to 20000 rpm";
+    }
+    if (command.kind === "dyno-sweep") {
+      const { toRpm, rate } = command;
+      if (!(typeof toRpm === "number" && toRpm >= 300 && toRpm <= 20000)) return "the dyno sweeps to 300..20000 rpm";
+      if (!(typeof rate === "number" && rate >= 0 && rate <= 5000)) return "a sweep's rate is 0..5000 rpm a second";
+    }
+    return null;
   }
 
   /** The preset's own layout is no layout at all (the preset as it comes): null for it. */
@@ -611,7 +640,10 @@ export class EngineControl {
     const read = this.requireHost().readSnapshot();
     if (!read) return;
     this.port?.post(
-      { type: "snapshot", bytes: read.bytes, sequence: read.sequence, generation: read.generation, audioFrame: read.audioFrame },
+      {
+        type: "snapshot", bytes: read.bytes, sequence: read.sequence, generation: read.generation, audioFrame: read.audioFrame,
+        outPeak: read.outPeak, outRms: read.outRms,
+      },
       [read.bytes],
     );
   }

@@ -19,6 +19,16 @@ export type Command =
   /** a driver's control or a setting, by the core's parameter name */
   | { kind: "set-param"; name: string; value: number }
   /**
+   * stage 068: the core's dyno. `dyno-attach` takes the crank at `rpm` (the engine runs into it),
+   * `dyno-sweep` climbs to `toRpm` at `rate` rpm/s, `dyno-clear` starts its readings again,
+   * `dyno-release` lets go. Each acknowledged once the render thread took it; a rebuild lets go
+   * too (the new engine has no dyno), which the snapshots' `dyno_attached` says.
+   */
+  | { kind: "dyno-attach"; rpm: number }
+  | { kind: "dyno-sweep"; toRpm: number; rate: number }
+  | { kind: "dyno-clear" }
+  | { kind: "dyno-release" }
+  /**
    * the driver's throttle, 0..1 (stage 066). `live` for the styles the dead-man rule covers (a
    * ramped key, an analog key, a trigger): the window then sends it at a steady beat, and if
    * none arrives for 250 ms the engine process ramps the throttle to zero over 100 ms. The
@@ -106,6 +116,9 @@ export type FromEngine =
       sequence: number;
       generation: number;
       audioFrame: number;
+      /** stage 068: the output since the snapshot before, peak and RMS (SnapshotRead's) */
+      outPeak: number;
+      outRms: number;
     }
   | { type: "stats"; stats: HostStats }
   /**

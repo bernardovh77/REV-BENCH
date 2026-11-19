@@ -690,6 +690,29 @@ int rb_engine_pipe_count(const rb_engine *e)
          + (e->desc.center_length > 0.0 ? 2 * e->collectors : 0);
 }
 
+/* A pipe's faces' guards and its cells' repairs. */
+static uint64_t pipe_guards(const rb_pipe *p)
+{
+    uint64_t n = (uint64_t)p->end_face[0].guards + p->end_face[1].guards;
+    for (int k = 0; k + 1 < p->cells; k++) n += p->face[k].guards;
+    for (int k = 0; k < p->cells; k++) n += (uint64_t)p->cell[k].repairs;
+    return n;
+}
+
+uint64_t rb_engine_guards(const rb_engine *e)
+{
+    uint64_t n = 0;
+    const rb_chamber *const fixed[] = { &e->intake_air, &e->plenum, &e->exhaust_air, &e->airbox, &e->junction };
+    for (size_t k = 0; k < sizeof fixed / sizeof fixed[0]; k++) n += (uint64_t)fixed[k]->repairs;
+    for (int c = 0; c < RB_MAX_COLLECTORS; c++) n += (uint64_t)e->collector[c].repairs;
+    /* not the orifices' equalisation limit: by design it acts on about a quarter of the
+     * valves' steps in a normal idle and on the throttle wide open (a big opening between
+     * small volumes equalises faster than a step), so it tells nothing apart */
+    for (int i = 0; i < e->desc.cylinders; i++) n += (uint64_t)e->cyl[i].gas.repairs;
+    for (int k = 0; k < rb_engine_pipe_count(e); k++) n += pipe_guards(rb_engine_pipe(e, k));
+    return n;
+}
+
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
 {
     const int n = e->desc.cylinders;
@@ -805,6 +828,10 @@ static void finish_cycle(rb_engine *e)
 {
     const rb_engine_desc *d = &e->desc;
     rb_engine_cycle *r = &e->result;
+    /* the guards over the cycle (stage 068): a sum over the pipes, once a cycle */
+    const uint64_t guards = rb_engine_guards(e);
+    r->guard_rate = e->acc_time > 0.0 ? (double)(guards - e->guards_then) / e->acc_time : 0.0;
+    e->guards_then = guards;
     const double v_cyl = e->cyl[0].geom.v_disp, v_all = v_cyl * d->cylinders;
     const double rho_ambient = d->p_ambient / (e->intake_air.gas.R * d->T_ambient);
     const double rho_plenum = e->acc_rho / e->acc_time;

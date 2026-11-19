@@ -163,6 +163,57 @@ static napi_value host_set_param(napi_env env, napi_callback_info info)
     return command_result(env, rc, request, "setParam");
 }
 
+/* The core's dyno (stage 068): attach at a speed, sweep it, clear its readings, release. Each a
+ * command like setParam: a request id, acknowledged by poll. */
+static napi_value host_dyno_attach(napi_env env, napi_callback_info info)
+{
+    napi_value args[2];
+    size_t given = 0;
+    rbn_host *h = begin(env, info, 2, args, &given);
+    if (!h || need(env, given, 1, "dynoAttach") != 0) return NULL;
+    double rpm = 0.0;
+    uint64_t expected = 0, request = 0;
+    if (rbn_get_double(env, args[0], "rpm", &rpm) != 0 || rbn_get_u64(env, args[1], "expectedGeneration", 1, 0, &expected) != 0)
+        return NULL;
+    return command_result(env, rb_host_dyno_attach(h->host, rpm, expected, &request), request, "dynoAttach");
+}
+
+static napi_value host_dyno_sweep(napi_env env, napi_callback_info info)
+{
+    napi_value args[3];
+    size_t given = 0;
+    rbn_host *h = begin(env, info, 3, args, &given);
+    if (!h || need(env, given, 2, "dynoSweep") != 0) return NULL;
+    double to = 0.0, rate = 0.0;
+    uint64_t expected = 0, request = 0;
+    if (rbn_get_double(env, args[0], "toRpm", &to) != 0 || rbn_get_double(env, args[1], "rate", &rate) != 0 ||
+        rbn_get_u64(env, args[2], "expectedGeneration", 1, 0, &expected) != 0)
+        return NULL;
+    return command_result(env, rb_host_dyno_sweep(h->host, to, rate, expected, &request), request, "dynoSweep");
+}
+
+static napi_value host_dyno_release(napi_env env, napi_callback_info info)
+{
+    napi_value args[1];
+    size_t given = 0;
+    rbn_host *h = begin(env, info, 1, args, &given);
+    if (!h) return NULL;
+    uint64_t expected = 0, request = 0;
+    if (rbn_get_u64(env, args[0], "expectedGeneration", 1, 0, &expected) != 0) return NULL;
+    return command_result(env, rb_host_dyno_release(h->host, expected, &request), request, "dynoRelease");
+}
+
+static napi_value host_dyno_clear(napi_env env, napi_callback_info info)
+{
+    napi_value args[1];
+    size_t given = 0;
+    rbn_host *h = begin(env, info, 1, args, &given);
+    if (!h) return NULL;
+    uint64_t expected = 0, request = 0;
+    if (rbn_get_u64(env, args[0], "expectedGeneration", 1, 0, &expected) != 0) return NULL;
+    return command_result(env, rb_host_dyno_clear(h->host, expected, &request), request, "dynoClear");
+}
+
 static napi_value host_set_engine_live(napi_env env, napi_callback_info info)
 {
     napi_value args[4];
@@ -313,7 +364,9 @@ static napi_value host_read_snapshot(napi_env env, napi_callback_info info)
         rbn_set_number(env, result, "sequence", (double)meta.sequence) != 0 ||
         rbn_set_number(env, result, "generation", (double)meta.generation) != 0 ||
         rbn_set_number(env, result, "audioFrame", (double)meta.audio_frame) != 0 ||
-        rbn_set_number(env, result, "physicsTick", (double)meta.physics_tick) != 0)
+        rbn_set_number(env, result, "physicsTick", (double)meta.physics_tick) != 0 ||
+        rbn_set_number(env, result, "outPeak", (double)meta.out_peak) != 0 ||
+        rbn_set_number(env, result, "outRms", (double)meta.out_rms) != 0)
         return NULL;
     return result;
 }
@@ -454,6 +507,10 @@ int rbn_host_class_init(napi_env env)
         {"generation", NULL, host_generation, NULL, NULL, NULL, napi_default_method, NULL},
         {"setParam", NULL, host_set_param, NULL, NULL, NULL, napi_default_method, NULL},
         {"setEngineLive", NULL, host_set_engine_live, NULL, NULL, NULL, napi_default_method, NULL},
+        {"dynoAttach", NULL, host_dyno_attach, NULL, NULL, NULL, napi_default_method, NULL},
+        {"dynoSweep", NULL, host_dyno_sweep, NULL, NULL, NULL, napi_default_method, NULL},
+        {"dynoRelease", NULL, host_dyno_release, NULL, NULL, NULL, napi_default_method, NULL},
+        {"dynoClear", NULL, host_dyno_clear, NULL, NULL, NULL, napi_default_method, NULL},
         {"prepare", NULL, host_prepare, NULL, NULL, NULL, napi_default_method, NULL},
         {"prepareState", NULL, host_prepare_state, NULL, NULL, NULL, napi_default_method, NULL},
         {"swap", NULL, host_swap, NULL, NULL, NULL, napi_default_method, NULL},

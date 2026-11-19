@@ -49,12 +49,12 @@ test("an engine built without a quality gets its preset's real-time default", as
 });
 
 test("each preset builds its own engine: the cylinders and the snapshot's size follow", async () => {
-  // contracts/snapshot-v2.md: 304 + 40 n bytes for n cylinders
+  // contracts/snapshot-v3.md: 360 + 40 n bytes for n cylinders
   const cylinders = { i4: 4, i6: 6, "v8-cross": 8 };
   for (const [key, n] of Object.entries(cylinders)) {
     const { header, snap } = await firstSnapshot(cheapConfig({ preset: key }));
     assert.equal(header.cylinders, n, key);
-    assert.equal(snap.bytes.byteLength, 304 + 40 * n, key);
+    assert.equal(snap.bytes.byteLength, 360 + 40 * n, key);
     assert.equal(header.size, snap.bytes.byteLength);
   }
 });

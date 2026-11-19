@@ -34,7 +34,11 @@ export function swapFadeFrames(rate: number, fadeMs = 15): number {
   return blocks * 128;
 }
 
-type Pending = { kind: "set"; name: string; value: number } | { kind: "swap"; build: string };
+type Pending =
+  | { kind: "set"; name: string; value: number }
+  | { kind: "swap"; build: string }
+  /** a dyno command (stage 068), its trace line after "at FRAME" */
+  | { kind: "line"; line: string };
 
 export class TraceRecorder {
   /** the lines after the first build, in order */
@@ -73,6 +77,10 @@ export class TraceRecorder {
         this.pending.set(request, { kind: "set", name: name(id), value });
         return request;
       },
+      dynoAttach: (rpm, expected) => this.line(host.dynoAttach(rpm, expected), `dyno_attach ${exact(rpm)}`),
+      dynoSweep: (to, rate, expected) => this.line(host.dynoSweep(to, rate, expected), `dyno_sweep ${exact(to)} ${exact(rate)}`),
+      dynoClear: (expected) => this.line(host.dynoClear(expected), "dyno_clear"),
+      dynoRelease: (expected) => this.line(host.dynoRelease(expected), "dyno_release"),
       setEngineLive: (field, index, value, expected) => {
         // not something the app sends yet: a trace can't name the field from here
         this.interrupted = true;
@@ -116,6 +124,12 @@ export class TraceRecorder {
     };
   }
 
+  /** Remembers a command's trace line until its acknowledgment dates it; the request id back. */
+  private line(request: number, line: string): number {
+    this.pending.set(request, { kind: "line", line });
+    return request;
+  }
+
   /** The trace for `frames` recorded frames from frame 0 (rb_host_trace.h). */
   text(frames: number): string {
     // a swap's build is defined before the line that swaps it in (the parser reads in order)
@@ -128,6 +142,7 @@ export class TraceRecorder {
     this.pending.delete(ack.requestId);
     if (ack.outcome !== "ok") return;
     if (p.kind === "set") this.commands.push(`at ${ack.audioFrame} set ${p.name} ${exact(p.value)}`);
+    else if (p.kind === "line") this.commands.push(`at ${ack.audioFrame} ${p.line}`);
     else this.commands.push(`at ${ack.audioFrame - swapFadeFrames(this.rate)} swap ${p.build}`);
   }
 

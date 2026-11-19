@@ -28,12 +28,12 @@ BUGS = {
         "    return fileURLToPath(given) === rendererIndex;",
         "tests/security.test.ts", "knows its page under another spelling of the same path"),
     "decoder-off-by-one-field": (
-        "app/src/shared/snapshot-v2.generated.ts",
+        "app/src/shared/snapshot-v3.generated.ts",
         'physics_tick: counter(view, 56, "physics_tick"),',
         'physics_tick: counter(view, 64, "physics_tick"),',
-        "tests/snapshot.test.ts", "reads every value as snapshot_v2.py does"),
+        "tests/snapshot.test.ts", "reads every value as snapshot_v3.py does"),
     "decoder-accepts-a-wrong-magic": (
-        "app/src/shared/snapshot-v2.generated.ts",
+        "app/src/shared/snapshot-v3.generated.ts",
         "  if (h.magic !== SNAPSHOT_MAGIC) fail(",
         "  if (false) fail(",
         "tests/snapshot.test.ts", "refuses a wrong magic"),
@@ -114,7 +114,7 @@ BUGS = {
         "tests/design-tokens.test.ts", "CentrePanel.svelte uses only tokens"),
     "panel-uses-its-own-font": (
         "app/src/ui/panels/BottomPanel.svelte",
-        "    font-size: var(--rb-font-size-sm);",
+        "    grid-template-columns: 1fr 1fr;",   # stage 068: the dyno panel
         "    font-family: Arial, sans-serif;",
         "tests/design-tokens.test.ts", "BottomPanel.svelte uses only tokens"),
     "linter-ignores-hex-colours": (
@@ -126,7 +126,7 @@ BUGS = {
         "app/src/preload/bridge-impl.ts",
         "    platform: env.platform,",
         "    ipc: env.ipc,\n    platform: env.platform,",
-        "tests/preload.test.ts", "exposes only the six names the type promises"),
+        "tests/preload.test.ts", "exposes only the seven names the type promises"),
     "client-ignores-detach": (
         "app/src/ui/lib/engine-client.ts",
         '      waiting.reject(new CommandError("DETACHED", reason));',

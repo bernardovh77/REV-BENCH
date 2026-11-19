@@ -9,9 +9,12 @@
  */
 import type { DeviceInfo, EngineFieldInfo, HostStats, LayoutInfo, LayoutSpec, Quality, Scene } from "../../shared/addon";
 import type { SavedEngine } from "../../shared/builds";
+import { DynoRuns } from "./dyno.svelte";
+import { GuardWatch } from "./guard-watch";
+import { Meter, type MeterReading } from "./meter";
 import type { EngineEdit } from "../../shared/process-messages";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../../shared/bridge";
-import type { Snapshot } from "../../shared/snapshot-v2.generated";
+import type { Snapshot } from "../../shared/snapshot-v3.generated";
 import type { FromEngine } from "../../shared/protocol";
 import { CommandError, EngineClient, fromMessagePort, type Hello } from "./engine-client";
 
@@ -50,6 +53,14 @@ export class EngineStore {
   hello = $state.raw<Hello | null>(null);
   snapshot = $state.raw<Snapshot | null>(null);
   stats = $state.raw<HostStats | null>(null);
+  /** stage 068: the output meter, the model's own warning, and the dyno's runs, all from the
+   *  snapshots and timed by the audio's frames */
+  meter = $state.raw<MeterReading>(new Meter().reading());
+  outsideModel = $state(false);
+  readonly dyno = new DynoRuns();
+  private readonly meterState = new Meter();
+  private readonly guards = new GuardWatch();
+  private lastGeneration = 0;
   connected = $state(false);
   /** the preset being played (what the engine last confirmed) */
   preset = $state<string | null>(null);
@@ -138,8 +149,18 @@ export class EngineStore {
         this.fallingBehind = false;
         this.connected = true;
       },
-      snapshot: (snapshot) => {
+      snapshot: (snapshot, meta) => {
         this.snapshot = snapshot;
+        const rate = this.hello?.sampleRate ?? 48000;
+        const seconds = meta.audioFrame / rate;
+        if (meta.generation !== this.lastGeneration) {   // a new engine: the warning starts afresh
+          this.lastGeneration = meta.generation;
+          this.guards.reset();
+        }
+        this.meter = this.meterState.update(meta.outPeak, meta.outRms, seconds);
+        this.outsideModel = this.guards.update(snapshot.instruments.guard_rate, seconds);
+        const i = snapshot.instruments;
+        this.dyno.update({ attached: i.dyno_attached, readings: i.dyno_readings, rpm: i.dyno_rpm, torque: i.dyno_torque, power: i.dyno_power, seconds });
       },
       stats: (stats) => {
         this.stats = stats;
@@ -352,6 +373,36 @@ export class EngineStore {
       this.rebuilding = false;
     }
   }
+
+  /**
+   * Stage 068: the core's dyno takes the crank at `rpm` and holds it there (wide open, the
+   * throttle latched open first; it is shut again on release). The run is labelled for its
+   * overlay. Rejects with the engine's reason.
+   */
+  async dynoHold(rpm: number, wideOpen: boolean): Promise<void> {
+    this.dyno.expect(`Held at ${Math.round(rpm)} rpm${wideOpen ? ", wide open" : ""}`);
+    if (wideOpen) await this.setParam("throttle", 1);
+    await this.client.command({ kind: "dyno-attach", rpm });
+    this.dynoWideOpen = wideOpen;
+  }
+
+  /** A sweep: taken at `from`, then climbing to `to` at `rate` rpm a second. */
+  async dynoSweep(from: number, to: number, rate: number, wideOpen: boolean): Promise<void> {
+    this.dyno.expect(`Sweep ${Math.round(from)}-${Math.round(to)} rpm at ${Math.round(rate)} rpm/s${wideOpen ? ", wide open" : ""}`);
+    if (wideOpen) await this.setParam("throttle", 1);
+    await this.client.command({ kind: "dyno-attach", rpm: from });
+    await this.client.command({ kind: "dyno-sweep", toRpm: to, rate });
+    this.dynoWideOpen = wideOpen;
+  }
+
+  /** The dyno lets go (and a wide-open run's throttle shuts). */
+  async dynoRelease(): Promise<void> {
+    await this.client.command({ kind: "dyno-release" });
+    if (this.dynoWideOpen) await this.setParam("throttle", 0);
+    this.dynoWideOpen = false;
+  }
+
+  private dynoWideOpen = false;
 
   /** A setting's default, the core's (an engine computer's setting a saved build may lack). */
   settingDefault(name: string): number {

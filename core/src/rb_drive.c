@@ -268,6 +268,13 @@ double rb_sim_engine_telemetry(const rb_sim *sim, int id)
     case RB_TLM_FUEL_FLOW:     return r->fuel_flow;
     case RB_TLM_EXHAUST_T:     return r->t_exhaust;
     case RB_TLM_TAILPIPE_T:    return r->t_tailpipe;
+    case RB_TLM_GUARD_RATE:    return r->guard_rate;
+    case RB_TLM_DYNO_ATTACHED: return sim->dyno ? 1.0 : 0.0;
+    case RB_TLM_DYNO_TARGET_RPM: return sim->dyno ? sim->dyno->target_rpm : 0.0;
+    case RB_TLM_DYNO_READINGS: return sim->dyno ? (double)sim->dyno->readings : 0.0;
+    case RB_TLM_DYNO_RPM:      return sim->dyno ? sim->dyno->reading.rpm : 0.0;
+    case RB_TLM_DYNO_TORQUE:   return sim->dyno ? sim->dyno->reading.brake_torque : 0.0;
+    case RB_TLM_DYNO_POWER:    return sim->dyno ? sim->dyno->reading.brake_power : 0.0;
     default:                   return NAN;
     }
 }
@@ -328,10 +335,10 @@ double rb_get_dyno(const rb_sim *sim, int field)
     }
 }
 
-/* ---- snapshots (contracts/snapshot-v2.md) ---- */
+/* ---- snapshots (contracts/snapshot-v3.md) ---- */
 
-_Static_assert(sizeof(rb_snapshot_header) == 112, "snapshot-v2's header is 112 bytes");
-_Static_assert(RB_SNAPSHOT_INSTRUMENTS == 24, "snapshot-v2 has 24 instruments");
+_Static_assert(sizeof(rb_snapshot_header) == 112, "snapshot-v3's header is 112 bytes");
+_Static_assert(RB_SNAPSHOT_INSTRUMENTS == 31, "snapshot-v3 has 31 instruments");
 
 /* The engine description's identity: a 64-bit FNV-1a hash of every field's
  * value, as rb_get_engine gives it (the bits of each double), so the same

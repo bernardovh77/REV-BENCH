@@ -152,7 +152,7 @@ Where this file and the code disagree, the code is right and this file is fixed.
     events, the generation +1. `rb_sim_desc` is the description without the car's inertia (the
     engine's `desc.inertia` carries it in gear);
   - **a dyno the sim owns** (`rb_dyno_attach` ..., `own_dyno`);
-  - **snapshots** (`rb_get_snapshot`, contracts/snapshot-v2.md, checked by tools/snapshot_v2.py)
+  - **snapshots** (`rb_get_snapshot`, contracts/snapshot-v3.md, checked by tools/snapshot_v3.py)
     and **events** (`RB_PARAM_EVENTS`, `rb_read_events`; off by default at no cost).
 
   New parameters: append to `rb_param` and `PARAMS[]` and apply them in `rb_sim_apply`; new
@@ -333,6 +333,16 @@ Where this file and the code disagree, the code is right and this file is fixed.
   - **Tests:** `tests/test_layouts.c`; the drive of every combination
     (`test_layout_every_combination_runs`) runs only with `RB_LAYOUT_SHARD=k/N`, which the
     `layouts` suite of tools/run_tests.py sets for parallel shares (tools/layout_shards.py).
+- **Stage 068** (instruments and the dyno, docs/stage-068.md):
+  - **The guards' count:** `rb_face.guards` (sonic cap, mass cap, a flow that stopped being a
+    number) and the chambers' `repairs`, summed by `rb_engine_guards` once a cycle into
+    `rb_engine_cycle.guard_rate` (`RB_TLM_GUARD_RATE`). The orifices' equalisation limit is
+    routine and not counted. A new guard counts itself the same way, in its branch only.
+  - **Snapshot-v3:** telemetry appended before `RB_TLM_COUNT` lands in the snapshot at the end
+    (a new version each time: the magic, `tools/snapshot_v3.py`'s table, the contract's rows,
+    then `python tools/gen_snapshot_ts.py`).
+  - **The host's meter:** `rbh_run.meter_*`, after the swaps' fades, published and reset with
+    each snapshot.
 
 ## Tools and charts
 

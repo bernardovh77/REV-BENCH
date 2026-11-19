@@ -39,6 +39,7 @@ void test_host_refused_commands_say_why(void);
 void test_host_every_command_kind_reaches_the_engine(void);
 void test_host_no_command_is_lost_under_load(void);
 void test_host_snapshots_are_whole_and_published_about_60_times_a_second(void);
+void test_host_snapshots_carry_the_output_meter(void);
 void test_host_a_slow_reader_gets_the_newest_and_drops_are_counted(void);
 void test_host_events_arrive_in_order_and_losses_are_the_gaps(void);
 void test_host_clock_maps_physics_ticks_to_audio_frames(void);
@@ -78,6 +79,7 @@ void test_offline_runs_repeat_exactly(void);
 void test_offline_refuses_what_only_a_device_host_does(void);
 void test_offline_swap_fades_and_repeats_exactly(void);
 void test_trace_parses_a_build_and_its_commands(void);
+void test_trace_observer_sees_the_engine_after_every_block(void);
 void test_trace_errors_name_the_line(void);
 void test_trace_plays_what_a_host_renders_skipping_the_skip(void);
 void test_trace_swap_plays_through_a_fade(void);
@@ -121,6 +123,7 @@ static const test_entry TESTS[] = {
     T(test_host_every_command_kind_reaches_the_engine),
     T(test_host_no_command_is_lost_under_load),
     T(test_host_snapshots_are_whole_and_published_about_60_times_a_second),
+    T(test_host_snapshots_carry_the_output_meter),
     T(test_host_a_slow_reader_gets_the_newest_and_drops_are_counted),
     T(test_host_events_arrive_in_order_and_losses_are_the_gaps),
     T(test_host_clock_maps_physics_ticks_to_audio_frames),
@@ -156,6 +159,7 @@ static const test_entry TESTS[] = {
     T(test_offline_refuses_what_only_a_device_host_does),
     T(test_offline_swap_fades_and_repeats_exactly),
     T(test_trace_parses_a_build_and_its_commands),
+    T(test_trace_observer_sees_the_engine_after_every_block),
     T(test_trace_errors_name_the_line),
     T(test_trace_plays_what_a_host_renders_skipping_the_skip),
     T(test_trace_swap_plays_through_a_fade),

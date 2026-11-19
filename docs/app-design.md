@@ -144,7 +144,7 @@ with its own tests (stage 123), including ThreadSanitizer runs in Linux CI (MSVC
   - the instruments: rpm, MAP, torque, power, lambda, spark, the cuts;
   - optional pipe-cell arrays, by subscription (stage 073).
 
-  The layout is versioned in `contracts/snapshot-v2.md`. A TypeScript decoder is generated from
+  The layout is versioned in `contracts/snapshot-v3.md`. A TypeScript decoder is generated from
   the C struct's offsets, and a test checks the two agree. Snapshots are published about 60
   times a second and dropped whole, never torn, if nobody reads them.
 - **Events** are runtime-v1's actual spark, injection, valve and cut events, for the 3D view and

@@ -102,6 +102,7 @@
 #define RB_PIPE_H
 
 #include "chamber.h"
+#include <stdint.h>
 #include "flow.h"
 #include "radiation.h"
 
@@ -134,6 +135,8 @@ typedef struct rb_face {
     int    direct_a;    /* in the fast pass, a slow chamber on that side gets  */
     int    direct_b;    /* its gas at once (rb_chamber_add_mass)               */
     double mdot;        /* kg/s: the column's flow now                         */
+    uint32_t guards;    /* times its sonic or mass cap stepped in, or its flow
+                         * stopped being a number (stage 068: rb_engine_guards) */
     double moved;       /* kg/s: what it moved in its last pass (signed; under
                            mdot only if that would have emptied a chamber)     */
     double moved_h;     /* J/kg the moved gas carried: enthalpy + kinetic      */

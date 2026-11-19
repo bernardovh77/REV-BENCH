@@ -87,6 +87,11 @@ static uint64_t publish_snapshot(rb_host *h)
     slot->physics_tick = header.physics_tick;
     slot->size = (uint32_t)size;
     slot->reserved = 0;
+    slot->out_peak = r->meter_peak;
+    slot->out_rms = r->meter_samples ? (float)sqrt(r->meter_sumsq / r->meter_samples) : 0.0f;
+    r->meter_peak = 0.0f;
+    r->meter_sumsq = 0.0;
+    r->meter_samples = 0;
     rbh_triple_write_end(&h->snapshots);
     return header.physics_tick;
 }
@@ -282,6 +287,15 @@ void rbh_run_block(rb_host *h, float *out, int frames)
         r->tr_pos += (uint32_t)frames;
         if (r->tr_pos >= fade) r->tr_state = RBH_TR_NONE;
     }
+
+    /* the meter: what the device gets, until the next snapshot carries it */
+    for (int i = 0; i < 2 * frames; i++) {
+        const float v = out[i];
+        const float a = fabsf(v);
+        if (a > r->meter_peak) r->meter_peak = a;
+        r->meter_sumsq += (double)v * v;
+    }
+    r->meter_samples += (uint32_t)(2 * frames);
 
     drain_events(h);
     r->audio_frame += (uint32_t)frames;

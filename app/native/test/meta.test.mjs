@@ -14,15 +14,15 @@ test("the module exports exactly the Addon of addon.ts", () => {
   for (const name of Object.keys(addon)) assert.equal(typeof addon[name], "function", name);
 });
 
-test("version() names the core's version, snapshot version 2 and a Node-API version", () => {
+test("version() names the core's version, snapshot version 3 and a Node-API version", () => {
   const v = addon.version();
   assert.deepEqual(Object.keys(v).sort(), ["addon", "nodeApi", "snapshot"]);
   // the core's version is in its header, an independent source
   const header = readFileSync(fileURLToPath(new URL("../../../core/include/rb.h", import.meta.url)), "utf8");
   const core = /#define RB_VERSION_STRING "([^"]+)"/.exec(header)[1];
   assert.equal(v.addon, core);
-  // contracts/snapshot-v2.md: version 2
-  assert.equal(v.snapshot, 2);
+  // contracts/snapshot-v3.md: version 3
+  assert.equal(v.snapshot, 3);
   assert.ok(Number.isInteger(v.nodeApi) && v.nodeApi >= 8, `Node-API version ${v.nodeApi}`);
 });
 
@@ -78,12 +78,13 @@ test("telemetry() lists the core's ids; the instruments from rpm on are the snap
   const rpm = telemetry.findIndex((t) => t.name === "rpm");
   assert.ok(rpm > 0, "rpm is among them");
   assert.deepEqual(telemetry[rpm], { id: rpm, name: "rpm", unit: "rpm" });
-  // contracts/snapshot-v2.md: 24 instruments from rpm on, in this order
+  // contracts/snapshot-v3.md: 31 instruments from rpm on, in this order
   const instruments = telemetry.slice(rpm).map((t) => t.name);
-  assert.equal(instruments.length, 24);
+  assert.equal(instruments.length, 31);
   assert.deepEqual(instruments.slice(0, 4), ["rpm", "rpm_smooth", "cycle_rpm", "map"]);
   assert.equal(instruments[9], "throttle");
   assert.equal(instruments[23], "tailpipe_temperature");
+  assert.deepEqual(instruments.slice(24), ["guard_rate", "dyno_attached", "dyno_target_rpm", "dyno_readings", "dyno_rpm", "dyno_torque", "dyno_power"]);
 });
 
 test("listDevices('null') finds the null backend's one device", () => {

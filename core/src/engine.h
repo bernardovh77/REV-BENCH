@@ -234,6 +234,8 @@ typedef struct rb_engine_cycle {
     double bmep;                      /* Pa: brake mean effective pressure, imep_net - fmep   */
     double brake_torque;              /* N m: what the crank delivers, torque minus friction  */
     double brake_power;               /* W                                                    */
+    double guard_rate;                /* the numerical guards stepping in, per second over the
+                                       * cycle (stage 068: rb_engine_guards)                  */
 } rb_engine_cycle;
 
 /* One cylinder's combustion bookkeeping. */
@@ -301,6 +303,7 @@ typedef struct rb_engine {
     double theta;           /* degrees, cylinder 1's crank angle in the cycle          */
     long   cycles;          /* cycles completed since rb_engine_init                    */
     rb_engine_cycle result; /* the last completed cycle                                */
+    uint64_t guards_then;   /* rb_engine_guards at the last cycle's end (stage 068)     */
     double variation;       /* stage 12c: how much no two cycles are alike (any time):
                              * 0 every cycle the same (the default, as the tests and
                              * the dyno numbers want), 1 a real engine's (rb_cli sound
@@ -496,5 +499,13 @@ double rb_engine_pipe_heat(const rb_engine *e);
  * and the snorkel. NULL if k is out of range. */
 int    rb_engine_pipe_count(const rb_engine *e);
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k);
+
+/* Every time one of the model's numerical guards has stepped in since the
+ * engine was built (stage 068): the pipes' faces' sonic and mass caps and a
+ * flow that stopped being a number, and every chamber's repairs (not the
+ * orifices' equalisation limit: by design it acts on a quarter of the valves'
+ * steps idling and on the throttle wide open). In normal running it barely moves; the cycle's
+ * rate of it is RB_TLM_GUARD_RATE. */
+uint64_t rb_engine_guards(const rb_engine *e);
 
 #endif /* RB_ENGINE_H */

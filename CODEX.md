@@ -4,6 +4,16 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-19: Stage 068, instruments and the dyno (Claude)
+
+- docs/stage-068.md. Snapshot version 3 (`contracts/snapshot-v3.md`, `tools/snapshot_v3.py`,
+  `snapshot-v3.generated.ts`): seven instruments appended (`guard_rate`, `dyno_*`).
+- Core: `rb_engine_guards` (faces' sonic and mass caps, bad flows, chamber repairs; not the
+  orifices' equalisation limit, which is routine), `RB_GUARD_RATE_WARN` 1000/s.
+- Host: the output meter (`out_peak`, `out_rms` with each snapshot), `rb_trace_play_observed`,
+  `rb_host_render --dyno-csv`. Add-on: `dyno*` on Host. Window: instruments, meter, the
+  model's warning, the dyno panel with CSV export (`bridge.saveText`).
+
 ## 2026-11-19: Stage 132, the build saver (Claude)
 
 - docs/stage-132.md. `app/src/main/library.ts` keeps saved builds (`%APPDATA%/Rev-Bench/builds`,

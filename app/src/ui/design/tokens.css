@@ -28,6 +28,13 @@
   --rb-color-warning-tint: #2a2316;
   --rb-color-success: #4cc38a;
   --rb-color-focus: #8dc1ff;
+  /* the dyno's charts (stage 068): the run being read, then the earlier ones, older dimmer */
+  --rb-color-chart-current: #4c9eff;
+  --rb-color-chart-earlier-1: #b38cff;
+  --rb-color-chart-earlier-2: #e0a35a;
+  --rb-color-chart-earlier-3: #6fc3b8;
+  --rb-color-chart-earlier-4: #8a93a6;
+  --rb-color-chart-grid: #262b35;
 }
 
 :root[data-theme="light"] {
@@ -48,6 +55,12 @@
   --rb-color-warning-tint: #fbf1dc;
   --rb-color-success: #1c7a4f;
   --rb-color-focus: #1a6fd6;
+  --rb-color-chart-current: #1a6fd6;
+  --rb-color-chart-earlier-1: #7a4fd0;
+  --rb-color-chart-earlier-2: #b06d1c;
+  --rb-color-chart-earlier-3: #2a8a7e;
+  --rb-color-chart-earlier-4: #6a7385;
+  --rb-color-chart-grid: #e3e6eb;
 }
 
 :root {
@@ -96,6 +109,12 @@
   --rb-editor-width: 340px;
   --rb-bottom-height: 220px;
   --rb-slider-width: 160px;
+  /* the dyno's charts and the output meter (stage 068) */
+  --rb-chart-height: 200px;
+  --rb-meter-height: 14px;
+  --rb-meter-width: 220px;
+  --rb-chart-line: 2px;
+  --rb-chart-line-earlier: 1.5px;
   /* the editor's number entries (stage 067) */
   --rb-number-width: 76px;
   --rb-readout-width: 88px;

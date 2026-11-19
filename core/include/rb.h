@@ -47,7 +47,7 @@
  * the seed) are parameters too; the engine's own numbers (rpm, MAP, torque,
  * the cuts...) are telemetry. A dyno the sim owns can hold the crank
  * (rb_dyno_*). A host that animates the engine reads coherent snapshots
- * (rb_get_snapshot, contracts/snapshot-v2.md) and the engine's actual events
+ * (rb_get_snapshot, contracts/snapshot-v3.md) and the engine's actual events
  * (rb_read_events).
  *
  * Every rebuild (rb_reset, rb_load_preset, a field that isn't RB_EF_LIVE,
@@ -253,6 +253,19 @@ typedef enum rb_telemetry {
     RB_TLM_FUEL_FLOW,    /* kg/s injected, last cycle                   */
     RB_TLM_EXHAUST_T,    /* K: the gas leaving the exhaust valves, last cycle */
     RB_TLM_TAILPIPE_T,   /* K: the gas leaving the tailpipes, last cycle */
+    /* stage 068 (snapshot-v3) */
+    RB_TLM_GUARD_RATE,   /* the model's numerical guards stepping in, per
+                            second, over the last cycle: the pipes' sonic
+                            and mass caps, the orifices' equalisation
+                            limit, a repaired chamber. Above
+                            RB_GUARD_RATE_WARN the build is outside what
+                            the model handles well                      */
+    RB_TLM_DYNO_ATTACHED,     /* 1: the core's dyno holds the crank        */
+    RB_TLM_DYNO_TARGET_RPM,   /* the speed it holds now (RB_DYNO_TARGET_RPM) */
+    RB_TLM_DYNO_READINGS,     /* its complete cycles read since attach/clear */
+    RB_TLM_DYNO_RPM,          /* the last reading's mean crank speed       */
+    RB_TLM_DYNO_TORQUE,       /* N m: the last reading's brake torque      */
+    RB_TLM_DYNO_POWER,        /* W: the last reading's brake power         */
     RB_TLM_COUNT
 } rb_telemetry;
 
@@ -354,13 +367,21 @@ typedef enum rb_dyno_field {
 } rb_dyno_field;
 double      rb_get_dyno(const rb_sim *sim, int field);   /* NaN without a dyno */
 
-/* ---- snapshots (stage 121, contracts/snapshot-v2.md) --------------- */
+/* RB_TLM_GUARD_RATE averaged over a second above this, the build is outside
+ * what the model handles well (stage 068). Set from the five presets:
+ * idling and wide open their guards are still (0 per second), a lift-off's
+ * closed throttle touches the runners' sonic cap now and then (about 18 a
+ * second over a second, 2200 over its busiest cycle); the narrowest headers
+ * the editor allows choke wide open at about 5100 a second. */
+#define RB_GUARD_RATE_WARN 1000.0
+
+/* ---- snapshots (stage 121, contracts/snapshot-v3.md) --------------- */
 /* One coherent picture of the engine, taken between two physics steps:
  * a header, the instruments (the telemetry from RB_TLM_RPM on, in order),
  * then RB_SNAPSHOT_CYLINDER_FIELDS doubles per cylinder. Little-endian, as
  * every platform the app runs on. */
-#define RB_SNAPSHOT_VERSION          2
-#define RB_SNAPSHOT_MAGIC            0x32534252u   /* "RBS2" */
+#define RB_SNAPSHOT_VERSION          3
+#define RB_SNAPSHOT_MAGIC            0x33534252u   /* "RBS3" */
 #define RB_SNAPSHOT_INSTRUMENTS      (RB_TLM_COUNT - RB_TLM_RPM)
 #define RB_SNAPSHOT_CYLINDER_FIELDS  5   /* pressure Pa, temperature K, burn
                                             fraction, intake and exhaust

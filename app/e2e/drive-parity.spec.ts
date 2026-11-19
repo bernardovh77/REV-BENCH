@@ -49,7 +49,8 @@ function wavFloats(path: string): { channels: number; samples: Float32Array } {
 }
 
 /** The engine's throttle now, from the newest snapshot the page has. */
-const throttleNow = (page: Page) => page.locator(".readouts .readout").nth(1).locator(".value").innerText().then(Number);
+const throttleNow = (page: Page) =>
+  page.locator(".readout").filter({ has: page.locator(".label", { hasText: /^Throttle$/ }) }).locator(".value").innerText().then(Number);
 
 for (const rate of [44100, 48000]) {
   test(`a drive through the interface sounds the same as the offline render of its trace, at ${rate} Hz`, async () => {

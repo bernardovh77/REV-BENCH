@@ -293,6 +293,7 @@ static void move_gas(rb_face *f, double dt, int direct, double ke_a, double ke_b
     if (!(m < INFINITY)) {   /* NaN or inf: none */
         m = 0.0;
         reasons |= RB_D_BIT(RB_D_BAD_FLOW);
+        f->guards++;
     }
     if (!(up->mass > 0.0)) {
         m = 0.0;
@@ -300,6 +301,7 @@ static void move_gas(rb_face *f, double dt, int direct, double ke_a, double ke_b
     } else if (m * dt > 0.5 * up->mass) {
         m = 0.5 * up->mass / dt;
         reasons |= RB_D_BIT(RB_D_MASS_CAP);
+        f->guards++;
     }
     f->moved = forward ? m : -m;
     f->moved_h = up->h + (forward ? ke_a : ke_b);
@@ -472,8 +474,10 @@ static void push(rb_face *f, double heads, double rho, double flux_a, double flu
     if (mdot * mdot > most2) {
         mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);
         reasons|=RB_D_BIT(RB_D_SONIC_CAP);
+        f->guards++;
     }
     if (f->diag && !(mdot == mdot && fabs(mdot) < 1e6)) reasons |= RB_D_BIT(RB_D_BAD_FLOW);
+    if (!(mdot == mdot && fabs(mdot) < 1e6)) f->guards++;
     f->mdot = (mdot == mdot && fabs(mdot) < 1e6) ? mdot : 0.0;   /* NaN: start from rest */
     if (f->diag)
         rb_diag_impulse(f->diag, reasons, (requested - old) / per_length,
@@ -539,6 +543,7 @@ static void push_end(rb_pipe *p, int end, double shortest, double dt)
         const rb_chamber *from = f->mdot >= 0.0 ? f->a : f->b;
         const double cap = RB_PIPE_MOST_SONIC * f->area * sqrt(1.4 * from->rho * from->p);
         f->mdot = fmax(-cap, fmin(cap, f->mdot));
+        if (f->mdot != requested) f->guards++;
         /* For the diagnostics, why the flow changed if it did: the sonic
          * guard clamped it, or it was a NaN. */
         if (f->diag)

@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { Addon, Host } from "../src/shared/addon";
-import { decodeSnapshot } from "../src/shared/snapshot-v2.generated";
+import { decodeSnapshot } from "../src/shared/snapshot-v3.generated";
 
 export interface ContractEnv {
   /** an add-on, new each time */
@@ -32,7 +32,7 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
     it("says its versions", () => {
       const v = env.make().version();
       expect(v.addon).toMatch(/\S/);
-      expect(v.snapshot).toBe(2);
+      expect(v.snapshot).toBe(3);
       expect(v.nodeApi).toBeGreaterThan(0);
     });
 

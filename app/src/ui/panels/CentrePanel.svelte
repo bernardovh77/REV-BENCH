@@ -1,28 +1,44 @@
 <!--
   CentrePanel - the middle region: the engine process's messages (restarting, stopped) when there
-  is no engine to show, and otherwise the driving and sound settings and a minimal readout
-  (stage 066) until the instruments and the 3D view take the space. Falling behind is said in
-  the top bar's own slot (TopBar.svelte), where it moves nothing else.
+  is no engine to show, and otherwise the instruments (stage 068: speed, manifold pressure and
+  boost, lambda and AFR, torque and power, spark, the engine computer's cuts, the output meter,
+  the render's speed and underruns, the model's own warning), then the driving and sound
+  settings. Every value is the snapshots' or the host's statistics', in the editor's units.
+  Falling behind is said in the top bar's own slot (TopBar.svelte), where it moves nothing else.
 -->
 <script lang="ts">
   import type { Quality } from "../../shared/addon";
   import Button from "../components/Button.svelte";
   import Notice from "../components/Notice.svelte";
   import Panel from "../components/Panel.svelte";
+  import LevelMeter from "../components/LevelMeter.svelte";
   import Readout from "../components/Readout.svelte";
   import Select from "../components/Select.svelte";
   import Slider from "../components/Slider.svelte";
   import { VARIANT_MAX, type Driver } from "../lib/driver.svelte";
   import type { EngineStore } from "../lib/engine-store.svelte";
+  import { GUARD_RATE_WARN } from "../lib/guard-watch";
   import { QUALITY_COST, QUALITY_NAMES } from "../lib/qualities";
   import { THROTTLE_STYLES, type ThrottleStyle } from "../lib/throttle-input";
+  import { displayUnit, toDisplay, type UnitSystem } from "../lib/units";
 
   interface Props {
     store: EngineStore;
     driver: Driver;
+    /** the editor's units (metric or imperial) */
+    units?: UnitSystem;
   }
+  let { store, driver, units = "metric" }: Props = $props();
 
-  let { store, driver }: Props = $props();
+  /** standard sea-level air, every preset's surroundings: boost above it, vacuum below */
+  const AMBIENT_PA = 101325;
+  let ins = $derived(store.snapshot?.instruments ?? null);
+  /** a value in the editor's units, and its unit's label */
+  let shown = (si: number | undefined, unit: string) => (si === undefined ? null : toDisplay(si, unit, units));
+  let label = (unit: string) => displayUnit(unit, units).label;
+  let digits = (unit: string) => displayUnit(unit, units).digits;
+  let boost = $derived(ins ? ins.map - AMBIENT_PA : null);
+  let stoich = $derived(store.settingDefault("afr"));
 
   const STYLE_NAMES: Record<ThrottleStyle, string> = {
     onoff: "On/off key (W snaps 0 or 100 %)",
@@ -73,9 +89,28 @@
         </Notice>
       {/if}
 
+      {#if store.outsideModel}
+        <Notice tone="warning">
+          This build is outside what the model handles well: its numerical guards are stepping in more than
+          {GUARD_RATE_WARN} times a second. What you hear and read may not be what such an engine does.
+        </Notice>
+      {/if}
+      <div class="readouts instruments">
+        <Readout label="Engine speed" value={ins ? ins.rpm : null} unit="rpm" />
+        <Readout label="Manifold pressure" value={shown(ins?.map, "Pa")} unit={label("Pa")} digits={digits("Pa")} />
+        <Readout label={boost !== null && boost > 0 ? "Boost" : "Vacuum"} value={boost === null ? null : Math.abs(toDisplay(boost, "Pa", units))} unit={label("Pa")} digits={digits("Pa")} />
+        <Readout label="Lambda" value={ins && ins.lambda > 0 ? ins.lambda : null} digits={2} />
+        <Readout label="Air-fuel ratio" value={ins && ins.lambda > 0 ? ins.lambda * stoich : null} unit=": 1" digits={1} />
+        <Readout label="Torque" value={shown(ins?.torque, "N m")} unit={label("N m")} digits={digits("N m")} />
+        <Readout label="Power" value={shown(ins?.power, "W")} unit={label("W")} digits={1} />
+        <Readout label="Spark advance" value={ins ? ins.spark : null} unit="°" digits={1} />
+        <Readout label="Fuel cut" value={ins ? (ins.fuel_cut ? "on" : "off") : null} />
+        <Readout label="Rev limiter" value={ins ? (ins.spark_cut ? "cutting" : "off") : null} />
+        <Readout label="Limiter cuts" value={ins ? ins.limiter_cuts : null} />
+        <LevelMeter label="Output" reading={store.meter} />
+      </div>
       <div class="readouts">
-        <Readout label="Engine speed" value={store.snapshot ? store.snapshot.instruments.rpm : null} unit="rpm" />
-        <Readout label="Throttle" value={store.snapshot ? 100 * store.snapshot.instruments.throttle : null} unit="%" />
+        <Readout label="Throttle" value={ins ? 100 * ins.throttle : null} unit="%" />
         <Readout label="Render time, of real time" value={renderShare} unit="%" />
         <Readout label="Ring" value={store.stats ? store.stats.ringFillMs : null} unit="ms" digits={1} />
         <Readout label="Underruns" value={store.stats ? store.stats.underruns : null} />

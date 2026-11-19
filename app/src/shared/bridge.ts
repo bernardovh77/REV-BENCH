@@ -32,6 +32,11 @@ export interface RevBenchBridge {
   requestEnginePort(): void;
   /** after "failed": the user's request to try the engine again */
   restartEngine(): void;
+  /**
+   * stage 068: a text file (the dyno's CSV) saved where the user picks in a save dialog, the
+   * name only a suggestion; true once written, false if the user cancelled or it couldn't be.
+   */
+  saveText?(suggestedName: string, text: string): Promise<boolean>;
   /** the saved builds (the build saver): the files are the main process's (main/library.ts) */
   builds?: {
     list(): Promise<SavedBuildSummary[]>;
@@ -76,4 +81,17 @@ export const IPC = {
   readBuild: "rb:read-build",
   saveBuild: "rb:save-build",
   deleteBuild: "rb:delete-build",
+  /** window -> main (invoke): a save dialog for a text file (stage 068) */
+  saveText: "rb:save-text",
 } as const;
+
+/** The most a saved text may be (the dyno's CSV is a few hundred kB at most). */
+export const SAVE_TEXT_MAX = 16 * 1024 * 1024;
+
+/** A file name safe on every system, from a suggestion: letters, digits, space, ".", "_" and "-",
+ *  ".csv" or ".txt" at the end; "export.txt" when nothing is left. */
+export function safeFileName(suggested: unknown): string {
+  const name = typeof suggested === "string" ? suggested.replace(/[^A-Za-z0-9 ._-]/g, "_").replace(/^[ .]+|[ .]+$/g, "").slice(0, 80) : "";
+  if (!name) return "export.txt";
+  return /\.(csv|txt)$/i.test(name) ? name : `${name}.txt`;
+}

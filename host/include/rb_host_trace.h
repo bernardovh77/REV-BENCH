@@ -65,6 +65,14 @@ typedef int (*rb_trace_sink)(void *user, const float *samples, int frames, int c
  * saying what failed. */
 int rb_trace_play(const rb_trace *t, rb_trace_sink sink, void *user, char *error, size_t error_size);
 
+/* Sees the engine playing after each block (stage 068: the dyno's readings),
+ * read-only, with the frames rendered so far. */
+typedef void (*rb_trace_observer)(void *user, const rb_sim *sim, long long frames);
+
+/* rb_trace_play with an observer (NULL: none) given the same `user`. */
+int rb_trace_play_observed(const rb_trace *t, rb_trace_sink sink, rb_trace_observer observer, void *user,
+                           char *error, size_t error_size);
+
 #ifdef __cplusplus
 }
 #endif

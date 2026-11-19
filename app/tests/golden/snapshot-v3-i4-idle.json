@@ -1,8 +1,8 @@
 [
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 28.982848590867697,
@@ -28,7 +28,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -75,9 +82,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 142.79521293458174,
@@ -103,7 +110,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -150,9 +164,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 193.68556371266243,
@@ -178,7 +192,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -225,9 +246,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 211.38260519210294,
@@ -253,7 +274,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -300,9 +328,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 212.47721293356685,
@@ -328,7 +356,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -375,9 +410,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 203.61803168095304,
@@ -403,7 +438,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,
@@ -450,9 +492,9 @@
   ]
  },
  {
-  "magic": 844317266,
-  "version": 2,
-  "size": 464,
+  "magic": 861094482,
+  "version": 3,
+  "size": 520,
   "cylinders": 4,
   "instruments": {
    "rpm": 190.8811153067217,
@@ -478,7 +520,14 @@
    "air_flow": 0.0,
    "fuel_flow": 0.0,
    "exhaust_temperature": 0.0,
-   "tailpipe_temperature": 0.0
+   "tailpipe_temperature": 0.0,
+   "guard_rate": 0.0,
+   "dyno_attached": 0.0,
+   "dyno_target_rpm": 0.0,
+   "dyno_readings": 0.0,
+   "dyno_rpm": 0.0,
+   "dyno_torque": 0.0,
+   "dyno_power": 0.0
   },
   "cylinder_fields": 5,
   "reserved0": 0,

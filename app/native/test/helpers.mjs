@@ -88,9 +88,9 @@ export async function nextSnapshot(host, ms = 5000) {
 }
 
 /**
- * Reads snapshot-v2 (contracts/snapshot-v2.md): the header's fields, little
+ * Reads snapshot-v3 (contracts/snapshot-v3.md): the header's fields, little
  * endian, 64-bit counters as numbers. A minimal reader of the layout in the
- * contract (tools/snapshot_v2.py is its executable check).
+ * contract (tools/snapshot_v3.py is its executable check).
  */
 export function readSnapshotBytes(bytes) {
   const view = new DataView(bytes);
@@ -117,8 +117,8 @@ export function readSnapshotBytes(bytes) {
   return { header, instrument };
 }
 
-/** The snapshot magic "RBS2" as the contract writes it. */
-export const SNAPSHOT_MAGIC = 0x32534252;
+/** The snapshot magic "RBS3" as the contract writes it. */
+export const SNAPSHOT_MAGIC = 0x33534252;
 
 /** Asserts that `fn` throws an Error whose string `code` is `code`. */
 export function throwsCode(fn, code, message) {
@@ -131,4 +131,8 @@ export function throwsCode(fn, code, message) {
 }
 
 /** Instrument indices of the snapshot (the contract's table). */
-export const INSTRUMENT = { rpm: 0, rpmSmooth: 1, cycleRpm: 2, map: 3, throttle: 9, ignition: 11, starter: 12 };
+export const INSTRUMENT = {
+  rpm: 0, rpmSmooth: 1, cycleRpm: 2, map: 3, throttle: 9, ignition: 11, starter: 12,
+  // snapshot-v3 (stage 068)
+  guardRate: 24, dynoAttached: 25, dynoTarget: 26, dynoReadings: 27, dynoRpm: 28, dynoTorque: 29, dynoPower: 30,
+};

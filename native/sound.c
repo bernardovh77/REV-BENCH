@@ -485,7 +485,7 @@ int cli_sound(int argc, char **argv)
         rb_destroy(sim);
         return 1;
     }
-    /* --snapshots: the engine's snapshots (contracts/snapshot-v2.md), one
+    /* --snapshots: the engine's snapshots (contracts/snapshot-v3.md), one
      * after another, about 60 a second of the recording */
     FILE *snapshots = NULL;
     static uint64_t snapshot[1024];   /* 8 KiB: far more than 16 cylinders need */

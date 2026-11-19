@@ -163,12 +163,16 @@ export interface Ack {
 }
 
 export interface SnapshotRead {
-  /** the core's snapshot-v2 bytes (contracts/snapshot-v2.md), a fresh copy */
+  /** the core's snapshot-v3 bytes (contracts/snapshot-v3.md), a fresh copy */
   bytes: ArrayBuffer;
   sequence: number;
   generation: number;
   audioFrame: number;
   physicsTick: number;
+  /** stage 068: what the device was given since the snapshot before (both channels, after the
+   *  swaps' fades): its peak |sample| and RMS, full scale 1 */
+  outPeak: number;
+  outRms: number;
 }
 
 export type PrepareState = "pending" | "ready" | "failed";
@@ -210,6 +214,13 @@ export interface Host {
   /** commands: each returns its request id; the ack comes through poll() */
   setParam(id: number, value: number, expectedGeneration?: number): number;
   setEngineLive(field: number, index: number, value: number, expectedGeneration?: number): number;
+  /** stage 068: the core's dyno (rb_dyno_*): it takes the crank at a speed (the engine runs into
+   *  it), sweeps that speed up at a rate, clears its readings, lets go. Commands like setParam,
+   *  acknowledged "dyno-attach", "dyno-sweep", "dyno-clear", "dyno-release". */
+  dynoAttach(rpm: number, expectedGeneration?: number): number;
+  dynoSweep(toRpm: number, rate: number, expectedGeneration?: number): number;
+  dynoClear(expectedGeneration?: number): number;
+  dynoRelease(expectedGeneration?: number): number;
 
   /** rebuilds: prepare off the render thread, then swap with a fade */
   prepare(spec: BuildSpec): number;

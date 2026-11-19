@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { createFakeAddon } from "../src/engine/fake-addon";
-import { decodeSnapshot } from "../src/shared/snapshot-v2.generated";
+import { decodeSnapshot } from "../src/shared/snapshot-v3.generated";
 import { describeAddonContract } from "./addon-contract";
 
 /** A clock the test steps by hand. */

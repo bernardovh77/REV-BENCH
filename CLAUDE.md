@@ -111,7 +111,7 @@ Each tool, and the charts' shared style, are listed in
   - an engine utility process that loads a Node-API add-on (C) wrapping `host/`, the real-time
     host, whose render thread runs the core and fills a ring that miniaudio plays;
   - a sandboxed Svelte 5 + TypeScript renderer for the interface and Three.js 3D, talking to the
-    engine process through one MessagePort (commands, acks, snapshot-v2 snapshots).
+    engine process through one MessagePort (commands, acks, snapshot-v3 snapshots).
 - Stage 124 built it (docs/stage-124.md): `app/native/` (the add-on, `python tools/build_addon.py`),
   `app/src/{main,engine,preload,ui,shared}`; the contracts `app/src/shared/addon.ts` and
   `protocol.ts` change on both sides at once. Suites `addon`, `app`, `app-e2e` (never the real

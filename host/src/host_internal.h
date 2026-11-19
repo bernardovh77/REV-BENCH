@@ -45,6 +45,7 @@ typedef struct rbh_retired {
 typedef struct rbh_snap_header {
     uint64_t sequence, generation, epoch, audio_frame, physics_tick;
     uint32_t size, reserved;
+    float    out_peak, out_rms;   /* the output since the last snapshot (stage 068) */
 } rbh_snap_header;
 #define RBH_SNAP_SLOT_BYTES (sizeof(rbh_snap_header) + RB_HOST_SNAPSHOT_MAX_BYTES)
 
@@ -88,6 +89,11 @@ typedef struct rbh_run {
     uint32_t  oversample;
     uint32_t  rate;
     uint32_t  snap_acc, snap_interval;
+    /* the output meter (stage 068): what the device was given since the last
+     * snapshot, both channels, after the swaps' fades */
+    float     meter_peak;
+    double    meter_sumsq;
+    uint32_t  meter_samples;
     uint64_t  snap_sequence;
     uint64_t  sim_events_lost_seen;
     int       tr_state;                 /* RBH_TR_*                                */

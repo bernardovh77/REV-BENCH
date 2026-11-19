@@ -179,3 +179,42 @@ void test_trace_swap_plays_through_a_fade(void)
     rb_trace_free(t);
     free(got.samples);
 }
+
+/* stage 068: what the observer saw */
+typedef struct observed {
+    collected got;
+    int       calls;
+    long long frames;
+    double    tone_hz;
+} observed;
+
+static int collect_observed(void *user, const float *samples, int frames, int channels)
+{
+    return collect(&((observed *)user)->got, samples, frames, channels);
+}
+
+static void observe(void *user, const rb_sim *sim, long long frames)
+{
+    observed *o = (observed *)user;
+    o->calls++;
+    o->frames = frames;
+    o->tone_hz = rb_get_param(sim, RB_PARAM_TEST_TONE_HZ);
+}
+
+void test_trace_observer_sees_the_engine_after_every_block(void)
+{
+    /* the skip and the recorded frames, 3024, in blocks of 128: 24 calls, the last at 3024, each
+     * with the engine playing (the trace's tone); the sink gets what it always did */
+    char error[200];
+    rb_trace *t = rb_trace_parse(TONE_TRACE, error, sizeof error);
+    CHECK(t != NULL);
+    if (!t) return;
+    observed o = { { NULL, 0, 0 }, 0, 0, 0.0 };
+    CHECK_EQ_INT(rb_trace_play_observed(t, collect_observed, observe, &o, error, sizeof error), RB_HOST_OK);
+    CHECK_EQ_INT(o.calls, 24);
+    CHECK_EQ_INT((int)o.frames, 3024);
+    CHECK(o.tone_hz == 300.0);
+    CHECK_EQ_INT(o.got.frames, 2000);
+    free(o.got.samples);
+    rb_trace_free(t);
+}

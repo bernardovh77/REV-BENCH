@@ -116,9 +116,9 @@
     <EditorPanel {store} {editor} {builds} />
   {/snippet}
   {#snippet centre()}
-    <CentrePanel {store} {driver} />
+    <CentrePanel {store} {driver} units={editor.units} />
   {/snippet}
   {#snippet bottom()}
-    <BottomPanel />
+    <BottomPanel {store} units={editor.units} saveText={window.revbench?.saveText} />
   {/snippet}
 </AppLayout>

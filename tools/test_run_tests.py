@@ -79,7 +79,7 @@ class FakeRepo:
         for path in ("app/package.json", "app/package-lock.json", "app/src/shared/a.ts",
                      "app/node_modules/dep/index.js", "app/dist/ui/index.html", "app/native/CMakeLists.txt", "app/native/build-tools/package.json",
                      "app/native/build-tools/package-lock.json",
-                     "app/native/build/rb_native.node", "contracts/examples/snapshot-v2-i4-idle.bin", "THIRD_PARTY_NOTICES.md", "third_party/miniaudio/LICENSE"):
+                     "app/native/build/rb_native.node", "contracts/examples/snapshot-v3-i4-idle.bin", "THIRD_PARTY_NOTICES.md", "third_party/miniaudio/LICENSE"):
             (root / path).parent.mkdir(parents=True, exist_ok=True)
             (root / path).write_text("x")
         for name, value in (("ROOT", root), ("OUT", out)):
@@ -98,7 +98,7 @@ class AppSuiteTests(FakeRepo, unittest.TestCase):
         self.assertTrue((app / "package.json").is_file())
         self.assertTrue((app / "package-lock.json").is_file())
         self.assertTrue((app / "src" / "shared" / "a.ts").is_file())
-        self.assertTrue((out / "app-copy" / "contracts" / "examples" / "snapshot-v2-i4-idle.bin").is_file())
+        self.assertTrue((out / "app-copy" / "contracts" / "examples" / "snapshot-v3-i4-idle.bin").is_file())
         self.assertTrue((out / "app-copy" / "THIRD_PARTY_NOTICES.md").is_file())
         self.assertTrue((out / "app-copy" / "third_party" / "miniaudio" / "LICENSE").is_file())
 

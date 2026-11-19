@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""The executable check of contracts/snapshot-v2.md: reads the engine's
+"""The executable check of contracts/snapshot-v3.md: reads the engine's
 binary snapshots (rb_get_snapshot, rb_cli sound --snapshots) and refuses any
 that break the contract.
 
-    python tools/snapshot_v2.py FILE      checks a stream of snapshots
+    python tools/snapshot_v3.py FILE      checks a stream of snapshots
 
 A stream is snapshots one after another, as a host takes them from one sim:
 each must be whole and well formed, and together they must move forward
@@ -15,7 +15,7 @@ from pathlib import Path
 import struct
 import sys
 
-MAGIC, VERSION = 0x32534252, 2
+MAGIC, VERSION = 0x33534252, 3
 # (offset, name, type) of the 112-byte header
 HEADER = [
     (0, "magic", "u32"), (4, "version", "u32"), (8, "size", "u32"), (12, "cylinders", "u32"),
@@ -33,6 +33,8 @@ INSTRUMENTS = [
     "idle_valve", "throttle", "throttle_area", "ignition", "starter", "held", "fuel_cut",
     "spark_cut", "limiter_cuts", "overrun_time", "load_torque", "crank_inertia", "air_flow",
     "fuel_flow", "exhaust_temperature", "tailpipe_temperature",
+    # version 3 (stage 068): the model's guards, the core's dyno
+    "guard_rate", "dyno_attached", "dyno_target_rpm", "dyno_readings", "dyno_rpm", "dyno_torque", "dyno_power",
 ]
 CYLINDER_FIELDS = ["pressure", "temperature", "burn", "intake_lift", "exhaust_lift"]
 FORMAT = {"u32": "I", "u64": "Q", "f64": "d"}
@@ -129,8 +131,8 @@ def main():
     try:
         snaps = check_stream(Path(sys.argv[1]).read_bytes())
     except ValueError as e:
-        sys.exit(f"snapshot_v2: {e}")
-    print(f"snapshot_v2: {len(snaps)} snapshots, valid")
+        sys.exit(f"snapshot_v3: {e}")
+    print(f"snapshot_v3: {len(snaps)} snapshots, valid")
 
 
 if __name__ == "__main__":

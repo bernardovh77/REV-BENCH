@@ -1,4 +1,4 @@
-# Engine snapshot — version 2 (binary)
+# Engine snapshot — version 3 (binary)
 
 Stage 121. A snapshot is one coherent picture of the running engine, taken by
 `rb_get_snapshot(sim, RB_SNAPSHOT_VERSION, buffer, size)` between two physics
@@ -7,10 +7,11 @@ steps, so every value in it belongs to the same instant (contracts/runtime-v1.md
 window about 60 times a second (docs/app-design.md §4); stage 124 generates its
 TypeScript decoder from these offsets and tests that the two agree.
 
-Version 1 was runtime-v1's JSON reference shape; version 2 is the binary layout
-the C core writes. [tools/snapshot_v2.py](../tools/snapshot_v2.py) is the
-executable check of everything below (`python tools/snapshot_v2.py FILE`), and
-[examples/snapshot-v2-i4-idle.bin](examples/snapshot-v2-i4-idle.bin) is a real
+Version 1 was runtime-v1's JSON reference shape; version 2 (stage 121) the binary layout
+the C core writes; version 3 (stage 068) adds seven instruments at the end: the model's
+guard rate and the core's dyno. Nothing before them moved. [tools/snapshot_v3.py](../tools/snapshot_v3.py) is the
+executable check of everything below (`python tools/snapshot_v3.py FILE`), and
+[examples/snapshot-v3-i4-idle.bin](examples/snapshot-v3-i4-idle.bin) is a real
 stream of seven, the four starting with the key (`rb_cli sound --preset i4
 --idle --seconds 0.1 --snapshots FILE`).
 
@@ -22,21 +23,21 @@ then the cylinders.
 | Bytes | Part |
 | --- | --- |
 | 0–111 | the header |
-| 112 + 8 i | instrument i, a double (24 of them) |
+| 112 + 8 i | instrument i, a double (31 of them) |
 | 304 + 40 c + 8 f | cylinder c's field f, a double (5 each) |
 
-So a snapshot of an engine of n cylinders is 304 + 40 n bytes: 464 for a
-four, 624 for a V8; `rb_snapshot_size` says so, and the header's `size` too.
+So a snapshot of an engine of n cylinders is 360 + 40 n bytes: 520 for a
+four, 680 for a V8; `rb_snapshot_size` says so, and the header's `size` too.
 
 ### The header
 
 | Offset | Field | Type | Meaning |
 | --- | --- | --- | --- |
-| 0 | `magic` | u32 | `0x32534252`, the bytes "RBS2" |
-| 4 | `version` | u32 | 2 |
+| 0 | `magic` | u32 | `0x33534252`, the bytes "RBS3" |
+| 4 | `version` | u32 | 3 |
 | 8 | `size` | u32 | bytes in the whole snapshot |
 | 12 | `cylinders` | u32 | the engine's, 1–16 |
-| 16 | `instruments` | u32 | 24 |
+| 16 | `instruments` | u32 | 31 |
 | 20 | `cylinder_fields` | u32 | 5 |
 | 24 | `reserved0` | u32 | 0 |
 | 28 | `reserved1` | u32 | 0 |
@@ -82,9 +83,23 @@ The telemetry from `RB_TLM_RPM` on, in its order: instrument i is
 | 21 | `fuel_flow` | kg/s |
 | 22 | `exhaust_temperature` | K |
 | 23 | `tailpipe_temperature` | K |
+| 24 | `guard_rate` | 1/s |
+| 25 | `dyno_attached` | 1 |
+| 26 | `dyno_target_rpm` | rpm |
+| 27 | `dyno_readings` | 1 |
+| 28 | `dyno_rpm` | rpm |
+| 29 | `dyno_torque` | N·m |
+| 30 | `dyno_power` | W |
 
 `torque`, `power`, `lambda`, `spark`, the flows and the temperatures are the
 last complete cycle's; the rest are now. rb.h's comments define each.
+
+Version 3's seven (stage 068): `guard_rate`, the model's numerical guards stepping in, per
+second over the last cycle (the pipes' sonic and mass caps, a flow that stopped being a
+number, a repaired chamber; averaged over a second above `RB_GUARD_RATE_WARN`, 1000, the build
+is outside what the model handles well); then the core's dyno: whether it holds the crank, the
+speed it holds, its readings (complete cycles read since attach or clear), and the last
+reading's mean speed, brake torque and brake power (0 with no dyno).
 
 ### Each cylinder
 

@@ -6,7 +6,7 @@
  */
 import type { Ack, HostStats } from "../../shared/addon";
 import type { Command, EngineState, FromEngine, ToEngine } from "../../shared/protocol";
-import { SnapshotError, decodeSnapshot, type Snapshot } from "../../shared/snapshot-v2.generated";
+import { SnapshotError, decodeSnapshot, type Snapshot } from "../../shared/snapshot-v3.generated";
 
 /** A MessagePort, as far as the client uses it. */
 export interface ClientPort {
@@ -40,6 +40,9 @@ export interface SnapshotMeta {
   sequence: number;
   generation: number;
   audioFrame: number;
+  /** the output since the snapshot before (stage 068): peak and RMS, full scale 1 */
+  outPeak: number;
+  outRms: number;
 }
 
 export interface ClientEvents {
@@ -160,6 +163,8 @@ export class EngineClient {
             sequence: message.sequence,
             generation: message.generation,
             audioFrame: message.audioFrame,
+            outPeak: message.outPeak ?? 0,
+            outRms: message.outRms ?? 0,
           });
         } catch (e) {
           if (e instanceof SnapshotError) this.events.invalidSnapshot?.(e);

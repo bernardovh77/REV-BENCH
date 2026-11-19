@@ -258,7 +258,7 @@ describe("the source never turns a protection off", () => {
       return /\.(ts|svelte|html|css)$/.test(name) ? [path] : [];
     });
   }
-  const files = sources(resolve("src")).filter((f) => !f.endsWith("snapshot-v2.generated.ts"));
+  const files = sources(resolve("src")).filter((f) => !f.endsWith("snapshot-v3.generated.ts"));
 
   it("finds the source files to scan", () => {
     expect(files.length).toBeGreaterThan(20);

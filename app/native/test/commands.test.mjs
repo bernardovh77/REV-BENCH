@@ -176,3 +176,46 @@ test("the stats count what the render thread did with the commands", async () =>
     assert.equal(stats.commandsRefused, 1);
   });
 });
+
+test("the core's dyno (stage 068): attach, sweep, clear and release, each acknowledged, its readings in the snapshots", async () => {
+  await withHost(cheapConfig(), async (host) => {
+    host.start();
+    // held running at 3000 wide open, then the dyno takes the crank there
+    for (const [name, value] of [["ignition", 1], ["throttle", 1], ["hold_rpm", 3000]]) host.setParam(P[name], value);
+    await acks(host, 3);
+    await sleep(400);
+    const attach = host.dynoAttach(3000);
+    const [a] = await acks(host, 1);
+    assert.equal(a.requestId, attach);
+    assert.deepEqual([a.kind, a.outcome], ["dyno-attach", "ok"]);
+    const read = await waitFor(() => {
+      const s = host.readSnapshot();
+      const r = s && readSnapshotBytes(s.bytes);
+      return r && r.instrument(INSTRUMENT.dynoReadings) >= 5 ? r : null;
+    }, 10000, "the dyno's readings");
+    assert.equal(read.instrument(INSTRUMENT.dynoAttached), 1);
+    assert.equal(read.instrument(INSTRUMENT.dynoTarget), 3000);
+    assert.ok(read.instrument(INSTRUMENT.dynoTorque) > 50, `a wide-open four's torque, ${read.instrument(INSTRUMENT.dynoTorque)}`);
+    assert.ok(Math.abs(read.instrument(INSTRUMENT.dynoRpm) - 3000) < 150);
+    host.dynoSweep(3500, 2000);
+    host.dynoClear();
+    const got = await acks(host, 2);
+    assert.deepEqual(got.map((k) => [k.kind, k.outcome]), [["dyno-sweep", "ok"], ["dyno-clear", "ok"]]);
+    const swept = await waitFor(() => {
+      const s = host.readSnapshot();
+      const r = s && readSnapshotBytes(s.bytes);
+      return r && r.instrument(INSTRUMENT.dynoTarget) >= 3500 ? r : null;
+    }, 10000, "the sweep's target");
+    assert.ok(swept.instrument(INSTRUMENT.dynoReadings) < read.instrument(INSTRUMENT.dynoReadings) + 30, "readings started again");
+    host.dynoRelease();
+    const [r] = await acks(host, 1);
+    assert.deepEqual([r.kind, r.outcome], ["dyno-release", "ok"]);
+    const free = await waitFor(() => {
+      const s = host.readSnapshot();
+      const x = s && readSnapshotBytes(s.bytes);
+      return x && x.instrument(INSTRUMENT.dynoAttached) === 0 ? x : null;
+    }, 5000, "the dyno to let go");
+    assert.ok(free);
+    throwsCode(() => host.dynoAttach("fast"), "RB_HOST_ERR_ARG", "a speed that isn't a number");
+  });
+});

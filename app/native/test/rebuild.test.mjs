@@ -50,7 +50,7 @@ test("swap hands the engine over: an ack with a new generation and reset, new by
       return s && s.generation === 2 ? s : null;
     }, 5000, "a snapshot of the new engine");
     assert.equal(readSnapshotBytes(fresh.bytes).header.cylinders, 6, "the six is playing");
-    assert.equal(fresh.bytes.byteLength, 304 + 40 * 6);
+    assert.equal(fresh.bytes.byteLength, 360 + 40 * 6);
     // the build is spent, and a command now reaches the new engine as generation 2
     throwsCode(() => host.prepareState(id), "RB_HOST_ERR_ARG", "a swapped build is gone");
     const next = host.setParam(P.throttle, 0.3, 2);

@@ -6,7 +6,7 @@
  * It is NOT an engine model and makes no sound. Its "rpm" is a first-order lag towards a
  * target set by ignition, starter and throttle, so the instruments move; what the real
  * engine does is the C core's business (CLAUDE.md: no physics or audio in JavaScript). Its
- * snapshots are real snapshot-v2 bytes, written by the generated encoder, so the window's
+ * snapshots are real snapshot-v3 bytes, written by the generated encoder, so the window's
  * decoder is exercised on the true layout.
  *
  * Time comes from `options.now` (milliseconds), so tests step it by hand.
@@ -37,7 +37,7 @@ import {
   type CylinderState,
   type InstrumentName,
   type Snapshot,
-} from "../shared/snapshot-v2.generated";
+} from "../shared/snapshot-v3.generated";
 
 export interface FakeOptions {
   /** the clock, in milliseconds (default: performance.now) */
@@ -365,6 +365,52 @@ class FakeHost implements Host {
     return this.acks.splice(0, this.acks.length);
   }
 
+  /** The fake's dyno: the speed it holds (and sweeps to), its readings; nothing here is physics. */
+  private dyno: { target: number; sweepTo: number; rate: number; readings: number; torque: number } | null = null;
+
+  /** Its made-up torque at a speed and throttle: a hump peaking at 4500 rpm. */
+  private static fakeTorque(rpm: number, throttle: number): number {
+    const x = (rpm - 4500) / 4500;
+    return Math.max(0, 200 * throttle * (1 - x * x));
+  }
+
+  private dynoCommand(kind: string, expectedGeneration: number | undefined, change: () => void): number {
+    this.live();
+    if (expectedGeneration !== undefined && expectedGeneration !== this.generationNow) return this.ack(kind, "stale");
+    this.advanceModel();
+    change();
+    return this.ack(kind, "ok");
+  }
+
+  dynoAttach(rpm: number, expectedGeneration?: number): number {
+    if (!Number.isFinite(rpm)) throw addonError("RB_HOST_ERR_ARG", "rpm must be a number");
+    return this.dynoCommand("dyno-attach", expectedGeneration, () => {
+      this.dyno = { target: rpm, sweepTo: rpm, rate: 0, readings: 0, torque: 0 };
+    });
+  }
+
+  dynoSweep(toRpm: number, rate: number, expectedGeneration?: number): number {
+    if (!Number.isFinite(toRpm) || !Number.isFinite(rate)) throw addonError("RB_HOST_ERR_ARG", "toRpm and rate must be numbers");
+    return this.dynoCommand("dyno-sweep", expectedGeneration, () => {
+      if (this.dyno) {
+        this.dyno.sweepTo = toRpm;
+        this.dyno.rate = Math.max(0, rate);
+      }
+    });
+  }
+
+  dynoClear(expectedGeneration?: number): number {
+    return this.dynoCommand("dyno-clear", expectedGeneration, () => {
+      if (this.dyno) this.dyno.readings = 0;
+    });
+  }
+
+  dynoRelease(expectedGeneration?: number): number {
+    return this.dynoCommand("dyno-release", expectedGeneration, () => {
+      this.dyno = null;
+    });
+  }
+
   /** The stand-in for the engine: rpm lags towards a target; nothing here is physics. */
   private advanceModel(): void {
     const now = this.options.now();
@@ -383,13 +429,21 @@ class FakeHost implements Host {
       target = 850 + 5150 * throttle;
       tau = 0.4;
     }
-    this.rpm += (target - this.rpm) * (1 - Math.exp(-dt / tau));
+    if (this.dyno) {
+      // the dyno holds its speed (climbing during a sweep), and reads the torque each cycle
+      this.dyno.target = Math.min(this.dyno.sweepTo, this.dyno.target + this.dyno.rate * dt);
+      this.rpm = this.dyno.target;
+      this.dyno.torque = FakeHost.fakeTorque(this.rpm, throttle);
+    } else {
+      this.rpm += (target - this.rpm) * (1 - Math.exp(-dt / tau));
+    }
     if (this.rpm < 0.01) this.rpm = 0;
     const speed = (this.rpm * 2 * Math.PI) / 60;
     this.phase += speed * dt;
     while (this.phase >= TWO_CYCLES) {
       this.phase -= TWO_CYCLES;
       this.cycles++;
+      if (this.dyno) this.dyno.readings++;
     }
     this.physicsTicks += Math.round(dt * PHYSICS_HZ);
   }
@@ -418,6 +472,12 @@ class FakeHost implements Host {
       crank_inertia: 0.16,
       exhaust_temperature: 600,
       tailpipe_temperature: 400,
+      dyno_attached: this.dyno ? 1 : 0,
+      dyno_target_rpm: this.dyno?.target ?? 0,
+      dyno_readings: this.dyno?.readings ?? 0,
+      dyno_rpm: this.dyno ? this.rpm : 0,
+      dyno_torque: this.dyno?.torque ?? 0,
+      dyno_power: this.dyno ? (this.dyno.torque * this.rpm * 2 * Math.PI) / 60 : 0,
     });
     const cylinder: CylinderState[] = Array.from({ length: n }, (_, c) => {
       const through = ((this.phase / TWO_CYCLES + c / n) % 1 + 1) % 1;
@@ -451,6 +511,9 @@ class FakeHost implements Host {
       generation: this.generationNow,
       audioFrame: snapshot.audio_frame,
       physicsTick: snapshot.physics_tick,
+      // the fake's output: a level that follows the speed, so a meter moves
+      outPeak: Math.min(1, this.rpm / 8000),
+      outRms: Math.min(1, this.rpm / 8000) / Math.SQRT2,
     };
   }
 
@@ -529,7 +592,7 @@ export function createFakeAddon(options: FakeOptions = {}): Addon {
     failPresets: options.failPresets ?? [],
   };
   return {
-    version: () => ({ addon: "fake-0.1.0", snapshot: 2, nodeApi: 9 }),
+    version: () => ({ addon: "fake-0.1.0", snapshot: 3, nodeApi: 9 }),
     presets: () => PRESETS.map((p) => ({ ...p })),
     params: () => PARAMS.map((p) => ({ ...p, flags: [...p.flags] })),
     telemetry: () => TELEMETRY.map((t) => ({ ...t })),

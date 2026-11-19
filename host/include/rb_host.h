@@ -291,10 +291,14 @@ typedef struct rb_host_snapshot_info {
     uint64_t physics_tick;          /* the engine's tick                      */
     uint32_t size;                  /* bytes of the core's snapshot           */
     uint32_t reserved;
+    /* stage 068: the output meter's input, the samples the device was given
+     * (both channels) from the previous snapshot to this one: their peak
+     * |value| and RMS, full scale 1 */
+    float    out_peak, out_rms;
 } rb_host_snapshot_info;
 
 /* The newest snapshot nobody has read: copies the core's snapshot
- * (snapshot-v2) into buffer and fills info. Returns its size, 0 when there
+ * (snapshot-v3) into buffer and fills info. Returns its size, 0 when there
  * is no new one, or an error (RB_HOST_ERR_ARG when buffer is too small). A
  * snapshot is never torn: the host drops whole ones if the reader is slow. */
 int rb_host_snapshot_read(rb_host *h, void *buffer, int capacity, rb_host_snapshot_info *info);

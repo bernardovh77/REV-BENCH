@@ -867,3 +867,31 @@ void test_host_engine_build_takes_a_layout(void)
     CHECK(strstr(why, "layout") != NULL && strstr(why, "even number") != NULL);
     CHECK_EQ_INT(rb_host_debug_live_sims(), before);
 }
+
+void test_host_snapshots_carry_the_output_meter(void)
+{
+    /* stage 068: each snapshot carries the peak and RMS of what the device was given since the
+     * one before (both channels, after the fades): a tone of 0.5 reads 0.5 and 0.354 (a sine's
+     * RMS), and silence reads 0 once a snapshot has passed */
+    rb_host_build b;
+    ht_tone_build(&b, 440.0);
+    rb_host *h = ht_make(RB_HOST_BACKEND_MANUAL, &b, 48000);
+    if (!h) return;
+    rb_host_start(h);
+    ht_capture c;
+    ht_capture_init(&c, 4096);
+    ht_pump(h, 24000, NULL, 20000);
+    static uint8_t buf[RB_HOST_SNAPSHOT_MAX_BYTES];
+    rb_host_snapshot_info info;
+    CHECK(rb_host_snapshot_read(h, buf, sizeof buf, &info) > 0);
+    CHECK_NEAR(info.out_peak, 0.5, 0.02);
+    CHECK_NEAR(info.out_rms, 0.5 / sqrt(2.0), 0.01);
+    uint64_t req = 0;
+    CHECK_EQ_INT(rb_host_set_param(h, RB_PARAM_TEST_TONE_LEVEL, 0.0, 0, &req), RB_HOST_OK);
+    ht_pump_until_ack(h, req, &c, 20000);
+    ht_pump(h, 9600, NULL, 20000);   /* past a whole snapshot interval of silence */
+    CHECK(rb_host_snapshot_read(h, buf, sizeof buf, &info) > 0);
+    CHECK(info.out_peak < 0.01f && info.out_rms < 0.01f);
+    ht_capture_free(&c);
+    rb_host_destroy(h);
+}

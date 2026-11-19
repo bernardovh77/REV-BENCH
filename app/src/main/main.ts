@@ -4,8 +4,10 @@
  * and the engine process talk over their own MessagePort. This file only wires the pieces,
  * each of which is tested apart (platform, autosave, logger, supervisor, window, config).
  */
-import { app, BrowserWindow, ipcMain, Menu, MessageChannelMain, powerMonitor, type IpcMainEvent, type IpcMainInvokeEvent, type MessagePortMain } from "electron";
-import { IPC } from "../shared/bridge";
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
+import { app, BrowserWindow, dialog, ipcMain, Menu, MessageChannelMain, powerMonitor, type IpcMainEvent, type IpcMainInvokeEvent, type MessagePortMain } from "electron";
+import { IPC, SAVE_TEXT_MAX, safeFileName } from "../shared/bridge";
 import { Autosave } from "./autosave";
 import { BuildLibrary } from "./library";
 import { engineInitFromEnv } from "./config";
@@ -86,6 +88,23 @@ ipcMain.handle(IPC.readBuild, (event, id: unknown) => (trusted(event) ? library.
 ipcMain.handle(IPC.saveBuild, (event, name: unknown, build: unknown, settings: unknown, replace: unknown) =>
   trusted(event) ? library.save(name, build, settings, replace === true) : { ok: false, reason: "bad-build" });
 ipcMain.handle(IPC.deleteBuild, (event, id: unknown) => (trusted(event) ? library.remove(id) : false));
+// a text file the user saves where they choose (the dyno's CSV): the page suggests a name only
+ipcMain.handle(IPC.saveText, async (event, suggested: unknown, text: unknown) => {
+  if (!trusted(event) || typeof text !== "string" || text.length > SAVE_TEXT_MAX || !window) return false;
+  const name = safeFileName(suggested);
+  const chosen = await dialog.showSaveDialog(window, {
+    defaultPath: join(app.getPath("documents"), name),
+    filters: name.toLowerCase().endsWith(".csv") ? [{ name: "CSV", extensions: ["csv"] }] : [{ name: "Text", extensions: ["txt"] }],
+  });
+  if (chosen.canceled || !chosen.filePath) return false;
+  try {
+    writeFileSync(chosen.filePath, text, "utf8");
+    return true;
+  } catch (e) {
+    logger.log("warn", "main", `could not save ${chosen.filePath}: ${e instanceof Error ? e.message : String(e)}`);
+    return false;
+  }
+});
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

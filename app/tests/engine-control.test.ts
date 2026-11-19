@@ -8,7 +8,7 @@ import { createFakeAddon, addonError } from "../src/engine/fake-addon";
 import type { Addon, BuildSpec, Host } from "../src/shared/addon";
 import type { BuildChoice, EngineInit } from "../src/shared/process-messages";
 import { PROTOCOL_VERSION, type Command, type FromEngine } from "../src/shared/protocol";
-import { decodeSnapshot } from "../src/shared/snapshot-v2.generated";
+import { decodeSnapshot } from "../src/shared/snapshot-v3.generated";
 
 class Recorder implements EnginePort {
   messages: FromEngine[] = [];
@@ -68,7 +68,7 @@ describe("hello", () => {
     expect(hello.sampleRate).toBe(48000);
     expect(hello.generation).toBe(1);
     expect(hello.addonVersion).toBe(addon.version().addon);
-    expect(hello.snapshotVersion).toBe(2);
+    expect(hello.snapshotVersion).toBe(3);
   });
 
   it("is followed by the state: running", () => {

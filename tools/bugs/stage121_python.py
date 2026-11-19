@@ -1,4 +1,4 @@
-"""Stage 121's planted bugs for the snapshot-v2 checker's tests.
+"""Stage 121's planted bugs for the snapshot-v3 checker's tests.
 
 python tools/bugs/stage121_python.py [NAME...]
 Each bug is applied to a fresh copy of tools/ (with the repo's contracts/),
@@ -11,29 +11,29 @@ import sys
 import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-REFUSED = "test_snapshot_v2.SnapshotV2Tests.test_broken_snapshots_are_refused"
+REFUSED = "test_snapshot_v3.SnapshotV2Tests.test_broken_snapshots_are_refused"
 
 BUGS = {
-    'magic-not-checked': ("tools/snapshot_v2.py",
+    'magic-not-checked': ("tools/snapshot_v3.py",
         '    if h["magic"] != MAGIC:',
         '    if False:',
         REFUSED),
-    'sequence-not-checked': ("tools/snapshot_v2.py",
+    'sequence-not-checked': ("tools/snapshot_v3.py",
         '        if b["sequence"] != a["sequence"] + 1:',
         '        if False:',
         REFUSED),
-    'phase-not-checked': ("tools/snapshot_v2.py",
+    'phase-not-checked': ("tools/snapshot_v3.py",
         '    if not (0.0 <= h["phase_rad"] < 4 * math.pi):',
         '    if False:',
         REFUSED),
-    'burn-not-checked': ("tools/snapshot_v2.py",
+    'burn-not-checked': ("tools/snapshot_v3.py",
         '        if not 0.0 <= row["burn"] <= 1.0:',
         '        if False:',
         REFUSED),
-    'layout-drifts': ("tools/snapshot_v2.py",
+    'layout-drifts': ("tools/snapshot_v3.py",
         '(96, "phase_rad", "f64"),',
         '(96, "phase", "f64"),',
-        "test_snapshot_v2.SnapshotV2Tests.test_the_layout_is_the_contracts"),
+        "test_snapshot_v3.SnapshotV2Tests.test_the_layout_is_the_contracts"),
 }
 
 

@@ -399,6 +399,12 @@ rb_trace *rb_trace_load(const char *path, char *error, size_t error_size)
 
 int rb_trace_play(const rb_trace *t, rb_trace_sink sink, void *user, char *error, size_t error_size)
 {
+    return rb_trace_play_observed(t, sink, NULL, user, error, error_size);
+}
+
+int rb_trace_play_observed(const rb_trace *t, rb_trace_sink sink, rb_trace_observer observer, void *user,
+                           char *error, size_t error_size)
+{
     if (!t || !sink) return RB_HOST_ERR_ARG;
     rb_host_config config;
     rb_host_config_default(&config);
@@ -447,6 +453,7 @@ int rb_trace_play(const rb_trace *t, rb_trace_sink sink, void *user, char *error
         if (rc != RB_HOST_OK) break;
         const int n = (int)(total - frame < RB_HOST_BLOCK_FRAMES ? total - frame : RB_HOST_BLOCK_FRAMES);
         rb_host_offline_render(h, block, n);
+        if (observer) observer(user, h->run.sim, frame + n);
         rb_host_ack acks[16];
         rb_host_poll(h, acks, 16);
         /* what's recorded: from the skip on, in the output's own channels */

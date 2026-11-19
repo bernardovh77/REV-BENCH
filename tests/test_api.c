@@ -309,7 +309,7 @@ void test_api_snapshot_layout(void)
     CHECK_EQ_INT((int)offsetof(rb_snapshot_header, audio_hz), 88);
     CHECK_EQ_INT((int)offsetof(rb_snapshot_header, phase_rad), 96);
     CHECK_EQ_INT((int)offsetof(rb_snapshot_header, speed_rad_s), 104);
-    CHECK_EQ_INT(RB_SNAPSHOT_INSTRUMENTS, 24);
+    CHECK_EQ_INT(RB_SNAPSHOT_INSTRUMENTS, 31);   /* snapshot-v3 (stage 068) */
     CHECK_EQ_INT(RB_SNAPSHOT_CYLINDER_FIELDS, 5);
     /* the instruments are these telemetry ids, as the contract and
      * tools/snapshot_v2.py name them */
@@ -677,4 +677,89 @@ void test_api_listen_changes_restart_the_histories(void)
         CHECK(step <= allowed);
         rb_destroy(sim);
     }
+}
+
+/* The busiest second of RB_TLM_GUARD_RATE in a drive: started, idled, floored and lifted, a second
+ * each, at the lean tier. */
+static double busiest_second(int preset, int field, double value, int phase_of_max[1])
+{
+    rb_sim *sim = rb_create_with_quality(48000, RB_QUALITY_LEAN);
+    if (!sim) return NAN;
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    rb_load_preset(sim, preset);
+    if (field >= 0) rb_set_engine(sim, field, 0, value);
+    rb_set_param(sim, RB_PARAM_HOLD, 0);
+    rb_set_param(sim, RB_PARAM_IGNITION, 1);
+    static float out[480];
+    double worst = 0.0;
+    for (int phase = 0; phase < 4; phase++) {
+        rb_set_param(sim, RB_PARAM_STARTER, phase == 0);
+        rb_set_param(sim, RB_PARAM_THROTTLE, phase == 2 ? 1.0 : 0.0);
+        double sum = 0.0;
+        for (int k = 0; k < 100; k++) {
+            rb_render_block(sim, out, 480);
+            sum += rb_get_telemetry(sim, RB_TLM_GUARD_RATE);
+        }
+        if (sum / 100.0 > worst) {
+            worst = sum / 100.0;
+            phase_of_max[0] = phase;
+        }
+    }
+    rb_destroy(sim);
+    return worst;
+}
+
+void test_api_guard_rate_warns_only_outside_the_model(void)
+{
+    /* Stage 068: the model's own warning. The presets' guards stay far under RB_GUARD_RATE_WARN
+     * in every phase of a drive; the narrowest headers the editor allows choke wide open and go
+     * over it. The telemetry is named and in the snapshot. */
+    for (int p = 0; p < rb_preset_count(); p++) {
+        int phase = -1;
+        const double worst = busiest_second(p, -1, 0.0, &phase);
+        if (!(worst < 0.25 * RB_GUARD_RATE_WARN)) fprintf(stderr, "    %s: %.0f per second (phase %d)\n", rb_preset_key(p), worst, phase);
+        CHECK(worst < 0.25 * RB_GUARD_RATE_WARN);
+    }
+    int phase = -1;
+    const double choked = busiest_second(0, RB_ENG_HEADER_DIAMETER, rb_engine_field_min(RB_ENG_HEADER_DIAMETER), &phase);
+    CHECK(choked > 2.0 * RB_GUARD_RATE_WARN);
+    CHECK_EQ_INT(phase, 2);   /* wide open */
+    CHECK(strcmp(rb_telemetry_name(RB_TLM_GUARD_RATE), "guard_rate") == 0);
+    CHECK(RB_TLM_GUARD_RATE >= RB_TLM_RPM && RB_TLM_GUARD_RATE - RB_TLM_RPM < RB_SNAPSHOT_INSTRUMENTS);
+}
+
+void test_api_dyno_in_the_telemetry(void)
+{
+    /* Stage 068: the core's dyno as telemetry (and so in every snapshot): attached, its target,
+     * its readings, the last one's speed, torque and power, what rb_get_dyno says. */
+    rb_sim *sim = rb_create_with_quality(48000, RB_QUALITY_LEAN);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    rb_load_preset(sim, 0);
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 0.0 && rb_get_telemetry(sim, RB_TLM_DYNO_READINGS) == 0.0);
+    rb_set_param(sim, RB_PARAM_IGNITION, 1);
+    rb_set_param(sim, RB_PARAM_THROTTLE, 1.0);
+    rb_set_param(sim, RB_PARAM_HOLD_RPM, 3000.0);   /* held running at 3000, then the dyno's */
+    static float out[480];
+    for (int k = 0; k < 50; k++) rb_render_block(sim, out, 480);
+    CHECK_EQ_INT(rb_dyno_attach(sim, 3000.0), RB_OK);
+    for (int k = 0; k < 100; k++) rb_render_block(sim, out, 480);
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 1.0);
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_TARGET_RPM) == rb_get_dyno(sim, RB_DYNO_TARGET_RPM));
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_READINGS) == rb_get_dyno(sim, RB_DYNO_READINGS));
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_READINGS) > 10.0);
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_RPM) == rb_get_dyno(sim, RB_DYNO_RPM));
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE) == rb_get_dyno(sim, RB_DYNO_BRAKE_TORQUE));
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_POWER) == rb_get_dyno(sim, RB_DYNO_BRAKE_POWER));
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE) > 100.0);
+    /* in the snapshot, at its place among the instruments */
+    static unsigned char snap[1 << 15];
+    CHECK(rb_get_snapshot(sim, RB_SNAPSHOT_VERSION, snap, sizeof snap) > 0);
+    double torque;
+    memcpy(&torque, snap + sizeof(rb_snapshot_header) + 8 * (RB_TLM_DYNO_TORQUE - RB_TLM_RPM), sizeof torque);
+    CHECK(torque == rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE));
+    rb_dyno_release(sim);
+    CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 0.0);
+    rb_destroy(sim);
 }

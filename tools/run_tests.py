@@ -171,7 +171,7 @@ def web_copy():
 
 
 def app_copy():
-    """A copy of app/ (and the contracts' examples its decoder test reads, and the licence files its
+    """A copy of app/ (and the contracts' examples its decoder test reads, rb.h, and the licence files its
     package carries, at the same relative paths) in OUT/app-copy, without node_modules, builds or the add-on's folder app/native (the
     addon suite's); returns the copy's app folder."""
     copy = OUT / "app-copy"
@@ -186,6 +186,10 @@ def app_copy():
 
     shutil.copytree(ROOT / "app", copy / "app", ignore=ignore, symlinks=True)
     shutil.copytree(ROOT / "contracts" / "examples", copy / "contracts" / "examples")
+    # the core's header, whose constants the app's tests check against its own (stage 068)
+    if (ROOT / "core" / "include" / "rb.h").exists():   # a test's fake repository may have none
+        (copy / "core" / "include").mkdir(parents=True)
+        shutil.copy2(ROOT / "core" / "include" / "rb.h", copy / "core" / "include" / "rb.h")
     # the notices a package ships (app/electron-builder.config.cjs names them as ../...)
     shutil.copy2(ROOT / "THIRD_PARTY_NOTICES.md", copy / "THIRD_PARTY_NOTICES.md")
     (copy / "third_party" / "miniaudio").mkdir(parents=True)

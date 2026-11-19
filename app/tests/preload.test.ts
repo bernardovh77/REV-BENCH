@@ -2,7 +2,7 @@
  * The preload's API (bridge-impl.ts) with a fake ipcRenderer.
  */
 import { describe, expect, it } from "vitest";
-import { ENGINE_PORT_MESSAGE, IPC, type EnginePortMessage, type EngineStatus } from "../src/shared/bridge";
+import { ENGINE_PORT_MESSAGE, IPC, safeFileName, type EnginePortMessage, type EngineStatus } from "../src/shared/bridge";
 import { makeBridge, type IpcLike } from "../src/preload/bridge-impl";
 
 type Listener = (event: { ports: MessagePort[] }, payload: unknown) => void;
@@ -40,8 +40,8 @@ describe("the preload's API", () => {
     expect(bridge.versions).toEqual({ electron: "45.0.0", chrome: "140" });
   });
 
-  it("exposes only the six names the type promises, no ipc object", () => {
-    expect(Object.keys(setup().bridge).sort()).toEqual(["builds", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "versions"]);
+  it("exposes only the seven names the type promises, no ipc object", () => {
+    expect(Object.keys(setup().bridge).sort()).toEqual(["builds", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "saveText", "versions"]);
     expect(Object.keys(setup().bridge.builds!).sort()).toEqual(["list", "read", "remove", "save"]);
   });
 
@@ -122,5 +122,32 @@ describe("the preload's API", () => {
     emit(IPC.engineStatus, { state: "running", restarts: 0 });
     expect(seen).toEqual([]);
     expect(listeners.get(IPC.engineStatus)).toEqual([]);
+  });
+});
+
+describe("saving a text file (stage 068)", () => {
+  it("asks the main process on its own channel, and is true only for a written file", async () => {
+    const calls: unknown[][] = [];
+    let answer: unknown = true;
+    const ipc: IpcLike = {
+      invoke: async (channel, ...args) => (calls.push([channel, ...args]), answer),
+      send: () => {},
+      on: () => {},
+      removeListener: () => {},
+    };
+    const bridge = makeBridge({ ipc, platform: "win32", versions: { electron: "", chrome: "" }, postToPage: () => {} });
+    expect(await bridge.saveText!("dyno.csv", "a,b\n")).toBe(true);
+    answer = "yes";
+    expect(await bridge.saveText!("dyno.csv", "a,b\n")).toBe(false);
+    expect(calls).toEqual([[IPC.saveText, "dyno.csv", "a,b\n"], [IPC.saveText, "dyno.csv", "a,b\n"]]);
+  });
+
+  it("makes a suggested name safe for every system: never a path", () => {
+    expect(safeFileName("dyno-i4-2026-11-19.csv")).toBe("dyno-i4-2026-11-19.csv");
+    expect(safeFileName("../../etc/passwd")).toBe("_.._etc_passwd.txt");
+    expect(safeFileName("C:\\Windows\\x.csv")).toBe("C__Windows_x.csv");
+    expect(safeFileName("")).toBe("export.txt");
+    expect(safeFileName(42)).toBe("export.txt");
+    expect(safeFileName("notes")).toBe("notes.txt");
   });
 });

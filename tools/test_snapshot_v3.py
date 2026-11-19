@@ -1,26 +1,26 @@
-"""snapshot-v2: the checker accepts real snapshots and rejects broken ones,
-and its layout is the contract's (contracts/snapshot-v2.md)."""
+"""snapshot-v3: the checker accepts real snapshots and rejects broken ones,
+and its layout is the contract's (contracts/snapshot-v3.md)."""
 from pathlib import Path
 import re
 import struct
 import unittest
 
-import snapshot_v2
+import snapshot_v3
 
 ROOT = Path(__file__).resolve().parents[1]
-EXAMPLE = ROOT / "contracts/examples/snapshot-v2-i4-idle.bin"
+EXAMPLE = ROOT / "contracts/examples/snapshot-v3-i4-idle.bin"
 
 
 def patch(data, offset, fmt, value):
     """data with the value packed at offset in the snapshot at index 1."""
-    at = len(snapshot_v2.split(data)[0]) + offset
+    at = len(snapshot_v3.split(data)[0]) + offset
     return data[:at] + struct.pack("<" + fmt, value) + data[at + struct.calcsize(fmt):]
 
 
 def alone(data, offset, fmt, value):
     """The snapshot at index 1 on its own, with the value packed at offset:
     only its own checks can refuse it, none between snapshots."""
-    snap = snapshot_v2.split(data)[1]
+    snap = snapshot_v3.split(data)[1]
     return snap[:offset] + struct.pack("<" + fmt, value) + snap[offset + struct.calcsize(fmt):]
 
 
@@ -29,10 +29,10 @@ class SnapshotV2Tests(unittest.TestCase):
         self.data = EXAMPLE.read_bytes()
 
     def test_the_committed_example_is_valid(self):
-        snaps = snapshot_v2.check_stream(self.data)
+        snaps = snapshot_v3.check_stream(self.data)
         self.assertGreaterEqual(len(snaps), 4)
         self.assertEqual(snaps[0]["cylinders"], 4)
-        snapshot_v2.check_stream(snapshot_v2.split(self.data)[1])   # each is valid alone
+        snapshot_v3.check_stream(snapshot_v3.split(self.data)[1])   # each is valid alone
 
     def test_broken_snapshots_are_refused(self):
         broken = {
@@ -44,22 +44,22 @@ class SnapshotV2Tests(unittest.TestCase):
             "time going backwards": patch(self.data, 56, "Q", 0),
             "a phase out of [0, 4 pi)": alone(self.data, 96, "d", 13.0),
             "a negative speed": alone(self.data, 104, "d", -1.0),
-            "a burn fraction over 1": alone(self.data, 112 + 8 * 24 + 8 * 2, "d", 1.5),
-            "a pressure not positive": alone(self.data, 112 + 8 * 24, "d", 0.0),
+            "a burn fraction over 1": alone(self.data, 112 + 8 * len(snapshot_v3.INSTRUMENTS) + 8 * 2, "d", 1.5),
+            "a pressure not positive": alone(self.data, 112 + 8 * len(snapshot_v3.INSTRUMENTS), "d", 0.0),
             "a NaN instrument": alone(self.data, 112, "d", float("nan")),
             "cut short": self.data[:-8],
         }
         for what, data in broken.items():
             with self.subTest(what):
                 with self.assertRaises(ValueError):
-                    snapshot_v2.check_stream(data)
+                    snapshot_v3.check_stream(data)
 
     def test_the_layout_is_the_contracts(self):
-        text = (ROOT / "contracts/snapshot-v2.md").read_text(encoding="utf-8")
+        text = (ROOT / "contracts/snapshot-v3.md").read_text(encoding="utf-8")
         rows = re.findall(r"^\| (\d+) \| `(\w+)` \| (u32|u64|f64) \|", text, re.M)
-        self.assertEqual([(int(o), n, t) for o, n, t in rows], snapshot_v2.HEADER)
+        self.assertEqual([(int(o), n, t) for o, n, t in rows], snapshot_v3.HEADER)
         listed = re.findall(r"^\| (\d+) \| `(\w+)` \| (\S*) \|$", text, re.M)
-        self.assertEqual([n for _, n, _ in listed], snapshot_v2.INSTRUMENTS)
+        self.assertEqual([n for _, n, _ in listed], snapshot_v3.INSTRUMENTS)
 
 
 if __name__ == "__main__":

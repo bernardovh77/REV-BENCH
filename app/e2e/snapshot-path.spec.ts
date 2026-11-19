@@ -170,7 +170,7 @@ test("the snapshot path costs a small fraction of runtime-v1's budget, and a fra
 
     // the V8's snapshot: 304 + 40 * 8 bytes, far under the 64 KiB a snapshot may have
     expect(measured.preset).toBe("v8-cross");
-    expect(measured.snapshotBytes).toBe(624);
+    expect(measured.snapshotBytes).toBe(680);
     expect(measured.snapshotBytes).toBeLessThanOrEqual(BUDGET.snapshotBytes);
     // at the page's frame rate: within the 60 a second, and within the bytes a second
     expect(measured.perFrame.snapshotsPerSecond).toBeLessThanOrEqual(BUDGET.perSecond * 1.1);
@@ -199,13 +199,13 @@ interface Blast {
   latencyMaxMs: number;
 }
 
-test("a utility process sending snapshots of 624 bytes, 8 KiB and runtime-v1's 64 KiB at 60 a second, and flat out", async () => {
+test("a utility process sending snapshots of 680 bytes, 8 KiB and runtime-v1's 64 KiB at 60 a second, and flat out", async () => {
   const run = await launch();
   try {
     const { page, app } = run;
     await waitForState(page, "Engine running");
     const cases = [
-      { size: 624, hz: 60, seconds: 5 },
+      { size: 680, hz: 60, seconds: 5 },
       { size: 8192, hz: 60, seconds: 5 },
       { size: 65536, hz: 60, seconds: 5 },
       { size: 65536, hz: 0, seconds: 3 },

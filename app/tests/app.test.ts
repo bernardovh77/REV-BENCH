@@ -181,12 +181,12 @@ describe("the window", () => {
     expect(values).toEqual(["", "asphalt", "grass", "wall", "garage", "dyno", "iso", "cabin"]);
   });
 
-  it("has the four regions of the layout: top bar, editor, centre and charts", async () => {
+  it("has the four regions of the layout: top bar, editor, centre and the dyno", async () => {
     const { target } = await launch();
     expect(target.querySelector("header.topbar")).not.toBeNull();
     expect(target.querySelector("aside")?.querySelector("section[aria-label='Editor']")).not.toBeNull();
     expect(target.querySelector("main")?.querySelector("section[aria-label='Engine']")).not.toBeNull();
-    expect(target.querySelector("section[aria-label='Charts']")).not.toBeNull();
+    expect(target.querySelector("section[aria-label='Dyno']")).not.toBeNull();
   });
 
   it("says the engine is running once it is connected, with its presets to choose from", async () => {

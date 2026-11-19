@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 import { ENGINE_PORT_MESSAGE, type EngineStatus, type RevBenchBridge } from "../src/shared/bridge";
 import type { FromEngine, ToEngine } from "../src/shared/protocol";
-import { INSTRUMENT_NAMES, encodeSnapshot, type Snapshot } from "../src/shared/snapshot-v2.generated";
+import { INSTRUMENT_NAMES, encodeSnapshot, type Snapshot } from "../src/shared/snapshot-v3.generated";
 import { EngineStore, KEEP_UP_QUIET_STATS, type PortEvent, type WindowLike } from "../src/ui/lib/engine-store.svelte";
 
 /** A DOM MessagePort made by hand. */
@@ -28,13 +28,14 @@ class FakeDomPort {
 }
 
 const hello = (preset = "i4"): FromEngine => ({
-  type: "hello", protocol: 1, addonVersion: "fake", snapshotVersion: 2, presets: [{ index: 0, key: "i4", name: "Inline 4", quality: "balanced", layout: { family: "inline", cylinders: 4, crank: "even", bankAngle: 0 } }],
+  type: "hello", protocol: 1, addonVersion: "fake", snapshotVersion: 3, presets: [{ index: 0, key: "i4", name: "Inline 4", quality: "balanced", layout: { family: "inline", cylinders: 4, crank: "even", bankAngle: 0 } }],
   params: [], telemetry: [], devices: [], sampleRate: 48000, preset, generation: 1,
 });
 
-function snapshotBytes(rpm = 800, sequence = 1): ArrayBuffer {
+function snapshotBytes(rpm = 800, sequence = 1, more: Partial<Snapshot["instruments"]> = {}): ArrayBuffer {
   const instruments = Object.fromEntries(INSTRUMENT_NAMES.map((n) => [n, 0])) as Snapshot["instruments"];
   instruments.rpm = rpm;
+  Object.assign(instruments, more);
   return encodeSnapshot({
     magic: 0, version: 0, size: 0, cylinders: 1, cylinder_fields: 0, reserved0: 0, reserved1: 0, build_id: 1n,
     generation: 1, sequence, physics_tick: 1, audio_frame: 1, cycle_index: 0, physics_hz: 1, audio_hz: 48000, phase_rad: 0, speed_rad_s: 0,
@@ -190,9 +191,9 @@ describe("the frame loop", () => {
     store.start();
     const port = new FakeDomPort();
     givePort(port);
-    port.emit({ type: "snapshot", bytes: snapshotBytes(900), sequence: 1, generation: 1, audioFrame: 1 });
+    port.emit({ type: "snapshot", bytes: snapshotBytes(900), sequence: 1, generation: 1, audioFrame: 1, outPeak: 0, outRms: 0 });
     expect(store.snapshot?.instruments.rpm).toBe(900);
-    port.emit({ type: "snapshot", bytes: new ArrayBuffer(10), sequence: 2, generation: 1, audioFrame: 2 });
+    port.emit({ type: "snapshot", bytes: new ArrayBuffer(10), sequence: 2, generation: 1, audioFrame: 2, outPeak: 0, outRms: 0 });
     expect(store.refusedSnapshots).toBe(1);
     expect(store.snapshot?.instruments.rpm).toBe(900);
   });
@@ -398,5 +399,51 @@ describe("commands", () => {
     status({ state: "restarting", restarts: 0, message: "the engine process exited. Restarting." });
     await done;
     expect(store.lastError).toBe("the engine process exited. Restarting.");
+  });
+});
+
+describe("the instruments the snapshots feed (stage 068)", () => {
+  /** a snapshot at `seconds` of audio (48 kHz), with the meter's values and instruments */
+  const at = (port: FakeDomPort, seconds: number, peak: number, more: Partial<Snapshot["instruments"]> = {}) =>
+    port.emit({
+      type: "snapshot", bytes: snapshotBytes(3000, Math.round(seconds * 60) + 1, more), sequence: Math.round(seconds * 60) + 1,
+      generation: 1, audioFrame: Math.round(seconds * 48000), outPeak: peak, outRms: peak / Math.SQRT2,
+    });
+
+  it("meters the host's output, timed by its audio frames", () => {
+    const { store, givePort } = setup();
+    store.start();
+    const port = new FakeDomPort();
+    givePort(port);
+    port.emit(hello());
+    at(port, 1, 0.5);
+    expect(store.meter.peakDb).toBeCloseTo(-6.02, 2);
+    at(port, 1.5, 0);
+    expect(store.meter.peakDb).toBeCloseTo(-6.02 - 10, 2);   // half a second of audio at 20 dB/s
+  });
+
+  it("says the build is outside the model after a second over the threshold", () => {
+    const { store, givePort } = setup();
+    store.start();
+    const port = new FakeDomPort();
+    givePort(port);
+    port.emit(hello());
+    for (let i = 0; i < 30; i++) at(port, i / 60, 0, { guard_rate: 5000 });
+    expect(store.outsideModel).toBe(true);
+  });
+
+  it("collects the dyno's readings into a run", () => {
+    const { store, givePort } = setup();
+    store.start();
+    const port = new FakeDomPort();
+    givePort(port);
+    port.emit(hello());
+    at(port, 1, 0, { dyno_attached: 1, dyno_readings: 1, dyno_rpm: 2000, dyno_torque: 150, dyno_power: 31400 });
+    at(port, 1.1, 0, { dyno_attached: 1, dyno_readings: 4, dyno_rpm: 2100, dyno_torque: 152, dyno_power: 33400 });
+    expect(store.dyno.current!.points.map((p) => [p.reading, p.rpm, p.torque])).toEqual([[1, 2000, 150], [4, 2100, 152]]);
+    expect(store.dyno.current!.points[1].t).toBeCloseTo(0.1, 6);
+    at(port, 1.2, 0, { dyno_attached: 0 });
+    expect(store.dyno.current).toBeNull();
+    expect(store.dyno.runs).toHaveLength(1);
   });
 });

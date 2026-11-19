@@ -578,6 +578,8 @@ int rb_host_snapshot_read(rb_host *h, void *buffer, int capacity, rb_host_snapsh
         info->physics_tick = s->physics_tick;
         info->size = s->size;
         info->reserved = 0;
+        info->out_peak = s->out_peak;
+        info->out_rms = s->out_rms;
     }
     return (int)s->size;
 }

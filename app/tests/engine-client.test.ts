@@ -8,7 +8,7 @@ import { EngineControl } from "../src/engine/control";
 import { createFakeAddon } from "../src/engine/fake-addon";
 import { CommandError, EngineClient, type ClientPort, type Hello } from "../src/ui/lib/engine-client";
 import type { FromEngine, ToEngine } from "../src/shared/protocol";
-import { INSTRUMENT_NAMES, encodeSnapshot, type Snapshot } from "../src/shared/snapshot-v2.generated";
+import { INSTRUMENT_NAMES, encodeSnapshot, type Snapshot } from "../src/shared/snapshot-v3.generated";
 
 class HandPort implements ClientPort {
   sent: ToEngine[] = [];

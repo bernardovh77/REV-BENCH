@@ -223,7 +223,7 @@ void cli_usage(FILE *f)
         "      --float           write 32-bit float instead of 16-bit PCM (dithered)\n"
         "      --csv FILE        a row per 128-frame block: speed, throttle, sound level\n"
         "      --snapshots FILE  the engine's snapshots, about 60 a second, one after another\n"
-        "                        (contracts/snapshot-v2.md; tools/snapshot_v2.py checks them)\n"
+        "                        (contracts/snapshot-v3.md; tools/snapshot_v3.py checks them)\n"
         "      --trace FILE      the drive's command trace (host/include/rb_host_trace.h), which\n"
         "                        rb_host_render plays through the real-time host: the same bits\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"

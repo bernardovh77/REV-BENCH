@@ -169,7 +169,7 @@ BUGS = {
         CABIN, 120),
     # the pipes (pipe.c): a face under twice its gas's sonic flow (the fuzzer's find)
     "pipes-without-sonic-guard": ("core/src/pipe.c",
-        "    if (mdot * mdot > most2) {\n        mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);\n        reasons|=RB_D_BIT(RB_D_SONIC_CAP);\n    }\n",
+        "    if (mdot * mdot > most2) {\n        mdot = (mdot > 0.0) ? sqrt(most2) : -sqrt(most2);\n        reasons|=RB_D_BIT(RB_D_SONIC_CAP);\n        f->guards++;\n    }\n",   # stage 068 counts it
         "",
         ["test_pipe_most_sonic", "test_engine_vacuum"], 300),
     "sonic-guard-from-the-wrong-side": ("core/src/pipe.c",

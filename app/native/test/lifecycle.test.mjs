@@ -138,6 +138,7 @@ test("every Host method on the prototype is covered by the destroyed check", () 
   assert.deepEqual(methods.sort(), [
     "captureRead", "destroy", "discard", "generation", "poll", "prepare", "prepareState", "readSnapshot", "sampleRate",
     "selectDevice", "setEngineLive", "setParam", "start", "stats", "stop", "suspend", "swap", "resume",
+    "dynoAttach", "dynoSweep", "dynoClear", "dynoRelease",
   ].sort());
   for (const name of methods) throwsCode(() => host[name](), "DESTROYED", name);
 });

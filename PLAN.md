@@ -109,7 +109,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 068** (066 stays 🟡 for Bernardo's device checks, docs/stage-066.md "What is left"). Open beside it: 118's stated misses (the four 1.05 dB off at idle; the
+**Next stage: 069** (066 stays 🟡 for Bernardo's device checks, docs/stage-066.md "What is left"). Open beside it: 118's stated misses (the four 1.05 dB off at idle; the
 V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB stated in
 docs/stage-118.md and his blind listening of low against lean still to do, in 066's build).
 One decision waits for Bernardo: the project's licence (README, "Licence").
@@ -134,7 +134,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [067](docs/roadmap/07-app.md#stage-067) | The engine, intake and exhaust editor, from the core's metadata (2026-11-17, docs/stage-067.md): every editable field in sections with units, ranges and live/rebuild stated; drafts applied as one rebuild, live edits, undo/redo, metric/imperial; new `afr` and `spark_offset` parameters; every field measured to have an effect (or stated as having none, and hidden); e2e on Windows | 037, 066 |
 | ✅ | [131](docs/roadmap/07-app.md#stage-131) | Engine layouts (2026-11-18, docs/stage-131.md): inline 1–6, V 2–16, boxer 2/4/6 with their cranks (28 combinations), each a generic engine the core designs from a preset (crank from the firing times, exhaust grouping, running set from size); every one starts, idles 30 s flat, revs, carries a load and stops (the `layouts` suite); chosen in the editor as one rebuild, undoable. V12, V14 and V16 can't play live on the laptop yet (→ 129); inline and boxer 8 planned | 067, 118, 123 |
 | ✅ | [132](docs/roadmap/07-app.md#stage-132) | The build saver (2026-11-19, docs/stage-132.md): engines made in the editor saved under a name (preset, layout, edits, AFR and spark offset; one JSON file each in the user-data folder), listed, loaded back as one rebuild, replaced, deleted; the main process's files reached by id only. Pulls forward 095's saved builds. Bernardo's request, 2026-11-18 | 067, 131 |
-| ⬜ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno, with overlays | 066, 067 |
+| ✅ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno (2026-11-19, docs/stage-068.md): speed, MAP and boost, lambda/AFR, torque, power, spark, the cuts, an output meter with defined ballistics (the host's peak and RMS of every block), render and underruns; the model's own warning (its guards per second, set from the presets, cost nothing measurable); snapshot-v3; the core's dyno in the app: sweep or hold, live curves with runs overlaid, CSV export; the app's curves are the native readings, 115 points exact | 066, 067 |
 | ⬜ | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows: deadlines, 15-minute stress runs on real devices, listening; the first pre-release | 066, 067, 068, 118 |
 
 ### Phase B — the sound to real-engine standard

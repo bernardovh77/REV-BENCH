@@ -90,6 +90,13 @@ static const telemetry_info TELEMETRY[RB_TLM_COUNT] = {
     [RB_TLM_FUEL_FLOW]     = { "fuel_flow",     "kg/s" },
     [RB_TLM_EXHAUST_T]     = { "exhaust_temperature",  "K" },
     [RB_TLM_TAILPIPE_T]    = { "tailpipe_temperature", "K" },
+    [RB_TLM_GUARD_RATE]    = { "guard_rate",    "1/s" },
+    [RB_TLM_DYNO_ATTACHED] = { "dyno_attached", "" },
+    [RB_TLM_DYNO_TARGET_RPM] = { "dyno_target_rpm", "rpm" },
+    [RB_TLM_DYNO_READINGS] = { "dyno_readings", "" },
+    [RB_TLM_DYNO_RPM]      = { "dyno_rpm",      "rpm" },
+    [RB_TLM_DYNO_TORQUE]   = { "dyno_torque",   "N m" },
+    [RB_TLM_DYNO_POWER]    = { "dyno_power",    "W" },
 };
 
 static int param_ok(int id)
