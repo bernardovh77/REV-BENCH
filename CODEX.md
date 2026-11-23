@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 053, the flow's noise booked and its reversals measured (Claude)
+
+- docs/stage-053.md: `tests/test_flow_noise.c` (3 tests); core unchanged. Jets' noise is
+  external source work (gas bit-identical on/off). Reversed jets are left out: at idle the
+  intake backflow carries 0.2 of the exhaust valves' source power. Routing: 054; ears: 128.
+
 ## 2026-11-23: Stage 052, the mixed-rate scheduler (Claude)
 
 - docs/stage-052.md: `tests/test_scheduler.c` (2 tests); core unchanged. Pipe rates 24/48 kHz

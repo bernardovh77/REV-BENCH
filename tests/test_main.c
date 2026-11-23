@@ -115,6 +115,9 @@ void test_muffler_catalyst_is_a_series_resistance(void);
 void test_muffler_engine_grid_limits(void);
 void test_scheduler_pipe_rates_agree_on_one_grid(void);
 void test_scheduler_blocks_and_transitions_are_seamless(void);
+void test_flow_noise_is_external_source_work(void);
+void test_flow_noise_reverse_jets_measured(void);
+void test_flow_noise_statistics_over_seeds(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -442,6 +445,9 @@ static const struct {
     T(test_muffler_engine_grid_limits),
     T(test_scheduler_pipe_rates_agree_on_one_grid),
     T(test_scheduler_blocks_and_transitions_are_seamless),
+    T(test_flow_noise_is_external_source_work),
+    T(test_flow_noise_reverse_jets_measured),
+    T(test_flow_noise_statistics_over_seeds),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),
