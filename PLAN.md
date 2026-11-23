@@ -124,6 +124,14 @@ to watch when reproducing). Suspects to check first in 069:
 a rebuild's swap or fade with the crank still (sound from a stopped engine), and the
 instruments reading a stopped engine's manifold (the boost/vacuum readout against sea-level
 air, stage 068).
+**The underruns, found 2026-11-22:** on battery (i7-1355U held at 1.7 GHz) with his LS7
+cross-plane V8 at 10 ms latency, the stopped engine's render took 66 % of real time (72 % of a
+core) and underruns kept rising, the meter dropping out with each; plugged in, they stopped.
+So the laptop not keeping up, not a fault; but for 069: a stopped engine costs as much as a
+running one (its pipes are still stepped: make it cheaper), the latency should be chosen for
+the machine (10 ms has no margin on battery), and the window should say plainly that the
+machine can't keep up with this build (and suggest more latency or mains power). The inline
+3's tone above is a separate matter, still open.
 One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
