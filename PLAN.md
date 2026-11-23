@@ -118,9 +118,6 @@ fresh engine's tone** (found in 069 from Bernardo's report of 2026-11-22: a fres
 stopped engine's cold gas against its warm walls grows a tone of about 800 Hz after 6 s or more,
 the pipes' heat transfer following the flow; the app's engines now sleep before it starts, but
 the core still makes it in offline renders: phase B decides the physics, by listening).
-**A flaky end-to-end test** (since 068): stage 124's `snapshot-path.spec.ts`, the utility
-process sending snapshots flat out, hangs past its 120 s limit in about four runs of ten (it
-takes 19 s when it passes): an intermittent stall to find (docs/stage-130.md).
 One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done

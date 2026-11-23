@@ -212,42 +212,49 @@ test("a utility process sending snapshots of 680 bytes, 8 KiB and runtime-v1's 6
     ];
     const results: Blast[] = [];
     for (const c of cases) {
-      // the page listens first; then the main process starts the sender and gives the page its port
-      const receiving = page.evaluate(async (): Promise<Omit<Blast, "size" | "hz" | "sent">> => {
-        const port = await new Promise<MessagePort>((resolve) => {
-          const take = (event: MessageEvent) => {
-            const data = event.data as { channel?: string } | null;
-            if (event.source !== globalThis.window || data?.channel !== "rev-bench:engine-port" || !event.ports[0]) return;
-            event.stopImmediatePropagation();
-            globalThis.window.removeEventListener("message", take, true);
-            resolve(event.ports[0]);
-          };
-          globalThis.window.addEventListener("message", take, true);
-        });
-        const latencies: number[] = [];
-        let received = 0;
-        let bytes = 0;
-        let first = 0;
-        let last = 0;
-        await new Promise<void>((resolve) => {
-          port.onmessage = (event) => {
-            const m = event.data as { type: string; sentAt?: number; bytes?: ArrayBuffer };
-            const now = performance.timeOrigin + performance.now();
-            if (m.type === "done") return resolve();
-            if (!first) first = now;
-            last = now;
-            received++;
-            bytes += m.bytes!.byteLength;
-            latencies.push(now - m.sentAt!);
-          };
-          port.start();
-        });
-        port.close();
-        latencies.sort((a, b) => a - b);
-        const q = (x: number) => latencies[Math.min(latencies.length - 1, Math.floor(x * latencies.length))];
-        const seconds = (last - first) / 1000;
-        return { received, seconds, messagesPerSecond: received / seconds, bytesPerSecond: bytes / seconds, latencyP50Ms: q(0.5), latencyP95Ms: q(0.95), latencyMaxMs: latencies[latencies.length - 1] };
+      // the page listens first (installed, and the test waits for that: started alongside the
+      // main process's post, the port could arrive before the listener and the page then waited
+      // forever, which made this test hang past its limit in about four runs of ten, stage 130);
+      // then the main process starts the sender and gives the page its port
+      await page.evaluate(() => {
+        const w = globalThis.window as unknown as { __rbBlast?: Promise<unknown> };
+        w.__rbBlast = (async (): Promise<Omit<Blast, "size" | "hz" | "sent">> => {
+          const port = await new Promise<MessagePort>((resolve) => {
+            const take = (event: MessageEvent) => {
+              const data = event.data as { channel?: string } | null;
+              if (event.source !== globalThis.window || data?.channel !== "rev-bench:engine-port" || !event.ports[0]) return;
+              event.stopImmediatePropagation();
+              globalThis.window.removeEventListener("message", take, true);
+              resolve(event.ports[0]);
+            };
+            globalThis.window.addEventListener("message", take, true);
+          });
+          const latencies: number[] = [];
+          let received = 0;
+          let bytes = 0;
+          let first = 0;
+          let last = 0;
+          await new Promise<void>((resolve) => {
+            port.onmessage = (event) => {
+              const m = event.data as { type: string; sentAt?: number; bytes?: ArrayBuffer };
+              const now = performance.timeOrigin + performance.now();
+              if (m.type === "done") return resolve();
+              if (!first) first = now;
+              last = now;
+              received++;
+              bytes += m.bytes!.byteLength;
+              latencies.push(now - m.sentAt!);
+            };
+            port.start();
+          });
+          port.close();
+          latencies.sort((a, b) => a - b);
+          const q = (x: number) => latencies[Math.min(latencies.length - 1, Math.floor(x * latencies.length))];
+          const seconds = (last - first) / 1000;
+          return { received, seconds, messagesPerSecond: received / seconds, bytesPerSecond: bytes / seconds, latencyP50Ms: q(0.5), latencyP95Ms: q(0.95), latencyMaxMs: latencies[latencies.length - 1] };
+        })();
       });
+      const receiving = page.evaluate(() => (globalThis.window as unknown as { __rbBlast: Promise<Omit<Blast, "size" | "hz" | "sent">> }).__rbBlast);
       await app.evaluate(async ({ utilityProcess, MessageChannelMain, BrowserWindow }, args) => {
         const child = utilityProcess.fork(args.script);
         (globalThis as { __blaster?: typeof child }).__blaster = child;

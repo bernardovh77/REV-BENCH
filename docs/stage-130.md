@@ -49,8 +49,12 @@ patches `engine_build.c` now.
 host, addon, app, app-e2e and layouts pass. app-e2e failed twice first on stage 124's
 `snapshot-path.spec.ts` (the utility process sending snapshots flat out) running past its
 120 s limit, then passed whole (that test in 19.8 s). It has done this in about four runs of ten
-since stage 068, quiet machine or not: a hang, not slowness (it takes 19 s when it passes). Not
-this stage's; named in PLAN.md as an open gap.
+since stage 068, quiet machine or not: a hang, not slowness (it takes 19 s when it passes).
+**Found and fixed after the commit:** a race in the test. It started the page's listener for the
+port (`page.evaluate`, not awaited) and at once had the main process post the port; when the port
+arrived first, the message was lost and the page waited forever. The listener is now installed,
+and waited for, before the port is posted. It then passed the suite and 8 runs of its own in a
+row (at four in ten, nine passes would happen about 1 % of the time).
 
 ## Found on the way
 
