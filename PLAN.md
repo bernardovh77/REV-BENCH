@@ -109,29 +109,15 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 069** (066 stays 🟡 for Bernardo's device checks, docs/stage-066.md "What is left"). Open beside it: 118's stated misses (the four 1.05 dB off at idle; the
-V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB stated in
-docs/stage-118.md and his blind listening of low against lean still to do, in 066's build).
-**Reported by Bernardo, 2026-11-22 (0.2.5, not yet reproduced):** with an inline 3 and the
-engine off, while he changed settings in the editor, a bland noise slowly rose and faded away
-on its own, and the vacuum gauge glitched and showed "boost". His details: the setting is not
-known (he was editing); it lasted about a second; the output meter showed it, so it was in the
-host's output; steady but rising, a hum like a very high-pitched flute, then gone; the
-underruns count kept rising with the engine off (not normal: a stopped engine should render
-easily, so a build that is too heavy for the laptop, or a stopped engine's pipes ringing or
-going unstable, would explain both; the model's warning and render time are the instruments
-to watch when reproducing). Suspects to check first in 069:
-a rebuild's swap or fade with the crank still (sound from a stopped engine), and the
-instruments reading a stopped engine's manifold (the boost/vacuum readout against sea-level
-air, stage 068).
-**The underruns, found 2026-11-22:** on battery (i7-1355U held at 1.7 GHz) with his LS7
-cross-plane V8 at 10 ms latency, the stopped engine's render took 66 % of real time (72 % of a
-core) and underruns kept rising, the meter dropping out with each; plugged in, they stopped.
-So the laptop not keeping up, not a fault; but for 069: a stopped engine costs as much as a
-running one (its pipes are still stepped: make it cheaper), the latency should be chosen for
-the machine (10 ms has no margin on battery), and the window should say plainly that the
-machine can't keep up with this build (and suggest more latency or mains power). The inline
-3's tone above is a separate matter, still open.
+**Next stage: 133** (Bernardo's request: the limiter's character and a 2-step), then phase B.
+069 and 066 stay 🟡 for Bernardo's real-device runs, listening and checks (docs/stage-069.md and
+docs/stage-066.md, "What is left"). Open beside them: 118's stated misses (the four 1.05 dB off
+at idle; the V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB
+stated in docs/stage-118.md and his blind listening of low against lean still to do), and **the
+fresh engine's tone** (found in 069 from Bernardo's report of 2026-11-22: a freshly built,
+stopped engine's cold gas against its warm walls grows a tone of about 800 Hz after 6 s or more,
+the pipes' heat transfer following the flow; the app's engines now sleep before it starts, but
+the core still makes it in offline renders: phase B decides the physics, by listening).
 One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
@@ -155,7 +141,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [131](docs/roadmap/07-app.md#stage-131) | Engine layouts (2026-11-18, docs/stage-131.md): inline 1–6, V 2–16, boxer 2/4/6 with their cranks (28 combinations), each a generic engine the core designs from a preset (crank from the firing times, exhaust grouping, running set from size); every one starts, idles 30 s flat, revs, carries a load and stops (the `layouts` suite); chosen in the editor as one rebuild, undoable. V12, V14 and V16 can't play live on the laptop yet (→ 129); inline and boxer 8 planned | 067, 118, 123 |
 | ✅ | [132](docs/roadmap/07-app.md#stage-132) | The build saver (2026-11-19, docs/stage-132.md): engines made in the editor saved under a name (preset, layout, edits, AFR and spark offset; one JSON file each in the user-data folder), listed, loaded back as one rebuild, replaced, deleted; the main process's files reached by id only. Pulls forward 095's saved builds. Bernardo's request, 2026-11-18 | 067, 131 |
 | ✅ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno (2026-11-19, docs/stage-068.md): speed, MAP and boost, lambda/AFR, torque, power, spark, the cuts, an output meter with defined ballistics (the host's peak and RMS of every block), render and underruns; the model's own warning (its guards per second, set from the presets, cost nothing measurable); snapshot-v3; the core's dyno in the app: sweep or hold, live curves with runs overlaid, CSV export; the app's curves are the native readings, 115 points exact | 066, 067 |
-| ⬜ | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows: deadlines, 15-minute stress runs on real devices, listening; the first pre-release | 066, 067, 068, 118 |
+| 🟡 | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows (2026-11-23, docs/stage-069.md): Bernardo's engine-off tone found (a fresh build's cold gas against warm walls: a Sondhauss-like tone after 6 s+) and kept out of the app (a stopped engine sleeps: `RB_PARAM_REST`, no cost, renders bit-identical); the gauge steadied; the "can't keep up" warning offers a longer latency or a cheaper quality as the cause wants, and says when on battery; the defaults recorded; 15-minute drives on the null device (40 ms clean; at 20 ms the null device starves itself; the busy window costs the render a third more). Open for Bernardo's real-device runs, listening and the pre-release | 066, 067, 068, 118 |
 | ⬜ | [133](docs/roadmap/07-app.md#stage-133) | The rev limiter's character and a 2-step: the cut's bounce (resume gap), the soft band's width, spark or fuel cut, edited like any field; a second, lower limit held on a key or button (launch control). Bernardo's request, 2026-11-22 | 066, 067, 069 |
 
 ### Phase B — the sound to real-engine standard

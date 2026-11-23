@@ -343,6 +343,14 @@ Where this file and the code disagree, the code is right and this file is fixed.
     then `python tools/gen_snapshot_ts.py`).
   - **The host's meter:** `rbh_run.meter_*`, after the swaps' fades, published and reset with
     each snapshot.
+- **Stage 069** (the app qualified on Windows, docs/stage-069.md):
+  - **A stopped engine asleep (`RB_PARAM_REST`, 0 by default, the app's builds 1):** after each
+    rendered block `maybe_rest` (rb_sim.c) counts it as quiet when the crank is still
+    (`omega == 0`), the starter off, no dyno on and the block's peak under `RB_REST_LEVEL`;
+    after `RB_REST_HOLD_S` of quiet blocks `render` writes silence without stepping the model.
+    Anything set on the sim wakes it: every setter does `sim->touched++` (a parameter only when
+    its value changes), and a rebuild moves `generation`. **A new setter that changes what the
+    engine does must do `sim->touched++` too**, or a sleeping engine won't see it.
 
 ## Tools and charts
 

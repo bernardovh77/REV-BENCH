@@ -37,6 +37,8 @@ export interface RevBenchBridge {
    * name only a suggestion; true once written, false if the user cancelled or it couldn't be.
    */
   saveText?(suggestedName: string, text: string): Promise<boolean>;
+  /** stage 069: whether the computer runs on battery now (the "can't keep up" warning says so) */
+  onBattery?(): Promise<boolean>;
   /** the saved builds (the build saver): the files are the main process's (main/library.ts) */
   builds?: {
     list(): Promise<SavedBuildSummary[]>;
@@ -83,6 +85,8 @@ export const IPC = {
   deleteBuild: "rb:delete-build",
   /** window -> main (invoke): a save dialog for a text file (stage 068) */
   saveText: "rb:save-text",
+  /** window -> main (invoke): on battery power? (stage 069) */
+  onBattery: "rb:on-battery",
 } as const;
 
 /** The most a saved text may be (the dyno's CSV is a few hundred kB at most). */

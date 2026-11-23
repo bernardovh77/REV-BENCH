@@ -233,6 +233,7 @@ double rb_listener_source_distance(const rb_sim *sim, int source)
 int rb_set_scene_time(rb_sim *sim, double seconds)
 {
     if (!sim || !sim->scene_active || !rb_finite(seconds)) return RB_ERR_ARG;
+    sim->touched++;
     sim->scene.time = seconds;
     return RB_OK;
 }
@@ -285,6 +286,7 @@ int rb_dyno_attach(rb_sim *sim, double rpm)
 {
     if (!sim) return RB_ERR_ARG;
     if (!(rpm >= 300.0 && rpm <= 20000.0)) return RB_ERR_VALUE;
+    sim->touched++;
     rb_dyno_init(&sim->own_dyno, &sim->engine, rpm);   /* frees the crank */
     sim->dyno = &sim->own_dyno;
     sim->param[RB_PARAM_HOLD] = 0.0;
@@ -294,6 +296,7 @@ int rb_dyno_attach(rb_sim *sim, double rpm)
 int rb_dyno_release(rb_sim *sim)
 {
     if (!sim) return RB_ERR_ARG;
+    sim->touched++;
     sim->dyno = NULL;
     apply_load(sim);   /* the driver's load (and the road's) again */
     return RB_OK;
@@ -308,6 +311,7 @@ int rb_dyno_set_sweep(rb_sim *sim, double to_rpm, double rate)
 {
     if (!sim || !sim->dyno) return RB_ERR_ARG;
     if (!(to_rpm >= 300.0 && to_rpm <= 20000.0) || !(rate >= 0.0 && rate <= 1e5)) return RB_ERR_VALUE;
+    sim->touched++;
     rb_dyno_sweep(sim->dyno, to_rpm, rate);
     return RB_OK;
 }
@@ -315,6 +319,7 @@ int rb_dyno_set_sweep(rb_sim *sim, double to_rpm, double rate)
 int rb_dyno_clear(rb_sim *sim)
 {
     if (!sim || !sim->dyno) return RB_ERR_ARG;
+    sim->touched++;
     sim->dyno->readings = 0;
     memset(&sim->dyno->reading, 0, sizeof sim->dyno->reading);
     return RB_OK;

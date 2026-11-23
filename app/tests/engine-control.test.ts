@@ -394,6 +394,16 @@ describe("the level, the quality and the scene (stage 066)", () => {
   }
   const gainOf = (spec: BuildSpec, addon: Addon) => spec.params?.find((p) => p.id === addon.params().find((q) => q.name === "master_gain")!.id)?.value;
 
+  it("builds every engine with a stopped engine allowed to sleep (rest 1, stage 069)", () => {
+    const { addon, specs } = recording();
+    const s = setup({ addon, build: { preset: "i6" } });
+    s.send(2, { kind: "load-preset", preset: "v8-flat" });
+    s.run(200);
+    const rest = addon.params().find((q) => q.name === "rest")!.id;
+    expect(specs.length).toBe(2);
+    for (const spec of specs) expect(spec.params?.find((p) => p.id === rest)?.value).toBe(1);
+  });
+
   it("builds every engine at the app's level, and at the volume after it changes", () => {
     const { addon, specs } = recording();
     const s = setup({ addon, build: { preset: "i6" } });

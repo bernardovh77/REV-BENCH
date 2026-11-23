@@ -269,6 +269,7 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     if (f->flags & RB_EF_READONLY) return RB_ERR_READONLY;
     if (!rb_finite(value)) return RB_ERR_VALUE;
     if ((f->flags & RB_EF_INTEGER) && value != floor(value)) return RB_ERR_VALUE;
+    sim->touched++;   /* wakes a resting engine (stage 069) */
 
     /* Angles around the crank wrap; everything else is clamped into its range. */
     int rc = RB_OK;

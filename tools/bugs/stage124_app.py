@@ -170,8 +170,8 @@ BUGS = {
         "tests/packaging.test.ts", "turns off running as plain Node, NODE_OPTIONS and the inspect flags"),
     "engine-built-with-the-dyno-held-crank": (
         "app/src/engine/control.ts",
-        "export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };",
-        "export const APP_BUILD_PARAMS: Record<string, number> = {};",
+        "export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0, rest: 1 };",
+        "export const APP_BUILD_PARAMS: Record<string, number> = { rest: 1 };",
         "tests/engine-control.test.ts", "builds the first engine with a free crank"),
     "restarted-engine-gets-no-port": (
         "app/src/main/supervisor.ts",

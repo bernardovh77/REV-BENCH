@@ -121,6 +121,10 @@ target_link_libraries(rb_audit PRIVATE rb_core_internal)
 add_executable(build_contract_probe tools/build_contract_probe.c)
 target_link_libraries(build_contract_probe PRIVATE rb_core_internal)
 
+# Stage 069: a stopped engine's sound after a build (tools/engine_off_probe.c).
+add_executable(rb_engine_off_probe tools/engine_off_probe.c)
+target_link_libraries(rb_engine_off_probe PRIVATE rb_core_internal)
+
 # ---- the C tests ----
 file(GLOB RB_TEST_SRC CONFIGURE_DEPENDS tests/*.c)
 add_executable(rb_tests ${RB_TEST_SRC})

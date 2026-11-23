@@ -204,6 +204,7 @@ void rb_sim_listen(rb_sim *sim)
 int rb_set_scene(rb_sim *sim, int scene)
 {
     if (!sim) return RB_ERR_ARG;
+    sim->touched++;
     const rb_engine *e = &sim->engine;
     const rb_chamber *air = &e->exhaust_air;
     const double cv = rb_gas_cv(&air->gas, air->T);
@@ -296,9 +297,53 @@ void rb_step(rb_sim *sim)
     sim->steps++;
 }
 
+/* Stage 069 (RB_PARAM_REST): 1 if the engine is asleep for this block. It
+ * wakes when anything was set on the sim or it was rebuilt since it fell
+ * asleep. */
+static int asleep(rb_sim *sim)
+{
+    if (!sim->resting) return 0;
+    if (sim->touched == sim->rest_touched && sim->generation == sim->rest_generation) return 1;
+    sim->resting = 0;
+    sim->rest_quiet = 0;
+    return 0;
+}
+
+/* After a block the model rendered: counts it toward sleep if the engine is
+ * still and left alone and the block was quiet (RB_REST_LEVEL), and falls
+ * asleep after RB_REST_HOLD_S of such blocks in a row. */
+static void maybe_rest(rb_sim *sim, int frames)
+{
+    const rb_engine *e = &sim->engine;
+    const int still = sim->param[RB_PARAM_REST] == 1.0 && sim->source == RB_SOURCE_ENGINE && !sim->dyno
+                   && e->omega == 0.0 && sim->param[RB_PARAM_STARTER] == 0.0;
+    const int same = sim->touched == sim->rest_touched && sim->generation == sim->rest_generation;
+    if (!still || !(sim->out_peak < RB_REST_LEVEL) || !same) {
+        sim->rest_quiet = 0;
+        sim->rest_touched = sim->touched;   /* the quiet stretch starts from now */
+        sim->rest_generation = sim->generation;
+        return;
+    }
+    sim->rest_quiet += (uint64_t)frames;
+    if ((double)sim->rest_quiet >= RB_REST_HOLD_S * sim->cfg.sample_rate) sim->resting = 1;
+}
+
+int rb_resting(const rb_sim *sim)
+{
+    return sim && sim->resting;
+}
+
 static int render(rb_sim *sim, float *out, int frames, int channels)
 {
     if (!sim || !out || frames < 0) return RB_ERR_ARG;
+
+    if (asleep(sim)) {   /* silence, the model waiting as it was */
+        memset(out, 0, sizeof *out * (size_t)frames * (size_t)channels);
+        sim->out_peak = 0.0;
+        sim->out_rms  = 0.0;
+        sim->frames  += (uint64_t)frames;
+        return frames;
+    }
 
     const int os = sim->cfg.oversample;
     double peak  = 0.0;
@@ -379,6 +424,7 @@ static int render(rb_sim *sim, float *out, int frames, int channels)
     sim->out_peak = peak;
     sim->out_rms  = frames > 0 ? sqrt(sumsq / (double)frames) : 0.0;
     sim->frames  += (uint64_t)frames;
+    maybe_rest(sim, frames);
     return frames;
 }
 

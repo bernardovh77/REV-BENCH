@@ -138,12 +138,13 @@ EXHAUST_GEOMETRY_OBJ := $(call obj,tools/exhaust_geometry_probe.c)
 MATERIAL_PROBE_OBJ := $(call obj,tools/material_probe.c)
 FIXED_TRANSPORT_OBJ := $(call obj,tools/fixed_transport_probe.c)
 JUNCTION_PROBE_OBJ := $(call obj,tools/junction_probe.c)
+ENGINE_OFF_PROBE_OBJ := $(call obj,tools/engine_off_probe.c)
 THERMAL_BENCH_OBJ := $(call obj,tools/thermal_bench.c)
 THERMAL_PROBE_OBJ := $(call obj,tools/thermal_probe.c)
 GAS_GRAPH_PROBE_OBJ := $(call obj,tools/gas_graph_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(BENCH_RENDER_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(BENCH_RENDER_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ) $(ENGINE_OFF_PROBE_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -343,7 +344,7 @@ WASM_EXPORTS := rb_version rb_config_default rb_sizeof rb_init rb_reset \
     rb_param_min rb_param_max rb_param_default rb_param_flags rb_param_find \
     rb_get_telemetry rb_telemetry_count rb_telemetry_name rb_telemetry_unit \
     rb_set_quality rb_get_quality rb_variation_seed rb_listener_source_distance rb_set_scene_time \
-    rb_dyno_attach rb_dyno_release rb_dyno_attached rb_dyno_set_sweep rb_dyno_clear rb_get_dyno \
+    rb_dyno_attach rb_dyno_release rb_dyno_attached rb_dyno_set_sweep rb_dyno_clear rb_get_dyno rb_resting \
     rb_snapshot_size rb_get_snapshot rb_event_kind_name rb_read_events rb_events_lost \
     rb_preset_count rb_preset_key rb_preset_name rb_preset_find rb_preset_quality rb_load_preset rb_get_preset \
     rb_family_name rb_crank_name rb_layout_check rb_layout_why rb_layout_usual_crank rb_layout_angle \
@@ -454,6 +455,10 @@ $(BUILD)/material_probe.wasm: tools/material_probe.c $(CORE_SRC) $(CORE_HDR) $(A
 	  tools/material_probe.c $(CORE_SRC) $(ACOUSTIC_SRC) -o $@
 
 $(BUILD)/junction_probe: $(JUNCTION_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+# Stage 069: a stopped engine's sound after a build, every field at either end.
+$(BUILD)/rb_engine_off_probe: $(ENGINE_OFF_PROBE_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(BUILD)/junction_probe.wasm: tools/junction_probe.c $(CORE_SRC) $(CORE_HDR) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) Makefile

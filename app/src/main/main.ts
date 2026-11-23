@@ -88,6 +88,8 @@ ipcMain.handle(IPC.readBuild, (event, id: unknown) => (trusted(event) ? library.
 ipcMain.handle(IPC.saveBuild, (event, name: unknown, build: unknown, settings: unknown, replace: unknown) =>
   trusted(event) ? library.save(name, build, settings, replace === true) : { ok: false, reason: "bad-build" });
 ipcMain.handle(IPC.deleteBuild, (event, id: unknown) => (trusted(event) ? library.remove(id) : false));
+// on battery power? (the "can't keep up" warning, stage 069)
+ipcMain.handle(IPC.onBattery, (event) => trusted(event) && powerMonitor.isOnBatteryPower());
 // a text file the user saves where they choose (the dyno's CSV): the page suggests a name only
 ipcMain.handle(IPC.saveText, async (event, suggested: unknown, text: unknown) => {
   if (!trusted(event) || typeof text !== "string" || text.length > SAVE_TEXT_MAX || !window) return false;

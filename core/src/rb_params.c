@@ -51,6 +51,8 @@ static const param_info PARAMS[RB_PARAM_COUNT] = {
     [RB_PARAM_VARIANT]         = { "variant",         "",   0.0,   RB_VARIANT_MAX, 0.0, LIVE | INT },
     [RB_PARAM_AFR]             = { "afr",             "",   10.0,  20.0,    RB_AFR_STOICH, LIVE },
     [RB_PARAM_SPARK_OFFSET]    = { "spark_offset",    "deg", -15.0, 15.0,   0.0,    LIVE },
+    /* stage 069 */
+    [RB_PARAM_REST]            = { "rest",            "",   0.0,   1.0,     0.0,    LIVE | INT },
 };
 
 typedef struct telemetry_info {
@@ -133,6 +135,7 @@ int rb_set_param(rb_sim *sim, int id, double value)
     if (value < PARAMS[id].min) { value = PARAMS[id].min; rc = RB_CLAMPED; }
     if (value > PARAMS[id].max) { value = PARAMS[id].max; rc = RB_CLAMPED; }
 
+    if (sim->param[id] != value) sim->touched++;   /* wakes a resting engine (stage 069) */
     sim->param[id] = value;
     const int applied = rb_sim_apply(sim, id);   /* into the engine and the sound */
     return applied == RB_PENDING ? RB_PENDING : rc;

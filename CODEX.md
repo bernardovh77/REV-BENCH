@@ -4,6 +4,16 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 069, qualified on Windows without the real device (Claude)
+
+- docs/stage-069.md; stays 🟡 for Bernardo's real-device runs and listening.
+- Core: `RB_PARAM_REST` (0 by default; the app's builds 1): a stopped engine left alone sleeps
+  (`maybe_rest`/`asleep` in rb_sim.c, `rb_resting`). **Every setter must `sim->touched++`**
+  (docs/architecture.md). Found: a fresh build's cold gas against warm walls grows an 800 Hz
+  tone after 6 s+ (pipes' heat transfer follows |mdot|): left for phase B.
+- `tools/engine_off_probe.c`; `app/e2e/stress.spec.ts` (on request); the keep-up advice
+  (`keep-up.ts`), the steadied boost readout (`manifold.ts`), `bridge.onBattery`.
+
 ## 2026-11-19: Stage 068, instruments and the dyno (Claude)
 
 - docs/stage-068.md. Snapshot version 3 (`contracts/snapshot-v3.md`, `tools/snapshot_v3.py`,

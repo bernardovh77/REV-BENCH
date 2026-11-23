@@ -119,6 +119,14 @@ struct rb_sim {
     double    event_theta;  /* the crank before the step in progress       */
     double    event_angle[RB_MAX_CYLINDERS];   /* each cylinder's then     */
     long      event_cycles;
+
+    /* ---- stage 069: a stopped engine asleep (RB_PARAM_REST) ---- */
+    uint64_t  touched;      /* anything set on the sim since rb_init: params,
+                             * fields, the scene, the dyno                 */
+    uint64_t  rest_touched; /* `touched` and `generation` when the quiet   */
+    uint64_t  rest_generation;  /* stretch began                           */
+    uint64_t  rest_quiet;   /* frames of quiet blocks in a row             */
+    int       resting;      /* 1: render writes silence, the model waits   */
 };
 
 /* Coefficient a for the smoother  y += a * (target - y)  run every dt. */

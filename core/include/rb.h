@@ -171,11 +171,33 @@ typedef enum rb_param {
                                    engine computer chooses (its map, idle
                                    and overrun); 0 by default. Not the
                                    cranking spark (stage 067)             */
+    RB_PARAM_REST,              /* 1: a stopped engine left alone sleeps
+                                   (stage 069). Once the crank has been
+                                   still, the starter off, no dyno on it
+                                   and every block's output under
+                                   RB_REST_LEVEL for RB_REST_HOLD_S, the
+                                   render writes silence without stepping
+                                   the model, until anything is set on the
+                                   sim (a parameter, a field, the scene,
+                                   the dyno) or it is rebuilt. Its state
+                                   waits as it was (its slow cooling
+                                   too). 0 by default: renders stay as
+                                   they were, bit for bit; the real-time
+                                   host's builds turn it on            */
     RB_PARAM_COUNT
 } rb_param;
 
 /* RB_PARAM_VARIANT's largest value. */
 #define RB_VARIANT_MAX 7
+
+/* RB_PARAM_REST: a block is quiet when its output's peak is under this (full
+ * scale 1: -100 dB), and the engine sleeps after this many seconds of quiet
+ * blocks with the crank still. A freshly built engine's gas, cold against its
+ * warm walls, grows a tone on its own after 6 s or more (docs/stage-069.md);
+ * every preset and layout measured gets under this level before that, so a
+ * sleeping engine never plays it. */
+#define RB_REST_LEVEL  1e-5
+#define RB_REST_HOLD_S 1.0
 
 /* RB_PARAM_SOURCE's values. */
 enum { RB_SOURCE_TONE = 0, RB_SOURCE_ENGINE = 1 };
@@ -308,6 +330,8 @@ void rb_step(rb_sim *sim);
 /* Render `frames` mono samples in [-1, 1] at the audio rate. Returns the
  * number of frames written, or a negative RB_ERR_* code. */
 int  rb_render_block(rb_sim *sim, float *out, int frames);
+/* 1 while the sim is asleep (RB_PARAM_REST, stage 069), else 0 (NULL too). */
+int  rb_resting(const rb_sim *sim);
 
 /* ---- parameters --------------------------------------------------- */
 int         rb_set_param(rb_sim *sim, int id, double value); /* RB_OK/RB_CLAMPED/RB_ERR_* */

@@ -12,7 +12,8 @@
   import Slider from "../components/Slider.svelte";
   import type { Driver } from "../lib/driver.svelte";
   import type { EngineStore, EngineSummary } from "../lib/engine-store.svelte";
-  import { QUALITY_NAMES, cheaperQuality } from "../lib/qualities";
+  import { keepUpAdvice } from "../lib/keep-up";
+  import { QUALITY_NAMES } from "../lib/qualities";
 
   interface Props {
     store: EngineStore;
@@ -42,7 +43,18 @@
   let instruments = $derived(store.snapshot?.instruments ?? null);
   // the quality playing (chosen, or the preset's tier) and the next cheaper one, for the warning
   let playing = $derived(store.quality ?? store.hello?.presets.find((p) => p.key === store.preset)?.quality ?? null);
-  let cheaper = $derived(cheaperQuality(playing));
+  // whether it's on battery, asked when the warning comes up (the bridge's, stage 069)
+  let onBattery = $state<boolean | null>(null);
+  $effect(() => {
+    if (!store.fallingBehind) return;
+    void store.onBattery().then((b) => (onBattery = b));
+  });
+  let advice = $derived(keepUpAdvice(store.renderShare, store.latencyMs, playing, onBattery));
+  function takeAdvice() {
+    const action = advice.action;
+    if (action?.kind === "quality") void store.setQuality(action.quality);
+    else if (action?.kind === "latency") void store.setLatency(action.ms);
+  }
   let ready = $derived(store.summary === "running");
   let presets = $derived((store.hello?.presets ?? []).map((p) => ({ value: p.key, label: p.name })));
   let places = PLACES.map((label, i) => ({ value: String(i), label }));
@@ -66,11 +78,13 @@
   <div class="keep-up" class:on={store.fallingBehind} role="status" aria-live="polite">
     {#if store.fallingBehind}
       <span class="keep-up-dot" aria-hidden="true"></span>
-      <span class="keep-up-text" title="This computer isn't keeping up with this engine at the {playing ? QUALITY_NAMES[playing] : ''} quality: the sound may break up.">
-        Can't keep up
+      <span class="keep-up-text" title={advice.why}>
+        Can't keep up{onBattery ? " (on battery)" : ""}
       </span>
-      {#if cheaper}
-        <span class="keep-up-action"><Button size="sm" onclick={() => void store.setQuality(cheaper)}>Use {QUALITY_NAMES[cheaper]}</Button></span>
+      {#if advice.action?.kind === "quality"}
+        <span class="keep-up-action"><Button size="sm" onclick={takeAdvice}>Use {QUALITY_NAMES[advice.action.quality]}</Button></span>
+      {:else if advice.action?.kind === "latency"}
+        <span class="keep-up-action"><Button size="sm" onclick={takeAdvice}>Latency {advice.action.ms} ms</Button></span>
       {/if}
     {/if}
   </div>

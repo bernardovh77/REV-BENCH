@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { DynoRuns, RUNS_KEPT, type DynoSample } from "../src/ui/lib/dyno.svelte";
 import { GUARD_RATE_WARN, GuardWatch, QUIET_S } from "../src/ui/lib/guard-watch";
 import { CLIP_HOLD_S, FLOOR_DB, HOLD_S, Meter, toDb } from "../src/ui/lib/meter";
+import { AMBIENT_PA, BOOST_DEADBAND_PA, manifoldReading } from "../src/ui/lib/manifold";
 
 describe("the meter's ballistics", () => {
   it("reads dB below full scale, with a floor", () => {
@@ -118,5 +119,22 @@ describe("the dyno's runs", () => {
     d.clear();
     expect(d.runs).toEqual([]);
     expect(d.csv()).toBe("run,label,reading,time_s,rpm,torque_Nm,power_W\n");
+  });
+});
+
+describe("the boost-or-vacuum readout (stage 069)", () => {
+  it("reads vacuum below the surroundings and boost only past the deadband", () => {
+    expect(manifoldReading(AMBIENT_PA - 40000)).toEqual({ label: "Vacuum", value: 40000 });
+    expect(manifoldReading(AMBIENT_PA + 50000)).toEqual({ label: "Boost", value: 50000 });
+    expect(BOOST_DEADBAND_PA).toBe(500);
+  });
+
+  it("stays 'Vacuum 0' for a stopped engine's manifold settling around the surroundings", () => {
+    for (const wobble of [-3, -0.5, 0, 0.5, 3, 120, BOOST_DEADBAND_PA]) {
+      const r = manifoldReading(AMBIENT_PA + wobble);
+      expect(r.label).toBe("Vacuum");
+      expect(r.value).toBe(Math.max(0, -wobble));
+    }
+    expect(manifoldReading(AMBIENT_PA + BOOST_DEADBAND_PA + 1).label).toBe("Boost");
   });
 });

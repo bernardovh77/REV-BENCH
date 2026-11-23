@@ -240,6 +240,10 @@ void test_api_variant(void);
 void test_api_afr_and_spark_offset(void);
 void test_api_guard_rate_warns_only_outside_the_model(void);
 void test_api_dyno_in_the_telemetry(void);
+void test_api_rest_sleeps_a_still_engine_only(void);
+void test_api_rest_wakes_on_anything_set(void);
+void test_api_rest_never_touches_a_running_engine(void);
+void test_api_rest_keeps_a_fresh_engine_from_singing(void);
 void test_editor_every_field_has_an_effect(void);
 void test_layout_offers_the_stated_set(void);
 void test_layout_presets_are_their_own_layouts(void);
@@ -550,6 +554,10 @@ static const struct {
     T(test_api_afr_and_spark_offset),
     T(test_api_guard_rate_warns_only_outside_the_model),
     T(test_api_dyno_in_the_telemetry),
+    T(test_api_rest_sleeps_a_still_engine_only),
+    T(test_api_rest_wakes_on_anything_set),
+    T(test_api_rest_never_touches_a_running_engine),
+    T(test_api_rest_keeps_a_fresh_engine_from_singing),
     T(test_editor_every_field_has_an_effect),
     T(test_layout_offers_the_stated_set),
     T(test_layout_presets_are_their_own_layouts),

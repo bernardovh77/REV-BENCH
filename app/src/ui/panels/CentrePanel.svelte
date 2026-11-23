@@ -7,6 +7,8 @@
   Falling behind is said in the top bar's own slot (TopBar.svelte), where it moves nothing else.
 -->
 <script lang="ts">
+  import { LATENCIES } from "../lib/keep-up";
+  import { manifoldReading } from "../lib/manifold";
   import type { Quality } from "../../shared/addon";
   import Button from "../components/Button.svelte";
   import Notice from "../components/Notice.svelte";
@@ -30,14 +32,13 @@
   }
   let { store, driver, units = "metric" }: Props = $props();
 
-  /** standard sea-level air, every preset's surroundings: boost above it, vacuum below */
-  const AMBIENT_PA = 101325;
   let ins = $derived(store.snapshot?.instruments ?? null);
   /** a value in the editor's units, and its unit's label */
   let shown = (si: number | undefined, unit: string) => (si === undefined ? null : toDisplay(si, unit, units));
   let label = (unit: string) => displayUnit(unit, units).label;
   let digits = (unit: string) => displayUnit(unit, units).digits;
-  let boost = $derived(ins ? ins.map - AMBIENT_PA : null);
+  /** boost or vacuum against sea-level air, steady near it (manifold.ts) */
+  let manifold = $derived(ins ? manifoldReading(ins.map) : null);
   let stoich = $derived(store.settingDefault("afr"));
 
   const STYLE_NAMES: Record<ThrottleStyle, string> = {
@@ -47,7 +48,6 @@
     trigger: "Controller trigger",
     latched: "Mouse (the slider and the wheel)",
   };
-  const LATENCIES = [10, 20, 30, 40, 60, 80];
 
   let ready = $derived(store.summary === "running");
   let tier = $derived(store.hello?.presets.find((p) => p.key === store.preset)?.quality ?? null);
@@ -59,13 +59,7 @@
   let devices = $derived([{ value: "-1", label: "The system's default" }, ...store.devices.map((d) => ({ value: String(d.index), label: d.name }))]);
   let latencies = LATENCIES.map((ms) => ({ value: String(ms), label: `${ms} ms` }));
   let candidates = Array.from({ length: VARIANT_MAX + 1 }, (_, i) => ({ value: String(i), label: i === 0 ? "None" : `Candidate ${i}` }));
-  /** the host renders RB_HOST_BLOCK_FRAMES (128) frames a block */
-  const BLOCK_FRAMES = 128;
-  let renderShare = $derived.by(() => {
-    const rate = store.hello?.sampleRate;
-    if (!store.stats || !rate) return null;
-    return (100 * store.stats.renderMsMean) / ((1000 * BLOCK_FRAMES) / rate);
-  });
+  let renderShare = $derived(store.renderShare === null ? null : 100 * store.renderShare);
   /** after a blind session: which side was the candidate */
   let revealed = $state<"A" | "B" | null>(null);
 </script>
@@ -98,7 +92,7 @@
       <div class="readouts instruments">
         <Readout label="Engine speed" value={ins ? ins.rpm : null} unit="rpm" />
         <Readout label="Manifold pressure" value={shown(ins?.map, "Pa")} unit={label("Pa")} digits={digits("Pa")} />
-        <Readout label={boost !== null && boost > 0 ? "Boost" : "Vacuum"} value={boost === null ? null : Math.abs(toDisplay(boost, "Pa", units))} unit={label("Pa")} digits={digits("Pa")} />
+        <Readout label={manifold?.label ?? "Vacuum"} value={manifold === null ? null : toDisplay(manifold.value, "Pa", units)} unit={label("Pa")} digits={digits("Pa")} />
         <Readout label="Lambda" value={ins && ins.lambda > 0 ? ins.lambda : null} digits={2} />
         <Readout label="Air-fuel ratio" value={ins && ins.lambda > 0 ? ins.lambda * stoich : null} unit=": 1" digits={1} />
         <Readout label="Torque" value={shown(ins?.torque, "N m")} unit={label("N m")} digits={digits("N m")} />

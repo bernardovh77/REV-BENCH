@@ -20,6 +20,8 @@ import { CommandError, EngineClient, fromMessagePort, type Hello } from "./engin
 
 /** Statistics in a row with nothing late before the "can't keep up" warning goes (one a second). */
 export const KEEP_UP_QUIET_STATS = 10;
+/** frames the host renders a block (RB_HOST_BLOCK_FRAMES) */
+export const HOST_BLOCK_FRAMES = 128;
 
 /** A capture-dump's result (protocol.ts). */
 export type CaptureInfo = Omit<Extract<FromEngine, { type: "capture" }>, "type">;
@@ -274,6 +276,25 @@ export class EngineStore {
       this.lastError = null;
     } catch (e) {
       this.lastError = describe(e);
+    }
+  }
+
+  /** The render's mean share of real time (1: a block takes as long as it lasts), from the host's
+   *  statistics (it renders RB_HOST_BLOCK_FRAMES, 128, frames a block); null before any. */
+  get renderShare(): number | null {
+    const rate = this.hello?.sampleRate;
+    if (!this.stats || !rate) return null;
+    return this.stats.renderMsMean / ((1000 * HOST_BLOCK_FRAMES) / rate);
+  }
+
+  /** Whether the computer runs on battery (the shell's), or null if it can't say (stage 069). */
+  async onBattery(): Promise<boolean | null> {
+    const ask = this.deps.bridge?.onBattery;
+    if (!ask) return null;
+    try {
+      return await ask();
+    } catch {
+      return null;
     }
   }
 

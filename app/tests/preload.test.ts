@@ -41,7 +41,7 @@ describe("the preload's API", () => {
   });
 
   it("exposes only the seven names the type promises, no ipc object", () => {
-    expect(Object.keys(setup().bridge).sort()).toEqual(["builds", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "saveText", "versions"]);
+    expect(Object.keys(setup().bridge).sort()).toEqual(["builds", "onBattery", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "saveText", "versions"]);
     expect(Object.keys(setup().bridge.builds!).sort()).toEqual(["list", "read", "remove", "save"]);
   });
 
@@ -122,6 +122,24 @@ describe("the preload's API", () => {
     emit(IPC.engineStatus, { state: "running", restarts: 0 });
     expect(seen).toEqual([]);
     expect(listeners.get(IPC.engineStatus)).toEqual([]);
+  });
+});
+
+describe("on battery (stage 069)", () => {
+  it("asks the main process on its own channel, and is true only for a true answer", async () => {
+    const calls: unknown[][] = [];
+    let answer: unknown = true;
+    const ipc: IpcLike = {
+      invoke: async (channel, ...args) => (calls.push([channel, ...args]), answer),
+      send: () => {},
+      on: () => {},
+      removeListener: () => {},
+    };
+    const bridge = makeBridge({ ipc, platform: "win32", versions: { electron: "", chrome: "" }, postToPage: () => {} });
+    expect(await bridge.onBattery!()).toBe(true);
+    answer = "true";
+    expect(await bridge.onBattery!()).toBe(false);
+    expect(calls).toEqual([[IPC.onBattery], [IPC.onBattery]]);
   });
 });
 

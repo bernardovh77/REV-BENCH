@@ -56,6 +56,7 @@ export function makeBridge(env: BridgeEnv): RevBenchBridge {
       env.ipc.send(IPC.restartEngine);
     },
     saveText: async (suggestedName, text) => (await env.ipc.invoke(IPC.saveText, suggestedName, text)) === true,
+    onBattery: async () => (await env.ipc.invoke(IPC.onBattery)) === true,
     // the saved builds: the main process checks every argument again, and answers by id only
     builds: {
       list: async () => {

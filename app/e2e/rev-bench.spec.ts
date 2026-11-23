@@ -48,7 +48,7 @@ test("the page is sandboxed in the real app: no Node, only the preload's few nam
     }));
     expect(seen.require).toBe("undefined");
     expect(seen.process).toBe("undefined");
-    expect(seen.bridge).toEqual(["builds", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "saveText", "versions"]);
+    expect(seen.bridge).toEqual(["builds", "onBattery", "onEngineStatus", "platform", "requestEnginePort", "restartEngine", "saveText", "versions"]);
     expect(seen.csp).toContain("default-src 'none'");
     // an inline script is refused by the policy
     const ran = await page.evaluate(() => {

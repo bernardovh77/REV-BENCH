@@ -20,7 +20,7 @@ afterEach(() => {
   delete document.documentElement.dataset.theme;
 });
 
-async function launch(options: { bridge?: boolean; preset?: string } = {}) {
+async function launch(options: { bridge?: boolean; preset?: string; onBattery?: boolean } = {}) {
   let t = 1000;
   const control = new EngineControl({
     addon: createFakeAddon({ now: () => t }),
@@ -57,6 +57,7 @@ async function launch(options: { bridge?: boolean; preset?: string } = {}) {
       });
     },
     restartEngine: () => void asked.push("restart"),
+    ...(options.onBattery === undefined ? {} : { onBattery: async () => options.onBattery! }),
   };
   const frames: (() => void)[] = [];
   const store = new EngineStore({
@@ -99,6 +100,7 @@ describe("the window", () => {
     const slot = target.querySelector(".topbar .keep-up")!;
     expect(slot).not.toBeNull();
     expect(slot.classList.contains("on")).toBe(false);
+    store.stats = { ...store.stats!, renderMsMean: 2.5 };   // 94 % of a block's 2.67 ms: too slow
     store.fallingBehind = true;
     flushSync();
     // the same element, now showing: nothing was added to the bar or the panels
@@ -107,6 +109,21 @@ describe("the window", () => {
     expect(slot.textContent).toContain("Can't keep up");
     expect(target.querySelector("main")!.textContent).not.toContain("keep up");
     expect(button("Use Lean")).toBeDefined(); // the six's tier is low: lean is the next cheaper
+  });
+
+  it("offers a longer latency when the render keeps up but arrives late, and says it's on battery (stage 069)", async () => {
+    const { target, settle, store, button } = await launch({ preset: "i6", onBattery: true });
+    await settle();
+    store.stats = { ...store.stats!, renderMsMean: 1.76 };   // 66 % of real time: Bernardo's laptop
+    store.latencyMs = 10;
+    store.fallingBehind = true;
+    flushSync();
+    await settle();
+    const slot = target.querySelector(".topbar .keep-up")!;
+    expect(slot.textContent).toContain("Can't keep up (on battery)");
+    expect(slot.querySelector("[title]")!.getAttribute("title")).toContain("It's on battery");
+    expect(button("Latency 20 ms")).toBeDefined();
+    expect(button("Use Lean")).toBeUndefined();
   });
 
   it("edits the engine: a draft applied as one rebuild, a live field at once, undo (stage 067)", async () => {
@@ -167,6 +184,7 @@ describe("the window", () => {
   it("offers nothing cheaper when the engine already plays at the cheapest quality", async () => {
     const { target, settle, store } = await launch({ preset: "v8-flat" }); // its tier: lean
     await settle();
+    store.stats = { ...store.stats!, renderMsMean: 2.5 };   // too slow: only a quality would help
     store.fallingBehind = true;
     flushSync();
     expect(target.querySelector(".topbar .keep-up")!.textContent).toContain("Can't keep up");

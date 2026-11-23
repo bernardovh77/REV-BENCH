@@ -55,9 +55,11 @@ export const PREPARE_TIMEOUT_MS = 30_000;
  * What the app wants of every engine it builds, by parameter name: the core's default is a crank
  * held at a speed by a dyno (hold 1, for the offline renders); the app's engine runs free, so the
  * driver's ignition, starter and throttle are what make it turn. Applied in the build itself, so
- * the first block already has it, for the first engine and for every swap.
+ * the first block already has it, for the first engine and for every swap. `rest` 1 (stage 069):
+ * a stopped engine left alone sleeps, so the app costs next to nothing with the key off (the
+ * offline renders keep the core's 0 and stay bit for bit as they were).
  */
-export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0 };
+export const APP_BUILD_PARAMS: Record<string, number> = { hold: 0, rest: 1 };
 /**
  * The app's level (stage 066): master_gain at volume 1. The core's output is the pressure at the
  * listener, so engines keep their real relative loudness (the flat-plane V8 about 20 dB louder

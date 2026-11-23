@@ -763,3 +763,201 @@ void test_api_dyno_in_the_telemetry(void)
     CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 0.0);
     rb_destroy(sim);
 }
+
+/* ---- stage 069: a stopped engine asleep (RB_PARAM_REST) ---- */
+
+/* A lean preset 0, the engine the source, the hold off, RB_PARAM_REST as given. */
+static rb_sim *still_engine(double rest)
+{
+    rb_sim *sim = rb_create_with_quality(48000, RB_QUALITY_LEAN);
+    if (!sim) return NULL;
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    rb_load_preset(sim, 0);
+    rb_set_param(sim, RB_PARAM_HOLD, 0.0);
+    rb_set_param(sim, RB_PARAM_REST, rest);
+    return sim;
+}
+
+/* Renders `blocks` blocks of 480 frames into out (which holds them all). */
+static void render_blocks(rb_sim *sim, float *out, int blocks)
+{
+    for (int k = 0; k < blocks; k++) rb_render_block(sim, out + 480 * k, 480);
+}
+
+void test_api_rest_sleeps_a_still_engine_only(void)
+{
+    /* A stopped engine left alone falls asleep after RB_REST_HOLD_S of quiet, and writes silence
+     * from then; until then it renders exactly what a sim without the rest renders, and with
+     * RB_PARAM_REST 0 (the default) it never sleeps. */
+    CHECK(strcmp(rb_param_name(RB_PARAM_REST), "rest") == 0);
+    CHECK(rb_param_default(RB_PARAM_REST) == 0.0);
+    rb_sim *a = still_engine(0.0), *b = still_engine(1.0);
+    CHECK(a && b);
+    if (!a || !b) return;
+    enum { BLOCKS = 600 };   /* 6 s */
+    static float xa[480 * BLOCKS], xb[480 * BLOCKS];
+    int slept_at = -1;
+    for (int k = 0; k < BLOCKS; k++) {
+        rb_render_block(a, xa + 480 * k, 480);
+        rb_render_block(b, xb + 480 * k, 480);
+        CHECK(!rb_resting(a));
+        if (slept_at < 0 && rb_resting(b)) slept_at = k;
+    }
+    CHECK(slept_at >= 0);
+    if (slept_at < 0) slept_at = BLOCKS - 1;
+    /* not before a second of quiet blocks: the last block over RB_REST_LEVEL (the build's own
+     * settling) is RB_REST_HOLD_S or more before it slept */
+    int last_loud = -1;
+    for (int k = 0; k <= slept_at; k++) {
+        double peak = 0.0;
+        for (int i = 0; i < 480; i++) peak = fmax(peak, fabs((double)xa[480 * k + i]));
+        if (!(peak < RB_REST_LEVEL)) last_loud = k;
+    }
+    CHECK(last_loud >= 0);   /* the fresh build settles audibly first */
+    CHECK(slept_at - last_loud >= (int)(RB_REST_HOLD_S * 100));
+    CHECK(memcmp(xa, xb, sizeof(float) * 480 * (size_t)(slept_at + 1)) == 0);
+    double after = 0.0, b_after = 0.0;
+    for (int i = 480 * (slept_at + 1); i < 480 * BLOCKS; i++) {
+        after = fmax(after, fabs((double)xa[i]));
+        b_after = fmax(b_after, fabs((double)xb[i]));
+    }
+    CHECK(b_after == 0.0);
+    CHECK(after < RB_REST_LEVEL);   /* what sleep left out was silent anyway */
+    CHECK(rb_get_telemetry(b, RB_TLM_RPM) == 0.0);
+    rb_destroy(a);
+    rb_destroy(b);
+}
+
+void test_api_rest_wakes_on_anything_set(void)
+{
+    /* Asleep, the engine wakes for a parameter that changes, a field, the scene, the dyno and a
+     * rebuild; setting a parameter to the value it has doesn't wake it. Woken by the key and the
+     * starter, it starts and runs as it would have. */
+    static float out[480 * 400];
+    rb_sim *sim = still_engine(1.0);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    render_blocks(sim, out, 400);
+    CHECK(rb_resting(sim));
+    rb_set_param(sim, RB_PARAM_THROTTLE, 0.0);   /* the same value: nothing set */
+    render_blocks(sim, out, 1);
+    CHECK(rb_resting(sim));
+
+    rb_set_param(sim, RB_PARAM_THROTTLE, 0.3);
+    render_blocks(sim, out, 1);
+    CHECK(!rb_resting(sim));
+    render_blocks(sim, out, 200);
+    CHECK(rb_resting(sim));   /* asleep again, the throttle open: nothing moves */
+
+    CHECK(rb_set_engine(sim, RB_ENG_IDLE_RPM, 0, 900.0) == RB_OK);
+    render_blocks(sim, out, 1);
+    CHECK(!rb_resting(sim));
+    render_blocks(sim, out, 200);
+    CHECK(rb_resting(sim));
+
+    rb_reset(sim);   /* a rebuild, nothing set */
+    render_blocks(sim, out, 1);
+    CHECK(!rb_resting(sim));
+    render_blocks(sim, out, 300);
+    CHECK(rb_resting(sim));
+
+    CHECK(rb_dyno_attach(sim, 3000.0) == RB_OK);   /* on a dyno: never asleep, even still */
+    render_blocks(sim, out, 300);
+    CHECK(!rb_resting(sim));
+    rb_destroy(sim);
+
+    /* the key and the starter wake it, and the engine runs */
+    sim = still_engine(1.0);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    render_blocks(sim, out, 400);
+    CHECK(rb_resting(sim));
+    rb_set_param(sim, RB_PARAM_IGNITION, 1.0);
+    rb_set_param(sim, RB_PARAM_STARTER, 1.0);
+    render_blocks(sim, out, 150);
+    rb_set_param(sim, RB_PARAM_STARTER, 0.0);
+    render_blocks(sim, out, 300);
+    CHECK(!rb_resting(sim));
+    CHECK(rb_get_telemetry(sim, RB_TLM_RPM) > 500.0);
+    double peak = 0.0;
+    for (int i = 0; i < 480 * 300; i++) peak = fmax(peak, fabs((double)out[i]));
+    CHECK(peak > 0.01);   /* it sounds */
+    rb_destroy(sim);
+}
+
+void test_api_rest_never_touches_a_running_engine(void)
+{
+    /* Running (idling, the throttle blipped), a sim with the rest on renders exactly what one
+     * without it renders, and never sleeps. */
+    static float xa[480 * 500], xb[480 * 500];
+    rb_sim *a = still_engine(0.0), *b = still_engine(1.0);
+    CHECK(a && b);
+    if (!a || !b) return;
+    rb_sim *both[2] = { a, b };
+    for (int s = 0; s < 2; s++) {
+        rb_set_param(both[s], RB_PARAM_IGNITION, 1.0);
+        rb_set_param(both[s], RB_PARAM_STARTER, 1.0);
+    }
+    for (int part = 0; part < 4; part++) {
+        for (int s = 0; s < 2; s++) {
+            if (part == 1) rb_set_param(both[s], RB_PARAM_STARTER, 0.0);
+            if (part == 2) rb_set_param(both[s], RB_PARAM_THROTTLE, 0.6);
+            if (part == 3) rb_set_param(both[s], RB_PARAM_THROTTLE, 0.0);
+        }
+        render_blocks(a, xa, 125);
+        render_blocks(b, xb, 125);
+        CHECK(memcmp(xa, xb, sizeof(float) * 480 * 125) == 0);
+        CHECK(!rb_resting(b));
+    }
+    /* turned all the way down, the running engine is silent but still turning: never asleep */
+    rb_set_param(b, RB_PARAM_MASTER_GAIN, 0.0);
+    render_blocks(b, xb, 300);
+    CHECK(!rb_resting(b));
+    CHECK(rb_get_telemetry(b, RB_TLM_RPM) > 500.0);
+    rb_destroy(a);
+    rb_destroy(b);
+}
+
+/* The loudest sample (dB below full scale) from `from_s` to `to_s` seconds of a freshly built,
+ * still engine: `preset` as itself (family < 0) or as a layout, lean, the rest as given. */
+static double still_engine_level(int preset, int family, int cylinders, double rest, double from_s, double to_s)
+{
+    rb_sim *sim = rb_create_with_quality(48000, RB_QUALITY_LEAN);
+    if (!sim) return 0.0;
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    rb_load_preset(sim, preset);
+    if (family >= 0) {
+        const int crank = rb_layout_usual_crank(family, cylinders);
+        rb_load_layout(sim, preset, family, cylinders, crank, rb_layout_angle(family, cylinders, crank, RB_ANGLE_USUAL));
+    }
+    rb_set_param(sim, RB_PARAM_HOLD, 0.0);
+    rb_set_param(sim, RB_PARAM_REST, rest);
+    static float out[4800];
+    double peak = 0.0;
+    for (double t = 0.1; t <= to_s + 1e-9; t += 0.1) {
+        rb_render_block(sim, out, 4800);
+        if (t > from_s)
+            for (int i = 0; i < 4800; i++) peak = fmax(peak, fabs((double)out[i]));
+    }
+    rb_destroy(sim);
+    return peak > 0.0 ? 20.0 * log10(peak) : -999.0;
+}
+
+void test_api_rest_keeps_a_fresh_engine_from_singing(void)
+{
+    /* Bernardo, 2026-11-22: an inline 3, the key off, editing; a rising high-pitched tone for
+     * about a second, then nothing. A freshly built engine's gas starts at 298 K against walls
+     * held at a warm engine's (the exhaust's 550 K); the pipes' heat transfer follows the flow
+     * (St cp |mdot|), so a still engine's tiny oscillations pump heat in and grow a tone of
+     * about 800 Hz (the four's peaks about 24 s after the build, -51 dBFS before the app's
+     * level). It's the core's (docs/stage-069.md, left for phase B). Asleep (RB_PARAM_REST) the
+     * engine stops before it starts: no preset, nor the inline 3, gets back above the rest's
+     * level after the first 3 s. */
+    CHECK(still_engine_level(0, -1, 0, 0.0, 15.0, 30.0) > -70.0);   /* without the rest it sings */
+    for (int p = 0; p < rb_preset_count(); p++) {
+        const double level = still_engine_level(p, -1, 0, 1.0, 3.0, 30.0);
+        if (!(level < 20.0 * log10(RB_REST_LEVEL))) fprintf(stderr, "    %s: %.1f dBFS\n", rb_preset_key(p), level);
+        CHECK(level < 20.0 * log10(RB_REST_LEVEL));
+    }
+    CHECK(still_engine_level(0, RB_FAMILY_INLINE, 3, 1.0, 3.0, 30.0) < 20.0 * log10(RB_REST_LEVEL));
+}
