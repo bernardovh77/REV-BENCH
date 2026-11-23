@@ -108,6 +108,11 @@ void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
 void test_radiation_matches_an_unflanged_pipe(void);
 void test_radiation_takes_what_a_monopole_radiates(void);
+void test_muffler_can_is_an_expansion_chamber(void);
+void test_muffler_centre_can_held_out(void);
+void test_muffler_packing_is_its_stated_loss(void);
+void test_muffler_catalyst_is_a_series_resistance(void);
+void test_muffler_engine_grid_limits(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -428,6 +433,11 @@ static const struct {
     T(test_radiation_pipe_work),
     T(test_radiation_matches_an_unflanged_pipe),
     T(test_radiation_takes_what_a_monopole_radiates),
+    T(test_muffler_can_is_an_expansion_chamber),
+    T(test_muffler_centre_can_held_out),
+    T(test_muffler_packing_is_its_stated_loss),
+    T(test_muffler_catalyst_is_a_series_resistance),
+    T(test_muffler_engine_grid_limits),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),

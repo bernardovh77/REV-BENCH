@@ -4,6 +4,13 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 050, the exhaust's components against theory (Claude)
+
+- docs/stage-050.md: `tests/test_mufflers.c` (5 tests, a transmission-loss bench with packed
+  sponges); core unchanged. The component models match four-pole theory on fine cells; the
+  engine's 7.5 cm grid limits the cans (450-750 Hz at 300 K). Finer cans: class C, 10-22 %
+  slower on the four, Bernardo's call. Open (🟡): that, the catalyst as a point, packing shape.
+
 ## 2026-11-23: Stage 135, an optimization survey (Claude)
 
 - docs/stage-135.md: profile and counts of today's core (no hot spot; the mixture rebuilt on
