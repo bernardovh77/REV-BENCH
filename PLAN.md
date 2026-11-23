@@ -114,7 +114,13 @@ V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 d
 docs/stage-118.md and his blind listening of low against lean still to do, in 066's build).
 **Reported by Bernardo, 2026-11-22 (0.2.5, not yet reproduced):** with an inline 3 and the
 engine off, while he changed settings in the editor, a bland noise slowly rose and faded away
-on its own, and the vacuum gauge glitched and showed "boost". Suspects to check first in 069:
+on its own, and the vacuum gauge glitched and showed "boost". His details: the setting is not
+known (he was editing); it lasted about a second; the output meter showed it, so it was in the
+host's output; steady but rising, a hum like a very high-pitched flute, then gone; the
+underruns count kept rising with the engine off (not normal: a stopped engine should render
+easily, so a build that is too heavy for the laptop, or a stopped engine's pipes ringing or
+going unstable, would explain both; the model's warning and render time are the instruments
+to watch when reproducing). Suspects to check first in 069:
 a rebuild's swap or fade with the crank still (sound from a stopped engine), and the
 instruments reading a stopped engine's manifold (the boost/vacuum readout against sea-level
 air, stage 068).
