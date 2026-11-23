@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 135 added, an optimization survey (Claude)
+
+- Bernardo's request: a measured map of where time and memory go across the core, host,
+  add-on and app; candidates classed A (identical), B (within tolerance), C (changes the
+  sound: never a default). Card in docs/roadmap/07-app.md, row in PLAN.md. Not started.
+
 ## 2026-11-23: Stage 051, the ends' load validated (Claude)
 
 - docs/stage-051.md: two tests in `tests/test_radiation.c` (Norris-Sheng's unflanged pipe, a

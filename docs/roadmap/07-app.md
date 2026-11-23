@@ -502,6 +502,61 @@ load, the limiter, stop); the presets' renders unchanged.
 
 **Execution record:** `docs/stage-134.md`.
 
+<a id="stage-135"></a>
+## Stage 135 — An optimization survey of today's architecture
+
+**Dependencies:** [118](#stage-118), [069](#stage-069)
+
+**Why:** Bernardo (2026-11-23): are there points in the architecture and its structures that
+can be made faster? Quality comes first: no optimization may cost the sound anything
+significant. Stage 118 made the speed-ups the profile pointed at that change nothing, for the
+core's render path only; stage 062 optimizes the renderer phase B promotes, much later. This
+stage looks at the whole of today's program, end to end, and writes down where the time and
+memory go and what could be done about it.
+
+**Deliverable:** an analysis first, changes second.
+1. **A map of the costs**, measured, not guessed, on the baseline laptop (i7-1355U, mains
+   power) with MSVC, gcc for the record:
+   - **The core**, per part of a step: the pipes, junctions, cylinders and burn, valves and
+     orifices, radiation, listener, noise, scene and telemetry. Each preset and tier on idle,
+     a held pull and a rev, and the heavy layouts (V12–V16, the eights).
+   - **Its data:** the structures' layout and sizes (`rb_engine`, the pipe cells, the
+     snapshot), cache misses and memory traffic per sample, and what a rebuild costs to
+     prepare and swap.
+   - **The real-time host and the add-on:** the render thread's block, the ring, the
+     snapshot's packing and copy, its wake-ups and the time it waits.
+   - **The app:** the MessagePort's traffic (snapshots per second, their size and copies),
+     the interface's work per frame (Svelte updates, the instruments' and the dyno's drawing),
+     the engine process's and the renderer's CPU and memory over a 15-minute drive.
+2. **A ranked list of candidates.** Each has where it is, what it would save (measured or
+   bounded by the map), what it costs to build, and its **class**:
+   - **A, identical:** renders bit-identical (`tools/cli_parity.py`), such as a better data
+     layout, work moved off the per-sample loop, fewer copies, or less interface redraw.
+   - **B, within the tolerance:** results move only within stage 122's cross-compiler
+     tolerance, such as a reordered sum or a cheaper libm call.
+   - **C, changes the sound:** a cheaper model, a lower rate, or a shortcut. Recorded with
+     what it would change; never applied here.
+3. **The class A candidates the map justifies, applied**, each its own commit with its
+   before-and-after timings. Class B candidates only with each measured against the sound
+   checks and stated. Class C candidates go to 062 or behind `RB_PARAM_VARIANT` for Bernardo's
+   blind listening, never in as defaults.
+
+**Required exit evidence:**
+- The map: interleaved timings, best of several runs, per preset, tier, drive and compiler, and
+  the profiles they come from (`tools/speed_check.py`, the stage 118 benchmark, Windows'
+  sampling profiler, the app's own render share).
+- Every applied change: renders bit-identical at every quality (class A), or within stage 122's
+  tolerance with the sound check's numbers stated (class B); `make wasm`, the speed check and
+  the whole suite green.
+- The list kept in `docs/stage-135.md`, so that later stages can pick from it.
+
+**Stop/reject rule:** A speed-up that moves the sound beyond the tolerance is not an
+optimization here, however large. No change without a measurement behind it. A gain under
+about 2 % that makes the C harder to read is not worth taking. The render thread's rules
+(never allocate, lock or log) and the core's (C11, no allocation, MSVC builds it) hold.
+
+**Execution record:** `docs/stage-135.md`.
+
 <a id="stage-068"></a>
 ## Stage 068 — Live instruments, telemetry and the core's dyno
 
