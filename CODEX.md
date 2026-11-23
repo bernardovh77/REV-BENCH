@@ -4,6 +4,14 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 054, the noise's routing against same-state captures (Claude)
+
+- docs/stage-054.md: `tests/test_routing.c` (6 tests), `tools/bugs/stage054.py` (8 caught).
+  noise.c's variant 3: live path times (sum of dx/(c+u)) per cylinder and outlet, reversed jets
+  heard; `structured()` keeps 055's modes to variants 1-2. Variant 0 bit-identical. Retargeted
+  055's two and 115's junction bug. Open: the components' losses in the noise band (pipes'
+  cans grid-limited, 050/062/094), listening (128).
+
 ## 2026-11-23: Stage 056, the stereo listener against analytic controls (Claude)
 
 - docs/stage-056.md: `tests/test_listener.c` (6 tests), `tools/bugs/stage056.py` (8 caught).

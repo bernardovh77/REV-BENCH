@@ -238,6 +238,12 @@ Where this file and the code disagree, the code is right and this file is fixed.
     (force, vertical) or sin (force, lateral; slap the other way round); the five local modes
     as before. Variant 2 adds the cam chain's tone (21st order) and the alternator's (97.2nd).
     Same impacts and random draws as variant 0 (docs/stage-055.md).
+  - **stage 054's candidate** (variant 3): the exhaust valves' noise written into each outlet's
+    ring at its live path time, Σ dx / (c + u) over the cells of the pipes it goes down (X: the
+    centre pipes to that outlet; Y: its own, then each muffler), worked out again every
+    `RB_NOISE_ROUTE_EVERY` (256) steps; the reversed jets heard (intake: back into the runner,
+    with the roar at the mouth; exhaust: back into the cylinder, down the header). `structured()`
+    keeps 055's modes to variants 1 and 2 (docs/stage-054.md).
   - **the stereo scene's reads** (`scene.c`, stage 056): each path reads its source's history by
     cubic Lagrange interpolation through four samples (flat to 0.54 dB at 10 kHz at the worst
     fraction; linear lost 2.0 dB and varied as a moving path's fraction did), linear within a

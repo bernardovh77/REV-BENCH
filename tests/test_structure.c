@@ -318,15 +318,15 @@ void test_structure_accessories(void)
 
 void test_structure_variant_reaches_the_noise(void)
 {
-    /* RB_PARAM_VARIANT 1 and 2 reach the noise; any other number leaves the
-     * accepted sound. */
+    /* RB_PARAM_VARIANT 1, 2 (and 3, stage 054's) reach the noise; any other
+     * number leaves the accepted sound. */
     rb_sim *sim = rb_create(NULL);
     CHECK(sim != NULL);
     if (!sim) return;
     float out[256];
     rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
-    const int want[4][2] = { { 0, 0 }, { 1, 1 }, { 2, 2 }, { 5, 0 } };
-    for (int k = 0; k < 4; k++) {
+    const int want[5][2] = { { 0, 0 }, { 1, 1 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };   /* 3: stage 054's */
+    for (int k = 0; k < 5; k++) {
         rb_set_param(sim, RB_PARAM_VARIANT, want[k][0]);
         rb_render_block(sim, out, 128);
         CHECK_EQ_INT(sim->noise.variant, want[k][1]);

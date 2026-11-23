@@ -165,7 +165,8 @@ typedef enum rb_param {
                                    accepted sound. Live: it switches while
                                    the engine runs, for A/B listening.
                                    In use: 1 and 2, stage 055's structure
-                                   (docs/stage-055.md)                    */
+                                   (docs/stage-055.md); 3, stage 054's
+                                   routing (docs/stage-054.md)            */
     RB_PARAM_AFR,               /* the air-fuel ratio (by mass) the
                                    injectors aim for; 14.596, the
                                    stoichiometric, by default (stage 067) */

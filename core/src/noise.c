@@ -414,6 +414,80 @@ static double inner_jet(const rb_orifice *o, double gamma, double eta)
     return eta * m2 * m2 * sqrt(m2) * 0.5 * o->mdot * u2;
 }
 
+/* A gap's jet flowing back (stage 054's candidate): the same law with its
+ * sides swapped, the gas coming from b. */
+static double reverse_jet(const rb_orifice *o, double gamma, double eta)
+{
+    if (!(o->area > 0.0 && o->mdot < 0.0)) return 0.0;
+    rb_orifice back = *o;
+    back.a = o->b;
+    back.b = o->a;
+    back.mdot = -o->mdot;
+    return inner_jet(&back, gamma, eta);
+}
+
+/* The time (s) sound takes down pipe p, end 0 to end 1, in its gas as it is
+ * now: each cell's length over its sound speed plus the gas's own speed
+ * (the faces' flow, end 0 to end 1 positive). */
+static double pipe_time(const rb_pipe *p)
+{
+    double t = 0.0;
+    for (int k = 0; k < p->cells; k++) {
+        const rb_chamber *c = &p->cell[k];
+        const double sound = sqrt(rb_chamber_gamma(c) * c->gas.R * c->T);
+        const double flow = (k < p->cells - 1) ? p->face[k].mdot : (k > 0 ? p->face[k - 1].mdot : 0.0);
+        const double u = (c->rho > 0.0) ? flow / (c->rho * p->area) : 0.0;
+        const double v = sound + u;
+        t += (v > 0.1 * sound && rb_finite(v)) ? p->dx / v : p->dx / (0.1 * sound);
+    }
+    return t;
+}
+
+/* Every cylinder's path time to every outlet it reaches, by the pipes it
+ * goes down (as engine_build.c joins them): its header, its collector's
+ * exhaust pipe; without a junction its centre pipe and link and its system's
+ * muffler and tailpipe; through an X every centre pipe leaving the junction
+ * (to the outlet each leads to; two into one muffler, their mean); through a
+ * Y its own centre and link, then every muffler. */
+static void route(rb_noise *n, const rb_engine *e)
+{
+    const rb_engine_desc *d = &e->desc;
+    const int extended = d->center_length > 0.0;
+    double middle[RB_MAX_COLLECTORS], rear[RB_MAX_COLLECTORS], from_x[RB_MAX_COLLECTORS];
+    for (int c = 0; c < e->collectors; c++)
+        middle[c] = extended ? pipe_time(&e->center[c]) + pipe_time(&e->link[c]) : 0.0;
+    for (int s = 0; s < e->systems; s++) {
+        rear[s] = pipe_time(&e->muffler[s]) + pipe_time(&e->tailpipe[s]);
+        const double t = pipe_time(&e->tailpipe[s]) / n->dt;
+        n->route_baffle[s] = (int)fmin(t, RB_NOISE_DELAY - 1.0);
+    }
+    /* through an X: the centre pipes into each outlet, their mean */
+    for (int s = 0; s < e->systems; s++) {
+        double sum = 0.0;
+        int count = 0;
+        for (int c = 0; c < e->collectors; c++)
+            if (e->systems == 1 || c == s) {
+                sum += middle[c];
+                count++;
+            }
+        from_x[s] = count ? sum / count : 0.0;
+    }
+    for (int i = 0; i < d->cylinders; i++) {
+        const int c = d->collector[i];
+        const double up = pipe_time(&e->header[i]) + pipe_time(&e->exhaust_pipe[c]);
+        for (int s = 0; s < RB_MAX_COLLECTORS; s++) {
+            double t = 0.0;
+            if (s < e->systems && n->blow_share[i][s] > 0.0) {
+                if (d->junction_volume > 0.0 && d->junction_before_center) t = up + from_x[s] + rear[s];
+                else t = up + middle[c] + rear[s];
+            }
+            double steps = t / n->dt;
+            if (!(steps < RB_NOISE_DELAY - 1)) steps = RB_NOISE_DELAY - 1;
+            n->route_delay[i][s] = (int)lround(steps);
+        }
+    }
+}
+
 static void flow_noise(rb_noise *n, const rb_engine *e)
 {
     const rb_engine_desc *d = &e->desc;
@@ -421,19 +495,36 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     const double rho0 = air->rho, T0 = air->T;
     const double c0 = sqrt(GAMMA_AIR * air->gas.R * T0);
     const double radiate = rho0 * c0 / (4.0 * PI);   /* p^2 at 1 m per W radiated */
-    n->intake_power = n->baffle_power = 0.0;
+    n->intake_power = n->baffle_power = n->reverse_power = 0.0;
     for (int i = 0; i < d->cylinders; i++)
         n->intake_power += inner_jet(&e->intake[i], GAMMA_AIR, THROTTLE_ETA);
+    const int routed = n->variant == 3;
+    if (routed) {
+        if (n->route_tick <= 0) {
+            route(n, e);
+            n->route_tick = RB_NOISE_ROUTE_EVERY;
+        }
+        n->route_tick--;
+        /* the cylinder's residual gas back into the runner, heard at the mouth */
+        for (int i = 0; i < d->cylinders; i++)
+            n->reverse_power += reverse_jet(&e->intake[i], GAMMA_BURNED, THROTTLE_ETA);
+    }
 
     /* The exhaust valves: each one's noise into the tailpipes it reaches,
      * arriving when it gets there (a ring the cylinders write ahead into). */
     for (int i = 0; i < d->cylinders; i++) {
-        const double w = inner_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
+        double w = inner_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
+        /* the candidate: the header's gas back into the cylinder too, its
+         * gap's noise down the header as the forward jet's */
+        if (routed && !(w > 0.0)) w = reverse_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
         if (w > 0.0) {
             const int at = (n->blow_pos + n->blow_delay[i]) & (RB_NOISE_DELAY - 1);
             const double x = sqrt(radiate * w * n->blow_pass) * white(&n->state);
             for (int s = 0; s < e->systems; s++)
-                if (n->blow_share[i][s] > 0.0) n->blow_ring[s][at] += (float)(x * n->blow_share[i][s]);
+                if (n->blow_share[i][s] > 0.0) {
+                    const int where = routed ? (n->blow_pos + n->route_delay[i][s]) & (RB_NOISE_DELAY - 1) : at;
+                    n->blow_ring[s][where] += (float)(x * n->blow_share[i][s]);
+                }
         }
     }
 
@@ -451,8 +542,8 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
             hole.mdot = f->moved;
             const double w = inner_jet(&hole, GAMMA_BURNED, VALVE_ETA);
             n->baffle_power += w;
-            int delay = (int)fmin(d->tailpipe_length / EXHAUST_C / n->dt,
-                                  RB_NOISE_DELAY - 1.0);
+            int delay = routed ? n->route_baffle[s]
+                               : (int)fmin(d->tailpipe_length / EXHAUST_C / n->dt, RB_NOISE_DELAY - 1.0);
             const int at = (n->blow_pos + delay) & (RB_NOISE_DELAY - 1);
             n->blow_ring[s][at] += (float)(sqrt(radiate * w) * white(&n->detail_state));
         }
@@ -488,7 +579,7 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
                    + inner_jet(&e->idle_air, GAMMA_AIR, THROTTLE_ETA);
     const double hiss = band_step(&n->hiss, sqrt(radiate * w * PASS_AIRBOX) * white(&n->state));
     const double roar = band_step(&n->intake_roar,
-        sqrt(radiate * n->intake_power * PASS_AIRBOX) * white(&n->detail_state));
+        sqrt(radiate * (n->intake_power + n->reverse_power) * PASS_AIRBOX) * white(&n->detail_state));
     n->out[RB_NOISE_MOUTH] = hiss * n->hiss.norm + roar * n->intake_roar.norm;
 }
 
@@ -530,6 +621,12 @@ static void cstrike(const rb_noise *n, double in[RB_NOISE_CMODES], int by, int i
     }
 }
 
+/* 1 if stage 055's structure plays (variants 1 and 2). */
+static int structured(const rb_noise *n)
+{
+    return n->variant == 1 || n->variant == 2;
+}
+
 /* An impact of `kind` (RB_IMPACT_*) from cylinder i (-1: none in
  * particular), striking as `by` says: counted, then its size varied by
  * IMPACT_SPREAD (but an injector's: always the same). */
@@ -539,7 +636,7 @@ static void impact(rb_noise *n, double in[RB_NOISE_MODES], double cin[RB_NOISE_C
     n->impacts[kind]++;
     n->impact_energy[kind] += size * size;
     if (kind != RB_IMPACT_INJECTOR) size *= 1.0 + IMPACT_SPREAD * white(&n->state);
-    if (n->variant) cstrike(n, cin, by, i, size);
+    if (structured(n)) cstrike(n, cin, by, i, size);
     else strike(in, by, size);
 }
 
@@ -568,7 +665,7 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
         force += each[i];
     }
     if (rb_finite(force)) {
-        if (n->variant) {
+        if (structured(n)) {
             for (int i = 0; i < d->cylinders; i++)
                 cstrike(n, cin, BY_FORCE, i, K_FORCE * (each[i] - n->cforce[i]));
         } else {
@@ -626,7 +723,7 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
 
     /* The modes ring, and the bay radiates them all. */
     double bay = 0.0;
-    if (n->variant) {
+    if (structured(n)) {
         for (int k = 0; k < RB_NOISE_CMODES; k++) {
             rb_noise_mode *m = &n->cmode[k];
             const double y = m->in * cin[k] + m->a1 * m->y1 - m->a2 * m->y2;
