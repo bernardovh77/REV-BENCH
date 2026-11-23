@@ -91,6 +91,8 @@ test("a sweep's curves in the app are the core's own readings, matched by readin
     const firstNative = native.get(Number(first.reading))!;
     expect(firstNative, `reading ${first.reading} in the native run`).toBeDefined();
     let worst = 0;
+    let onTime = 0;
+    let previousT = 0;
     for (const row of appRows) {
       const n = native.get(Number(row.reading));
       expect(n, `reading ${row.reading} in the native run`).toBeDefined();
@@ -101,10 +103,21 @@ test("a sweep's curves in the app are the core's own readings, matched by readin
       worst = Math.max(worst, error / allowed);
       expect(error, `reading ${row.reading}: ${appTorque} N m in the app, ${nativeTorque} native`).toBeLessThanOrEqual(allowed);
       expect(Math.abs(Number(row.rpm) - Number(n!.rpm))).toBeLessThanOrEqual(0.02 * Number(n!.rpm));
-      // aligned in time: the app's time since the run's first point, against the native frames
+      // aligned in time: the app's time since the run's first point, against the native frames.
+      // The app stamps a point with the snapshot in which the reading's count rose: never early,
+      // and late by at most the time since the snapshot before it, which a busy window (CI's
+      // runner, 2026-11-23) can stretch past a 60th of a second. So each point is late by no
+      // more than the time since the app's previous point (and a block), and nine in ten within
+      // the card's snapshot interval and a block.
       const nativeT = (Number(n!.frame) - Number(firstNative.frame)) / capture.rate;
-      expect(Math.abs(Number(row.time_s) - nativeT), `reading ${row.reading}'s time`).toBeLessThanOrEqual(1 / 60 + 128 / capture.rate + 1e-3);
+      const late = Number(row.time_s) - nativeT;
+      const block = 128 / capture.rate;
+      expect(late, `reading ${row.reading}'s time: early`).toBeGreaterThanOrEqual(-block - 1e-3);
+      expect(late, `reading ${row.reading}'s time`).toBeLessThanOrEqual(Math.max(1 / 60, Number(row.time_s) - previousT) + block + 1e-3);
+      if (late <= 1 / 60 + block + 1e-3) onTime++;
+      previousT = Number(row.time_s);
     }
+    expect(onTime / appRows.length, "points within a snapshot interval and a block").toBeGreaterThanOrEqual(0.9);
     console.log(`dyno parity: ${appRows.length} points, worst ${(100 * worst).toFixed(1)} % of the allowed error, peak ${peak.toFixed(1)} N m`);
     expect(run.problems).toEqual([]);
   } finally {
