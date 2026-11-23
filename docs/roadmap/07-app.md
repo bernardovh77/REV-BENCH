@@ -453,6 +453,37 @@ playing.
 
 **Execution record:** `docs/stage-132.md`.
 
+<a id="stage-133"></a>
+## Stage 133 — The rev limiter's character and a 2-step
+
+**Dependencies:** [066](#stage-066), [067](#stage-067), [069](#stage-069)
+
+**Why:** Bernardo's request (2026-11-22): change how the revs bounce at the top, slower or
+faster, and a 2-step. Today only `rev_limit` is editable; the hard cut's resume point
+(`rev_limit_resume`, a description field the editor doesn't show) and the soft cut's band
+(`LIMIT_SOFT`, 150 rpm, a constant in engine.c) set the bounce, and there is no second limit.
+
+**Deliverable:**
+- **The bounce:** the resume gap as an engine field (a wider gap, slower and deeper bounces;
+  a narrow one, a fast stutter), and the soft band's width as one (0: a pure hard cut).
+- **The cut's kind:** spark cut (today's) or fuel cut, as the engine computer's setting; with
+  a spark cut the unburnt charge still leaves through the exhaust, as the core already models.
+- **A 2-step:** a second, lower limit with its own gap and band, armed while a key or a
+  controller button is held (the app's input layer, stage 066), a parameter the core reads
+  live; released, the engine revs on to the main limit.
+- In the editor's "Limits and load", live, undoable, saved with a build (stage 132).
+
+**Required exit evidence:** the bounce measured in renders (the rpm's period and depth
+against the gap and band, monotonic); each preset's sound with today's values bit-identical
+(`tools/cli_parity.py`); the 2-step's limit held within its band under full throttle; the
+sound check and `tools/speed_check.py`; planted bugs caught; e2e of the 2-step's key.
+
+**Stop/reject rule:** no bangs or flames that the core doesn't compute: burning in the
+exhaust is the chemistry of [109](13-optional.md#stage-109) (anti-lag); until then the 2-step
+is the revs' rhythm only.
+
+**Execution record:** `docs/stage-133.md`.
+
 <a id="stage-068"></a>
 ## Stage 068 — Live instruments, telemetry and the core's dyno
 
