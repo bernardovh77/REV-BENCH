@@ -106,6 +106,8 @@ void test_exhaust_coherent_x_modes(void);
 void test_exhaust_high_rpm_fired_books(void);
 void test_radiation_causal_impedance(void);
 void test_radiation_pipe_work(void);
+void test_radiation_matches_an_unflanged_pipe(void);
+void test_radiation_takes_what_a_monopole_radiates(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -424,6 +426,8 @@ static const struct {
     T(test_exhaust_high_rpm_fired_books),
     T(test_radiation_causal_impedance),
     T(test_radiation_pipe_work),
+    T(test_radiation_matches_an_unflanged_pipe),
+    T(test_radiation_takes_what_a_monopole_radiates),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),

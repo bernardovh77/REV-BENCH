@@ -2,6 +2,7 @@
 #include "pipe.h"
 #include "rb_test.h"
 #include <math.h>
+#include <stdio.h>
 
 #define PI 3.14159265358979323846
 
@@ -89,4 +90,95 @@ void test_radiation_pipe_work(void)
     int repairs=0;
     for(int k=0;k<64;k++) repairs+=cell[k].repairs;
     CHECK_EQ_INT(repairs,0);
+}
+
+/* ---- stage 051: the load against independent results ---- */
+
+/* The core's load at ka driven with v = cos(w t), as the complex impedance over rho c (real, imag)
+ * from its steady response; a fine step keeps the bilinear transform's warping negligible. */
+static void load_at(double ka, double radius, double c, double *zr, double *zi, double *work_per_s)
+{
+    const double rho = 1.2, f = ka * c / (2.0 * PI * radius), dt = 1.0 / 768000.0;
+    rb_radiation r;
+    rb_radiation_init(&r, radius, rho, c);
+    const int settle = (int)(0.02 / dt), cycles = (int)ceil(0.05 * f);
+    const int n = (int)lround(cycles / (f * dt));
+    double re = 0.0, im = 0.0, work = 0.0;
+    for (int k = 0; k < settle + n; k++) {
+        const double phase = 2.0 * PI * f * dt * k, v = cos(phase);
+        double direct, history;
+        rb_radiation_linear(&r, dt, &direct, &history);
+        const double p = rb_radiation_step(&r, v);
+        if (k >= settle) {
+            re += p * cos(phase);
+            im -= p * sin(phase);
+            work += p * v;
+        }
+    }
+    *zr = 2.0 * re / n / (rho * c);
+    *zi = 2.0 * im / n / (rho * c);
+    *work_per_s = work / n * PI * radius * radius;   /* mean p v S: the power taken from the pipe */
+}
+
+void test_radiation_matches_an_unflanged_pipe(void)
+{
+    /* The core's load is Silva et al.'s (2009) rational fit of Levine and Schwinger's unflanged
+     * pipe. Checked here against a different fit of the same exact result, Norris and Sheng's
+     * (1989), good to about 1 % below ka 3.8: the reflection's magnitude
+     *   |R| = (1 + 0.2 ka - 0.084 ka^2) / (1 + 0.2 ka + 0.416 ka^2)
+     * and the end correction
+     *   l / a = 0.6133 (1 + 0.044 ka^2) / (1 + 0.19 ka^2) - 0.02 sin^2(2 ka),
+     * with R = (Z - 1) / (Z + 1) = -|R| exp(-2 i k l), over the plane wave's range (ka under
+     * 1.84, the first cross mode) as the engine's tailpipes use it, ka 0.02 to 1.5. And their
+     * low end, exact: |R| -> 1 - ka^2 / 2, l -> 0.6133 a. */
+    const double radius = 0.025, c = 343.0;
+    const double kas[] = { 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 1.0, 1.2, 1.5 };
+    double worst_r = 0.0, worst_l = 0.0;
+    for (size_t j = 0; j < sizeof kas / sizeof kas[0]; j++) {
+        const double ka = kas[j];
+        double zr, zi, work;
+        load_at(ka, radius, c, &zr, &zi, &work);
+        /* R = (Z - 1) / (Z + 1), complex */
+        const double nr = zr - 1.0, ni = zi, dr = zr + 1.0, di = zi, den = dr * dr + di * di;
+        const double rr = (nr * dr + ni * di) / den, ri = (ni * dr - nr * di) / den;
+        const double mag = sqrt(rr * rr + ri * ri);
+        double arg = atan2(-ri, -rr);          /* -R = |R| exp(-2 i k l) */
+        if (arg > 0.0) arg -= 2.0 * PI;
+        const double l_over_a = -arg / (2.0 * ka);
+        const double ns_r = (1.0 + 0.2 * ka - 0.084 * ka * ka) / (1.0 + 0.2 * ka + 0.416 * ka * ka);
+        const double s = sin(2.0 * ka);
+        const double ns_l = 0.6133 * (1.0 + 0.044 * ka * ka) / (1.0 + 0.19 * ka * ka) - 0.02 * s * s;
+        printf("        ka %.2f: |R| %.4f (Norris-Sheng %.4f), l/a %.4f (%.4f)\n", ka, mag, ns_r, l_over_a, ns_l);
+        worst_r = fmax(worst_r, fabs(mag - ns_r));
+        worst_l = fmax(worst_l, fabs(l_over_a - ns_l));
+        if (ka <= 0.05) {
+            CHECK_NEAR(mag, 1.0 - 0.5 * ka * ka, 0.02 * ka * ka);
+            CHECK_NEAR(l_over_a, 0.6133, 0.005);
+        }
+        CHECK(mag < 1.0);   /* passive: it takes energy, never gives it */
+    }
+    printf("        worst: |R| %.4f, l/a %.4f\n", worst_r, worst_l);
+    CHECK(worst_r < 0.03);
+    CHECK(worst_l < 0.03);
+}
+
+void test_radiation_takes_what_a_monopole_radiates(void)
+{
+    /* At low ka the open end is a monopole of the volume flow Q = S v: it radiates
+     * rho w^2 |Q|^2 / (8 pi c) into the whole space. The power the load takes from the pipe
+     * (its real part's work, the mean of p v S) must be that, and no more: the reactive part
+     * (the end's mass of air) stores and gives back, so it does no work over a cycle. The
+     * listener hears that same monopole (test_audio_listener_monopole, rho / (4 pi r) dQ/dt):
+     * the load and the far field are one account, not two. */
+    const double radius = 0.025, c = 343.0, rho = 1.2;
+    const double kas[] = { 0.02, 0.05, 0.1 };
+    for (size_t j = 0; j < sizeof kas / sizeof kas[0]; j++) {
+        const double ka = kas[j], w = ka * c / radius, s = PI * radius * radius;
+        double zr, zi, work;
+        load_at(ka, radius, c, &zr, &zi, &work);
+        const double monopole = rho * w * w * s * s / (8.0 * PI * c);   /* |Q| = S at v = cos */
+        printf("        ka %.2f: the load takes %.6g W, a monopole radiates %.6g W\n", ka, work, monopole);
+        CHECK_NEAR(work / monopole, 1.0, 0.6 * ka * ka + 0.002);
+        CHECK_NEAR(work, 0.5 * zr * rho * c * s, 1e-6 * monopole);   /* only the real part works */
+    }
 }

@@ -4,6 +4,11 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 051, the ends' load validated (Claude)
+
+- docs/stage-051.md: two tests in `tests/test_radiation.c` (Norris-Sheng's unflanged pipe, a
+  monopole's power); core unchanged. Open (🟡): directivity and the mean jet at the end.
+
 ## 2026-11-23: Stage 134, the inline and boxer eights (Claude)
 
 - docs/stage-134.md: `layouts.c` offers inline 8 (outer/inner fours on two manifolds) and
