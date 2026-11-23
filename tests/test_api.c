@@ -758,7 +758,18 @@ void test_api_dyno_in_the_telemetry(void)
     CHECK(rb_get_snapshot(sim, RB_SNAPSHOT_VERSION, snap, sizeof snap) > 0);
     double torque;
     memcpy(&torque, snap + sizeof(rb_snapshot_header) + 8 * (RB_TLM_DYNO_TORQUE - RB_TLM_RPM), sizeof torque);
-    CHECK(torque == rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE));
+    const double told = rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE);
+    if (torque != told) {   /* CI's MSVC 19.52 (2026-11-23) disagreed: say how */
+        fprintf(stderr, "    snapshot %a, telemetry %a, rb_get_dyno %a; header %u bytes, instruments %d, index %d\n",
+                torque, told, rb_get_dyno(sim, RB_DYNO_BRAKE_TORQUE), (unsigned)sizeof(rb_snapshot_header),
+                RB_SNAPSHOT_INSTRUMENTS, RB_TLM_DYNO_TORQUE - RB_TLM_RPM);
+        for (int k = 0; k < RB_SNAPSHOT_INSTRUMENTS; k++) {
+            double v;
+            memcpy(&v, snap + sizeof(rb_snapshot_header) + 8 * k, sizeof v);
+            fprintf(stderr, "      [%d] snapshot %a telemetry %a\n", k, v, rb_get_telemetry(sim, RB_TLM_RPM + k));
+        }
+    }
+    CHECK(torque == told);
     rb_dyno_release(sim);
     CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 0.0);
     rb_destroy(sim);
