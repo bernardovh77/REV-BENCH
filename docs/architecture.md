@@ -238,6 +238,10 @@ Where this file and the code disagree, the code is right and this file is fixed.
     (force, vertical) or sin (force, lateral; slap the other way round); the five local modes
     as before. Variant 2 adds the cam chain's tone (21st order) and the alternator's (97.2nd).
     Same impacts and random draws as variant 0 (docs/stage-055.md).
+  - **the stereo scene's reads** (`scene.c`, stage 056): each path reads its source's history by
+    cubic Lagrange interpolation through four samples (flat to 0.54 dB at 10 kHz at the worst
+    fraction; linear lost 2.0 dB and varied as a moving path's fraction did), linear within a
+    sample of now, silence outside the ring (docs/stage-056.md).
 - The pipes' sonic guard (stage 12b, `RB_PIPE_MOST_SONIC`): no face's flow passes twice the sonic
   flow of the gas it comes from, A √(1.4 ρ p). Normal running stays under 1.13 times it; held at
   high rpm with the throttle shut, the runners near a vacuum ran away without it (58 times, gas at

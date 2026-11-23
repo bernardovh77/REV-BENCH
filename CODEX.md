@@ -4,6 +4,13 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 056, the stereo listener against analytic controls (Claude)
+
+- docs/stage-056.md: `tests/test_listener.c` (6 tests), `tools/bugs/stage056.py` (8 caught).
+  scene.c's reads are cubic Lagrange (linear lost 2 dB at 10 kHz): stereo scenes change above
+  2 kHz (+0.1 to +1.2 dB), mono renders bit-identical, bench -1.8 %. Open: directivity (051),
+  recordings at known positions (039).
+
 ## 2026-11-23: Stage 055, engine-specific structure as an A/B candidate (Claude)
 
 - docs/stage-055.md: noise.c's `cmode[]` (variant 1: block bending modes from each engine's

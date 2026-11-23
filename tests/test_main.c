@@ -125,6 +125,12 @@ void test_structure_statistics_over_seeds(void);
 void test_structure_accessories(void);
 void test_structure_variant_reaches_the_noise(void);
 void test_structure_order_statistics(void);
+void test_listener_fractional_delay_band(void);
+void test_listener_doppler_analytic(void);
+void test_listener_bounded_history(void);
+void test_listener_stereo_known_position(void);
+void test_listener_cabin_transfer(void);
+void test_listener_eight_scenes(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -462,6 +468,12 @@ static const struct {
     T(test_structure_accessories),
     T(test_structure_variant_reaches_the_noise),
     T(test_structure_order_statistics),
+    T(test_listener_fractional_delay_band),
+    T(test_listener_doppler_analytic),
+    T(test_listener_bounded_history),
+    T(test_listener_stereo_known_position),
+    T(test_listener_cabin_transfer),
+    T(test_listener_eight_scenes),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),

@@ -119,15 +119,29 @@ int rb_scene_init(rb_scene *s, int kind, double fs, double c, int tailpipes, dou
     return 0;
 }
 
+/* Source j as it was `delay` samples ago (fractional), by cubic Lagrange
+ * interpolation through the four samples around it (stage 056): flat to
+ * 0.54 dB at 10 kHz at the worst fraction, half a sample, where reading
+ * between two samples alone lost 2.0 dB (and 1.25 at 8 kHz) and varied as a
+ * moving path's fraction did. Within a sample of now, the two samples
+ * either side. Out of the finite history is silence, never a wrapped
+ * unrelated event. */
 static double read_source(const rb_scene *s, int j, double delay)
 {
-    /* Out of the finite history is silence, never a wrapped unrelated event. */
-    if (!(delay >= 0 && delay < RB_SCENE_RING - 2))
+    if (!(delay >= 0 && delay < RB_SCENE_RING - 3))
         return 0;
-    int whole = (int)delay;
-    double part = delay - whole;
-    int a = (s->pos - whole) & (RB_SCENE_RING - 1), b = (a - 1) & (RB_SCENE_RING - 1);
-    return (1 - part) * s->source[j][a] + part * s->source[j][b];
+    const int whole = (int)delay;
+    const double p = delay - whole;
+    const int a = (s->pos - whole) & (RB_SCENE_RING - 1), b = (a - 1) & (RB_SCENE_RING - 1);
+    if (whole < 1)
+        return (1 - p) * s->source[j][a] + p * s->source[j][b];
+    const int n = (a + 1) & (RB_SCENE_RING - 1), c = (b - 1) & (RB_SCENE_RING - 1);
+    /* the samples at delays whole - 1, whole, whole + 1, whole + 2 */
+    const double hn = -p * (p - 1.0) * (p - 2.0) / 6.0;
+    const double ha = (p + 1.0) * (p - 1.0) * (p - 2.0) / 2.0;
+    const double hb = -(p + 1.0) * p * (p - 2.0) / 2.0;
+    const double hc = (p + 1.0) * p * (p - 1.0) / 6.0;
+    return hn * s->source[j][n] + ha * s->source[j][a] + hb * s->source[j][b] + hc * s->source[j][c];
 }
 
 /* One sample: the sources' pressures 1 m away (Pa) in, each ear's out.
