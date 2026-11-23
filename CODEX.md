@@ -4,6 +4,15 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 055, engine-specific structure as an A/B candidate (Claude)
+
+- docs/stage-055.md: noise.c's `cmode[]` (variant 1: block bending modes from each engine's
+  geometry, per-cylinder/bank weights; variant 2: plus chain and alternator tones);
+  `rb_sim.c` copies `sim->variant` into `n->variant`. Variant 0 bit-identical (cli_parity).
+  `tests/test_structure.c` (7 tests), `tools/bugs/stage055.py` (8 caught). Open: listening (128),
+  recordings (039), injector level (042). Retargeted 12b's two impact() bugs; 053's reverse
+  check now scales by the cycle's loudest jet (it failed under MSVC: 053 had run gcc only).
+
 ## 2026-11-23: Stage 053, the flow's noise booked and its reversals measured (Claude)
 
 - docs/stage-053.md: `tests/test_flow_noise.c` (3 tests); core unchanged. Jets' noise is

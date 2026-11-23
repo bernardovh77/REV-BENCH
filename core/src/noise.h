@@ -75,6 +75,8 @@ enum { RB_NOISE_FLOW = 1, RB_NOISE_ENGINE = 2 };
 enum { RB_IMPACT_SLAP = 0, RB_IMPACT_SEAT, RB_IMPACT_LIFT, RB_IMPACT_INJECTOR, RB_IMPACT_KINDS };
 
 #define RB_NOISE_MODES 6        /* the block's and head's resonances          */
+#define RB_NOISE_CMODES 8       /* stage 055's candidate: the block's bending
+                                   modes from its geometry, then the local ones */
 #define RB_NOISE_DELAY 4096     /* physics steps the exhaust valves' noise can
                                    take down the pipes: 21 ms at 192 kHz      */
 
@@ -133,6 +135,23 @@ typedef struct rb_noise {
     double   mount_hp, mount_lp;             /* ... and their states             */
     uint64_t injection_tick;                 /* last completed engine step consumed */
     double injected_fuel_kg;                 /* positive source doses heard, diagnostic */
+
+    /* Stage 055's candidates, heard when `variant` (RB_PARAM_VARIANT, which
+     * the sim copies here before each step) is 1 or 2; 0 is the accepted
+     * sound, unchanged. 1: the block's bending modes from each engine's own
+     * geometry, each cylinder striking them as its place on the block and
+     * its bank's angle say. 2: that, and the accessories' tones (the cam
+     * drive's chain, the alternator). */
+    int      variant;
+    rb_noise_mode cmode[RB_NOISE_CMODES];
+    double   cmode_hz[RB_NOISE_CMODES];      /* their frequencies, diagnostic   */
+    double   cweight[RB_MAX_CYLINDERS][RB_NOISE_CMODES][2];   /* how hard each
+                                              * cylinder's force [0] and slap [1]
+                                              * strike each mode (1 everywhere for
+                                              * the local ones)                  */
+    double   cforce[RB_MAX_CYLINDERS];       /* N: each piston's force, last step */
+    double   block_length, block_depth, block_width;   /* m, the beam's        */
+    double   chain_phase, alternator_phase;  /* rad, the accessories' tones     */
 
     /* this physics step: Pa at 1 m from each placed source, and the mounts' */
     double   out[RB_NOISE_OUTPUTS];

@@ -129,7 +129,7 @@ void test_flow_noise_reverse_jets_measured(void)
         held_four(CASES[c][0], CASES[c][1]);
         rb_noise_init(&n, &e, 5);
         const int cycle = (int)(120.0 / CASES[c][0] / DT);
-        double fwd[2] = { 0.0, 0.0 }, rev[2] = { 0.0, 0.0 }, worst = 0.0;
+        double fwd[2] = { 0.0, 0.0 }, rev[2] = { 0.0, 0.0 }, worst = 0.0, loudest = 0.0;
         for (int s = 0; s < cycle; s++) {
             rb_engine_step(&e);
             rb_noise_step(&n, &e, RB_NOISE_FLOW);
@@ -148,12 +148,15 @@ void test_flow_noise_reverse_jets_measured(void)
                     }
                 }
             }
-            if (intake > 0.0) worst = fmax(worst, fabs(n.intake_power / intake - 1.0));
+            /* against the cycle's loudest: a gap crossing almost no drop is
+             * rounding either way, and libms round it differently (MSVC) */
+            loudest = fmax(loudest, intake);
+            if (intake > 0.0) worst = fmax(worst, fabs(n.intake_power - intake));
             else CHECK(n.intake_power == 0.0);
         }
         printf("    %4.0f rpm, throttle %.0f %%: reverse jets would add %.1f %% to the intake valves' noise, %.2f %% to the exhaust valves' (the reversed intake jets: %.3g of the forward exhaust jets)\n",
                CASES[c][0], 100.0 * CASES[c][1], 100.0 * rev[0] / fwd[0], 100.0 * rev[1] / fwd[1], rev[0] / fwd[1]);
-        CHECK(worst < 1e-9);                 /* forward only, at every step */
+        CHECK(worst < 1e-9 * loudest);       /* forward only, at every step */
         CHECK(fwd[0] > 0.0 && fwd[1] > 0.0);
         if (c == 0) {                        /* idle: reversion dominates the intake */
             CHECK(rev[0] > 1e4 * fwd[0]);

@@ -163,7 +163,9 @@ typedef enum rb_param {
                                    candidate under listening (stage 127). A
                                    number no candidate uses plays the
                                    accepted sound. Live: it switches while
-                                   the engine runs, for A/B listening      */
+                                   the engine runs, for A/B listening.
+                                   In use: 1 and 2, stage 055's structure
+                                   (docs/stage-055.md)                    */
     RB_PARAM_AFR,               /* the air-fuel ratio (by mass) the
                                    injectors aim for; 14.596, the
                                    stoichiometric, by default (stage 067) */

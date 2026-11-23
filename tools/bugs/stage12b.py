@@ -87,14 +87,14 @@ BUGS = {
         IMPACTS, 300),
     "slaps-at-tdc-only": ("core/src/noise.c",
         "        if (passes(from, step, 180.0) || passes(from, step, 540.0))\n"
-        "            impact(n, in, BY_SLAP, RB_IMPACT_SLAP, K_SLAP * fabs(gas + inertia * (1.0 - lambda)));\n",
+        "            impact(n, in, cin, BY_SLAP, RB_IMPACT_SLAP, i, K_SLAP * fabs(gas + inertia * (1.0 - lambda)));\n",
         "",
         IMPACTS, 300),
     "exhaust-seats-at-evo": ("core/src/noise.c",
-        "        if (passes(from, step, evc)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_ex);\n"
-        "        if (passes(from, step, evo)) impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_ex / 3.0);",
-        "        if (passes(from, step, evo)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_ex);\n"
-        "        if (passes(from, step, evc)) impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_ex / 3.0);",
+        "        if (passes(from, step, evc)) impact(n, in, cin, BY_VALVE, RB_IMPACT_SEAT, i, seat_ex);\n"
+        "        if (passes(from, step, evo)) impact(n, in, cin, BY_VALVE, RB_IMPACT_LIFT, i, seat_ex / 3.0);",
+        "        if (passes(from, step, evo)) impact(n, in, cin, BY_VALVE, RB_IMPACT_SEAT, i, seat_ex);\n"
+        "        if (passes(from, step, evc)) impact(n, in, cin, BY_VALVE, RB_IMPACT_LIFT, i, seat_ex / 3.0);",
         IMPACTS, 300),
     "seats-ignore-rpm": ("core/src/noise.c",
         ("const double seat_in = K_VALVE * rpm / 1000.0 *", "const double seat_ex = K_VALVE * rpm / 1000.0 *"),

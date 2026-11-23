@@ -110,6 +110,76 @@ static const struct {
 #define MOUNT_HP_HZ  20.0
 #define MOUNT_LP_HZ  200.0
 
+/* Stage 055's candidate (docs/stage-055.md), heard at RB_PARAM_VARIANT 1
+ * and 2. The block is a free-free beam: as long as the span of its cylinders
+ * and BLOCK_END bores past each end one, as deep as its decks stand above the
+ * crank (stroke + rod along each bank, cos of its angle) and half a stroke of
+ * crankcase below (but never less than its bore and jacket: a boxer's), as
+ * wide as its bore and jacket or its banks' spread. Its bending modes go as
+ * depth / length^2 (Euler-Bernoulli: f = (beta L)^2 / (2 pi L^2)
+ * sqrt(E I / rho A), sqrt(I / A) proportional to the section's depth h),
+ * lowered for shear as a block is a deep beam (Timoshenko's, to first order:
+ * by sqrt(1 + TIMOSHENKO (beta L)^2 (h / L)^2), TIMOSHENKO = (1 + E / (kappa
+ * G)) / 12 for aluminium, nu 0.33, and a solid section, kappa 5/6), fitted to
+ * one number: the four's first vertical bending at stage 12b's block mode,
+ * 950 Hz. Each cylinder strikes a bending mode as the
+ * mode's shape at its place on the block (Blevins's free-free beam), its gas
+ * force along its bank's axis (the vertical modes take cos of the bank's
+ * angle, the lateral ones sin: a boxer's force bends its block sideways, its
+ * banks opposite), its slap across it. The rest are local (the skirt, the
+ * liners, the head, the cam cover, the rail): panels the size of the bore,
+ * every cylinder alike, as before. */
+#define BLOCK_END      0.8      /* bores of block past each end cylinder's centre */
+#define BLOCK_JACKET   0.060    /* m: an inline block's width past its bore       */
+#define BLOCK_FOUR_HZ  950.0    /* the four's first vertical bending             */
+#define REF_LENGTH     (3.0 * 0.096 + 2.0 * BLOCK_END * 0.086)   /* the four's  */
+#define REF_DEPTH      (0.086 + 0.143 + 0.5 * 0.086)
+#define TIMOSHENKO     ((1.0 + 2.0 * 1.33 / (5.0 / 6.0)) / 12.0)
+static const double BETA_L[2] = { 4.73004074486, 7.85320462410 };
+static const double SIGMA[2] = { 0.982502215, 1.000777312 };
+enum { CM_V1, CM_L1, CM_V2, CM_LOCAL };
+static const struct {
+    int kind;
+    double f, q, force, slap, valve, injector;
+} CMODES[RB_NOISE_CMODES] = {
+    { CM_V1,       0.0, 10.0, 1.0, 0.4,  0.0, 0.0 },   /* the block: vertical bending */
+    { CM_L1,       0.0, 10.0, 1.0, 0.4,  0.0, 0.0 },   /* ... lateral bending         */
+    { CM_V2,       0.0, 14.0, 0.5, 0.3,  0.1, 0.0 },   /* ... its second vertical     */
+    { CM_LOCAL, 1750.0, 14.0, 0.7, 1.0,  0.3, 0.0 },   /* the skirt                   */
+    { CM_LOCAL, 2700.0, 18.0, 0.3, 0.8,  0.5, 0.1 },   /* the liners                  */
+    { CM_LOCAL, 3500.0, 22.0, 0.1, 0.2,  1.0, 0.3 },   /* the head                    */
+    { CM_LOCAL, 5500.0, 28.0, 0.0, 0.05, 0.4, 0.4 },   /* the cam cover, valvetrain   */
+    { CM_LOCAL, 7800.0, 30.0, 0.0, 0.0,  0.1, 0.6 },   /* the injectors' rail         */
+};
+
+/* The accessories (variant 2), tones at 1 m from the bay, estimates (no
+ * matched recording bounds them yet: docs/stage-055.md):
+ *   - the cam drive's chain: its links meet the crank's sprocket CHAIN_TEETH
+ *     times a turn, K_CHAIN Pa at 3000 rpm, as the rpm;
+ *   - the alternator's magnetic whine: its 36 stator slots at 2.7 times the
+ *     crank (the pulleys), K_ALTERNATOR Pa at 800 W of accessories, as their
+ *     power (the current). */
+#define CHAIN_TEETH       21.0
+#define K_CHAIN           0.02
+#define ALTERNATOR_ORDER  (36.0 * 2.7)
+#define K_ALTERNATOR      0.006
+
+/* A deep beam's bending mode n (0, 1), Hz, `stiff` its slender one's
+ * f L^2 / h, of depth h and length l. */
+static double bending_hz(double stiff, int mode, double h, double l)
+{
+    const double bl = BETA_L[mode] / BETA_L[0], r = h / l;
+    return stiff * bl * bl * h / (l * l)
+         / sqrt(1.0 + TIMOSHENKO * BETA_L[mode] * BETA_L[mode] * r * r);
+}
+
+/* A free-free beam's bending mode n (0, 1) at s = x / L: 2 at either end. */
+static double beam_shape(int n, double s)
+{
+    const double b = BETA_L[n] * s;
+    return cosh(b) + cos(b) - SIGMA[n] * (sinh(b) + sin(b));
+}
+
 /* ---- the generator: white noise of RMS 1 (rand.h) ---- */
 
 static double white(uint64_t *state)
@@ -150,6 +220,83 @@ static void band_init(rb_noise_band *b, double hp_hz, double lp_hz, double top_h
     }
     b->norm = (sum > 0.0) ? 1.0 / sqrt(sum / (32768 - 4096)) : 0.0;
     b->hp_lp = b->mid = b->out = 0.0;
+}
+
+/* ---- stage 055's candidate: the block's modes from its geometry ---- */
+
+static void mode_set(rb_noise_mode *m, double f, double q, double dt)
+{
+    const double w = 2.0 * PI * f * dt;
+    const double r = exp(-PI * f / q * dt);   /* bandwidth f / Q */
+    m->a1 = 2.0 * r * cos(w);
+    m->a2 = r * r;
+    m->in = sin(w);
+}
+
+static void structure_init(rb_noise *n, const rb_engine *e)
+{
+    const rb_engine_desc *d = &e->desc;
+    double lo = d->position[0], hi = d->position[0];
+    for (int i = 1; i < d->cylinders; i++) {
+        lo = fmin(lo, d->position[i]);
+        hi = fmax(hi, d->position[i]);
+    }
+    const double deck = d->stroke + d->rod;
+    double up = 0.0, across = 0.0;
+    for (int b = 0; b < d->banks && b < 2; b++) {
+        const double a = d->bank_angle[b] * PI / 180.0;
+        up = fmax(up, fabs(cos(a)));
+        across += fabs(sin(a));
+    }
+    n->block_length = hi - lo + 2.0 * BLOCK_END * d->bore;
+    n->block_depth = fmax(deck * up + 0.5 * d->stroke, d->bore + BLOCK_JACKET);
+    n->block_width = fmax(d->bore + BLOCK_JACKET, deck * across);
+    const double r0 = REF_DEPTH / REF_LENGTH;
+    const double stiff = BLOCK_FOUR_HZ * REF_LENGTH * REF_LENGTH / REF_DEPTH
+                       * sqrt(1.0 + TIMOSHENKO * BETA_L[0] * BETA_L[0] * r0 * r0);
+    const double l = n->block_length;
+    const double top = 0.25 / n->dt;   /* well inside the step's band */
+    for (int k = 0; k < RB_NOISE_CMODES; k++) {
+        double f;
+        switch (CMODES[k].kind) {
+        case CM_V1: f = bending_hz(stiff, 0, n->block_depth, l); break;
+        case CM_L1: f = bending_hz(stiff, 0, n->block_width, l); break;
+        case CM_V2: f = bending_hz(stiff, 1, n->block_depth, l); break;
+        default:    f = CMODES[k].f * sqrt(MODE_BORE / d->bore); break;
+        }
+        if (!(f < top)) f = top;
+        n->cmode_hz[k] = f;
+        mode_set(&n->cmode[k], f, CMODES[k].q, n->dt);
+    }
+
+    /* Each cylinder's weights: the shape at its place, normalized to an RMS
+     * of 1 over the cylinders (the block's energy doesn't depend on how many
+     * strike it), times its bank's projection. */
+    double shape[2][RB_MAX_CYLINDERS], rms[2] = { 0.0, 0.0 };
+    for (int i = 0; i < d->cylinders; i++) {
+        const double s = (d->position[i] - lo + BLOCK_END * d->bore) / n->block_length;
+        for (int m = 0; m < 2; m++) {
+            shape[m][i] = beam_shape(m, s);
+            rms[m] += shape[m][i] * shape[m][i];
+        }
+    }
+    for (int m = 0; m < 2; m++) rms[m] = sqrt(rms[m] / d->cylinders);
+    for (int i = 0; i < d->cylinders; i++) {
+        const double a = d->bank_angle[d->bank[i]] * PI / 180.0;
+        const double c = cos(a), sn = sin(a);
+        const double v1 = rms[0] > 0.0 ? shape[0][i] / rms[0] : 1.0;
+        const double v2 = rms[1] > 0.0 ? shape[1][i] / rms[1] : 1.0;
+        for (int k = 0; k < RB_NOISE_CMODES; k++) {
+            double *w = n->cweight[i][k];
+            switch (CMODES[k].kind) {
+            case CM_V1: w[0] = v1 * c;  w[1] = v1 * fabs(sn); break;
+            case CM_L1: w[0] = v1 * sn; w[1] = v1 * fabs(c);  break;
+            case CM_V2: w[0] = v2 * c;  w[1] = v2 * fabs(sn); break;
+            default:    w[0] = 1.0;     w[1] = 1.0;           break;
+            }
+        }
+        n->cforce[i] = (e->cyl[i].gas.p - d->p_ambient) * e->cyl[i].geom.area;
+    }
 }
 
 /* ---- set up ---- */
@@ -233,6 +380,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     n->mount_hp = rb_finite(e->gas_torque) ? e->gas_torque : 0.0;   /* settled */
     n->mount_hp_a = one_pole(MOUNT_HP_HZ, n->dt);
     n->mount_lp_a = one_pole(MOUNT_LP_HZ, n->dt);
+    structure_init(n, e);
 }
 
 /* ---- the flow ---- */
@@ -367,27 +515,67 @@ static void strike(double in[RB_NOISE_MODES], int by, double size)
     }
 }
 
-/* An impact of `kind` (RB_IMPACT_*), striking as `by` says: counted, then
- * its size varied by IMPACT_SPREAD (but an injector's: always the same). */
-static void impact(rb_noise *n, double in[RB_NOISE_MODES], int by, int kind, double size)
+/* The same into the candidate's modes (stage 055), from cylinder i: the
+ * bending modes as its weights say (a valve as its force), the local ones
+ * alike for all; an injector (i < 0) strikes the local ones only. */
+static void cstrike(const rb_noise *n, double in[RB_NOISE_CMODES], int by, int i, double size)
+{
+    for (int k = 0; k < RB_NOISE_CMODES; k++) {
+        const double weight = (by == BY_FORCE) ? CMODES[k].force
+                            : (by == BY_SLAP)  ? CMODES[k].slap
+                            : (by == BY_VALVE) ? CMODES[k].valve : CMODES[k].injector;
+        const double place = (i < 0) ? (CMODES[k].kind == CM_LOCAL)
+                           : n->cweight[i][k][by == BY_SLAP];
+        in[k] += weight * place * size;
+    }
+}
+
+/* An impact of `kind` (RB_IMPACT_*) from cylinder i (-1: none in
+ * particular), striking as `by` says: counted, then its size varied by
+ * IMPACT_SPREAD (but an injector's: always the same). */
+static void impact(rb_noise *n, double in[RB_NOISE_MODES], double cin[RB_NOISE_CMODES],
+                   int by, int kind, int i, double size)
 {
     n->impacts[kind]++;
     n->impact_energy[kind] += size * size;
     if (kind != RB_IMPACT_INJECTOR) size *= 1.0 + IMPACT_SPREAD * white(&n->state);
-    strike(in, by, size);
+    if (n->variant) cstrike(n, cin, by, i, size);
+    else strike(in, by, size);
+}
+
+/* The accessories' tones (variant 2), Pa at 1 m: the chain's mesh and the
+ * alternator's whine, their phases following the crank. */
+static double accessories(rb_noise *n, const rb_engine *e, double omega)
+{
+    const double rpm = omega * 30.0 / PI;
+    n->chain_phase = fmod(n->chain_phase + CHAIN_TEETH * omega * n->dt, 2.0 * PI);
+    n->alternator_phase = fmod(n->alternator_phase + ALTERNATOR_ORDER * omega * n->dt, 2.0 * PI);
+    const double load = (e->desc.accessory_power > 0.0) ? e->desc.accessory_power / 800.0 : 0.0;
+    return K_CHAIN * rpm / 3000.0 * sin(n->chain_phase)
+         + K_ALTERNATOR * load * (omega > 0.0) * sin(n->alternator_phase);
 }
 
 static void engine_noise(rb_noise *n, const rb_engine *e)
 {
     const rb_engine_desc *d = &e->desc;
-    double in[RB_NOISE_MODES] = { 0.0 };
+    double in[RB_NOISE_MODES] = { 0.0 }, cin[RB_NOISE_CMODES] = { 0.0 };
 
-    /* Combustion: the pistons' force, as it changes. */
-    double force = 0.0;
-    for (int i = 0; i < d->cylinders; i++) force += (e->cyl[i].gas.p - d->p_ambient) * e->cyl[i].geom.area;
+    /* Combustion: the pistons' force, as it changes (the candidate's: each
+     * piston's, where it is). */
+    double force = 0.0, each[RB_MAX_CYLINDERS];
+    for (int i = 0; i < d->cylinders; i++) {
+        each[i] = (e->cyl[i].gas.p - d->p_ambient) * e->cyl[i].geom.area;
+        force += each[i];
+    }
     if (rb_finite(force)) {
-        strike(in, BY_FORCE, K_FORCE * (force - n->force));
+        if (n->variant) {
+            for (int i = 0; i < d->cylinders; i++)
+                cstrike(n, cin, BY_FORCE, i, K_FORCE * (each[i] - n->cforce[i]));
+        } else {
+            strike(in, BY_FORCE, K_FORCE * (force - n->force));
+        }
         n->force = force;
+        for (int i = 0; i < d->cylinders; i++) n->cforce[i] = each[i];
     }
 
     /* What each cylinder passed in this step. */
@@ -408,7 +596,7 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
             const rb_injection_event *event = &e->injection[j];
             if (event->tick + 1 == e->physics_tick && event->kind == RB_INJ_DELIVERED &&
                 event->fuel_kg > 0.0 && rb_finite(event->fuel_kg)) {
-                impact(n, in, BY_INJECTOR, RB_IMPACT_INJECTOR, K_INJECTOR);
+                impact(n, in, cin, BY_INJECTOR, RB_IMPACT_INJECTOR, -1, K_INJECTOR);
                 n->injected_fuel_kg += event->fuel_kg;
             }
         }
@@ -424,26 +612,37 @@ static void engine_noise(rb_noise *n, const rb_engine *e)
          * then, the gas's less the parts' inertia (which pulls it up at TDC
          * and down at BDC: m r w^2 (cos theta + lambda cos 2 theta)). */
         if (passes(from, step, 0.0) || passes(from, step, 360.0))
-            impact(n, in, BY_SLAP, RB_IMPACT_SLAP, K_SLAP * fabs(gas - inertia * (1.0 + lambda)));
+            impact(n, in, cin, BY_SLAP, RB_IMPACT_SLAP, i, K_SLAP * fabs(gas - inertia * (1.0 + lambda)));
         if (passes(from, step, 180.0) || passes(from, step, 540.0))
-            impact(n, in, BY_SLAP, RB_IMPACT_SLAP, K_SLAP * fabs(gas + inertia * (1.0 - lambda)));
+            impact(n, in, cin, BY_SLAP, RB_IMPACT_SLAP, i, K_SLAP * fabs(gas + inertia * (1.0 - lambda)));
         /* The valves: seating, and lifting off at a third of that. */
-        if (passes(from, step, ivc)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_in);
-        if (passes(from, step, evc)) impact(n, in, BY_VALVE, RB_IMPACT_SEAT, seat_ex);
-        if (passes(from, step, evo)) impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_ex / 3.0);
+        if (passes(from, step, ivc)) impact(n, in, cin, BY_VALVE, RB_IMPACT_SEAT, i, seat_in);
+        if (passes(from, step, evc)) impact(n, in, cin, BY_VALVE, RB_IMPACT_SEAT, i, seat_ex);
+        if (passes(from, step, evo)) impact(n, in, cin, BY_VALVE, RB_IMPACT_LIFT, i, seat_ex / 3.0);
         if (passes(from, step, ivo)) {
-            impact(n, in, BY_VALVE, RB_IMPACT_LIFT, seat_in / 3.0);
+            impact(n, in, cin, BY_VALVE, RB_IMPACT_LIFT, i, seat_in / 3.0);
         }
     }
 
     /* The modes ring, and the bay radiates them all. */
     double bay = 0.0;
-    for (int k = 0; k < RB_NOISE_MODES; k++) {
-        rb_noise_mode *m = &n->mode[k];
-        const double y = m->in * in[k] + m->a1 * m->y1 - m->a2 * m->y2;
-        m->y2 = m->y1;
-        m->y1 = y;
-        bay += y;
+    if (n->variant) {
+        for (int k = 0; k < RB_NOISE_CMODES; k++) {
+            rb_noise_mode *m = &n->cmode[k];
+            const double y = m->in * cin[k] + m->a1 * m->y1 - m->a2 * m->y2;
+            m->y2 = m->y1;
+            m->y1 = y;
+            bay += y;
+        }
+        if (n->variant == 2) bay += accessories(n, e, omega);
+    } else {
+        for (int k = 0; k < RB_NOISE_MODES; k++) {
+            rb_noise_mode *m = &n->mode[k];
+            const double y = m->in * in[k] + m->a1 * m->y1 - m->a2 * m->y2;
+            m->y2 = m->y1;
+            m->y1 = y;
+            bay += y;
+        }
     }
     n->out[RB_NOISE_BAY] = bay;
 
@@ -469,7 +668,9 @@ void rb_noise_step(rb_noise *n, const rb_engine *e, int what)
     for (int k = 0; k < RB_NOISE_OUTPUTS; k++) {
         if (!rb_finite(n->out[k])) {
             const uint64_t state = n->state;
+            const int variant = n->variant;
             rb_noise_init(n, e, state);
+            n->variant = variant;
             for (int j = 0; j < RB_NOISE_OUTPUTS; j++) n->out[j] = 0.0;
             break;
         }

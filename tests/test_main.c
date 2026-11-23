@@ -118,6 +118,13 @@ void test_scheduler_blocks_and_transitions_are_seamless(void);
 void test_flow_noise_is_external_source_work(void);
 void test_flow_noise_reverse_jets_measured(void);
 void test_flow_noise_statistics_over_seeds(void);
+void test_structure_modes_from_geometry(void);
+void test_structure_paths_per_cylinder(void);
+void test_structure_events_and_energy(void);
+void test_structure_statistics_over_seeds(void);
+void test_structure_accessories(void);
+void test_structure_variant_reaches_the_noise(void);
+void test_structure_order_statistics(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -448,6 +455,13 @@ static const struct {
     T(test_flow_noise_is_external_source_work),
     T(test_flow_noise_reverse_jets_measured),
     T(test_flow_noise_statistics_over_seeds),
+    T(test_structure_modes_from_geometry),
+    T(test_structure_paths_per_cylinder),
+    T(test_structure_events_and_energy),
+    T(test_structure_statistics_over_seeds),
+    T(test_structure_accessories),
+    T(test_structure_variant_reaches_the_noise),
+    T(test_structure_order_statistics),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),

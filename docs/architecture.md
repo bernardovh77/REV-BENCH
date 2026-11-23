@@ -229,6 +229,15 @@ Where this file and the code disagree, the code is right and this file is fixed.
     (the mouth, the bay) at 200 Hz, both at 0.3, plus the mounts, then a 55 Hz boom (RBJ peak);
   - **tests pose the engine by hand** (test_noise.c's `pose`): set `e.theta`, `e.omega` and the
     pressures, `rb_noise_init`, move the crank and step only the noise.
+  - **stage 055's candidate** (`n->variant`, which `rb_sim.c` copies from `sim->variant` before
+    each step; 1 and 2 only, 0 the accepted sound bit for bit): eight modes in `cmode[]`. The
+    block's first vertical and lateral and second vertical bending come from its geometry (a
+    free-free Timoshenko beam as long as its cylinders' span and 0.8 bores past each end, as
+    deep as its decks along its banks, fitted to the four's 950 Hz); each cylinder strikes them
+    with Blevins's shape at its place (an RMS of 1 over the cylinders) times its bank's cos
+    (force, vertical) or sin (force, lateral; slap the other way round); the five local modes
+    as before. Variant 2 adds the cam chain's tone (21st order) and the alternator's (97.2nd).
+    Same impacts and random draws as variant 0 (docs/stage-055.md).
 - The pipes' sonic guard (stage 12b, `RB_PIPE_MOST_SONIC`): no face's flow passes twice the sonic
   flow of the gas it comes from, A √(1.4 ρ p). Normal running stays under 1.13 times it; held at
   high rpm with the throttle shut, the runners near a vacuum ran away without it (58 times, gas at
