@@ -354,10 +354,25 @@ Where this file and the code disagree, the code is right and this file is fixed.
 - **Stage 133** (the rev limiter's character and a 2-step, docs/stage-133.md): the limiter reads
   its limit, resume point and soft band from the description (`limiter_band`, `limiter_cut`,
   `launch_*`; `limiter_gap` is worked out, `rev_limit - rev_limit_resume`, and written through
-  `rev_limit_resume`). `launching()` (engine.c) picks the 2-step's three while
+  `rev_limit_resume`). `launching()` (engine_computer.c since 130) picks the 2-step's three while
   `RB_PARAM_LAUNCH` is 1 and its limit is lower. `limiter_cut()` is the one decision (hard,
   soft or none): `spark()` asks it with a spark cut, the injection with a fuel cut
   (`RB_INJ_LIMITER`). With the defaults the arithmetic is stage 12c's, bit for bit.
+- **Stage 130** (`engine.c` split along the step order, docs/stage-130.md), whole functions
+  moved line for line, renders byte-identical and no speed lost (both compilers):
+  - `engine_build.c`: the description (`rb_engine_desc_default`, the layout, `rb_engine_desc_check`),
+    building the engine (`rb_engine_init_at`, its pipes and junctions, the variation it starts
+    with), and what the books read of it (`rb_engine_pipe`, `rb_engine_contents`, the guards);
+  - `engine_computer.c`: the spark it chooses (`rb_computer_spark`, the map, MBT, the idle spark),
+    the burn it expects (`rb_computer_burn_duration`), the limiter and the 2-step
+    (`rb_computer_limiter_cut`), and `rb_computer_step` (the limiter's hard cut, the fuel cut on
+    overrun, the idle air valve) once a step;
+  - `engine.c`: the step (`rb_engine_step`: intake closing, the spark, the burn, the crank, the
+    pipes' fast and slow steps) and the cycle's books, in one file: the step's helpers stay
+    inlined where they were;
+  - `engine_parts.h`: what they share (`PI`, `AIR`, `FUEL`, the spark and gas-pace defaults, the
+    variation's constants and `variation()`), and the six functions one part calls in another.
+  Earlier entries here that say "engine.c" for building or the computer mean those files now.
 
 ## Tools and charts
 

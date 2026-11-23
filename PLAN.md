@@ -102,7 +102,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [ ] **057 → 058 → 059 → 060 → 061 → 062 → 063:** base sound acceptance. Each of these
      updates the app too.
 3. **Phase C, the 3D engine:** [ ] 070 → 071 → 072 → 073 → 074 → 075 → 076 → 077.
-4. **Phase D, turbo:** [ ] 130 (`engine.c` split, first) → 078 → 084.
+4. **Phase D, turbo:** [x] 130 (`engine.c` split, first) → [ ] 078 → 084.
 5. **Phase E, knock and limits:** [ ] 085 → 089.
 6. **Phase F, more engines:** [ ] 090 → 094.
 7. **Phase G, release:** [ ] 126 (the port to macOS and Linux) → 095 → 102.
@@ -118,6 +118,9 @@ fresh engine's tone** (found in 069 from Bernardo's report of 2026-11-22: a fres
 stopped engine's cold gas against its warm walls grows a tone of about 800 Hz after 6 s or more,
 the pipes' heat transfer following the flow; the app's engines now sleep before it starts, but
 the core still makes it in offline renders: phase B decides the physics, by listening).
+**A flaky end-to-end test** (since 068): stage 124's `snapshot-path.spec.ts`, the utility
+process sending snapshots flat out, hangs past its 120 s limit in about four runs of ten (it
+takes 19 s when it passes): an intermittent stall to find (docs/stage-130.md).
 One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
@@ -185,7 +188,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
-| ⬜ | [130](docs/roadmap/14-review-fixes.md#stage-130) | `engine.c` split along the step order, no behaviour change and no speed lost | 127 |
+| ✅ | [130](docs/roadmap/14-review-fixes.md#stage-130) | `engine.c` split along the step order (2026-11-23, docs/stage-130.md): `engine_build.c` (the description and building), `engine_computer.c` (the spark, the limiter, the idle, the fuel cut), `engine.c` (the step and the books, one translation unit), `engine_parts.h`; renders byte-identical, speed within 1 % on both compilers, 41 planted bugs followed their code | 127 |
 | ⬜ | [078](docs/roadmap/09-turbo.md#stage-078) | Turbo compressor and turbine map components | 037, 061, 039 |
 | ⬜ | [079](docs/roadmap/09-turbo.md#stage-079) | Turbo shaft and engine gas-system integration | 078 |
 | ⬜ | [080](docs/roadmap/09-turbo.md#stage-080) | Boost, wastegate, intercooler and blow-off control | 079 |

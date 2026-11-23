@@ -85,7 +85,7 @@ BUGS = {
         ["test_core_quality"], 120),
     # 'preset-forgets-pipe-rate' retired at stage 121: the same line as
     # rebuild-forgets-pipe-rate now (rb_sim_build).
-    "pipe-rate-ignored": ("core/src/engine.c",
+    "pipe-rate-ignored": ("core/src/engine_build.c",
         "    e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));",
         "    e->pipe_every = (int)lround(1.0 / (48000.0 * dt));",
         ["test_core_quality", "test_engine_pipe_rate"], 300),

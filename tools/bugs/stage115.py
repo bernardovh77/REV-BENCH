@@ -50,7 +50,7 @@ BUGS = {
         "return 1 - 2 * q - log1p(-q);",
         "return 1 - q;",
         ['test_combustion_conditional_means'], 300),
-    'idle-spark-ignores-delay': ("core/src/engine.c",
+    'idle-spark-ignores-delay': ("core/src/engine_computer.c",
         "const double s = IDLE_SPARK + kernel_delay + IDLE_SPARK_GAIN",
         "const double s = IDLE_SPARK + IDLE_SPARK_GAIN",
         ['test_variation_cov_at_idle'], 900),

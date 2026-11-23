@@ -4,7 +4,7 @@ BUGS = {
         "4.4e-4, 3.2e-4, 7000.0);", ["test_exhaust_high_rpm_fired_books"], 30),
     "old-cross-limit": ("core/src/presets.c", "5.1e-4, 2.6e-4, 7500.0);",
         "5.1e-4, 2.6e-4, 7000.0);", ["test_exhaust_high_rpm_fired_books"], 30),
-    "unvalidated-catalyst-loss": ("core/src/engine.c",
+    "unvalidated-catalyst-loss": ("core/src/engine_build.c",
         "if (!(d->catalyst_laminar >= 0.0 && d->catalyst_laminar <= 10000.0)) return -1;",
         "/* BUG: accept negative and non-finite substrate loss */",
         ["test_exhaust_descriptor_guards"], 30),

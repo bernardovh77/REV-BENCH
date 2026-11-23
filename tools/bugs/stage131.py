@@ -47,7 +47,7 @@ BUGS = {
         "    if (l->family == RB_FAMILY_V && n >= 4) collectors = 2;",
         "    if (l->family == RB_FAMILY_V && n >= 40) collectors = 2;",
         KEEPS, 300),
-    'exhaust-ratio-unchecked': ("core/src/engine.c",
+    'exhaust-ratio-unchecked': ("core/src/engine_build.c",
         "                           <= 6.0 * joined[c] * d->header_diameter * d->header_diameter)) return -1;",
         "                           <= 60.0 * joined[c] * d->header_diameter * d->header_diameter)) return -1;",
         ["test_layout_refuses_an_exhaust_far_wider_than_its_headers"], 300),

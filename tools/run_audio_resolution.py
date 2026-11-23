@@ -39,18 +39,18 @@ def build(directory):
     core = sorted((directory / "core/src").glob("*.o"))
     if not core:
         raise RuntimeError("No core objects were built")
-    original = ROOT / "core/src/engine.c"
+    original = ROOT / "core/src/engine_build.c"   # building the pipes (stage 130 split it out)
     text = original.read_text(encoding="utf-8")
     if text.count(GRID_LINE) != 1:
         raise RuntimeError("Grid fixture needs review against the current engine source")
-    isolated = directory / "engine-fixed-grid.c"
+    isolated = directory / "engine_build-fixed-grid.c"
     isolated.write_text(text.replace(GRID_LINE,
         "const double grid_scale = 1.0; /* diagnostic fixed-grid control only */"), encoding="utf-8")
-    fixed_object = directory / "engine-fixed-grid.o"
+    fixed_object = directory / "engine_build-fixed-grid.o"
     run(["cc", *flags, *includes, "-c", isolated, "-o", fixed_object], directory / "grid-build.log")
     executables = {}
     for fixed in (False, True):
-        objects = [fixed_object if fixed and p.name == "engine.o" else p for p in core]
+        objects = [fixed_object if fixed and p.name == "engine_build.o" else p for p in core]
         binary = directory / ("source-probe-fixed-grid" if fixed else "source-probe")
         run(["cc", *flags, *includes, ROOT / "tools/audio_source_probe.c", *objects,
              directory / "native/wav.o", "-lm", "-o", binary],

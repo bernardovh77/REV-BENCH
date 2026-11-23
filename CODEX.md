@@ -4,6 +4,15 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 130, engine.c split (Claude)
+
+- docs/stage-130.md. `core/src/engine_build.c` (description, layout, checks, building),
+  `engine_computer.c` (`rb_computer_*`: spark, burn length, limiter, the per-step computer),
+  `engine.c` (the step and the books), `engine_parts.h` (shared constants, `variation()`, the
+  six cross-file declarations). A bug table's text for building or the computer now names those
+  files. CI's Windows job: MSVC 19.52 fails `test_api_dyno_in_the_telemetry` (19.51 passes);
+  the test prints the values now: see the run of 8c1afd5.
+
 ## 2026-11-23: Stage 133, the rev limiter's character and a 2-step (Claude)
 
 - docs/stage-133.md. Fields `limiter_gap` (worked out, written through `rev_limit_resume`),

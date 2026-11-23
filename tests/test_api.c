@@ -756,20 +756,11 @@ void test_api_dyno_in_the_telemetry(void)
     /* in the snapshot, at its place among the instruments */
     static unsigned char snap[1 << 15];
     CHECK(rb_get_snapshot(sim, RB_SNAPSHOT_VERSION, snap, sizeof snap) > 0);
-    double torque;
-    memcpy(&torque, snap + sizeof(rb_snapshot_header) + 8 * (RB_TLM_DYNO_TORQUE - RB_TLM_RPM), sizeof torque);
+    /* The snapshot's bytes are the reading's, bit for bit. Compared as bytes: CI's MSVC 19.52
+     * (2026-11-23) printed the two doubles bit-identical (0x1.54a1da61d5310p+7 both) yet
+     * evaluated `torque == told` false, a miscompile 19.51 doesn't have (docs/stage-130.md). */
     const double told = rb_get_telemetry(sim, RB_TLM_DYNO_TORQUE);
-    if (torque != told) {   /* CI's MSVC 19.52 (2026-11-23) disagreed: say how */
-        fprintf(stderr, "    snapshot %a, telemetry %a, rb_get_dyno %a; header %u bytes, instruments %d, index %d\n",
-                torque, told, rb_get_dyno(sim, RB_DYNO_BRAKE_TORQUE), (unsigned)sizeof(rb_snapshot_header),
-                RB_SNAPSHOT_INSTRUMENTS, RB_TLM_DYNO_TORQUE - RB_TLM_RPM);
-        for (int k = 0; k < RB_SNAPSHOT_INSTRUMENTS; k++) {
-            double v;
-            memcpy(&v, snap + sizeof(rb_snapshot_header) + 8 * k, sizeof v);
-            fprintf(stderr, "      [%d] snapshot %a telemetry %a\n", k, v, rb_get_telemetry(sim, RB_TLM_RPM + k));
-        }
-    }
-    CHECK(torque == told);
+    CHECK(memcmp(snap + sizeof(rb_snapshot_header) + 8 * (RB_TLM_DYNO_TORQUE - RB_TLM_RPM), &told, sizeof told) == 0);
     rb_dyno_release(sim);
     CHECK(rb_get_telemetry(sim, RB_TLM_DYNO_ATTACHED) == 0.0);
     rb_destroy(sim);

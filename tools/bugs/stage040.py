@@ -17,7 +17,7 @@ BUGS = {
         'const double first = b->discharged_this_step ? b->discharge_fraction : 0;',
         'const double first = 0;',
         ['test_ignition_causal_clock'], 300),
-    'bypass-hard-cut': ("core/src/engine.c",
+    'bypass-hard-cut': ("core/src/engine_computer.c",
         '    return e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT : -1);',
         '    return (soft_cut(e) ? RB_IGN_SOFT_CUT : -1);',
         ['test_ignition_suppression'], 300),

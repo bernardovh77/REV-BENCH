@@ -9,7 +9,7 @@ GUARD = ["test_api_guard_rate_warns_only_outside_the_model"]
 DYNO = ["test_api_dyno_in_the_telemetry"]
 
 BUGS = {
-    'guards-never-summed': ("core/src/engine.c",
+    'guards-never-summed': ("core/src/engine_build.c",
         "    for (int k = 0; k < rb_engine_pipe_count(e); k++) n += pipe_guards(rb_engine_pipe(e, k));\n",
         "",
         GUARD, 600),

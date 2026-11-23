@@ -12,7 +12,7 @@ BUGS = {
         "    ch->U += ch->dU * dt + 1e-6 * fabs(ch->dU) * dt;",
         ['test_exhaust_junction_scattering_conservation'], 300),
     # test_engine_drives_itself: the fuel cut holds once it's on
-    'fuel-cut-flickers': ("core/src/engine.c",
+    'fuel-cut-flickers': ("core/src/engine_computer.c",
         "        e->fuel_cut = e->overrun_time >= transition;",
         "        e->fuel_cut = e->overrun_time >= transition && !e->fuel_cut;",
         ['test_engine_drives_itself'], 600),
@@ -22,7 +22,7 @@ BUGS = {
         "const double base = capped ? expected : fmin(b->demand_duration, 2.0 * e->desc.burn_duration + 1.0);",
         ['test_calibration_burn_and_spark'], 600),
     # test_presets_run_on_their_own: the soft cut keeps the engine at its limit
-    'soft-cut-too-early': ("core/src/engine.c",
+    'soft-cut-too-early': ("core/src/engine_computer.c",
         "    const double into = (e->omega * 30.0 / PI - (limit - band)) / band;",
         "    const double into = (e->omega * 30.0 / PI - (limit - 120.0 - band)) / band;",
         ['test_presets_run_on_their_own'], 900),
