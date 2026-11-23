@@ -99,8 +99,10 @@ in the next full run (19 s): the laptop was slow then. Named here in case it com
 **Since (2026-11-23):** CI's runner failed the e2e's time alignment once: a busy window can miss
 a snapshot, and a point is then stamped a frame later. The check now allows each point to be late
 by at most the time since the app's previous point (a provable bound: the reading came after the
-snapshot before it) and never early, and still asks nine in ten points within a snapshot
-interval and a block. The readings, speeds and torques are still checked exactly.
+snapshot before it), and still asks nine in ten points within a snapshot interval and a
+block. Lateness counts from the least late point, not the first: the first can itself be stamped
+late, and then every other point looked early (CI, the next run). The readings, speeds and
+torques are still checked exactly.
 
 ## What is left
 
