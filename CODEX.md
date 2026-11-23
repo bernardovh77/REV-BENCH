@@ -4,11 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
-## 2026-11-23: Stage 135 added, an optimization survey (Claude)
+## 2026-11-23: Stage 135, an optimization survey (Claude)
 
-- Bernardo's request: a measured map of where time and memory go across the core, host,
-  add-on and app; candidates classed A (identical), B (within tolerance), C (changes the
-  sound: never a default). Card in docs/roadmap/07-app.md, row in PLAN.md. Not started.
+- docs/stage-135.md: profile and counts of today's core (no hot spot; the mixture rebuilt on
+  75 % of updates), structures, host and app costs; eight candidates ranked A/B/C. Nothing
+  applied, code unchanged. Open (🟡): the interface's per-frame cost, cache counters.
+  Candidate 1 (remix threshold 1e-5, +5-9 %) changes the sound: Bernardo's call.
 
 ## 2026-11-23: Stage 051, the ends' load validated (Claude)
 
