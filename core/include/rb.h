@@ -505,8 +505,8 @@ int         rb_get_preset(const rb_sim *sim);
  * starter, the accessories and the idle's air valve and gains. A preset's
  * own layout gives the preset itself.
  *
- * Offered: inline 1 to 6 cylinders; V 2 to 16, even counts, banks 30 to 120
- * degrees apart; boxer 2, 4 and 6. */
+ * Offered: inline 1 to 6 and 8 cylinders; V 2 to 16, even counts, banks 30 to
+ * 120 degrees apart; boxer 2, 4, 6 and 8 (the eights since stage 134). */
 typedef enum rb_family {
     RB_FAMILY_INLINE = 0,
     RB_FAMILY_V,

@@ -2,8 +2,9 @@
  * test_layouts.c - stage 131's evidence: engines built from a family, a cylinder count, a crank
  * and a bank angle (core/src/layouts.c).
  *
- * - What's offered is exactly the stated set (inline 1-6, V 2-16 even at 30-120 degrees,
- *   boxer 2/4/6, each crank only where it belongs), with a reason for everything else.
+ * - What's offered is exactly the stated set (inline 1-6 and 8, V 2-16 even at 30-120 degrees,
+ *   boxer 2/4/6/8 (the eights since stage 134), each crank only where it belongs), with a reason
+ *   for everything else.
  * - Each preset is its own layout: its layout gives it back whole, and the generator makes its
  *   crank (pins, banks, firing order) from any other preset too.
  * - Every combination fires as stated: the even ones every 720/n degrees (and a V's banks, a
@@ -35,13 +36,13 @@ static rb_engine e;   /* kept off the stack */
 static int offered(int family, int n, int crank, double angle)
 {
     if (family == RB_FAMILY_INLINE)
-        return n >= 1 && n <= 6 && angle == 0.0
+        return ((n >= 1 && n <= 6) || n == 8) && angle == 0.0
             && (crank == RB_CRANK_EVEN || (n == 2 && (crank == RB_CRANK_TWIN_180 || crank == RB_CRANK_TWIN_270)));
     if (family == RB_FAMILY_V)
         return n >= 2 && n <= 16 && n % 2 == 0 && angle >= 30.0 && angle <= 120.0
             && (crank == RB_CRANK_EVEN || crank == RB_CRANK_COMMON_PIN || (crank == RB_CRANK_CROSS_PLANE && n == 8));
     if (family == RB_FAMILY_BOXER)
-        return (n == 2 || n == 4 || n == 6) && angle == 0.0 && crank == RB_CRANK_EVEN;
+        return (n == 2 || n == 4 || n == 6 || n == 8) && angle == 0.0 && crank == RB_CRANK_EVEN;
     return 0;
 }
 
@@ -192,8 +193,9 @@ void test_layout_offers_the_stated_set(void)
     CHECK_EQ_INT(rb_layout_check(RB_FAMILY_COUNT, 4, RB_CRANK_EVEN, 0.0), RB_ERR_ID);
     CHECK_EQ_INT(rb_layout_check(RB_FAMILY_V, 8, RB_CRANK_COUNT, 90.0), RB_ERR_ID);
     CHECK_EQ_INT(rb_layout_check(RB_FAMILY_V, 8, RB_CRANK_EVEN, NAN), RB_ERR_VALUE);
-    CHECK(strstr(rb_layout_why(RB_FAMILY_INLINE, 8, RB_CRANK_EVEN, 0.0), "planned") != NULL);
-    CHECK(strstr(rb_layout_why(RB_FAMILY_BOXER, 8, RB_CRANK_EVEN, 0.0), "planned") != NULL);
+    CHECK(rb_layout_check(RB_FAMILY_INLINE, 8, RB_CRANK_EVEN, 0.0) == RB_OK);   /* stage 134 */
+    CHECK(rb_layout_check(RB_FAMILY_BOXER, 8, RB_CRANK_EVEN, 0.0) == RB_OK);
+    CHECK(strstr(rb_layout_why(RB_FAMILY_INLINE, 7, RB_CRANK_EVEN, 0.0), "seven") != NULL);
     CHECK(rb_layout_check(RB_FAMILY_V, 8, RB_CRANK_CROSS_PLANE, 90.0) == RB_OK);
 
     /* names, the usual crank and angles, and a tier for each */
@@ -209,10 +211,11 @@ void test_layout_offers_the_stated_set(void)
     CHECK(rb_layout_angle(RB_FAMILY_V, 6, RB_CRANK_EVEN, RB_ANGLE_MIN) == 30.0);
     CHECK(rb_layout_angle(RB_FAMILY_V, 6, RB_CRANK_EVEN, RB_ANGLE_MAX) == 120.0);
     CHECK(rb_layout_angle(RB_FAMILY_BOXER, 6, RB_CRANK_EVEN, RB_ANGLE_USUAL) == 0.0);
-    CHECK(isnan(rb_layout_angle(RB_FAMILY_BOXER, 8, RB_CRANK_EVEN, RB_ANGLE_USUAL)));
+    CHECK(rb_layout_angle(RB_FAMILY_BOXER, 8, RB_CRANK_EVEN, RB_ANGLE_USUAL) == 0.0);   /* stage 134 */
+    CHECK(isnan(rb_layout_angle(RB_FAMILY_BOXER, 10, RB_CRANK_EVEN, RB_ANGLE_USUAL)));
     combo list[64];
     const int k = all_combos(list);
-    CHECK_EQ_INT(k, 6 + 2 + 8 * 2 + 1 + 3);
+    CHECK_EQ_INT(k, 6 + 1 + 2 + 8 * 2 + 1 + 4);   /* the inline and boxer eights since stage 134 */
     for (int i = 0; i < k; i++) {
         const int q = rb_layout_quality(list[i].family, list[i].n, list[i].crank);
         CHECK(q == RB_QUALITY_BALANCED || q == RB_QUALITY_LOW || q == RB_QUALITY_LEAN);
@@ -372,6 +375,20 @@ void test_layout_keeps_the_presets_part(void)
     CHECK_EQ_INT(d.exhaust_systems, 1);
     CHECK(all_gaps(&d, 0, 1, 240.0) && all_gaps(&d, 1, 1, 240.0));
 
+    /* a straight eight from the four (stage 134): two manifolds, the outer four (1, 2, 7, 8)
+     * and the inner four, each fed every 180 degrees; one exhaust */
+    const rb_layout i8 = { RB_FAMILY_INLINE, 8, RB_CRANK_EVEN, 0.0 };
+    CHECK(rb_layout_desc(0, &i8, &d) == 0);
+    CHECK(d.collector[0] == 0 && d.collector[1] == 0 && d.collector[6] == 0 && d.collector[7] == 0);
+    CHECK(d.collector[2] == 1 && d.collector[3] == 1 && d.collector[4] == 1 && d.collector[5] == 1);
+    CHECK_EQ_INT(d.exhaust_systems, 1);
+    CHECK(all_gaps(&d, 0, 1, 180.0) && all_gaps(&d, 1, 1, 180.0));
+    /* a boxer eight from the six: a collector and an exhaust per bank, each fed evenly */
+    const rb_layout b8 = { RB_FAMILY_BOXER, 8, RB_CRANK_EVEN, 0.0 };
+    CHECK(rb_layout_desc(rb_preset_find("i6"), &b8, &d) == 0);
+    CHECK_EQ_INT(d.exhaust_systems, 2);
+    for (int i = 0; i < 8; i++) CHECK_EQ_INT(d.collector[i], d.bank[i]);
+
     /* a boxer four from the six: one collector, the far bank's headers crossing under */
     const rb_layout b4 = { RB_FAMILY_BOXER, 4, RB_CRANK_EVEN, 0.0 };
     CHECK(rb_layout_desc(rb_preset_find("i6"), &b4, &d) == 0);
@@ -420,7 +437,7 @@ void test_layout_api(void)
 
     /* refused whole: the engine as it was */
     const double bore = rb_get_engine(sim, RB_ENG_BORE, 0);
-    CHECK_EQ_INT(rb_load_layout(sim, 0, RB_FAMILY_INLINE, 8, RB_CRANK_EVEN, 0.0), RB_ERR_VALUE);
+    CHECK_EQ_INT(rb_load_layout(sim, 0, RB_FAMILY_INLINE, 7, RB_CRANK_EVEN, 0.0), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_load_layout(sim, 0, RB_FAMILY_V, 9, RB_CRANK_EVEN, 90.0), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_load_layout(sim, 0, RB_FAMILY_V, 8, RB_CRANK_EVEN, 140.0), RB_ERR_VALUE);
     CHECK_EQ_INT(rb_load_layout(sim, 0, 7, 8, RB_CRANK_EVEN, 90.0), RB_ERR_ID);

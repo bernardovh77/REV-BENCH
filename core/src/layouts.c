@@ -289,8 +289,8 @@ const char *rb_layout_refusal(const rb_layout *l)
     if (!isfinite(l->bank_angle)) return "a bank angle that isn't a number";
     switch (l->family) {
     case RB_FAMILY_INLINE:
-        if (n == 7 || n == 8) return "an inline engine of 7 or 8 cylinders isn't offered yet (an 8 is planned)";
-        if (n < 1 || n > 6) return "an inline engine has 1 to 6 cylinders";
+        if (n == 7) return "an inline seven isn't offered (1 to 6, and 8)";
+        if (n < 1 || n > 8) return "an inline engine has 1 to 6 or 8 cylinders";
         if (l->bank_angle != 0.0) return "an inline engine has no bank angle (0)";
         if (l->crank == RB_CRANK_TWIN_180 || l->crank == RB_CRANK_TWIN_270) {
             if (n != 2) return "a 180- or 270-degree crank is a twin's";
@@ -306,8 +306,7 @@ const char *rb_layout_refusal(const rb_layout *l)
             return "a V's crank is even firing, common pins or (a V8's) cross-plane";
         break;
     case RB_FAMILY_BOXER:
-        if (n == 8) return "a boxer eight isn't offered yet (it is planned)";
-        if (n != 2 && n != 4 && n != 6) return "a boxer has 2, 4 or 6 cylinders";
+        if (n != 2 && n != 4 && n != 6 && n != 8) return "a boxer has 2, 4, 6 or 8 cylinders";
         if (l->bank_angle != 0.0) return "a boxer's banks are always 180 degrees apart (bank angle 0)";
         if (l->crank != RB_CRANK_EVEN) return "a boxer's crank is even firing";
         break;
@@ -386,10 +385,14 @@ static void exhaust_grouping(const rb_layout *l, rb_engine_desc *d)
     const int n = d->cylinders;
     int collectors = 1;
     if (l->family == RB_FAMILY_V && n >= 4) collectors = 2;
-    if (l->family == RB_FAMILY_BOXER && n == 6) collectors = 2;
-    if (l->family == RB_FAMILY_INLINE && n == 6) collectors = 2;
+    if (l->family == RB_FAMILY_BOXER && n >= 6) collectors = 2;
+    if (l->family == RB_FAMILY_INLINE && n >= 6) collectors = 2;
     for (int i = 0; i < n; i++) {
         if (collectors == 1) d->collector[i] = 0;
+        else if (l->family == RB_FAMILY_INLINE && n == 8)
+            /* a straight eight's two manifolds (stage 134): the outer four (1, 2, 7, 8) and the
+             * inner four, each fed every 180 degrees by the 1-6-2-5-8-3-7-4 order */
+            d->collector[i] = (i < 2 || i >= 6) ? 0 : 1;
         else if (l->family == RB_FAMILY_INLINE) d->collector[i] = (i < n / 2) ? 0 : 1;
         else d->collector[i] = d->bank[i];
     }

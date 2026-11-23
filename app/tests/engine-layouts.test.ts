@@ -145,7 +145,7 @@ describe("set-layout: one transaction", () => {
     const told = s.port.of("description").find((d) => d.request === 1)!;
     expect(told.layout).toEqual(V10);
     expect(told.values[s.fieldId("cylinders")]).toEqual([10]);
-    s.send(2, { kind: "describe", edits: [], layout: { family: "boxer", cylinders: 8, crank: "even", bankAngle: 0 } });
+    s.send(2, { kind: "describe", edits: [], layout: { family: "boxer", cylinders: 10, crank: "even", bankAngle: 0 } });
     expect(s.port.reply(2)?.error?.code).toBe("RB_ERR_VALUE");
     expect(s.specs.length).toBe(before);
   });

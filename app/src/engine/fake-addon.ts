@@ -63,12 +63,12 @@ const PRESETS: PresetInfo[] = [
 ];
 const CYLINDERS: Record<string, number> = { i4: 4, i6: 6, "v8-cross": 8, "v8-flat": 8, boxer4: 4 };
 
-/** The layouts the fake builds: the core's set (rb.h, stage 131), written out again. */
+/** The layouts the fake builds: the core's set (rb.h, stages 131 and 134), written out again. */
 const FAKE_LAYOUTS: LayoutInfo[] = (() => {
   const out: LayoutInfo[] = [];
   const quality = (n: number): Quality => (n <= 4 ? "balanced" : n <= 6 ? "low" : "lean");
   const vAngle = (n: number) => (n === 6 || n === 12 ? 60 : n === 10 ? 72 : n >= 14 ? 720 / n : 90);
-  for (let n = 1; n <= 6; n++) {
+  for (const n of [1, 2, 3, 4, 5, 6, 8]) {
     const cranks: LayoutInfo["cranks"] = [{ crank: "even", name: "Even firing", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) }];
     if (n === 2) {
       cranks.push({ crank: "twin-180", name: "180-degree twin", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) });
@@ -82,7 +82,7 @@ const FAKE_LAYOUTS: LayoutInfo[] = (() => {
     if (n === 8) cranks.push({ crank: "cross-plane", name: "Cross-plane", ...a });
     out.push({ family: "v", familyName: "V", cylinders: n, usualCrank: n === 2 ? "common-pin" : n === 8 ? "cross-plane" : "even", cranks });
   }
-  for (const n of [2, 4, 6]) {
+  for (const n of [2, 4, 6, 8]) {
     out.push({ family: "boxer", familyName: "Boxer", cylinders: n, usualCrank: "even",
       cranks: [{ crank: "even", name: "Even firing", angleMin: 0, angleMax: 0, angleUsual: 0, quality: quality(n) }] });
   }

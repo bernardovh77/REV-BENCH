@@ -35,8 +35,9 @@ BUGS = {
         "int rb_layout_check(int family, int cylinders, int crank, double bank_angle)\n{\n    const rb_layout l = { family, cylinders, crank, bank_angle };",
         "int rb_layout_check(int family, int cylinders, int crank, double bank_angle)\n{\n    const rb_layout l = { family, cylinders > 16 ? 16 : cylinders, crank, bank_angle };",
         OFFERED, 300),
-    'inline-eight-not-refused': ("core/src/layouts.c",
-        "        if (n == 7 || n == 8) return \"an inline engine of 7 or 8 cylinders isn't offered yet (an 8 is planned)\";\n",
+    # stage 134 offers the eight: the seven is the one refused now
+    'inline-seven-not-refused': ("core/src/layouts.c",
+        "        if (n == 7) return \"an inline seven isn't offered (1 to 6, and 8)\";\n",
         "",
         OFFERED, 300),
     'cross-plane-as-flat': ("core/src/layouts.c",

@@ -4,6 +4,11 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 134, the inline and boxer eights (Claude)
+
+- docs/stage-134.md: `layouts.c` offers inline 8 (outer/inner fours on two manifolds) and
+  boxer 8 (a collector and exhaust per bank); the fake add-on and the contract test follow.
+
 ## 2026-11-23: Stage 129, closed as a negative result (Claude)
 
 - docs/stage-129.md: `tools/exhaust_swing_probe.c` measured every exhaust cell's swing; the 5 %

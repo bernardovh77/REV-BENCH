@@ -152,8 +152,8 @@ exhaust on delay lines); the V10 is at the edge.
 ## What is left
 
 - **The V12, V14 and V16 in real time** (above): stage 129, which closed negative (docs/stage-129.md); now stage 062's.
-- **Inline 7-8 and boxer 8:** planned, Bernardo's choice; the core's tables already have the
-  eight's firing order (the V16's banks use it).
+- **Inline 7-8 and boxer 8:** the eights are offered since stage 134 (docs/stage-134.md); an
+  inline seven isn't.
 - **Calibrated engines:** a generated engine is generic. 090-093 add researched V6s, V10s,
   V12s and a boxer six on top of these layouts, and 094 calibrates them.
 - **Bernardo's listening** to the renders: phase B's question.

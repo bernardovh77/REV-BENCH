@@ -484,6 +484,24 @@ is the revs' rhythm only.
 
 **Execution record:** `docs/stage-133.md`.
 
+<a id="stage-134"></a>
+## Stage 134 — The inline and boxer eights
+
+**Dependencies:** [131](#stage-131)
+
+**Why:** Bernardo (2026-11-18, stage 131): "keep it at about inline 6, maybe we'll add an 8
+eventually; for the boxer make it also 6 and eventually we'll add 8."
+
+**Deliverable:** the inline 8 (the straight eight's 1-6-2-5-8-3-7-4) and the boxer 8 offered as
+layouts like the others: the crank from the firing times, the exhausts grouped as real ones are,
+the running set from size, the tier.
+
+**Required exit evidence:** what's offered (the test's own statement of it); the exhausts'
+grouping fed evenly; both through the `layouts` suite's whole drive (start, 30 s idle, blip,
+load, the limiter, stop); the presets' renders unchanged.
+
+**Execution record:** `docs/stage-134.md`.
+
 <a id="stage-068"></a>
 ## Stage 068 — Live instruments, telemetry and the core's dyno
 

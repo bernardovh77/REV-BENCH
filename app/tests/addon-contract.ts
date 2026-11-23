@@ -75,9 +75,9 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       const addon = env.make();
       const layouts = addon.layouts();
       const count = (family: string) => layouts.filter((l) => l.family === family).map((l) => l.cylinders);
-      expect(count("inline")).toEqual([1, 2, 3, 4, 5, 6]);
+      expect(count("inline")).toEqual([1, 2, 3, 4, 5, 6, 8]);   // the eight since stage 134
       expect(count("v")).toEqual([2, 4, 6, 8, 10, 12, 14, 16]);
-      expect(count("boxer")).toEqual([2, 4, 6]);
+      expect(count("boxer")).toEqual([2, 4, 6, 8]);
       const v8 = layouts.find((l) => l.family === "v" && l.cylinders === 8)!;
       expect(v8.cranks.map((c) => c.crank)).toEqual(["even", "common-pin", "cross-plane"]);
       expect(v8.usualCrank).toBe("cross-plane");
@@ -102,7 +102,7 @@ export function describeAddonContract(label: string, env: ContractEnv): void {
       expect(edited[id("header_length")][2]).toBe(0.7);
       for (const layout of [
         { family: "v", cylinders: 9, crank: "even", bankAngle: 90 },
-        { family: "inline", cylinders: 8, crank: "even", bankAngle: 0 },
+        { family: "inline", cylinders: 7, crank: "even", bankAngle: 0 },
         { family: "boxer", cylinders: 4, crank: "cross-plane", bankAngle: 0 },
         { family: "v", cylinders: 6, crank: "even", bankAngle: 150 },
       ] as const) {
