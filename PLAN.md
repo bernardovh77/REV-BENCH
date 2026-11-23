@@ -112,6 +112,12 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 **Next stage: 069** (066 stays 🟡 for Bernardo's device checks, docs/stage-066.md "What is left"). Open beside it: 118's stated misses (the four 1.05 dB off at idle; the
 V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB stated in
 docs/stage-118.md and his blind listening of low against lean still to do, in 066's build).
+**Reported by Bernardo, 2026-11-22 (0.2.5, not yet reproduced):** with an inline 3 and the
+engine off, while he changed settings in the editor, a bland noise slowly rose and faded away
+on its own, and the vacuum gauge glitched and showed "boost". Suspects to check first in 069:
+a rebuild's swap or fade with the crank still (sound from a stopped engine), and the
+instruments reading a stopped engine's manifold (the boost/vacuum readout against sea-level
+air, stage 068).
 One decision waits for Bernardo: the project's licence (README, "Licence").
 
 ## The stages, in the order they'll be done
