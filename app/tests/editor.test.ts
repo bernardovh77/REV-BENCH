@@ -75,6 +75,20 @@ function fakeStore(options: { refuse?: (edits: EngineEdit[]) => string | null } 
 }
 
 describe("sections", () => {
+  it("put the rev limiter's fields together, its cut named (stage 133)", () => {
+    const { editor, store } = fakeStore();
+    store.engineFields = [
+      ...FIELDS,
+      { id: 6, name: "rev_limit", unit: "rpm", min: 2000, max: 12000, flags: ["live"] },
+      { id: 7, name: "limiter_gap", unit: "rpm", min: 20, max: 1500, flags: ["live"] },
+      { id: 8, name: "limiter_cut", unit: "", min: 0, max: 1, flags: ["live", "integer"] },
+    ];
+    store.engineValues = [...(store.engineValues ?? []), [6800], [100], [0]];
+    const limiter = editor.sections().find((x) => x.title === "Rev limiter");
+    expect(limiter?.fields.map((x) => x.name)).toEqual(["rev_limit", "limiter_gap", "limiter_cut"]);
+    expect(CHOICES.limiter_cut).toEqual(["Spark cut", "Fuel cut"]);
+  });
+
   it("leave out what has no effect: the crank position always, the bank angle on one bank", () => {
     const { editor, store } = fakeStore();
     store.engineFields = [

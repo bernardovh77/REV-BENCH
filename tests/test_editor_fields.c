@@ -11,7 +11,7 @@
  * driven twice, held wide open and idling with its crank free, and the field has an effect when
  * its sound, its torque, its idle speed or its rev limiter's cuts move measurably from the plain
  * preset's (EFFECT_*). The rev limit, part of the engine computer, is driven free and wide open
- * too. A field that acts only with another part fitted is driven with that part (CONTEXT); one
+ * too, and so are the limiter's character (stage 133); the 2-step's fields with it armed. A field that acts only with another part fitted is driven with that part (CONTEXT); one
  * with no effect on the sound or the running is NO_EFFECT, with why, and held to it.
  */
 #include <math.h>
@@ -89,8 +89,9 @@ static rb_sim *make(int preset, const change *c)
     return sim;
 }
 
-/* Held wide open at held_rpm, then free at idle; for the rev limit, also free wide open. */
-static void drive(int preset, const change *c, double held_rpm, int rev, measured *m)
+/* Held wide open at held_rpm, then free at idle; for the rev limiter's fields, also free wide
+ * open, with the 2-step armed for its own (`launch`). */
+static void drive(int preset, const change *c, double held_rpm, int rev, int launch, measured *m)
 {
     rb_sim *sim = make(preset, c);
     CHECK(sim != NULL);
@@ -121,6 +122,7 @@ static void drive(int preset, const change *c, double held_rpm, int rev, measure
     rb_set_param(sim, RB_PARAM_HOLD, 1);
     rb_set_param(sim, RB_PARAM_HOLD_RPM, 1500.0);
     rb_set_param(sim, RB_PARAM_THROTTLE, 1);
+    rb_set_param(sim, RB_PARAM_LAUNCH, launch);
     render(sim, NULL, RATE / 10);
     rb_set_param(sim, RB_PARAM_HOLD, 0);   /* free, wide open: it revs to its limit */
     render(sim, NULL, REV_FRAMES);
@@ -281,9 +283,11 @@ static void each_field(const char *key)
         rb_sim *before = make(preset, &plain);
         const int banks = before ? (int)rb_get_engine(before, RB_ENG_BANKS, 0) : 0;
         rb_destroy(before);
-        const int rev = f == RB_ENG_REV_LIMIT;
-        drive(preset, &plain, 3000.0, rev, &base);
-        drive(preset, &c, 3000.0, rev, &edited);
+        const int launch = f == RB_ENG_LAUNCH_RPM || f == RB_ENG_LAUNCH_GAP || f == RB_ENG_LAUNCH_BAND;
+        const int rev = f == RB_ENG_REV_LIMIT || f == RB_ENG_LIMITER_GAP || f == RB_ENG_LIMITER_BAND
+                     || f == RB_ENG_LIMITER_CUT || launch;
+        drive(preset, &plain, 3000.0, rev, launch, &base);
+        drive(preset, &c, 3000.0, rev, launch, &edited);
         const double e = effect(&base, &edited);
         const char *why = no_effect_reason(name, banks);
         if (why) {

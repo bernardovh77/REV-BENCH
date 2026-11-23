@@ -79,6 +79,17 @@ describe("keys", () => {
     expect(s.params).toEqual([["ignition", 1], ["starter", 1], ["starter", 0], ["ignition", 0]]);
   });
 
+  it("L holds the 2-step while held, and lets go of it on blur (stage 133)", () => {
+    const s = setup();
+    s.key("keydown", "KeyL");
+    s.key("keydown", "KeyL", { repeat: true });
+    s.key("keyup", "KeyL");
+    expect(s.params).toEqual([["launch", 1], ["launch", 0]]);
+    s.key("keydown", "KeyL");
+    s.win.fire("blur");
+    expect(s.params.at(-1)).toEqual(["launch", 0]);
+  });
+
   it("leaves keys alone in a form control, or with Ctrl, Alt or Meta", () => {
     const s = setup();
     s.key("keydown", "KeyI", { target: { tagName: "SELECT" } });

@@ -133,7 +133,8 @@ void rb_sim_events_step(rb_sim *sim)
     for (size_t k = 0; k < sim->injection_trace.count && n < MOST_PER_STEP; k++) {
         const rb_injection_event *r = &sim->injection_records[k];
         const int kind = r->kind == RB_INJ_DELIVERED ? RB_EVENT_FUEL_INJECTION
-                       : r->kind == RB_INJ_DFCO ? RB_EVENT_FUEL_CUT : -1;
+                       : r->kind == RB_INJ_DFCO ? RB_EVENT_FUEL_CUT
+                       : r->kind == RB_INJ_LIMITER ? RB_EVENT_LIMITER_CUT : -1;
         if (kind >= 0)
             got[n++] = (pending){ subtick_of(r->fraction), r->tick, r->charge, kind, r->cylinder };
     }

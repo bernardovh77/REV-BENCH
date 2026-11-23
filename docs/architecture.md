@@ -351,6 +351,13 @@ Where this file and the code disagree, the code is right and this file is fixed.
     Anything set on the sim wakes it: every setter does `sim->touched++` (a parameter only when
     its value changes), and a rebuild moves `generation`. **A new setter that changes what the
     engine does must do `sim->touched++` too**, or a sleeping engine won't see it.
+- **Stage 133** (the rev limiter's character and a 2-step, docs/stage-133.md): the limiter reads
+  its limit, resume point and soft band from the description (`limiter_band`, `limiter_cut`,
+  `launch_*`; `limiter_gap` is worked out, `rev_limit - rev_limit_resume`, and written through
+  `rev_limit_resume`). `launching()` (engine.c) picks the 2-step's three while
+  `RB_PARAM_LAUNCH` is 1 and its limit is lower. `limiter_cut()` is the one decision (hard,
+  soft or none): `spark()` asks it with a spark cut, the injection with a fuel cut
+  (`RB_INJ_LIMITER`). With the defaults the arithmetic is stage 12c's, bit for bit.
 
 ## Tools and charts
 

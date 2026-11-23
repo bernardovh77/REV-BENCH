@@ -123,6 +123,7 @@ int rb_sim_apply(rb_sim *sim, int id)
     case RB_PARAM_SOURCE:     sim->source = (int)v; break;
     case RB_PARAM_IGNITION:   e->ignition = (int)v; break;
     case RB_PARAM_STARTER:    e->starter = (int)v; break;
+    case RB_PARAM_LAUNCH:     e->launch = (int)v; break;
     case RB_PARAM_THROTTLE:   e->throttle_pos = v; break;
     case RB_PARAM_LOAD_TORQUE: apply_load(sim); break;
     case RB_PARAM_HOLD:

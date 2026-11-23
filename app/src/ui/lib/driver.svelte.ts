@@ -5,6 +5,8 @@
  *   W or Up      the throttle key (its style: throttle-input.ts)
  *   I            ignition, on and off
  *   S            the starter, while held
+ *   L            the 2-step (launch control), while held (stage 133): the engine computer holds
+ *                its launch limit instead of the rev limit
  *   B            the A/B switch: flips RB_PARAM_VARIANT between 0 (the accepted sound) and the
  *                candidate chosen in the developer menu (stage 127's switch)
  *
@@ -55,6 +57,7 @@ export const THROTTLE_KEYS: readonly string[] = ["KeyW", "ArrowUp"];
 export const FRAME_GAP_MS = 250;
 export const IGNITION_KEY = "KeyI";
 export const STARTER_KEY = "KeyS";
+export const LAUNCH_KEY = "KeyL";
 export const AB_KEY = "KeyB";
 /** The core's RB_VARIANT_MAX: the candidates the switch can name. */
 export const VARIANT_MAX = 7;
@@ -83,6 +86,7 @@ export class Driver {
   /** in blind mode, which variant each side plays: decided when blind mode starts */
   private blindB = 0;
   private starterHeld = false;
+  private launchHeld = false;
   /** the throttle key's own press is current: after a let-go, only a fresh press counts */
   private throttlePressed = false;
   /** the last animation frame's time, to notice a window that stopped getting frames */
@@ -226,6 +230,9 @@ export class Driver {
     } else if (event.code === STARTER_KEY && !event.repeat) {
       this.starterHeld = true;
       void this.deps.store.setParam("starter", 1);
+    } else if (event.code === LAUNCH_KEY && !event.repeat) {
+      this.launchHeld = true;
+      void this.deps.store.setParam("launch", 1);
     } else if (event.code === AB_KEY && !event.repeat) {
       this.flip();
     }
@@ -238,6 +245,12 @@ export class Driver {
       this.input.keyUp(now);
     }
     else if (event.code === STARTER_KEY && this.starterHeld) this.releaseStarter();
+    else if (event.code === LAUNCH_KEY && this.launchHeld) this.releaseLaunch();
+  }
+
+  private releaseLaunch(): void {
+    this.launchHeld = false;
+    void this.deps.store.setParam("launch", 0);
   }
 
   private releaseStarter(): void {
@@ -250,5 +263,6 @@ export class Driver {
     this.throttlePressed = false;
     this.input.blur(this.deps.now());
     if (this.starterHeld) this.releaseStarter();
+    if (this.launchHeld) this.releaseLaunch();
   }
 }

@@ -32,7 +32,9 @@ static double value(const rb_engine_desc *d,const field *f,int i)
 static int import(rb_engine_desc *d)
 {
     unsigned char seen[COUNT][RB_MAX_CYLINDERS]={0};
-    memset(d,0,sizeof *d);
+    /* every field the contract carries must come in the file (seen, below); one it doesn't
+     * carry (stage 133's limiter and 2-step) keeps the core's default */
+    rb_engine_desc_default(d);
     char line[256],name[100],extra;
     int index;
     double v;

@@ -184,6 +184,11 @@ typedef enum rb_param {
                                    too). 0 by default: renders stay as
                                    they were, bit for bit; the real-time
                                    host's builds turn it on            */
+    RB_PARAM_LAUNCH,            /* 1: the 2-step armed (stage 133): the
+                                   engine computer holds RB_ENG_LAUNCH_RPM
+                                   with its own gap and band instead of
+                                   the rev limit, if lower. A driver's
+                                   control: held while launching       */
     RB_PARAM_COUNT
 } rb_param;
 
@@ -633,8 +638,29 @@ typedef enum rb_engine_field {
     RB_ENG_OUTLET_RADIATION,    /* 1: the tailpipes' outlets radiate as unflanged
                                    pipes (causal load); 0: a constant end (stage 121
                                    made it public)                                */
+    /* Stage 133: the rev limiter's character and a 2-step (launch control). */
+    RB_ENG_LIMITER_GAP,         /* rpm: how far below the rev limit the crank must
+                                   fall before the hard cut lets go: wider, slower
+                                   and deeper bounces; narrower, a fast stutter    */
+    RB_ENG_LIMITER_BAND,        /* rpm below the limit where the soft cut skips
+                                   sparks at random, more of them nearer the limit
+                                   (0: the hard cut alone)                         */
+    RB_ENG_LIMITER_CUT,         /* an rb_limiter_cut: what the limiter cuts        */
+    RB_ENG_LAUNCH_RPM,          /* rpm: the 2-step's limit, held while
+                                   RB_PARAM_LAUNCH is 1 (and lower than the rev
+                                   limit)                                          */
+    RB_ENG_LAUNCH_GAP,          /* rpm: the 2-step's own gap ...                   */
+    RB_ENG_LAUNCH_BAND,         /* rpm: ... and soft band                          */
     RB_ENG_COUNT
 } rb_engine_field;
+
+/* What the rev limiter cuts (stage 133), RB_ENG_LIMITER_CUT. */
+typedef enum rb_limiter_cut {
+    RB_LIMITER_SPARK = 0,       /* the sparks (the default): the charge still
+                                   leaves through the exhaust unburned           */
+    RB_LIMITER_FUEL             /* the injectors: a cylinder already fuelled
+                                   still fires, so it bites a cycle later        */
+} rb_limiter_cut;
 
 /* What each muffler is (stage 12), between the catalyst and the tailpipe. */
 typedef enum rb_muffler_type {

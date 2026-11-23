@@ -102,6 +102,13 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_ACCESSORY_POWER]   = { "accessory_power",   "W",      LIVE,          0.0,     5000.0,  DBL(accessory_power) },
     [RB_ENG_CATALYST_LAMINAR]  = { "catalyst_laminar",  "Pa s/m", 0,             0.0,     10000.0, DBL(catalyst_laminar) },
     [RB_ENG_OUTLET_RADIATION]  = { "outlet_radiation",  "",       WHOLE,         0.0,     1.0,     INT(outlet_radiation) },
+    /* stage 133: the limiter's character and the 2-step */
+    [RB_ENG_LIMITER_GAP]       = { "limiter_gap",       "rpm",    LIVE,          20.0,    1500.0,  CALC },
+    [RB_ENG_LIMITER_BAND]      = { "limiter_band",      "rpm",    LIVE,          0.0,     1000.0,  DBL(limiter_band) },
+    [RB_ENG_LIMITER_CUT]       = { "limiter_cut",       "",       LIVE | WHOLE,  0.0,     1.0,     INT(limiter_cut) },
+    [RB_ENG_LAUNCH_RPM]        = { "launch_rpm",        "rpm",    LIVE,          1500.0,  12000.0, DBL(launch_rpm) },
+    [RB_ENG_LAUNCH_GAP]        = { "launch_gap",        "rpm",    LIVE,          20.0,    1500.0,  DBL(launch_gap) },
+    [RB_ENG_LAUNCH_BAND]       = { "launch_band",       "rpm",    LIVE,          0.0,     1000.0,  DBL(launch_band) },
 };
 
 typedef struct cylinder_field_info {
@@ -242,6 +249,7 @@ static double worked_out(const rb_engine *e, int field)
     case RB_ENG_INTAKE_CLOSES:  return rb_valve_closes(&e->desc.intake);
     case RB_ENG_EXHAUST_OPENS:  return rb_valve_opens(&e->desc.exhaust);
     case RB_ENG_EXHAUST_CLOSES: return rb_valve_closes(&e->desc.exhaust);
+    case RB_ENG_LIMITER_GAP:    return e->desc.rev_limit - e->desc.rev_limit_resume;
     default:                    return NAN;
     }
 }
@@ -292,7 +300,9 @@ int rb_set_engine(rb_sim *sim, int field, int index, double value)
     const rb_engine_desc now = rb_sim_desc(sim);
     rb_engine_desc d = now;
     char *at = (char *)&d + f->offset;
-    if (f->kind == STORED_INT) {
+    if (f->kind == WORKED_OUT) {               /* stage 133: the limiter's gap */
+        if (field == RB_ENG_LIMITER_GAP) d.rev_limit_resume = d.rev_limit - value;
+    } else if (f->kind == STORED_INT) {
         int *slot = (int *)at;
         const int v = (int)value;
         if (field == RB_ENG_FIRING_ORDER) {   /* swap places with cylinder v */

@@ -15,6 +15,7 @@ enum {
     RB_INJ_NO_AIR,         /* none: no air trapped */
     RB_INJ_RETAINED,       /* none: the fuel already there meets the target */
     RB_INJ_INVALID,        /* none: a NaN or impossible state */
+    RB_INJ_LIMITER,        /* none: the rev limiter cuts the fuel (stage 133) */
     RB_INJ_KINDS
 };
 typedef struct rb_injection_event {

@@ -23,7 +23,7 @@ BUGS = {
         ['test_calibration_burn_and_spark'], 600),
     # test_presets_run_on_their_own: the soft cut keeps the engine at its limit
     'soft-cut-too-early': ("core/src/engine.c",
-        "(e->desc.rev_limit - LIMIT_SOFT)) / LIMIT_SOFT;",
-        "(e->desc.rev_limit - 120.0 - LIMIT_SOFT)) / LIMIT_SOFT;",
+        "    const double into = (e->omega * 30.0 / PI - (limit - band)) / band;",
+        "    const double into = (e->omega * 30.0 / PI - (limit - 120.0 - band)) / band;",
         ['test_presets_run_on_their_own'], 900),
 }

@@ -244,6 +244,13 @@ void test_api_rest_sleeps_a_still_engine_only(void);
 void test_api_rest_wakes_on_anything_set(void);
 void test_api_rest_never_touches_a_running_engine(void);
 void test_api_rest_keeps_a_fresh_engine_from_singing(void);
+/* ---- the rev limiter's character and the 2-step (tests/test_limiter.c, stage 133) ---- */
+void test_limiter_defaults_are_the_old_limiter(void);
+void test_limiter_gap_sets_the_bounce(void);
+void test_limiter_band_softens_the_cut(void);
+void test_limiter_fuel_cut_holds_the_limit(void);
+void test_limiter_launch_holds_its_own_limit(void);
+void test_limiter_launch_lets_go(void);
 void test_editor_every_field_has_an_effect(void);
 void test_layout_offers_the_stated_set(void);
 void test_layout_presets_are_their_own_layouts(void);
@@ -558,6 +565,12 @@ static const struct {
     T(test_api_rest_wakes_on_anything_set),
     T(test_api_rest_never_touches_a_running_engine),
     T(test_api_rest_keeps_a_fresh_engine_from_singing),
+    T(test_limiter_defaults_are_the_old_limiter),
+    T(test_limiter_gap_sets_the_bounce),
+    T(test_limiter_band_softens_the_cut),
+    T(test_limiter_fuel_cut_holds_the_limit),
+    T(test_limiter_launch_holds_its_own_limit),
+    T(test_limiter_launch_lets_go),
     T(test_editor_every_field_has_an_effect),
     T(test_layout_offers_the_stated_set),
     T(test_layout_presets_are_their_own_layouts),

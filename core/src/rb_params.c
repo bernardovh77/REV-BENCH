@@ -53,6 +53,8 @@ static const param_info PARAMS[RB_PARAM_COUNT] = {
     [RB_PARAM_SPARK_OFFSET]    = { "spark_offset",    "deg", -15.0, 15.0,   0.0,    LIVE },
     /* stage 069 */
     [RB_PARAM_REST]            = { "rest",            "",   0.0,   1.0,     0.0,    LIVE | INT },
+    /* stage 133 */
+    [RB_PARAM_LAUNCH]          = { "launch",          "",   0.0,   1.0,     0.0,    LIVE | INT | CONTROL },
 };
 
 typedef struct telemetry_info {

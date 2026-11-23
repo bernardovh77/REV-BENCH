@@ -124,6 +124,8 @@ const PARAM_ROWS: [string, string, number, number, number, string[]][] = [
   ["spark_offset", "deg", -15, 15, 0, []],
   // stage 069: a stopped engine sleeps (the fake never needs to)
   ["rest", "", 0, 1, 0, ["integer"]],
+  // stage 133: the 2-step, held (the fake only keeps it)
+  ["launch", "", 0, 1, 0, ["integer", ...control]],
 ];
 const PARAMS: ParamInfo[] = PARAM_ROWS.map(([name, unit, min, max, def, flags], id) => ({
   id,

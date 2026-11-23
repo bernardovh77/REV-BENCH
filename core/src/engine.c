@@ -15,6 +15,8 @@
 #include <math.h>
 #include <string.h>
 
+static int limiter_cut(rb_engine *e);   /* the rev limiter's cut (stage 133), below */
+
 static const double PI = 3.14159265358979323846;
 static const double AIR[RB_NSPECIES] = { [RB_AIR] = 1.0 };
 static const double FUEL[RB_NSPECIES] = { [RB_FUEL] = 1.0 };
@@ -188,6 +190,11 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->rev_limit_resume = 6700.0;
     d->cranking_rpm = 400.0;
     d->cranking_spark = 5.0;
+    d->limiter_band = 150.0;   /* stage 12c's soft cut */
+    d->limiter_cut = RB_LIMITER_SPARK;
+    d->launch_rpm = 4000.0;    /* a 2-step's usual launch speed */
+    d->launch_gap = 100.0;
+    d->launch_band = 0.0;      /* hard: the 2-step's stutter */
 }
 
 /* Crank angle (0..360) where cylinder i is at a TDC, relative to cylinder 1. */
@@ -354,6 +361,11 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (!(d->rev_limit_resume > 0.0 && d->rev_limit > d->rev_limit_resume && d->rev_limit < 1e5)) return -1;
     if (!(d->cranking_rpm >= 0.0 && d->cranking_rpm < 1e4)) return -1;
     if (!(d->cranking_spark >= -90.0 && d->cranking_spark <= 90.0)) return -1;
+    if (!(d->limiter_band >= 0.0 && d->limiter_band <= 1000.0)) return -1;
+    if (d->limiter_cut != RB_LIMITER_SPARK && d->limiter_cut != RB_LIMITER_FUEL) return -1;
+    if (!(d->launch_rpm >= 1000.0 && d->launch_rpm < 1e5)) return -1;
+    if (!(d->launch_gap > 0.0 && d->launch_gap < d->launch_rpm)) return -1;
+    if (!(d->launch_band >= 0.0 && d->launch_band <= 1000.0)) return -1;
     return 0;
 }
 
@@ -1057,11 +1069,14 @@ static void close_intake(rb_engine *e, int i, double fraction)
         kind = RB_INJ_AFR_DISABLED;
     else if (e->fuel_cut)
         kind = RB_INJ_DFCO;
+    else if (e->desc.limiter_cut == RB_LIMITER_FUEL && limiter_cut(e) >= 0)
+        kind = RB_INJ_LIMITER;   /* stage 133: the limiter cuts the fuel */
     else if (!(g->m[RB_AIR] > 0.0))
         kind = RB_INJ_NO_AIR;
     if (!rb_finite(target) || !rb_finite(retained) || retained < 0.0 || !rb_finite(g->T) ||
         !(g->T > 0.0))
         kind = RB_INJ_INVALID;
+    if (kind == RB_INJ_LIMITER) e->limiter_cuts++;
     double fuel = kind == RB_INJ_DELIVERED ? target - retained : 0.0, energy = 0.0;
     if (kind == RB_INJ_DELIVERED && !(fuel > 0.0)) kind = RB_INJ_RETAINED;
     if (kind==RB_INJ_DELIVERED) {
@@ -1137,23 +1152,41 @@ static void close_intake(rb_engine *e, int i, double fraction)
     b->spark_due = 1;
 }
 
-/* The rev limiter's soft cut (stage 12c): within LIMIT_SOFT rpm below the
- * rev limit the engine computer skips single sparks at random, more of them
- * the nearer the limit (a share that grows from none to all across the
- * band), as a racing ECU's soft cut does: held there in gear the engine
- * stutters at the limit, firing on some of its cylinders. Above the limit
- * the hard cut stops every spark (engine_computer). Before stage 12c only
- * the hard cut was there: in gear, with a car's inertia on the crank, it
- * took 0.6 s to fall the 100 rpm back to where it fires again; real engines
- * bounce off their limiters 10-30 times a second. */
-#define LIMIT_SOFT 150.0   /* rpm */
+/* Stage 133: 1 while the 2-step holds the engine (armed, and its limit
+ * lower than the rev limit): its limit, gap and band stand in for the rev
+ * limiter's. */
+static int launching(const rb_engine *e)
+{
+    return e->launch && e->desc.launch_rpm < e->desc.rev_limit;
+}
 
+/* The rev limiter's soft cut (stage 12c): within the band below the rev
+ * limit (limiter_band, 150 rpm by default; stage 133 made it a field) the
+ * engine computer skips single cuts at random, more of them the nearer the
+ * limit (a share that grows from none to all across the band), as a racing
+ * ECU's soft cut does: held there in gear the engine stutters at the limit,
+ * firing on some of its cylinders. Above the limit the hard cut stops every
+ * one (engine_computer). Before stage 12c only the hard cut was there: in
+ * gear, with a car's inertia on the crank, it took 0.6 s to fall the 100 rpm
+ * back to where it fires again; real engines bounce off their limiters 10-30
+ * times a second. The 2-step (launching) has its own band. */
 static int soft_cut(rb_engine *e)
 {
     if (e->hold_speed) return 0;   /* the engine computer is off while held */
-    const double into = (e->omega * 30.0 / PI - (e->desc.rev_limit - LIMIT_SOFT)) / LIMIT_SOFT;
+    const int l = launching(e);
+    const double band = l ? e->desc.launch_band : e->desc.limiter_band;
+    if (!(band > 0.0)) return 0;
+    const double limit = l ? e->desc.launch_rpm : e->desc.rev_limit;
+    const double into = (e->omega * 30.0 / PI - (limit - band)) / band;
     if (!(into > 0.0)) return 0;
     return rb_rand_uniform(&e->rand_cycles) < into;
+}
+
+/* What the limiter does to this spark or injection: RB_IGN_HARD_CUT,
+ * RB_IGN_SOFT_CUT, or -1 (none). */
+static int limiter_cut(rb_engine *e)
+{
+    return e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT : -1);
 }
 
 /* The spark: what can burn is the fuel, or as much of it as the air can burn,
@@ -1168,7 +1201,8 @@ static void spark(rb_engine *e, int i, double fraction, double angle)
         ignition_event(e, i, RB_IGN_OFF, fraction, angle, g->m[RB_FUEL]);
         return;
     }
-    const int cut = e->spark_cut ? RB_IGN_HARD_CUT : (soft_cut(e) ? RB_IGN_SOFT_CUT : -1);
+    /* a fuel-cut limiter (stage 133) leaves the sparks alone */
+    const int cut = e->desc.limiter_cut == RB_LIMITER_SPARK ? limiter_cut(e) : -1;
     if (cut >= 0) { /* suppression is not an actual discharge */
         e->limiter_cuts++;
         ignition_event(e, i, cut, fraction, angle, g->m[RB_FUEL]);
@@ -1356,8 +1390,13 @@ static void engine_computer(rb_engine *e)
         return;
     }
 
-    if (rpm > d->rev_limit) e->spark_cut = 1;   /* the hard cut (the soft one: soft_cut) */
-    else if (rpm < d->rev_limit_resume) e->spark_cut = 0;
+    /* the hard cut (the soft one: soft_cut), at the 2-step's limit while it
+     * holds the engine (stage 133) */
+    const int l = launching(e);
+    const double limit = l ? d->launch_rpm : d->rev_limit;
+    const double resume = l ? d->launch_rpm - d->launch_gap : d->rev_limit_resume;
+    if (rpm > limit) e->spark_cut = 1;
+    else if (rpm < resume) e->spark_cut = 0;
 
     if (!(d->idle_rpm > 0.0)) {
         e->idle_valve = 0.0;

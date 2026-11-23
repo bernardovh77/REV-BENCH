@@ -195,6 +195,13 @@ typedef struct rb_engine_desc {
     double cranking_spark;                /* ... and sparks this late (deg before TDC) */
     double catalyst_laminar;              /* Pa per m/s: substrate's linear loss;
                                            * 0 with catalyst bypass pipes (13b-r)    */
+    /* Stage 133: the limiter's character and the 2-step. */
+    double limiter_band;                  /* rpm: the soft cut's band under the limit */
+    int    limiter_cut;                   /* an rb_limiter_cut                        */
+    double launch_rpm;                    /* rpm: the 2-step's limit ...              */
+    double launch_gap;                    /* ... the speed it falls below before
+                                           * firing again ...                         */
+    double launch_band;                   /* ... and its soft band                    */
 } rb_engine_desc;
 
 /* What went through the engine during one 720-degree cycle. */
@@ -292,6 +299,7 @@ typedef struct rb_engine {
     double load_torque;     /* N m taken by what the crank drives (free; < 0 drives it) */
     double throttle_pos;    /* pedal, 0..1 (set it any time)                           */
     int    ignition;        /* 1 = injectors and spark on, 0 = motored (any time)      */
+    int    launch;          /* 1 = the 2-step armed (RB_PARAM_LAUNCH, stage 133)       */
     double afr;             /* air-fuel ratio (by mass) the injectors aim for          */
     int    spark_map;       /* 1: the engine computer times the spark, aiming the
                              * middle of the burn just after TDC (the default);

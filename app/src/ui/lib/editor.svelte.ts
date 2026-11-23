@@ -69,7 +69,9 @@ export const SECTIONS: readonly { title: string; fields: readonly string[] }[] =
       "muffler_type", "muffler_volume", "muffler_length", "tailpipe_length", "tailpipe_diameter", "outlet_radiation",
     ],
   },
-  { title: "Limits and load", fields: ["idle_rpm", "rev_limit", "accessory_power"] },
+  { title: "Limits and load", fields: ["idle_rpm", "accessory_power"] },
+  // stage 133: how the revs bounce at the limit, and the 2-step (held on L)
+  { title: "Rev limiter", fields: ["rev_limit", "limiter_gap", "limiter_band", "limiter_cut", "launch_rpm", "launch_gap", "launch_band"] },
 ];
 
 /**
@@ -88,6 +90,7 @@ export const CHOICES: Readonly<Record<string, readonly string[]>> = {
   outlet_radiation: ["Constant end", "Radiating outlet"],
   exhaust_systems: ["", "One (single exhaust)", "Two (twin exhaust)"],
   collector: ["First", "Second"],
+  limiter_cut: ["Spark cut", "Fuel cut"],
 };
 
 /** A label from a core name: "compression_ratio" -> "Compression ratio". */

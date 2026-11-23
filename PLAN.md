@@ -109,7 +109,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 133** (Bernardo's request: the limiter's character and a 2-step), then phase B.
+**Next stage: phase B** (below; its stages ask for Bernardo's listening). 133, his request, is done.
 069 and 066 stay 🟡 for Bernardo's real-device runs, listening and checks (docs/stage-069.md and
 docs/stage-066.md, "What is left"). Open beside them: 118's stated misses (the four 1.05 dB off
 at idle; the V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB
@@ -142,7 +142,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ✅ | [132](docs/roadmap/07-app.md#stage-132) | The build saver (2026-11-19, docs/stage-132.md): engines made in the editor saved under a name (preset, layout, edits, AFR and spark offset; one JSON file each in the user-data folder), listed, loaded back as one rebuild, replaced, deleted; the main process's files reached by id only. Pulls forward 095's saved builds. Bernardo's request, 2026-11-18 | 067, 131 |
 | ✅ | [068](docs/roadmap/07-app.md#stage-068) | Live instruments, telemetry and the core's dyno (2026-11-19, docs/stage-068.md): speed, MAP and boost, lambda/AFR, torque, power, spark, the cuts, an output meter with defined ballistics (the host's peak and RMS of every block), render and underruns; the model's own warning (its guards per second, set from the presets, cost nothing measurable); snapshot-v3; the core's dyno in the app: sweep or hold, live curves with runs overlaid, CSV export; the app's curves are the native readings, 115 points exact | 066, 067 |
 | 🟡 | [069](docs/roadmap/07-app.md#stage-069) | The first playable app, qualified on Windows (2026-11-23, docs/stage-069.md): Bernardo's engine-off tone found (a fresh build's cold gas against warm walls: a Sondhauss-like tone after 6 s+) and kept out of the app (a stopped engine sleeps: `RB_PARAM_REST`, no cost, renders bit-identical); the gauge steadied; the "can't keep up" warning offers a longer latency or a cheaper quality as the cause wants, and says when on battery; the defaults recorded; 15-minute drives on the null device (40 ms clean; at 20 ms the null device starves itself; the busy window costs the render a third more). Open for Bernardo's real-device runs, listening and the pre-release | 066, 067, 068, 118 |
-| ⬜ | [133](docs/roadmap/07-app.md#stage-133) | The rev limiter's character and a 2-step: the cut's bounce (resume gap), the soft band's width, spark or fuel cut, edited like any field; a second, lower limit held on a key or button (launch control). Bernardo's request, 2026-11-22 | 066, 067, 069 |
+| ✅ | [133](docs/roadmap/07-app.md#stage-133) | The rev limiter's character and a 2-step (2026-11-23, docs/stage-133.md): the gap (bounce depth and rate: 50 rpm 36 a second, 600 rpm 8), the soft band, spark or fuel cut, and a 2-step (its limit, gap and band) held on L; live fields in the editor's Rev limiter section; renders with the defaults byte-identical. Bernardo's request, 2026-11-22; his listening to come | 066, 067, 069 |
 
 ### Phase B — the sound to real-engine standard
 

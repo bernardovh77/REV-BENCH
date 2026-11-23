@@ -4,6 +4,14 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 133, the rev limiter's character and a 2-step (Claude)
+
+- docs/stage-133.md. Fields `limiter_gap` (worked out, written through `rev_limit_resume`),
+  `limiter_band`, `limiter_cut` (`RB_LIMITER_SPARK`/`_FUEL`), `launch_rpm`/`_gap`/`_band`;
+  `RB_PARAM_LAUNCH` (the app's L key). engine.c: `launching()`, `limiter_cut()`.
+- `tools/build_contract_probe.c` now starts from `rb_engine_desc_default` (a field the
+  contract doesn't carry keeps its default).
+
 ## 2026-11-23: Stage 069, qualified on Windows without the real device (Claude)
 
 - docs/stage-069.md; stays 🟡 for Bernardo's real-device runs and listening.
