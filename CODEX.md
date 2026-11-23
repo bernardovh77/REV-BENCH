@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 129, closed as a negative result (Claude)
+
+- docs/stage-129.md: `tools/exhaust_swing_probe.c` measured every exhaust cell's swing; the 5 %
+  line is not near the catalyst (the six, flat-plane V8 and boxer never reach it), so no
+  delay-line tier. Also: the snapshot e2e's hang was a race in the test (f160931).
+
 ## 2026-11-23: Stage 130, engine.c split (Claude)
 
 - docs/stage-130.md. `core/src/engine_build.c` (description, layout, checks, building),

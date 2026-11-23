@@ -139,12 +139,13 @@ MATERIAL_PROBE_OBJ := $(call obj,tools/material_probe.c)
 FIXED_TRANSPORT_OBJ := $(call obj,tools/fixed_transport_probe.c)
 JUNCTION_PROBE_OBJ := $(call obj,tools/junction_probe.c)
 ENGINE_OFF_PROBE_OBJ := $(call obj,tools/engine_off_probe.c)
+EXHAUST_SWING_OBJ := $(call obj,tools/exhaust_swing_probe.c)
 THERMAL_BENCH_OBJ := $(call obj,tools/thermal_bench.c)
 THERMAL_PROBE_OBJ := $(call obj,tools/thermal_probe.c)
 GAS_GRAPH_PROBE_OBJ := $(call obj,tools/gas_graph_probe.c)
 # Every object, for the header dependencies (-MMD) included at the end: one
 # left out isn't rebuilt when a header changes (stage 13: rb_bench.o, a segfault).
-ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(BENCH_RENDER_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ) $(ENGINE_OFF_PROBE_OBJ)
+ALL_OBJ    := $(CORE_OBJ) $(NATIVE_OBJ) $(CLI_OBJ) $(TEST_OBJ) $(BENCH_OBJ) $(BENCH_RENDER_OBJ) $(AUDIT_OBJ) $(ACOUSTIC_OBJ) $(ACOUSTIC_PROBE_OBJ) $(COUPLED_PROBE_OBJ) $(BUILD_CONTRACT_OBJ) $(DIAGNOSTICS_OBJ) $(IGNITION_OBJ) $(IGNITION_SCENARIO_OBJ) $(COMBUSTION_VARIATION_OBJ) $(INJECTION_SCENARIO_OBJ) $(MIXTURE_PROBE_OBJ) $(MIXTURE_ENGINE_OBJ) $(EXHAUST_GEOMETRY_OBJ) $(GAS_GRAPH_PROBE_OBJ) $(THERMAL_PROBE_OBJ) $(THERMAL_BENCH_OBJ) $(MATERIAL_PROBE_OBJ) $(FIXED_TRANSPORT_OBJ) $(JUNCTION_PROBE_OBJ) $(ENGINE_OFF_PROBE_OBJ) $(EXHAUST_SWING_OBJ)
 
 CLI   := $(BUILD)/rb_cli
 TESTS := $(BUILD)/rb_tests
@@ -459,6 +460,10 @@ $(BUILD)/junction_probe: $(JUNCTION_PROBE_OBJ) $(ACOUSTIC_OBJ) $(CORE_OBJ)
 
 # Stage 069: a stopped engine's sound after a build, every field at either end.
 $(BUILD)/rb_engine_off_probe: $(ENGINE_OFF_PROBE_OBJ) $(CORE_OBJ)
+	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
+
+# Stage 129: how strong the exhaust's waves are, cell by cell.
+$(BUILD)/rb_exhaust_swing_probe: $(EXHAUST_SWING_OBJ) $(CORE_OBJ)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
 $(BUILD)/junction_probe.wasm: tools/junction_probe.c $(CORE_SRC) $(CORE_HDR) $(ACOUSTIC_SRC) $(ACOUSTIC_HDR) Makefile

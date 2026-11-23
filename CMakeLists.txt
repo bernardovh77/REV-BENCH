@@ -125,6 +125,10 @@ target_link_libraries(build_contract_probe PRIVATE rb_core_internal)
 add_executable(rb_engine_off_probe tools/engine_off_probe.c)
 target_link_libraries(rb_engine_off_probe PRIVATE rb_core_internal)
 
+# Stage 129: how strong the exhaust's waves are (tools/exhaust_swing_probe.c).
+add_executable(rb_exhaust_swing_probe tools/exhaust_swing_probe.c)
+target_link_libraries(rb_exhaust_swing_probe PRIVATE rb_core_internal)
+
 # ---- the C tests ----
 file(GLOB RB_TEST_SRC CONFIGURE_DEPENDS tests/*.c)
 add_executable(rb_tests ${RB_TEST_SRC})

@@ -97,7 +97,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [ ] **039:** matched references (Bernardo's recordings, alongside the rest);
    - [ ] **050, 051 → 052;**
    - [ ] **053, 055, 056 → 054;**
-   - [ ] **129:** the cold end of the exhaust on delay lines, a faster tier (beside 050–056,
+   - [x] **129:** the cold end of the exhaust on delay lines, a faster tier (closed negative: docs/stage-129.md) (beside 050–056,
      before 062);
    - [ ] **057 → 058 → 059 → 060 → 061 → 062 → 063:** base sound acceptance. Each of these
      updates the app too.
@@ -157,7 +157,7 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ⬜ | [055](docs/roadmap/05-engine-qualification.md#stage-055) | Engine-specific structure and accessories (block, head, body modes per engine) | 041, 042 |
 | ⬜ | [056](docs/roadmap/05-engine-qualification.md#stage-056) | Listener, vehicle and recording-transfer validation | 024, 037, 038, 051 |
 | ⬜ | [054](docs/roadmap/05-engine-qualification.md#stage-054) | Unified pulse and noise routing (stage 115 fixed the paths and junction sharing; the frequency-dependent transfer remains) | 044, 049, 050, 051, 053 |
-| ⬜ | [129](docs/roadmap/14-review-fixes.md#stage-129) | The cold end of the exhaust on delay lines: a faster tier, first measuring where the exhaust's waves are weak enough | 127, 049 |
+| ✅ | [129](docs/roadmap/14-review-fixes.md#stage-129) | The cold end of the exhaust on delay lines — **a recorded negative result** (2026-11-23, docs/stage-129.md): the premise measured (`rb_exhaust_swing_probe`), and the 5 % line is not near the catalyst: only the four's muffler and tailpipe and the cross-plane V8's tail qualify; the six, the flat-plane V8 and the boxer carry 5-36 % swings to the open air. No delay-line tier; the V12-V16's speed is 062's | 127, 049 |
 | ⬜ | [057](docs/roadmap/05-engine-qualification.md#stage-057) | Whole-engine candidate integration of the surviving research solvers | 041–052, 054, 055, 056 |
 | ⬜ | [058](docs/roadmap/05-engine-qualification.md#stage-058) | Deceleration and lift-off: find the causes of the robotic texture and the boom | 039, 057 |
 | ⬜ | [059](docs/roadmap/05-engine-qualification.md#stage-059) | Five-engine physical and acoustic qualification against matched references | 039, 057, 058 |
