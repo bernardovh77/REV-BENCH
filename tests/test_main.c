@@ -113,6 +113,8 @@ void test_muffler_centre_can_held_out(void);
 void test_muffler_packing_is_its_stated_loss(void);
 void test_muffler_catalyst_is_a_series_resistance(void);
 void test_muffler_engine_grid_limits(void);
+void test_scheduler_pipe_rates_agree_on_one_grid(void);
+void test_scheduler_blocks_and_transitions_are_seamless(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -438,6 +440,8 @@ static const struct {
     T(test_muffler_packing_is_its_stated_loss),
     T(test_muffler_catalyst_is_a_series_resistance),
     T(test_muffler_engine_grid_limits),
+    T(test_scheduler_pipe_rates_agree_on_one_grid),
+    T(test_scheduler_blocks_and_transitions_are_seamless),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),

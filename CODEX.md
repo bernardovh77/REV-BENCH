@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 052, the mixed-rate scheduler (Claude)
+
+- docs/stage-052.md: `tests/test_scheduler.c` (2 tests); core unchanged. Pipe rates 24/48 kHz
+  on one grid agree; blocks of 128 and 7 bit-identical through live changes and a rebuild;
+  bugs planted 3/3. Open (🟡): common-clock control needs cells apart from the rate (062).
+
 ## 2026-11-23: Stage 050, the exhaust's components against theory (Claude)
 
 - docs/stage-050.md: `tests/test_mufflers.c` (5 tests, a transmission-loss bench with packed
