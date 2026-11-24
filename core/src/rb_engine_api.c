@@ -109,6 +109,8 @@ static const field_info FIELDS[RB_ENG_COUNT] = {
     [RB_ENG_LAUNCH_RPM]        = { "launch_rpm",        "rpm",    LIVE,          1500.0,  12000.0, DBL(launch_rpm) },
     [RB_ENG_LAUNCH_GAP]        = { "launch_gap",        "rpm",    LIVE,          20.0,    1500.0,  DBL(launch_gap) },
     [RB_ENG_LAUNCH_BAND]       = { "launch_band",       "rpm",    LIVE,          0.0,     1000.0,  DBL(launch_band) },
+    /* stage 050's finer cans, a build setting */
+    [RB_ENG_MUFFLER_RESOLUTION] = { "muffler_resolution", "",     0,             1.0,     4.0,     DBL(muffler_resolution) },
 };
 
 typedef struct cylinder_field_info {

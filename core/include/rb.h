@@ -654,6 +654,11 @@ typedef enum rb_engine_field {
                                    limit)                                          */
     RB_ENG_LAUNCH_GAP,          /* rpm: the 2-step's own gap ...                   */
     RB_ENG_LAUNCH_BAND,         /* rpm: ... and soft band                          */
+    /* Stage 050's finer cans as a build setting (2026-11-23). */
+    RB_ENG_MUFFLER_RESOLUTION,  /* the mufflers' and centre can's cells this many
+                                   times shorter than the exhaust's: 1 (default)
+                                   the same, 3 holds a can to its cross mode (and
+                                   costs the four 10-22 % of its speed)           */
     RB_ENG_COUNT
 } rb_engine_field;
 

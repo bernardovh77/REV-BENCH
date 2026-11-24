@@ -66,7 +66,8 @@ export const SECTIONS: readonly { title: string; fields: readonly string[] }[] =
     title: "Exhaust",
     fields: [
       "header_length", "header_diameter", "collector", "exhaust_pipe_length", "exhaust_pipe_diameter", "exhaust_systems", "catalyst_laminar",
-      "muffler_type", "muffler_volume", "muffler_length", "tailpipe_length", "tailpipe_diameter", "outlet_radiation",
+      "muffler_type", "muffler_volume", "muffler_length", "muffler_resolution", "tailpipe_length", "tailpipe_diameter",
+      "outlet_radiation",
     ],
   },
   { title: "Limits and load", fields: ["idle_rpm", "accessory_power"] },

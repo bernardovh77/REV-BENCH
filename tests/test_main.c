@@ -113,6 +113,7 @@ void test_muffler_centre_can_held_out(void);
 void test_muffler_packing_is_its_stated_loss(void);
 void test_muffler_catalyst_is_a_series_resistance(void);
 void test_muffler_engine_grid_limits(void);
+void test_muffler_resolution_builds_finer_cans(void);
 void test_scheduler_pipe_rates_agree_on_one_grid(void);
 void test_scheduler_blocks_and_transitions_are_seamless(void);
 void test_flow_noise_is_external_source_work(void);
@@ -467,6 +468,7 @@ static const struct {
     T(test_muffler_packing_is_its_stated_loss),
     T(test_muffler_catalyst_is_a_series_resistance),
     T(test_muffler_engine_grid_limits),
+    T(test_muffler_resolution_builds_finer_cans),
     T(test_scheduler_pipe_rates_agree_on_one_grid),
     T(test_scheduler_blocks_and_transitions_are_seamless),
     T(test_flow_noise_is_external_source_work),

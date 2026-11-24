@@ -20,11 +20,15 @@
  * six's packed straight-through; the catalyst (a restriction with a laminar
  * loss). The air is still and at 300 K, the pulse 100 Pa: linear acoustics.
  */
+#include "engine.h"
 #include "pipe.h"
+#include "presets.h"
+#include "rb.h"
 #include "rb_test.h"
 
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static const double AIR[RB_NSPECIES] = { [RB_AIR] = 1.0 };
@@ -343,4 +347,44 @@ void test_muffler_engine_grid_limits(void)
     c = catalyst(ENGINE_CELL);
     CHECK(worst_gap(&c, 1400.0, &low) <= 2.0);
     CHECK(low >= -0.3);
+}
+
+static rb_engine can_engine[2];
+
+void test_muffler_resolution_builds_finer_cans(void)
+{
+    /* Stage 050's finer cans as a build setting (`muffler_resolution`, 2026-11-23): at 3 the
+     * four's muffler and centre can get three times the cells (within one, the cell count
+     * rounds, and the floor below), its other pipes none more; its breathing holds (torque and VE within 1 % at
+     * 3000 rpm wide open: only the cans' upper band moves); 1 is the default, and the
+     * description refuses under 1 or over 4. Never shorter than the pipes' stability floor:
+     * a wave's travel in a pipe step (rb_pipe_cells_for), 2.6 cm at 48 kHz pipes, so 3 gives
+     * a little under three times the cells there (10 -> 27). */
+    rb_engine_desc d[2];
+    for (int k = 0; k < 2; k++) {
+        rb_preset_desc(rb_preset_find("i4"), &d[k]);
+        d[k].muffler_resolution = k ? 3.0 : 1.0;
+        CHECK(rb_engine_init(&can_engine[k], &d[k], 1.0 / 192000.0) == 0);
+        can_engine[k].rpm = 3000.0;
+        can_engine[k].throttle_pos = 1.0;
+        can_engine[k].ignition = 1;
+        rb_engine_settle(&can_engine[k], 60, 1e-4);
+    }
+    CHECK_NEAR(d[0].muffler_resolution, 1.0, 0.0);
+    const int m0 = can_engine[0].muffler[0].cells, m1 = can_engine[1].muffler[0].cells;
+    const int c0 = can_engine[0].center[0].cells, c1 = can_engine[1].center[0].cells;
+    CHECK(m1 >= 2.5 * m0 && m1 <= 3 * m0 + 1 && abs(c1 - 3 * c0) <= 1);
+    CHECK(can_engine[1].muffler[0].dx >= 1000.0 * can_engine[1].pipe_dt / 0.8 - 1e-12);
+    CHECK_EQ_INT(can_engine[1].tailpipe[0].cells, can_engine[0].tailpipe[0].cells);
+    CHECK_EQ_INT(can_engine[1].exhaust_pipe[0].cells, can_engine[0].exhaust_pipe[0].cells);
+    CHECK_NEAR(can_engine[1].result.torque / can_engine[0].result.torque, 1.0, 0.01);
+    CHECK_NEAR(can_engine[1].result.ve / can_engine[0].result.ve, 1.0, 0.01);
+    printf("    muffler %d -> %d cells, centre can %d -> %d; torque %+.2f %%, VE %+.2f %%\n", m0, m1, c0, c1,
+           100.0 * (can_engine[1].result.torque / can_engine[0].result.torque - 1.0),
+           100.0 * (can_engine[1].result.ve / can_engine[0].result.ve - 1.0));
+    rb_engine_desc bad = d[0];
+    bad.muffler_resolution = 0.5;
+    CHECK(rb_engine_desc_check(&bad) != 0);
+    bad.muffler_resolution = 5.0;
+    CHECK(rb_engine_desc_check(&bad) != 0);
 }

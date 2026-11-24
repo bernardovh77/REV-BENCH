@@ -32,4 +32,17 @@ BUGS = {
         "    if (end) face_init(f, cell, chamber, p->area, length, p->friction_factor * 0.5 * p->dx / p->diameter);",
         "    if (end) face_init(f, cell, chamber, 4.0 * p->area, length, p->friction_factor * 0.5 * p->dx / p->diameter);",
         CAN + CAT, 300),
+    # 2026-11-23: muffler_resolution, the finer cans as a build setting
+    'resolution-ignored': ("core/src/engine_build.c",
+        "    const double can_cell = long_cell / d->muffler_resolution;",
+        "    const double can_cell = long_cell + 0.0 * d->muffler_resolution;",
+        ["test_muffler_resolution_builds_finer_cans"], 300),
+    'resolution-everywhere': ("core/src/engine_build.c",
+        "        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, long_cell, room, over,",
+        "        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, can_cell, room, over,",
+        ["test_muffler_resolution_builds_finer_cans"], 300),
+    'resolution-unchecked': ("core/src/engine_build.c",
+        "    if (!(d->muffler_resolution >= 1.0 && d->muffler_resolution <= 4.0)) return -1;",
+        "",
+        ["test_muffler_resolution_builds_finer_cans"], 300),
 }

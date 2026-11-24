@@ -151,6 +151,13 @@ typedef struct rb_engine_desc {
     double junction_volume;              /* m^3; finite common X/Y junction, 0: separate */
     int junction_before_center;           /* 1: X before intermediate pipes; 0: rear Y */
     int outlet_radiation;                 /* 1: causal unflanged radiation load */
+    double muffler_resolution;            /* the mufflers' and the centre can's cells are
+                                           * this many times shorter than the exhaust's
+                                           * (1, the default: the same; stage 050's
+                                           * finer cans are 3, holding plane-wave theory
+                                           * to the can's cross mode; never shorter than
+                                           * the pipes' stability floor, 2.6 cm at 48 kHz
+                                           * pipes: rb_pipe_cells_for) */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
     double burn_duration;                 /* bulk-release crank degrees after kernel development,

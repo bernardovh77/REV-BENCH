@@ -178,6 +178,7 @@ void rb_engine_desc_default(rb_engine_desc *d)
     d->cranking_rpm = 400.0;
     d->cranking_spark = 5.0;
     d->limiter_band = 150.0;   /* stage 12c's soft cut */
+    d->muffler_resolution = 1.0;   /* the exhaust's own cells (stage 050's finer cans: 3) */
     d->limiter_cut = RB_LIMITER_SPARK;
     d->launch_rpm = 4000.0;    /* a 2-step's usual launch speed */
     d->launch_gap = 100.0;
@@ -305,6 +306,7 @@ int rb_engine_desc_check(const rb_engine_desc *d)
         || !(d->junction_volume >= 0.0 && d->junction_volume <= 0.02)) return -1;
     if (d->junction_before_center != 0 && d->junction_before_center != 1) return -1;
     if (d->outlet_radiation != 0 && d->outlet_radiation != 1) return -1;
+    if (!(d->muffler_resolution >= 1.0 && d->muffler_resolution <= 4.0)) return -1;
     if (d->junction_before_center && !(d->junction_volume > 0.0 && joined[1]
         && d->exhaust_systems == 2)) return -1;
     if (d->center_length > 0.0) {
@@ -483,6 +485,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     const double grid_scale = fmin(1.0, RB_PIPE_RATE * e->pipe_dt);
     const double short_cell = SHORT_CELL * grid_scale;
     const double long_cell = LONG_CELL * grid_scale;
+    const double can_cell = long_cell / d->muffler_resolution;   /* the mufflers', the centre can's */
     /* The pipes' cells. If they'd want more than the pool has, each still
      * gets one, and a share of the rest of what it wants (new_pipe): never
      * more than the pool, however many short pipes there are (at most 39). */
@@ -493,10 +496,10 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         want += rb_pipe_cells_for(d->header_length[i], short_cell, e->pipe_dt)
               + (runners ? rb_pipe_cells_for(d->runner_length, short_cell, e->pipe_dt) : 0);
     want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, long_cell, e->pipe_dt)
-          + e->systems * (rb_pipe_cells_for(d->muffler_length, long_cell, e->pipe_dt)
+          + e->systems * (rb_pipe_cells_for(d->muffler_length, can_cell, e->pipe_dt)
                           + rb_pipe_cells_for(d->tailpipe_length, long_cell, e->pipe_dt));
     if (d->center_length > 0.0)
-        want += e->collectors * (rb_pipe_cells_for(d->center_length, long_cell, e->pipe_dt)
+        want += e->collectors * (rb_pipe_cells_for(d->center_length, can_cell, e->pipe_dt)
                               + rb_pipe_cells_for(d->link_length, long_cell, e->pipe_dt));
     const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
     const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
@@ -558,7 +561,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
      * packed (pipe.h); chambered, a wide can. */
     for (int s = 0; s < e->systems; s++) {
         rb_pipe *m = &e->muffler[s];
-        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), long_cell, room, over,
+        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), can_cell, room, over,
                  MUFFLER_WALL, EXHAUST_FRICTION);
         if (d->muffler_type == RB_MUFFLER_STRAIGHT) rb_pipe_pack(m, PACKING, PACKING_SETTLE);
     }
@@ -585,7 +588,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
             rb_pipe *z = &e->center[c], *l = &e->link[c];
             const double width = d->center_volume > 0.0
                 ? sqrt(4.0 * d->center_volume / (PI * d->center_length)) : d->center_diameter;
-            new_pipe(e, z, &used, d->center_length, width, long_cell, room, over,
+            new_pipe(e, z, &used, d->center_length, width, can_cell, room, over,
                      EXHAUST_WALL, EXHAUST_FRICTION);
             new_pipe(e, l, &used, d->link_length, d->exhaust_pipe_diameter, long_cell, room, over,
                      EXHAUST_WALL, EXHAUST_FRICTION);

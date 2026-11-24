@@ -78,7 +78,9 @@ Where this file and the code disagree, the code is right and this file is fixed.
   source, `RB_GROUND` 0.9). Their flows are kept at the pipe rate in a 2048-step ring. The muffler
   is a pipe (`muffler_type`: none, a straight pipe the tailpipe's bore; straight-through, that pipe
   packed, `PACKING` and `PACKING_SETTLE` in engine.c; chambered, a can as wide as `muffler_volume`
-  over `muffler_length`, left through `muffler_area` with `BAFFLE_LAMINAR`). A can's exhaust pipes
+  over `muffler_length`, left through `muffler_area` with `BAFFLE_LAMINAR`; its cells, and the centre
+  can's, `muffler_resolution` times shorter than the exhaust's, 1 by default, never under the
+  pipes' stability floor: stage 050's finer cans as a build setting). A can's exhaust pipes
   open into its first cell and its tailpipe starts from its last, joined as to volumes; a straight
   pipe or straight-through goes straight on (`rb_pipe_onward`) from its exhaust pipe, unless two
   meet there, and into its tailpipe. Joined through a volume, a straight pipe lost two velocity

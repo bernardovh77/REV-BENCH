@@ -107,6 +107,33 @@ aren't published):
 
    It is offered as renders for Bernardo's blind comparison, or for 062's tier work.
 
+## Follow-up (2026-11-23, overnight): the finer cans as a build setting
+
+**The decision it unblocks:** the class C candidate above couldn't go on the A/B switch, because
+it needs a rebuild. So it is now an engine field:
+- **`muffler_resolution`** (`RB_ENG_MUFFLER_RESOLUTION`, 1–4, default 1): the mufflers' and the
+  centre can's cells are that many times shorter than the exhaust's.
+- **Where it is:** the app's editor offers it in the Exhaust section. A change rebuilds the
+  engine, which the host fades across (runtime-v1). Bernardo can try 3 against 1 by ear.
+- **Never under the pipes' stability floor:** a wave's travel in a pipe step
+  (`rb_pipe_cells_for`), 2.6 cm at 48 kHz pipes. So 3 gives the four's can 27 cells for its
+  10, a little under three times.
+
+**The evidence:**
+- **Default 1:** all 11 `cli_parity` renders are bit-identical, and the speed check gives a
+  median of +0.5 % (MSVC, 15 cells): within the laptop's noise.
+- **At 3** (`test_muffler_resolution_builds_finer_cans`):
+  - the four's muffler gets 10 → 27 cells and its centre can 3 → 9;
+  - its other pipes are untouched;
+  - its torque moves −0.00 % and its VE −0.01 % at 3000 rpm wide open: only the cans' upper band
+    changes;
+  - the description refuses under 1 and over 4.
+- **The planted bugs,** in this stage's table, all caught: the setting ignored, the setting
+  reaching the tailpipe, the range unchecked.
+
+**What it costs:** the 10–22 % measured above, on the four at 3, when chosen. Bernardo's call:
+quality against the tier.
+
 ## The limits, stated (what keeps it 🟡)
 
 1. **The grid limit above.** It is real on today's tiers, it costs the four's sound above

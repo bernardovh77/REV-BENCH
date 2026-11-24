@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 050's finer cans as a build setting (Claude)
+
+- `muffler_resolution` (RB_ENG_MUFFLER_RESOLUTION, 1-4, default 1; editor's Exhaust section):
+  the mufflers' and centre can's cells that many times shorter. Default renders identical.
+  `test_muffler_resolution_builds_finer_cans`; three bugs in tools/bugs/stage050.py.
+
 ## 2026-11-23: Stage 128, the complaints measured (Claude)
 
 - docs/stage-128.md: doc only; two engine candidates (dilution spread, wall turbulence) built,
