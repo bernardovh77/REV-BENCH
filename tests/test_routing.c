@@ -259,9 +259,13 @@ void test_routing_component_controls(void)
 void test_routing_reverse_jets_heard(void)
 {
     /* The candidate hears the reversed jets: idling, the cylinders' gas
-     * blowing back into the runners (at the mouth, with the intake's roar)
-     * and the headers' back into the cylinders (down the headers). The
-     * accepted sound doesn't; the same gas either way. */
+     * blowing back into the runners (made in a pipe, heard at the mouth with
+     * the intake's roar, at the exhaust valves' efficiency: 3 dB and more
+     * louder there) and the headers' back into the cylinders (made in the
+     * cylinder, heard back through the gap as the intake valves' forward jets
+     * are: a few per cent of the exhaust's noise, the tailpipe within 1.5 dB,
+     * its own draws a new realisation of the noise). The accepted sound
+     * hears neither; the same gas either way. */
     same_state("i4", NULL, 850.0, 0.04, 0, &a, NULL, NULL, NULL);
     static rb_noise m;
     rb_noise_init(&n, &a, 5);
@@ -285,8 +289,11 @@ void test_routing_reverse_jets_heard(void)
     printf("    idling: the reversed intake jets %.3g times the forward; the mouth %+.1f dB, the tailpipe %+.1f dB\n",
            reverse / forward, 10.0 * log10(mouth[1] / mouth[0]), 10.0 * log10(tail[1] / tail[0]));
     CHECK(reverse > 1e3 * forward);
-    CHECK(mouth[1] > mouth[0]);
-    CHECK(tail[1] > tail[0]);
+    CHECK(mouth[1] > 2.0 * mouth[0]);
+    CHECK(fabs(10.0 * log10(tail[1] / tail[0])) < 1.5);
+    /* ... and they were heard: each reversed exhaust jet draws its own noise, so the two
+     * generators part (the reversed intake jets join the roar's draws and add none) */
+    CHECK(n.state != m.state);
 }
 
 void test_routing_no_duplicated_pulse(void)

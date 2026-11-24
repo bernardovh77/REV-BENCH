@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-24: Stage 054's variant 3, the reversed jets' efficiencies corrected (Claude)
+
+- noise.c (variant 3 only): reversed intake jets at VALVE_ETA (made in the runner), reversed
+  exhaust jets at THROTTLE_ETA (made in the cylinder, heard back through the gap). The cross
+  V8's idle +11.5 dB above 2 kHz, not +20. Variant 0 identical. 054's table retargeted.
+
 ## 2026-11-23: Stage 050's finer cans as a build setting (Claude)
 
 - `muffler_resolution` (RB_ENG_MUFFLER_RESOLUTION, 1-4, default 1; editor's Exhaust section):

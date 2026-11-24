@@ -57,18 +57,29 @@ heard from behind (`rb_cli sound --idle --variant 3`). The share of energy above
 | | above 1 kHz | above 2 kHz | above 4 kHz | slope |
 | --- | ---: | ---: | ---: | ---: |
 | i4, accepted | −19.3 | −38.4 | −44.0 | −6.9 |
-| i4, variant 3 | −19.1 | **−32.6** | **−37.9** | −5.0 |
+| i4, variant 3 (first version) | −19.1 | −32.6 | −37.9 | −5.0 |
+| i4, variant 3 (corrected) | −18.9 | **−31.3** | **−37.0** | −4.8 |
 | v8-cross, accepted | −13.6 | −27.7 | −46.2 | −9.6 |
-| v8-cross, variant 3 | −5.8 | **−7.7** | **−11.8** | **+1.7** |
+| v8-cross, variant 3 (first version) | −5.8 | −7.7 | −11.8 | +1.7 |
+| v8-cross, variant 3 (corrected) | −11.4 | **−16.2** | **−20.7** | −1.3 |
 
 **What it says:**
-- **The four:** 6 dB more above 2 and 4 kHz, the lows untouched. That is the kind of brightening
-  "dull" asks for: **a fair candidate for Bernardo's ears on the four.**
-- **The cross-plane V8: 20–34 dB more**, its slope rising. Its long overlap at idle makes strong
-  reversed exhaust jets, heard here at the forward jets' full efficiency (5e-4).
-  - **Too much to put before Bernardo as it is.** A sized version needs the reversed exhaust jet's
-    efficiency (the gas blowing back into the cylinder: where does its sound go?).
-  - **Open in 054's own record.**
+**The first version:**
+- **The four:** 6 dB more above 2 and 4 kHz.
+- **The cross-plane V8: 20–34 dB more**, its slope rising, because its reversed exhaust jets
+  were heard at the forward exhaust jets' efficiency (5e-4).
+
+**The correction, made the same night** (054's record): each reversed jet at the efficiency of
+where its sound is made.
+- **The exhaust's** blows into the cylinder, so it is heard back through the gap, 5e-5.
+- **The intake's** blows into the runner, so it is heard directly, 5e-4.
+
+**Now:**
+- **The four: 7 dB more above 2 kHz, the lows untouched.** That is the kind of brightening "dull"
+  asks for: **a fair candidate for Bernardo's ears.**
+- **The cross-plane V8: 11.5 dB more above 2 kHz,** its slope still falling (−1.3). Its long
+  overlap at idle makes real reversion, so it is brighter, but it is now a candidate to judge
+  by ear, not one to hold back.
 
 ## 3. The four is quiet
 
@@ -100,12 +111,11 @@ heard from behind (`rb_cli sound --idle --variant 3`). The share of energy above
 ## What is left (why 🟡)
 
 1. **Bernardo's blind A/B verdicts:**
-   - variant 3 on the four's idle;
+   - variant 3 on the idles (the four's and the V8s');
    - the limiter's band on the V8;
    - 055's variants 1 and 2.
 2. **A stationary recording of a known engine (039):** the repeat and the four's level both wait
    on it.
-3. **Variant 3's reversed exhaust jets sized** before it goes before Bernardo on the V8s.
 
 ## Files
 

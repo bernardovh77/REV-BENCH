@@ -19,7 +19,8 @@ port.
 - the noise's path times follow the cells' temperature and flow to every outlet: within 0.12 ms
   of the pulses on the four and the boxer, 0.25 on the V8's X junction, against today's
   0.57–0.71;
-- the reversed jets are heard (idling, the four's mouth +1.1 dB, its tailpipe +1.0).
+- the reversed jets are heard (idling, the four's mouth +5.0 dB; each jet at the efficiency of
+  where its sound is made, corrected the same night: below).
 
 **What stays open:** the third, the components. There the two layers disagree by up to 18 dB,
 and the pipes are the ones that are wrong: stage 050's grid limit. Fixing it is the grid's
@@ -73,7 +74,7 @@ The accepted sound is bit-identical.
 | Loss bypass controls | `test_routing_component_controls`: the four, each component as built and bypassed, its loss in the 800 Hz–3 kHz band, each layer against itself | **the catalyst: 0.7 dB of the pulses, 3.0 of the noise; the chambered can: 6.3 against 24.0; a straight-through: 13.4 against 11.0.** Both layers lose with each component, conditionally (a missing component takes nothing); by amounts that disagree, and in opposite order for the two mufflers (below) |
 | No duplicated pulse | `test_routing_no_duplicated_pulse`: 0.25 s of the four wide open | the valves' noise at the tailpipe against the resolved flow's swings: **r = −0.006** (accepted), **−0.007** (candidate): the jets' turbulence, not a copy of their pulses |
 | Stochastic work keeps 053's ownership | the candidate reads the gas and writes only the noise (`const rb_engine *`), as 053's `test_flow_noise_is_external_source_work` proved for the layer; the reversed jets add their own source work by the same law | the gas is unchanged by any variant |
-| The reversed jets | `test_routing_reverse_jets_heard`: the four idling, a cycle | the reversed intake jets **7.4e5 times** the forward ones, heard at the mouth (**+1.1 dB**); the reversed exhaust jets down the headers (the tailpipe **+1.0 dB**); the accepted sound hears neither; the forward jets the same in both |
+| The reversed jets | `test_routing_reverse_jets_heard`: the four idling, a cycle | the reversed intake jets **7.4e6 times** the forward ones (at the corrected efficiency), heard at the mouth (**+5.0 dB**); the reversed exhaust jets down the headers, heard back through the gap: the tailpipe within 1.5 dB (a few per cent of the exhaust's noise), their own draws present; the accepted sound hears neither; the forward jets the same in both |
 | The accepted sound unchanged | `tools/cli_parity.py`, 11 cases | **all identical** to 056's |
 
 **Planted bugs** (`tools/bugs/stage054.py`): 8 of 8 caught:
@@ -131,11 +132,23 @@ per cylinder.
 - **The baffles' noise:** its tailpipe's live time.
 
 **The reversed jets:**
-- **The intake's:** the cylinder's residual gas blowing back into the runner, heard at the
-  mouth with the intake's roar. Same law, its sides swapped: γ 1.32, η 5e-5, the intake side's
-  calibration, as 053 measured them.
-- **The exhaust's:** the header's gas back into the cylinder at overlap, its gap's noise down
-  the header as a forward jet's.
+**The rule:** each reversed jet is at the efficiency of **where its sound is made**, the forward
+jets' rule.
+
+- **The intake's:** the cylinder's residual gas blowing back into the runner.
+  - **Where its sound is made:** in a pipe, so it is heard directly at the forward exhaust jets'
+    efficiency, η 5e-4.
+  - **Its law:** the same as a forward jet's, its sides swapped (γ 1.32).
+  - **Where it is heard:** at the mouth, with the intake's roar.
+- **The exhaust's:** the header's gas back into the cylinder at overlap.
+  - **Where its sound is made:** in the cylinder, so it is heard back through the gap, as the
+    intake valves' forward jets are: η 5e-5.
+  - **Where it is heard:** down the header.
+- **The correction** (2026-11-24, after 128's measurement):
+  - **The first version** had the two the other way round: the intake's at 5e-5 (as 053
+    measured them) and the exhaust's at 5e-4.
+  - **What that did:** it took the cross-plane V8's idle 20–34 dB brighter above 2 kHz.
+  - **Now:** the four's idle is 7 dB brighter there and the V8's 11.5 (stage 128).
 
 **Unchanged:** the shares at junctions, the components' passes, the band and the random draws
 per cylinder (but for the reversed exhaust jets' own).

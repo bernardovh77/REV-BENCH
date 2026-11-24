@@ -506,9 +506,12 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
             n->route_tick = RB_NOISE_ROUTE_EVERY;
         }
         n->route_tick--;
-        /* the cylinder's residual gas back into the runner, heard at the mouth */
+        /* the cylinder's residual gas back into the runner, heard at the mouth:
+         * a jet made in a pipe, heard directly, as an exhaust valve's into its
+         * header (VALVE_ETA); the intake valves' forward jets are made in the
+         * cylinder and heard back up through the gap (THROTTLE_ETA) */
         for (int i = 0; i < d->cylinders; i++)
-            n->reverse_power += reverse_jet(&e->intake[i], GAMMA_BURNED, THROTTLE_ETA);
+            n->reverse_power += reverse_jet(&e->intake[i], GAMMA_BURNED, VALVE_ETA);
     }
 
     /* The exhaust valves: each one's noise into the tailpipes it reaches,
@@ -516,8 +519,9 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     for (int i = 0; i < d->cylinders; i++) {
         double w = inner_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
         /* the candidate: the header's gas back into the cylinder too, its
-         * gap's noise down the header as the forward jet's */
-        if (routed && !(w > 0.0)) w = reverse_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
+         * gap's noise down the header; made in the cylinder, so heard back
+         * through the gap, as the intake valves' forward jets are (THROTTLE_ETA) */
+        if (routed && !(w > 0.0)) w = reverse_jet(&e->exhaust[i], GAMMA_BURNED, THROTTLE_ETA);
         if (w > 0.0) {
             const int at = (n->blow_pos + n->blow_delay[i]) & (RB_NOISE_DELAY - 1);
             const double x = sqrt(radiate * w * n->blow_pass) * white(&n->state);
