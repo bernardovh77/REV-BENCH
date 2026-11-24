@@ -118,17 +118,18 @@ static double cov_of_imep(int p, double rpm, double throttle, uint64_t seed, lon
 void test_qualification_cov_over_seeds(void)
 {
     /* Multiple seeds, every preset: the COV of IMEP wide open at 3000 rpm within Heywood's
-     * 1-3 % (section 9.4, here 0.5-4 %). At light load (its idle speed, 8 % throttle) the
-     * model's is no higher (1-4 %, frozen here), where real engines' rise to 3-10 %: the
-     * variation doesn't grow with the dilution of a light load, an unmatched mechanism
-     * (docs/stage-059.md). Three seeds agree within a factor 2.5 (40 cycles each). */
+     * 1-3 % (section 9.4, here 0.5-4 %), and near idle (its idle speed, 2 % throttle: a
+     * quarter to half of the charge residual gas) higher, within his 3-10 % (here 2.5-12 %):
+     * the slower, diluted burn varies more. Three seeds agree within a factor 2.5 (40 cycles
+     * each). (A first version took 8 % throttle for light load: its residual was only 7-19 %,
+     * its COV no higher than wide open; docs/stage-059.md records the correction.) */
     for (int p = 0; p < rb_preset_count(); p++) {
         rb_engine_desc d;
         rb_preset_desc(p, &d);
         double wot[3], light[3];
         for (int s = 0; s < 3; s++) {
             wot[s] = cov_of_imep(p, 3000.0, 1.0, 101 + 17 * s, 40);
-            light[s] = cov_of_imep(p, d.idle_rpm, 0.08, 101 + 17 * s, 40);
+            light[s] = cov_of_imep(p, d.idle_rpm, 0.02, 101 + 17 * s, 40);
         }
         double wlo = wot[0], whi = wot[0], llo = light[0], lhi = light[0];
         for (int s = 1; s < 3; s++) {
@@ -137,10 +138,11 @@ void test_qualification_cov_over_seeds(void)
             llo = fmin(llo, light[s]);
             lhi = fmax(lhi, light[s]);
         }
-        printf("    %-8s COV of IMEP: wide open %.1f-%.1f %%, light %.1f-%.1f %% (three seeds)\n",
+        printf("    %-8s COV of IMEP: wide open %.1f-%.1f %%, near idle %.1f-%.1f %% (three seeds)\n",
                rb_preset_key(p), 100.0 * wlo, 100.0 * whi, 100.0 * llo, 100.0 * lhi);
         CHECK(wlo > 0.005 && whi < 0.04);
-        CHECK(llo > 0.01 && lhi < 0.04);
+        CHECK(llo > 0.025 && lhi < 0.12);
+        CHECK(llo > whi);
         CHECK(whi < 2.5 * wlo && lhi < 2.5 * llo);
     }
 }

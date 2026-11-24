@@ -16,7 +16,7 @@ certify a model. The core is unchanged.
 | 039: matched references | **The entry gate for the acoustic half, not met.** The physical half uses the manufacturers' scalar ratings, which 039's own table permits for "a reported number to its named system and stated test condition", not as audio. |
 | 057 | Its whole-drive baseline (start, idle, load, limiter, cut, resume) and float stems are this stage's trajectories. |
 | 058 | Its overrun measures (repetition, orders, floor) are the per-layer and order statistics; its finding (the overrun's floor 36–43 dB down) is an unmatched mechanism here. |
-| 041: combustion's calibration | Measured here: the COV's load dependence is the gap. |
+| 041: combustion's calibration | Measured here: the COV wide open and near idle, both in Heywood's bands. |
 | 118's tiers, 135, 066/069 | The maps run at the presets' default quality; the tiers' misses stay theirs. |
 
 ## The engines and their identity (stage 039's table)
@@ -81,20 +81,26 @@ dyno, a second's settling, six cycles' mean):
 **COV of IMEP over seeds** (`test_qualification_cov_over_seeds`: three seeds, 40 cycles each,
 variation 1):
 
-| Preset | Wide open, 3000 rpm | Light load (idle speed, 8 % throttle) |
-| --- | ---: | ---: |
-| i4 | 1.0–2.0 % | 1.4–1.6 % |
-| i6 | 1.3–2.0 % | 1.7–1.8 % |
-| v8-cross | 1.6–2.0 % | 1.7–1.9 % |
-| v8-flat | 1.6–2.0 % | 1.6–2.1 % |
-| boxer4 | 0.9–2.1 % | 1.6–1.7 % |
+| Preset | Wide open, 3000 rpm | Near idle (idle speed, 2 % throttle) | Residual gas near idle |
+| --- | ---: | ---: | ---: |
+| i4 | 1.0–2.0 % | 3.6–3.8 % | 24 % |
+| i6 | 1.3–2.0 % | 3.7–4.2 % | 25 % |
+| v8-cross | 1.6–2.0 % | 4.5–5.3 % | 35 % |
+| v8-flat | 1.6–2.0 % | 6.8–8.8 % | 51 % |
+| boxer4 | 0.9–2.1 % | 3.8–4.1 % | 22 % |
 
 - **Wide open:** within Heywood's 1–3 % (section 9.4) for every preset.
-- **At light load: no higher, where real engines' rise to 3–10 %** (more residual gas, slower
-  burns). The variation doesn't grow with a light load's dilution: an unmatched mechanism (041's
-  calibration).
-- **Related to 058:** it may be part of why the idle and the overrun sound too regular (058's
-  floor, 128's "dull idle").
+- **Near idle: higher, as real engines' is,** within Heywood's 3–10 %. It rises with the
+  residual gas, which slows and dilutes the burn, so the model has the load dependence without
+  being told.
+- **A correction, made the same night.**
+  - **What was first measured:** "light load" at 8 % throttle, where the residual is only 7–19 %
+    and the COV no higher than wide open.
+  - **What was first concluded:** that the variation didn't grow with dilution.
+  - **What disproved it:** a candidate built on that (stage 128's, the spread grown with the
+    residual) took the COV near idle to 16–153 %, which showed the premise wrong.
+  - **What was done:** the candidate was deleted before it was committed, and the test moved to
+    a true idle's throttle.
 
 **Trajectories** (057's `test_baseline_whole_drive_books` and stems):
 - **The drive:** start, idle, a load, the pull, the limiter, the fuel cut and its resume, on every
@@ -109,17 +115,16 @@ variation 1):
 | --- | --- | --- |
 | Speeds | idle to the rated power speed: i4 6000, i6 5900, v8-cross 6500, v8-flat 9000, boxer 6200 | **above the stock rating: the i6's 8500 limit** (stock 5900 power, about 6500 redline), the cross V8's 7500 (stock 7000). Raised limits are not validated durability (the card's rule). |
 | Wide-open torque and power | i4, i6, boxer within 12 % (5–11 % short) | the V8s 11–22 % short; both high-rpm breathing |
-| Cycle variation | wide open, 1–2 % COV | light load and idle: too regular (1.4–2.1 % against a real 3–10 %) |
+| Cycle variation | wide open 1–2 %, near idle 3.6–8.8 % COV (Heywood's bands) | its size against these engines' own (039) |
 | The overrun | books, cut and resume | its sound's floor and repetition (058), unqualified |
 | Sound | **not qualified:** no matched references (039's entry gate) | everything acoustic, by the stop rule |
 | Exhausts | as modified (039's identity) | catalog systems, valved variants, other model years |
 
 **Unresolved mechanisms:**
 1. high-rpm ram tuning (VE above 1);
-2. load-dependent cycle variation;
-3. friction's share of the common shortfall;
-4. the overrun's aperiodic content (058);
-5. the cans' upper band (050, 054).
+2. friction's share of the common shortfall;
+3. the overrun's aperiodic content (058);
+4. the cans' upper band (050, 054).
 
 ## Planted bugs (`tools/bugs/stage059.py`): 3 of 3 caught
 
@@ -132,7 +137,7 @@ variation 1):
 ## What is left (why 🟡)
 
 1. **The acoustic qualification**: 039's matched references. The card's entry gate.
-2. **The V8s' breathing** above about 5000 rpm, and the four mechanisms above, each a stage of
+2. **The V8s' breathing** above about 5000 rpm, and the mechanisms above, each a stage of
    its own or 062's tier work, with a reference to fit against rather than a single rating.
 3. **Raised limits:** the i6's 8500 and the cross V8's 7500 stay a stated build assumption.
 

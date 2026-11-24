@@ -38,8 +38,8 @@ The card asks for one, and none was possible:
 - **The plain pipes:** to about 1.5 kHz.
 - **The cans:** to 450–750 Hz.
 - **The upper band** is carried by the noise layer's calibrated passes (054).
-- **Not supported:** the overrun's aperiodic content (058), light-load cycle variation (059),
-  sound against matched recordings (039).
+- **Not supported:** the overrun's aperiodic content (058), sound against matched recordings
+  (039).
 
 ## Why 136 is the right experiment
 

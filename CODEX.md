@@ -14,7 +14,8 @@ CLAUDE.md and .claude/ have been preserved.
 
 - docs/stage-059.md: `tests/test_qualification.c` (ratings at their speeds, COV over seeds),
   `tools/bugs/stage059.py` (3 caught). All presets short (i4/i6/boxer 5-11 %, V8s 11-22 %: VE
-  <= ~1.0); light-load COV too low. Acoustic half blocked on 039. Core unchanged.
+  <= ~1.0); COV in Heywood's bands (corrected: a first 8 % "light load" wasn't light). Acoustic
+  half blocked on 039. Core unchanged.
 
 ## 2026-11-23: Stage 058, the overrun's causes by intervention (Claude)
 
