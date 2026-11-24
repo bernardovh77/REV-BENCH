@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 128, the complaints measured (Claude)
+
+- docs/stage-128.md: doc only; two engine candidates (dilution spread, wall turbulence) built,
+  measured, rejected and deleted. Repeat gap likely the F20C recording's setting. Variant 3
+  good on the four's idle, too strong on the cross V8. Crackle = the soft cut in the pipes.
+
 ## 2026-11-23: Stage 060, no renderer replacement yet (Claude)
 
 - docs/stage-060.md, docs/adr/0005-no-renderer-replacement-yet.md (proposed: Bernardo to accept).
