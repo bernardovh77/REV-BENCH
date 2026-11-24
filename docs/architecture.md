@@ -406,6 +406,8 @@ Where this file and the code disagree, the code is right and this file is fixed.
   without `--float`),
   `tools/compare_real.py` the renders against recordings of real engines (see "Sound" above),
   `tools/orders.py` how much is between the firing orders,
+  `tools/coast_diagnosis.py` the overrun's repetition, dominant order and floor between the orders
+  (stage 058; `rb_cli sound --variant N` renders an A/B candidate offline),
   `tools/plant_bugs.py` plants a stage's bugs (see Workflow).
   The shared style lives in `tools/rbplot.py`: surface #fcfcfb, ink #0b0b0b / #52514e, muted
   #898781, grid #e1e0d9, series blue #2a78d6 then orange #eb6834, an ordinal blue ramp for ordered

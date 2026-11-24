@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 058, the overrun's causes by intervention (Claude)
+
+- docs/stage-058.md: `tools/coast_diagnosis.py` (+ 3 tests); `rb_cli sound --variant N` (default
+  renders identical). Robotic = no aperiodic content on the overrun (floor 36-43 dB, repetition
+  0.96-0.99); boom = one order's dominance, not a resonance. Needs a marked real coast (039).
+
 ## 2026-11-23: Stage 057, the A0 baseline (no research arm can enter yet) (Claude)
 
 - docs/stage-057.md: `tests/test_baseline.c` (3 tests: the pipes' own loss per preset, the whole

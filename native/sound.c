@@ -145,7 +145,7 @@ static double tlm(const rb_sim *sim, int id)
 /* The options of rb_cli sound. */
 typedef struct sound_options {
     const char *out_path, *csv_path, *preset, *snapshots_path, *trace_path;
-    double seconds, rpm, throttle, inertia, gain, os, variation, idle_load, seed;
+    double seconds, rpm, throttle, inertia, gain, os, variation, idle_load, seed, variant;
     double overrun_transition, coast_seconds, pull_seconds;
     int seed_given, burn_model, drive, use_float, where, equal, quality, layers, scene;
     int momentum_order, outlet_radiation, muffler, rate_given;
@@ -249,6 +249,8 @@ static int read_options(int argc, char **argv, sound_options *o)
             ok = (o->layers = layers_from(cli_take_value(argc, argv, &i))) > 0;
         else if (!strcmp(a, "--variation"))
             ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->variation);
+        else if (!strcmp(a, "--variant"))
+            ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->variant);
         else if (!strcmp(a, "--seed")) {
             o->seed_given = 1;
             ok = !cli_to_double(cli_take_value(argc, argv, &i), &o->seed);
@@ -318,6 +320,10 @@ static int read_options(int argc, char **argv, sound_options *o)
     }
     if (!(o->inertia >= 0.01 && o->inertia <= 99.0) || !(o->gain >= 0.0 && o->gain <= 4.0)) {
         fprintf(stderr, "rb_cli sound: --inertia must be in [0.01, 99] kg m^2 and --gain in [0, 4]\n");
+        return 2;
+    }
+    if (!(o->variant >= 0.0 && o->variant <= RB_VARIANT_MAX && o->variant == floor(o->variant))) {
+        fprintf(stderr, "rb_cli sound: --variant must be a whole number in [0, %d]\n", RB_VARIANT_MAX);
         return 2;
     }
     if (!(o->variation >= 0.0 && o->variation <= 4.0)) {
@@ -453,6 +459,7 @@ int cli_sound(int argc, char **argv)
     set(sim, RB_PARAM_LAYERS, o.layers);
     set(sim, RB_PARAM_MASTER_GAIN, o.gain);
     set(sim, RB_PARAM_VARIATION, o.variation);
+    set(sim, RB_PARAM_VARIANT, o.variant);
     set(sim, RB_PARAM_OVERRUN_TRANSITION, o.overrun_transition);
     /* the driver */
     set(sim, RB_PARAM_IGNITION, 1);
