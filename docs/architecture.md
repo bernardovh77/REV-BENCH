@@ -240,12 +240,16 @@ Where this file and the code disagree, the code is right and this file is fixed.
     (force, vertical) or sin (force, lateral; slap the other way round); the five local modes
     as before. Variant 2 adds the cam chain's tone (21st order) and the alternator's (97.2nd).
     Same impacts and random draws as variant 0 (docs/stage-055.md).
-  - **stage 054's candidate** (variant 3): the exhaust valves' noise written into each outlet's
-    ring at its live path time, Σ dx / (c + u) over the cells of the pipes it goes down (X: the
-    centre pipes to that outlet; Y: its own, then each muffler), worked out again every
-    `RB_NOISE_ROUTE_EVERY` (256) steps; the reversed jets heard (intake: back into the runner,
-    with the roar at the mouth; exhaust: back into the cylinder, down the header). `structured()`
-    keeps 055's modes to variants 1 and 2 (docs/stage-054.md).
+    Since 2026-11-24 the candidate's block is 5 dB quieter (`STRUCTURE_TRIM`, Bernardo's A/B).
+  - **the tailpipes' openings** (`audio.c`, stage 051, accepted 2026-11-24): the mono listener
+    reads each tailpipe path across its opening, as the stereo scene does (8 Gauss-Chebyshev nodes
+    over D sin θ / 2c, `rb_listener_aperture`), every read later by the largest spread plus a step
+    (`lag`, `nlag`) so none reads ahead. Each path's reads (`rb_listen_reads`: its nodes' steps
+    back and weights) are worked out whenever a delay, spread or lag changes (`plan_reads`), so a
+    step only adds samples: the first version, working them out every step, cost the four's coast
+    render 37 %.
+  - **Retired variants:** 3 (stage 054's live routing and reversed jets: lost the A/B, deleted),
+    4 (two tries at stage 128, deleted before committing), 5 (accepted, above).
   - **the stereo scene's reads** (`scene.c`, stage 056): each path reads its source's history by
     cubic Lagrange interpolation through four samples (flat to 0.54 dB at 10 kHz at the worst
     fraction; linear lost 2.0 dB and varied as a moving path's fraction did), linear within a

@@ -199,6 +199,18 @@ it keeps for each cylinder.
 gives a **median of −0.1 %**, within the 3 % tolerance. The worst cell is v8-cross high at
 −1.6 %, the laptop's noise.
 
+## Follow-up (2026-11-24): the block 5 dB quieter
+
+Bernardo's A/B: candidate 1 is "decent", but its ringing is heard as a whine, too loud: "make it
+5 dB quieter".
+- **The change:** the candidate's block (its modes' sum, variants 1 and 2) times `STRUCTURE_TRIM`,
+  0.5623 (−5 dB), in noise.c. The accessories' tones are added after it, at their own levels (10 dB
+  under the stage's since 2026-11-23).
+- **The test:** `test_structure_events_and_energy` now expects the bay 5 dB under the accepted
+  sound, within 3 dB. Measured: −4.87 to −5.17 dB on every preset.
+- **Planted bug:** `trim-missing` (the trim left out) is caught by that test.
+- **The accepted sound:** unchanged; the trim is the candidate's only.
+
 ## Files
 
 - **New:** `tests/test_structure.c` (7 tests), `tools/bugs/stage055.py`, this doc.

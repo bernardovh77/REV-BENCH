@@ -14,8 +14,8 @@ BUGS = {
         "            double delay = r[j][k] / (c * pipe_dt);",
         ["test_audio_listener_paths"], 120),
     "no-interpolation": ("core/src/audio.c",
-        "            const double v = l->gain[j][k] * ((1.0 - part) * q[a] + part * q[b]);",
-        "            const double v = l->gain[j][k] * q[a] + 0.0 * part * q[b];",
+        "        const double part = at - whole;",
+        "        const double part = 0.0 * (at - whole);",   # retargeted 2026-11-24 (the listener's read plan)
         ["test_audio_listener_paths"], 120),
     "inverse-square": ("core/src/audio.c",
         "            l->gain[j][k] = g / rr;",

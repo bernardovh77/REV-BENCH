@@ -4,6 +4,18 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-24: Bernardo's A/B verdicts acted on (Claude)
+
+- **Variant 5 accepted** (stage 051's directivity): audio.c's mono listener reads every tailpipe
+  path across its opening (`rb_listener_aperture`, the scene's Rayleigh disk). The accepted sound
+  changes behind the car above 2 kHz only (−2.2 dB at 8 kHz); speed median −0.9 %.
+  `test_listener_mono_aperture`; three bugs in tools/bugs/stage051.py; stage 12's
+  `no-interpolation` retargeted.
+- **Variant 3 deleted** (stage 054's routing and reversed jets: "bad"). noise.c/h back to the fixed
+  paths; test_routing keeps the accepted checks; stage054.py rewritten (2 bugs, both caught).
+- **Variants 1 and 2: the block 5 dB quieter** (`STRUCTURE_TRIM`; its ringing heard as a whine).
+- Variants 3, 4 and 5 are retired; 1 and 2 are the switch's only candidates.
+
 ## 2026-11-24: Stage 054's variant 3, the reversed jets' efficiencies corrected (Claude)
 
 - noise.c (variant 3 only): reversed intake jets at VALVE_ETA (made in the runner), reversed

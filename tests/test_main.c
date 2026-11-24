@@ -132,11 +132,9 @@ void test_listener_bounded_history(void);
 void test_listener_stereo_known_position(void);
 void test_listener_cabin_transfer(void);
 void test_listener_eight_scenes(void);
-void test_routing_path_times_follow_the_gas(void);
+void test_listener_mono_aperture(void);
 void test_routing_source_sum(void);
-void test_routing_geometry_edit(void);
 void test_routing_component_controls(void);
-void test_routing_reverse_jets_heard(void);
 void test_routing_no_duplicated_pulse(void);
 void test_baseline_where_the_waves_are_weak(void);
 void test_baseline_whole_drive_books(void);
@@ -487,11 +485,9 @@ static const struct {
     T(test_listener_stereo_known_position),
     T(test_listener_cabin_transfer),
     T(test_listener_eight_scenes),
-    T(test_routing_path_times_follow_the_gas),
+    T(test_listener_mono_aperture),
     T(test_routing_source_sum),
-    T(test_routing_geometry_edit),
     T(test_routing_component_controls),
-    T(test_routing_reverse_jets_heard),
     T(test_routing_no_duplicated_pulse),
     T(test_baseline_where_the_waves_are_weak),
     T(test_baseline_whole_drive_books),

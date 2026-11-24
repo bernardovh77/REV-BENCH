@@ -77,7 +77,6 @@ enum { RB_IMPACT_SLAP = 0, RB_IMPACT_SEAT, RB_IMPACT_LIFT, RB_IMPACT_INJECTOR, R
 #define RB_NOISE_MODES 6        /* the block's and head's resonances          */
 #define RB_NOISE_CMODES 8       /* stage 055's candidate: the block's bending
                                    modes from its geometry, then the local ones */
-#define RB_NOISE_ROUTE_EVERY 256  /* physics steps between stage 054's path times */
 #define RB_NOISE_DELAY 4096     /* physics steps the exhaust valves' noise can
                                    take down the pipes: 21 ms at 192 kHz      */
 
@@ -153,17 +152,6 @@ typedef struct rb_noise {
     double   cforce[RB_MAX_CYLINDERS];       /* N: each piston's force, last step */
     double   block_length, block_depth, block_width;   /* m, the beam's        */
     double   chain_phase, alternator_phase;  /* rad, the accessories' tones     */
-
-    /* Stage 054's candidate (variant 3): the valves' noise routed down the
-     * exhaust's own gas, its path times from the cells' temperature and flow
-     * (worked out again every RB_NOISE_ROUTE_EVERY steps), to each outlet it
-     * reaches by its own pipes; and the reversed jets heard (the intake
-     * valves' back into their runners, at the mouth; the exhaust valves'
-     * back into their cylinders, down their headers). */
-    int      route_delay[RB_MAX_CYLINDERS][RB_MAX_COLLECTORS];   /* physics steps */
-    int      route_baffle[RB_MAX_COLLECTORS];   /* the baffles to each outlet     */
-    int      route_tick;                     /* steps until the next working out */
-    double   reverse_power;                  /* W: the reversed intake jets', last step */
 
     /* this physics step: Pa at 1 m from each placed source, and the mounts' */
     double   out[RB_NOISE_OUTPUTS];

@@ -152,6 +152,15 @@ double rb_smoother_next(rb_smoother *s);
 /* How late the smoothed value is, in physics steps (0 when off). */
 double rb_smoother_delay(const rb_smoother *s);
 
+/* One path's reads of its source's ring (rb_listener's `reads`). */
+#define RB_LISTEN_NODES 8
+typedef struct rb_listen_reads {
+    int    nodes;                         /* 1 (a point) or RB_LISTEN_NODES      */
+    int    back[RB_LISTEN_NODES];         /* steps before now                    */
+    double w[RB_LISTEN_NODES][2];         /* that step's weight, and the one's
+                                             before it                          */
+} rb_listen_reads;
+
 typedef struct rb_listener {
     double gain[RB_LISTEN_SOURCES][2];    /* 1 / r of each source's paths (direct,
                                              off the ground), 1/m; 0: no source  */
@@ -178,6 +187,23 @@ typedef struct rb_listener {
     /* stage 127: the flows read between their pipe steps (off until
      * rb_listener_smooth) */
     rb_smoother smooth, smooth_front;     /* of `sum` and of `sum_front`         */
+
+    /* Stage 051 (accepted 2026-11-24, docs/stage-051.md): each tailpipe heard
+     * as its opening, as the stereo scene hears it (scene.c): the path's
+     * history read across the opening, 8 Gauss-Chebyshev nodes over a half
+     * spread of D sin(theta) / 2c (the Rayleigh disk), theta the path's angle
+     * off the pipe's axis. All 0 (point sources) until rb_listener_aperture. */
+    double spread[RB_LISTEN_SOURCES][2];  /* pipe steps, each flow path's        */
+    double nspread[RB_LISTEN_NOISES][2];  /* physics steps, each noise path's    */
+    double lag, nlag;                     /* every read later by this much, so no
+                                             node reads ahead of now (pipe and
+                                             physics steps)                      */
+
+    /* Each path's reads, worked out whenever its delay, spread or lag change
+     * (plan_reads in audio.c), so a step only adds: `nodes` samples pairs, the
+     * one `back` steps before now times w[0] and the one before it times w[1]. */
+    rb_listen_reads reads[RB_LISTEN_SOURCES][2];
+    rb_listen_reads nreads[RB_LISTEN_NOISES][2];
 } rb_listener;
 
 /* The listener at `at` and the sources at pos[0..sources-1] (m; z up from the
@@ -208,6 +234,11 @@ void   rb_listener_prime(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
 
 /* One pipe step's flows out of the sources (m^3/s). */
 void   rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
+
+/* The tailpipes' openings: each tailpipe path's spread for tailpipes of
+ * `diameter` (m), from place `where`; after placing. */
+void   rb_listener_aperture(rb_listener *l, int where, int tailpipes, double diameter, double c,
+                            double pipe_dt, double dt);
 
 /* Puts stage 12b's sources around the car for a listener rb_listener_place
  * put at `where` (the same place and tailpipes): each tailpipe's and the

@@ -52,6 +52,8 @@ static double distance(const double a[3], const double b[3])
     return sqrt(dx * dx + dy * dy + dz * dz);
 }
 
+static void plan_reads(rb_listener *l);
+
 void rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES],
                      const double at[3], double ground, double c, double pipe_dt)
 {
@@ -80,6 +82,7 @@ void rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES],
             l->delay[j][k] = delay;
         }
     }
+    plan_reads(l);
 }
 
 int rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double pipe_dt)
@@ -130,6 +133,7 @@ int rb_listener_place_noise(rb_listener *l, int where, int tailpipes, double c, 
     memset(l->ring, 0, sizeof l->ring);
     l->npos = 0;
     l->mount = 0.0;
+    plan_reads(l);
     return 0;
 }
 
@@ -139,26 +143,94 @@ double rb_listener_distance(const rb_listener *l, int j)
     return 1.0 / l->gain[j][0];
 }
 
+/* The 8 Gauss-Chebyshev nodes across a disk and their weights (scene.c's). */
+static const double DISK_NODE[8] = { .9396926208,  .7660444431,  .5,  .1736481777,
+                                     -.1736481777, -.5, -.7660444431, -.9396926208 };
+static const double DISK_WEIGHT[8] = { .02599506188, .09181686915, .16666666667, .21552140231,
+                                       .21552140231, .16666666667, .09181686915, .02599506188 };
+
+/* One path's reads: `delay` steps back (and `lag` more, so that no node reads
+ * ahead of now; at most `most` steps), across `spread` steps either side at
+ * the disk's nodes, each between the two steps it falls between. Under 0.05
+ * steps of spread the path is a point: one node. */
+static void plan_path(rb_listen_reads *r, double delay, double spread, double lag, double most)
+{
+    const double d = fmin(delay + lag, most - lag);
+    r->nodes = (spread < 0.05) ? 1 : RB_LISTEN_NODES;
+    for (int q = 0; q < r->nodes; q++) {
+        const double at = (r->nodes == 1) ? d : d + spread * DISK_NODE[q];
+        const double weight = (r->nodes == 1) ? 1.0 : DISK_WEIGHT[q];
+        const int whole = (int)at;
+        const double part = at - whole;
+        r->back[q] = whole;
+        r->w[q][0] = weight * (1.0 - part);
+        r->w[q][1] = weight * part;
+    }
+}
+
+/* Every path's reads from its delay, spread and lag as they are now. */
+static void plan_reads(rb_listener *l)
+{
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+        for (int k = 0; k < 2; k++)
+            plan_path(&l->reads[j][k], l->delay[j][k], l->spread[j][k], l->lag, RB_LISTEN_HISTORY - 2);
+    for (int j = 0; j < RB_LISTEN_NOISES; j++)
+        for (int k = 0; k < 2; k++)
+            plan_path(&l->nreads[j][k], l->ndelay[j][k], l->nspread[j][k], l->nlag, RB_LISTEN_RING - 2);
+}
+
+void rb_listener_aperture(rb_listener *l, int where, int tailpipes, double diameter, double c,
+                          double pipe_dt, double dt)
+{
+    l->lag = l->nlag = 0.0;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) l->spread[j][0] = l->spread[j][1] = 0.0;
+    for (int j = 0; j < RB_LISTEN_NOISES; j++) l->nspread[j][0] = l->nspread[j][1] = 0.0;
+    if (where < 0 || where >= RB_HEAR_COUNT || !(diameter > 0.0) || !(c > 0.0)
+        || !(pipe_dt > 0.0) || !(dt > 0.0)) {
+        plan_reads(l);
+        return;
+    }
+    const double *at = PLACE[where];
+    double most = 0.0;
+    for (int j = 0; j < 2 && j < tailpipes; j++)
+        for (int k = 0; k < 2; k++) {
+            /* the source, or its image under the ground; the pipe's axis is y */
+            const double p[3] = { TAILPIPE[j][0], TAILPIPE[j][1], k ? -TAILPIPE[j][2] : TAILPIPE[j][2] };
+            const double r = distance(p, at), along = at[1] - p[1];
+            const double sine = (r > 0.0) ? sqrt(fmax(0.0, 1.0 - along * along / (r * r))) : 0.0;
+            const double half = 0.5 * diameter * sine / c;   /* s */
+            l->spread[j][k] = half / pipe_dt;
+            l->nspread[j][k] = half / dt;
+            if (half > most) most = half;
+        }
+    l->lag = ceil(most / pipe_dt) + 1.0;
+    l->nlag = ceil(most / dt) + 1.0;
+    plan_reads(l);
+}
+
 /* What arrives now: each path's source as it was `delay` pipe steps ago, read
  * between the two steps it falls between; and the part of it from in front
- * of the cabin. */
+ * of the cabin. A tailpipe is heard as its opening (stage 051): its history
+ * read across the opening's spread (rb_listener_aperture); every read `lag`
+ * steps later, so that no node reads ahead of now. */
 static double arriving(const rb_listener *l, double *front)
 {
     double sum = 0.0;
     *front = 0.0;
-    for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
-        const double *q = l->flow[j];
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++)
         for (int k = 0; k < 2; k++) {
             if (l->gain[j][k] == 0.0) continue;
-            const int whole = (int)l->delay[j][k];
-            const double part = l->delay[j][k] - whole;
-            const int a = (l->pos - whole + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
-            const int b = (a - 1 + RB_LISTEN_HISTORY) % RB_LISTEN_HISTORY;
-            const double v = l->gain[j][k] * ((1.0 - part) * q[a] + part * q[b]);
+            const rb_listen_reads *r = &l->reads[j][k];
+            const double *x = l->flow[j];
+            double v = 0.0;
+            for (int q = 0; q < r->nodes; q++) {
+                const int a = (l->pos - r->back[q]) & (RB_LISTEN_HISTORY - 1);
+                v += r->w[q][0] * x[a] + r->w[q][1] * x[(a - 1) & (RB_LISTEN_HISTORY - 1)];
+            }
+            v *= l->gain[j][k];
             sum += v;
             if (FLOW_IN_FRONT(j)) *front += v;
         }
-    }
     return sum;
 }
 
@@ -236,6 +308,7 @@ int rb_listener_smooth(rb_listener *l, int every)
     for (int j = 0; j < RB_LISTEN_NOISES; j++)
         for (int k = 0; k < 2; k++)
             if (l->ngain[j][k] != 0.0) l->ndelay[j][k] = fmin(l->ndelay[j][k] + late, RB_LISTEN_RING - 2);
+    plan_reads(l);
     return 0;
 }
 
@@ -268,24 +341,26 @@ void rb_listener_push_noise(rb_listener *l, const double p[RB_LISTEN_NOISES], do
 }
 
 /* Stage 12b's sources arriving now: each path's pressure as it was `ndelay`
- * physics steps ago; behind the cabin (the return value) and in front. */
+ * physics steps ago, a tailpipe's read across its opening as arriving()'s
+ * are; behind the cabin (the return value) and in front. */
 static double noise_arriving(const rb_listener *l, double *front)
 {
     double rear = 0.0;
     *front = 0.0;
-    for (int j = 0; j < RB_LISTEN_NOISES; j++) {
-        const float *p = l->ring[j];
+    for (int j = 0; j < RB_LISTEN_NOISES; j++)
         for (int k = 0; k < 2; k++) {
             if (l->ngain[j][k] == 0.0) continue;
-            const int whole = (int)l->ndelay[j][k];
-            const double part = l->ndelay[j][k] - whole;
-            const int a = (l->npos - whole) & (RB_LISTEN_RING - 1);
-            const int b = (a - 1) & (RB_LISTEN_RING - 1);
-            const double v = l->ngain[j][k] * ((1.0 - part) * p[a] + part * p[b]);
+            const rb_listen_reads *r = &l->nreads[j][k];
+            const float *x = l->ring[j];
+            double v = 0.0;
+            for (int q = 0; q < r->nodes; q++) {
+                const int a = (l->npos - r->back[q]) & (RB_LISTEN_RING - 1);
+                v += r->w[q][0] * x[a] + r->w[q][1] * x[(a - 1) & (RB_LISTEN_RING - 1)];
+            }
+            v *= l->ngain[j][k];
             if (NOISE_IN_FRONT(j)) *front += v;
             else rear += v;
         }
-    }
     return rear;
 }
 

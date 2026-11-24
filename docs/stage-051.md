@@ -51,13 +51,57 @@ wrong, the load doubled.
    back (Levine and Schwinger). The "behind" listener stands near the pipe's axis, where the
    monopole is closest; "side" and "front" hear the highs (above about 2 kHz for a 2.5 cm
    tailpipe) a little too strong. A directivity filter changes the sound: for Bernardo's ears
-   (and 056, the listener's validation).
+   (and 056, the listener's validation). **Since 2026-11-24 the accepted sound** (below:
+   variant 5, accepted after Bernardo's A/B the same day).
 2. **The mean flow at the end.** The load is the still air's. A jet leaving the end (Mach up to
    0.25-0.5 wide open, stage 129's measurement) absorbs low frequencies at the end (Munt's
    jet: |R| below 1 even as ka goes to 0) and moves the end correction. Not modelled; it would
    change the sound's low end: 054/056 with his ears.
 3. **Flanges, flares and the body:** none; a tailpipe is a bare pipe in free air (with the
    ground's reflection).
+
+## Follow-up (2026-11-24, overnight): the openings in the mono listener, variant 5
+
+**The shortest honest candidate for item 1 is one account, not a new model.** The stereo scene
+already hears each tailpipe as its opening:
+- the path's history is read across the opening, at 8 Gauss–Chebyshev nodes;
+- the half spread is D sin θ / 2c;
+- that is the Rayleigh disk, checked against Airy's 2J₁(x)/x in `test_scene_aperture_radiation`.
+
+The mono listener now does the same (`rb_listener_aperture`; `spread`, `nspread`, `lag` in
+`rb_listener`). It was variant 5 overnight; it is the accepted sound since Bernardo's A/B
+("Candidate 5 is good", 2026-11-24), and the number is retired.
+- **What it applies to:** each tailpipe path, direct and off the ground, for the pipes' flows
+  and the noise layer's tailpipe sources alike.
+- **The lag:** each path's delay counts from the nearest path, so with the opening on every
+  read lags by the largest spread plus a step (under 0.1 ms), and no node reads ahead of now.
+
+**The evidence:**
+- **The test** (`test_listener_mono_aperture`), from the side:
+  - tailpipe 0's direct path is 59° off its axis;
+  - its spread is the geometry's (1e-12);
+  - a 3 kHz tone through that path alone comes out at **0.759**, against the disk's **0.771**
+    (the scene's tolerance, 0.04);
+  - the sim places the openings with its listener, at every place and in every variant.
+- **Planted bugs:** 3 caught, in this stage's table (the wrong axis, reads ahead, never placed).
+  Stage 12's `no-interpolation` retargeted to the new read (caught by
+  `test_audio_listener_paths`).
+- **The accepted sound, as a candidate:** all 11 `cli_parity` cases identical.
+- **Accepted:** 28 of the 11 cases' files change against the commit before, their sound only (the
+  CSVs' out_peak, out_rms and spl_dB; rpm and every engine column identical); the stereo scene's
+  case identical. Behind, the four's idle and coast: −0.2 dB at 2 kHz, −0.6 at 4 kHz, −2.2 to
+  −2.5 at 8 kHz, nothing below 1 kHz. Speed: first measured at median −0.9 % (the cross V8 at low −15 %, the
+  worst cell), within the 3 %. That was with each path's reads worked out every step, which an
+  rb_cli render showed costing 37 % (the four's 16 s coast, 10.9 to 14.9 s; the speed check's
+  hold drive barely sees it): the reads are now worked out once per placing (`plan_reads`),
+  the coast back within run-to-run noise, the speed check median −1.0 %, worst cell −2.5 %.
+- **What it does, from the side at 4000 rpm** (share of the energy):
+  - the four: **−2.1 dB above 2 kHz, −4.7 above 4 kHz**;
+  - the cross-plane V8: −3.8 and −10.9 (its pipes are wider);
+  - behind (23° off the axis), a fraction of a dB.
+
+**Its limit is the scene's:** a baffled disk. An unflanged pipe radiates still less towards its
+back (θ over 90°, Levine and Schwinger), which neither listener models.
 
 ## Files
 

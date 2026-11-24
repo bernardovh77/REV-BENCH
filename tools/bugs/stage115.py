@@ -28,8 +28,8 @@ BUGS = {
         "reach[s] ? 1.0 : 0.0;",
         ['test_noise_valve_routing'], 300),
     'junction-uncorrelated': ("core/src/noise.c",
-        "n->blow_ring[s][where] += (float)(x * n->blow_share[i][s]);",
-        "n->blow_ring[s][where] += (float)(x * n->blow_share[i][s] * (s ? -1.0 : 1.0));",
+        "n->blow_ring[s][at] += (float)(x * n->blow_share[i][s]);",
+        "n->blow_ring[s][at] += (float)(x * n->blow_share[i][s] * (s ? -1.0 : 1.0));",
         ['test_noise_valve_routing'], 300),
     # D04: the path down the centre pipe and link
     'path-without-centre': ("core/src/noise.c",

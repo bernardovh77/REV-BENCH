@@ -21,4 +21,17 @@ BUGS = {
         "    r->impedance = rho * c;",
         "    r->impedance = 2.0 * rho * c;",
         PIPE + POWER, 300),
+    # 2026-11-24: the mono listener's openings (variant 5, accepted the same day)
+    'aperture-wrong-axis': ("core/src/audio.c",
+        "            const double r = distance(p, at), along = at[1] - p[1];",
+        "            const double r = distance(p, at), along = at[0] - p[0];",
+        ["test_listener_mono_aperture"], 300),
+    'aperture-reads-ahead': ("core/src/audio.c",
+        "    l->lag = ceil(most / pipe_dt) + 1.0;",
+        "    l->lag = 0.0 * most;",
+        ["test_listener_mono_aperture"], 300),
+    'aperture-never-placed': ("core/src/rb_sim.c",
+        "                         e->pipe_dt, sim->dt);   /* the tailpipes' openings (stage 051) */",
+        "                         e->pipe_dt, -1.0);",
+        ["test_listener_mono_aperture"], 300),
 }

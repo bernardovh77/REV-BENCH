@@ -300,3 +300,73 @@ void test_listener_eight_scenes(void)
         else if (kind != RB_SCENE_CABIN) CHECK(late < 1e-12 * early);
     }
 }
+
+static rb_listener mono;
+
+void test_listener_mono_aperture(void)
+{
+    /* Stage 051 (accepted 2026-11-24): the mono listener hears each tailpipe as its
+     * opening, as the stereo scene does. From the side place (4 m right of the middle, 2.2 m
+     * ahead of the bumper) tailpipe 0's direct path is 59 degrees off the pipe's axis: its half
+     * spread is D sin(theta) / 2c, computed here from the documented coordinates. A tone
+     * through that path alone comes out at the Rayleigh disk's gain, 2 J1(x) / x with
+     * x = w D sin(theta) / 2c (the 8-node quadrature within 0.04, the scene's tolerance); the
+     * reads only lag, never lead. Against it, the same path read at a point (no spread). */
+    const double D = 0.06, c = 343.0, pipe_dt = 1.0 / 48000.0, dt = 1.0 / 192000.0;
+    rb_listener_place(&mono, RB_HEAR_SIDE, 2, c, pipe_dt);
+    rb_listener_aperture(&mono, RB_HEAR_SIDE, 2, D, c, pipe_dt, dt);
+    const double at[3] = { 4.0, 2.2, 1.6 }, src[3] = { 0.5, -0.05, 0.35 };
+    const double dx = at[0] - src[0], dy = at[1] - src[1], dz = at[2] - src[2];
+    const double r = sqrt(dx * dx + dy * dy + dz * dz), sine = sqrt(1.0 - dy * dy / (r * r));
+    CHECK_NEAR(mono.spread[0][0], 0.5 * D * sine / c / pipe_dt, 1e-12);
+    CHECK_NEAR(mono.nspread[0][0], 0.5 * D * sine / c / dt, 1e-12);
+    CHECK(mono.lag >= mono.spread[0][0] && mono.lag >= mono.spread[1][1]);
+    CHECK(mono.spread[0][0] > 1.0);   /* the side is well off the axis */
+
+    /* one path alone: tailpipe 0, direct */
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+        for (int k = 0; k < 2; k++)
+            if (j || k) mono.gain[j][k] = 0.0;
+    const double f = 3000.0, w = 2.0 * PI * f;
+    double amp[2];
+    for (int on = 0; on < 2; on++) {
+        /* off: the same listener with no opening (a point; no lag either,
+         * which moves only the tone's phase) */
+        rb_listener_aperture(&mono, RB_HEAR_SIDE, 2, on ? D : 0.0, c, pipe_dt, dt);
+        double re = 0.0, im = 0.0;
+        const int n = 48000;
+        for (int i = 0; i < n; i++) {
+            const double q[RB_LISTEN_SOURCES] = { sin(w * i * pipe_dt), 0.0, 0.0 };
+            rb_listener_push(&mono, q);
+            if (i >= 4800) {
+                re += mono.sum * sin(w * i * pipe_dt);
+                im += mono.sum * cos(w * i * pipe_dt);
+            }
+        }
+        amp[on] = 2.0 * sqrt(re * re + im * im) / (n - 4800);
+    }
+    const double x = w * 0.5 * D * sine / c;
+    double term = 1.0, airy = 1.0;
+    for (int k = 1; k < 20; k++) {
+        term *= (-x * x / 4.0) / (k * (k + 1));
+        airy += term;
+    }
+    printf("    from the side, 3 kHz: the opening's gain %.3f, the disk's %.3f\n", amp[1] / amp[0], airy);
+    CHECK(fabs(amp[1] / amp[0] - fabs(airy)) < 0.04);
+    CHECK(amp[1] < 0.97 * amp[0]);
+
+    /* the sim places the openings with its listener, in every variant, at every place */
+    rb_sim *sim = rb_create(NULL);
+    CHECK(sim != NULL);
+    if (!sim) return;
+    float out[256];
+    rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
+    for (int v = 0; v < 3; v++) {
+        rb_set_param(sim, RB_PARAM_VARIANT, v);
+        rb_set_param(sim, RB_PARAM_LISTENER, v ? RB_LISTENER_SIDE : RB_LISTENER_BEHIND);
+        rb_render_block(sim, out, 128);
+        CHECK(sim->listener.lag >= 1.0 && sim->listener.nlag >= 1.0);
+        if (v) CHECK(sim->listener.spread[0][0] > 0.1);
+    }
+    rb_destroy(sim);
+}

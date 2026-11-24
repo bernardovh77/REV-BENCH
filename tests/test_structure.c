@@ -229,8 +229,9 @@ void test_structure_events_and_energy(void)
 {
     /* The candidate changes where the blows go, not the blows: the same
      * impacts, counted and sized, as the accepted sound's; the bay's level
-     * within 3 dB of it on every engine (the weights keep the block's
-     * energy), and the same seed's noise, so nothing random is added. */
+     * 5 dB under it on every engine, within 3 dB (the weights keep the
+     * block's energy, then noise.c's STRUCTURE_TRIM takes 5 dB: Bernardo,
+     * 2026-11-24), and the same seed's noise, so nothing random is added. */
     for (int p = 0; p < rb_preset_count(); p++) {
         double e0, e1;
         two_variants(rb_preset_key(p), 3000.0, 0, 1, 24000, &e0, &e1, NULL, 3);
@@ -242,7 +243,7 @@ void test_structure_events_and_energy(void)
         const double change = 10.0 * log10(e1 / e0);
         printf("    %-9s the bay at 3000 rpm wide open: %+.2f dB against the accepted sound\n",
                rb_preset_key(p), change);
-        CHECK(fabs(change) < 3.0);
+        CHECK(fabs(change + 5.0) < 3.0);
     }
 }
 
@@ -318,15 +319,15 @@ void test_structure_accessories(void)
 
 void test_structure_variant_reaches_the_noise(void)
 {
-    /* RB_PARAM_VARIANT 1, 2 (and 3, stage 054's) reach the noise; any other
-     * number leaves the accepted sound. */
+    /* RB_PARAM_VARIANT 1 and 2 reach the noise; any other number leaves the
+     * accepted sound. */
     rb_sim *sim = rb_create(NULL);
     CHECK(sim != NULL);
     if (!sim) return;
     float out[256];
     rb_set_param(sim, RB_PARAM_SOURCE, RB_SOURCE_ENGINE);
-    const int want[5][2] = { { 0, 0 }, { 1, 1 }, { 2, 2 }, { 3, 3 }, { 5, 0 } };   /* 3: stage 054's */
-    for (int k = 0; k < 5; k++) {
+    const int want[4][2] = { { 0, 0 }, { 1, 1 }, { 2, 2 }, { 5, 0 } };
+    for (int k = 0; k < 4; k++) {
         rb_set_param(sim, RB_PARAM_VARIANT, want[k][0]);
         rb_render_block(sim, out, 128);
         CHECK_EQ_INT(sim->noise.variant, want[k][1]);

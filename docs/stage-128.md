@@ -108,12 +108,18 @@ where its sound is made.
 - **If it's to change:** the soft cut's band (`limiter_band`, live, 150 rpm by default) spreads
   the cuts. A wider band is a setting, not a code change, to try first on the A/B.
 
+## Bernardo's verdicts (2026-11-24)
+
+- **Variant 3 (the dull idle): "bad".** Deleted (054's record). The dull idle stays open.
+- **Variant 5 (051's openings): "good".** Accepted.
+- **Variant 1 (055's block): "decent", too loud.** 5 dB quieter (055's record), still a candidate.
+
 ## What is left (why 🟡)
 
 1. **Bernardo's blind A/B verdicts:**
-   - variant 3 on the idles (the four's and the V8s');
    - the limiter's band on the V8;
-   - 055's variants 1 and 2.
+   - 055's variants 1 and 2, the block now 5 dB quieter;
+   - a new try at the dull idle (variant 3 lost).
 2. **A stationary recording of a known engine (039):** the repeat and the four's level both wait
    on it.
 

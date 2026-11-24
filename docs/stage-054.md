@@ -177,6 +177,26 @@ per cylinder (but for the reversed exhaust jets' own).
 
    Both within the test's 0.3 ms, and half today's error.
 
+## The verdict (2026-11-24): the candidate deleted
+
+Bernardo's A/B: **"Candidate 3 is bad."** As the playbook asks, variant 3 is deleted and its number
+retired:
+- **noise.c:** `reverse_jet`, `pipe_time`, `route`, the routed writes and `reverse_power`; the
+  valves' noise is the fixed paths again.
+- **noise.h:** `RB_NOISE_ROUTE_EVERY`, `route_delay`, `route_baffle`, `route_tick`,
+  `reverse_power`.
+- **rb_sim.c:** the noise hears variants 1 and 2 only.
+- **tests/test_routing.c:** the candidate's three tests (its path times, the geometry edit, the
+  reversed jets) are gone. The same-state captures stay, with the accepted routing's checks: the
+  sources add, each component takes energy from both layers, the noise isn't the pulse.
+- **tools/bugs/stage054.py:** the candidate's eight bugs went with it. Two for what stays are both
+  caught: the catalyst's pass ignored, the chambered can passing everything. Three more were
+  tried and missed, and are named there.
+
+What the stage measured stays true: the fixed 580 m/s paths are off the live gas by its
+temperature, and the idle's reversed jets are real. Heard as variant 3 built them, they made the
+sound worse, not better. A later try would start from that.
+
 ## Files
 
 - **New:** `tests/test_routing.c` (6 tests), `tools/bugs/stage054.py`, this doc.
