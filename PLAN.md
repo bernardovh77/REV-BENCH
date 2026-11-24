@@ -99,6 +99,8 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [ ] **053, 055, 056 → 054;**
    - [x] **129:** the cold end of the exhaust on delay lines, a faster tier (closed negative: docs/stage-129.md) (beside 050–056,
      before 062);
+   - [ ] **B2, the exhaust (Bernardo, 2026-11-24), before 3D:** [x] 137 → [ ] 138 → [ ] 139 → 140,
+     141 → 142 → 143;
    - [ ] **057 → 058 → 059 → 060 → (136) → 061 → 062 → 063:** base sound acceptance (060 chose no
      replacement: 136 is its bounded experiment, and 061 waits on it). Each of these
      updates the app too.
@@ -171,6 +173,22 @@ Click a stage's number for its specification. "Depends on" lists stages that mus
 | ⬜ | [063](docs/roadmap/05-engine-qualification.md#stage-063) | Base-engine sound and realism acceptance: Bernardo listens, per preset and scenario | 039, 059, 061, 062 |
 | 💤 | [064](docs/roadmap/06-learned-research.md#stage-064) | Conditional: learned pulse and DSP-parameter benchmark | 039, 053, 054, 059 |
 | 💤 | [065](docs/roadmap/06-learned-research.md#stage-065) | Conditional: learned unresolved-source integration | 064, 060, 061, 063 |
+
+### Phase B2 — the exhaust, every part of it (Bernardo, 2026-11-24)
+
+Bernardo, after the A/B of 2026-11-24: every style and size of muffler, one or more, X-pipes,
+junctions, every diameter, how many tailpipes and exits, researched against real cars and tuned
+by their recordings, before 3D. Cards: [docs/roadmap/15-exhaust.md](docs/roadmap/15-exhaust.md).
+
+| | Stage | What | Depends on |
+| --- | --- | --- | --- |
+| ✅ | [137](docs/roadmap/15-exhaust.md#stage-137) | The exhaust audit and the real cars' exhausts (2026-11-24, docs/stage-137.md): what the template could and couldn't represent, part by part; the 458's, Mustang's, M3's and S2000's exhausts from public sources (factory drawings aren't public: every dimension marked published or estimated); the plan | 050, 051, 054 |
+| ⬜ | [138](docs/roadmap/15-exhaust.md#stage-138) | The exhaust as a network (2026-11-24, docs/stage-138.md): pipes (pipe, can, tailpipe, header secondary), volumes and up to four outlets, each end closed, into a volume or a pipe's end cell, tapped into a pipe's middle, straight on, or out; the legacy fields compile into one in the old order (every preset bit-identical); side branches, closed tubes, H-pipes and extra outlets keep the books; the noise layer routes along the network; the listener and the scene hear every outlet at its place | 137, 044 |
+| ⬜ | [139](docs/roadmap/15-exhaust.md#stage-139) | The network's parts against four-pole theory (2026-11-24, docs/stage-139.md): Helmholtz 0.95 dB, quarter-wave 0.59, a chamber 1.54 in third-octave bands, their resonances where theory's are; an extended-tube chamber within 1.8 dB to 320 Hz (8.7 to 1 kHz, open) and two chambers in series within 3 dB (open); the noise layer's passes from each part's geometry (an expansion chamber's kL-averaged transmission, a packed core by Piening's law) | 138, 050 |
+| ⬜ | [140](docs/roadmap/15-exhaust.md#stage-140) | The network in the API and the app's editor | 138, 067 |
+| ⬜ | [141](docs/roadmap/15-exhaust.md#stage-141) | Real cars\' exhausts as presets, against their recordings: the 458 first (its silencers from an EC type approval) | 138, 139, 039 |
+| ⬜ | [142](docs/roadmap/15-exhaust.md#stage-142) | Exhaust valves: a bypass flap's area as a live control | 138, 141 |
+| ⬜ | [143](docs/roadmap/15-exhaust.md#stage-143) | Tuning by recordings, each parameter within its physical range | 141, 039 |
 
 ### Phase C — the 3D engine
 

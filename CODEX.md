@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-24: Stage 137, the exhaust audit (Claude)
+
+- Bernardo asked for every part of an exhaust to be simulable, researched against real
+  cars, before 3D. Roadmap: docs/roadmap/15-exhaust.md (137-143); the audit and research:
+  docs/stage-137.md.
+
 ## 2026-11-24: Bernardo's A/B verdicts acted on (Claude)
 
 - **Variant 5 accepted** (stage 051's directivity): audio.c's mono listener reads every tailpipe
