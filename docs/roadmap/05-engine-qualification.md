@@ -196,3 +196,31 @@ These are stage specifications. Current statuses live only in PLAN.md. Future ex
 **Starting evidence/specification:** [docs/render-workflow.md](../../docs/render-workflow.md), [docs/sound-robustness-plan.md](../../docs/sound-robustness-plan.md).
 
 **Execution record:** for new work, `docs/stage-063.md` plus the protocol's source/command/measurement/decision record. Historical rows use their existing linked records. No stage closes from a planned test alone.
+
+<a id="stage-136"></a>
+## Stage 136 — The coupled arm as a component: the cans and the upper band
+
+**Dependencies:** [060](#stage-060), [057](#stage-057), [050](../../docs/roadmap/04-propagation.md#stage-050), [054](#stage-054)
+
+**Why:** Stage 060's decision ([ADR 0005](../adr/0005-no-renderer-replacement-yet.md)): no current renderer replaces today's pipes, and a no-winner outcome opens a bounded experiment. Today's pipes are sound to about 1.5 kHz along every plain path, but the cans hold plane-wave theory only to 450–750 Hz on the 7.5 cm grid (050), the plain pipes lose 1.4–4.3 dB at 2 kHz and 5–11 dB at 2.4 kHz (057), and the noise layer's calibrated passes stand in for the cans above that (054). Stage 045–048's coupled duct carries waves by characteristics, without that numerical loss, but only as a uniform, constant-gamma duct from a still background, and at 0.002–0.015× real time for one duct.
+
+**Deliverable:** One component first, behind a research selector, default off: the four's chambered can (or its tailpipe) as a coupled element with two ports to the production pipes. It needs:
+- the production gas at its ports;
+- the mean flow and reversal;
+- the one conservative interface ADR 0001 requires.
+
+Then, only if that passes, the other presets' cans and packed straight-throughs.
+
+**Required exit evidence:**
+- **The can's transmission loss against four-pole theory:** within 050's tolerance up to its cross mode, on the engine's grid.
+- **The engine's books:** mass, species and energy closing as 057's whole drive does, with the component in.
+- **Load upstream:** the back pressure and VE moved as the physics says (057's geometry test).
+- **Sound:** the noise layer's pass for that component taken away in the same change (no double counting, 054).
+- **The cost:** measured against the preset's tier (062's budget). A component that takes the tier below 1.5× real time on the baseline laptop needs Bernardo's call.
+- **Listening:** Bernardo's, on the A/B switch.
+
+**Stop/reject rule:**
+- **No promotion from a paper score:** a component that only matches theory on a bench, or only brightens the sound, does not pass.
+- **No silent stand-ins:** if no component passes, the cans' upper band stays the noise layer's, stated, and this stage records the rejection.
+
+**Execution record:** `docs/stage-136.md`.

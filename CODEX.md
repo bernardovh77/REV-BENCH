@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 060, no renderer replacement yet (Claude)
+
+- docs/stage-060.md, docs/adr/0005-no-renderer-replacement-yet.md (proposed: Bernardo to accept).
+  A0 stays; the no-winner outcome opens stage 136 (the coupled arm as one component, the four's
+  can or tailpipe); 061 blocked on it. PLAN.md carries 059's and 060's rows.
+
 ## 2026-11-23: Stage 059, the physical envelope against published ratings (Claude)
 
 - docs/stage-059.md: `tests/test_qualification.c` (ratings at their speeds, COV over seeds),
