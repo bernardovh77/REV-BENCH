@@ -112,8 +112,11 @@ engine's speed. Not modelled; stated.
   accepted sound's.
 
 **Variant 2: that, and the accessories.** Both tones' phases follow the crank:
-- **The chain:** 21 teeth, 0.02 Pa at 1 m at 3000 rpm, as the rpm.
-- **The alternator:** 36 slots × 2.7, 0.006 Pa at 800 W of accessories, as their power.
+- **The chain:** 21 teeth, 0.0063 Pa at 1 m at 3000 rpm, as the rpm.
+- **The alternator:** 36 slots × 2.7, 0.0019 Pa at 800 W of accessories, as their power.
+- **Both 10 dB under their first levels** (0.02 and 0.006 Pa): Bernardo heard the whine far
+  too loud at the front listener on every engine, and asked for it under half as loud
+  (2026-11-23). 10 dB is about half the perceived loudness.
 
 **The switch:** `rb_sim.c` copies `sim->variant` into `n->variant` before each step: 1 and 2
 reach the candidate, and every other number plays the accepted sound.
@@ -171,8 +174,8 @@ reach the candidate, and every other number plays the accepted sound.
 | Inline width past the bore | 60 mm | walls and jacket | ±20 mm |
 | Shear constant T | 0.349 | aluminium, solid section | a ribbed hollow section's κ is lower: the deepest blocks' modes up to 20 % lower again |
 | Modes' Q | 10–30 | stage 12b's | unchanged, unmeasured |
-| Chain | 21 teeth, 0.02 Pa at 1 m at 3000 rpm | typical sprocket; level an estimate about 23 dB under the bay | teeth 18–25; level ±10 dB |
-| Alternator | 36 × 2.7, 0.006 Pa at 800 W | claw-pole stator, typical pulleys | order ±15 %; level ±10 dB |
+| Chain | 21 teeth, 0.0063 Pa at 1 m at 3000 rpm | typical sprocket; level an estimate, now about 33 dB under the bay (10 dB down at Bernardo's ear) | teeth 18–25; level ±10 dB |
+| Alternator | 36 × 2.7, 0.0019 Pa at 800 W | claw-pole stator, typical pulleys | order ±15 %; level ±10 dB |
 | Injector click | 0.05 Pa (stage 12b) | port injection | uncalibrated (042's gap) |
 
 ## What is left (why 🟡)

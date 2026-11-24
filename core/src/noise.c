@@ -160,9 +160,10 @@ static const struct {
  *     crank (the pulleys), K_ALTERNATOR Pa at 800 W of accessories, as their
  *     power (the current). */
 #define CHAIN_TEETH       21.0
-#define K_CHAIN           0.02
+#define K_CHAIN           0.0063   /* 10 dB under stage 055's 0.02: Bernardo
+                                      * heard it far too loud at the front (2026-11-23) */
 #define ALTERNATOR_ORDER  (36.0 * 2.7)
-#define K_ALTERNATOR      0.006
+#define K_ALTERNATOR      0.0019   /* likewise, from 0.006 */
 
 /* A deep beam's bending mode n (0, 1), Hz, `stiff` its slender one's
  * f L^2 / h, of depth h and length l. */

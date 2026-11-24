@@ -287,19 +287,19 @@ static double diff[48000];
 void test_structure_accessories(void)
 {
     /* Variant 2 is variant 1 and two tones, nothing else: the chain's at
-     * 21 times the crank, 0.02 Pa at 3000 rpm and as the rpm; the
-     * alternator's at 97.2 times, 0.006 Pa for 800 W of accessories. */
+     * 21 times the crank, 0.0063 Pa at 3000 rpm and as the rpm; the
+     * alternator's at 97.2 times, 0.0019 Pa for 800 W of accessories. */
     const double rpms[2] = { 3000.0, 1500.0 };
     for (int r = 0; r < 2; r++) {
         double e1, e2;
         two_variants("i4", rpms[r], 1, 2, 48000, &e1, &e2, diff, 5);
         const double crank = e.rpm / 60.0;
-        CHECK_NEAR(tone(diff, 48000, 21.0 * crank) / (0.02 * e.rpm / 3000.0), 1.0, 0.01);
-        CHECK_NEAR(tone(diff, 48000, 97.2 * crank) / 0.006, 1.0, 0.01);
+        CHECK_NEAR(tone(diff, 48000, 21.0 * crank) / (0.0063 * e.rpm / 3000.0), 1.0, 0.01);
+        CHECK_NEAR(tone(diff, 48000, 97.2 * crank) / 0.0019, 1.0, 0.01);
         /* nowhere else: the difference's energy is the two tones' */
         double all = 0.0;
         for (long k = 0; k < 48000; k++) all += diff[k] * diff[k];
-        const double tones = 0.5 * (pow(0.02 * e.rpm / 3000.0, 2) + 0.006 * 0.006) * 48000;
+        const double tones = 0.5 * (pow(0.0063 * e.rpm / 3000.0, 2) + 0.0019 * 0.0019) * 48000;
         CHECK_NEAR(all / tones, 1.0, 0.02);
     }
     /* A still engine: no tones. */
