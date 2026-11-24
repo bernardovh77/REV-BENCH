@@ -4,6 +4,12 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-23: Stage 057, the A0 baseline (no research arm can enter yet) (Claude)
+
+- docs/stage-057.md: `tests/test_baseline.c` (3 tests: the pipes' own loss per preset, the whole
+  drive's books, geometry edits upstream), `tools/bugs/stage057.py` (6 caught, 2 non-faults
+  retired). Core unchanged. The coupled arm needs a whole-engine adapter first (its README).
+
 ## 2026-11-23: Stage 054, the noise's routing against same-state captures (Claude)
 
 - docs/stage-054.md: `tests/test_routing.c` (6 tests), `tools/bugs/stage054.py` (8 caught).

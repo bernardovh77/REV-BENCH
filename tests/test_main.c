@@ -137,6 +137,9 @@ void test_routing_geometry_edit(void);
 void test_routing_component_controls(void);
 void test_routing_reverse_jets_heard(void);
 void test_routing_no_duplicated_pulse(void);
+void test_baseline_where_the_waves_are_weak(void);
+void test_baseline_whole_drive_books(void);
+void test_baseline_geometry_returns_upstream(void);
 /* ---- isolated S2d candidates (experiments/acoustics/, not engine defaults) ---- */
 void test_candidate_wave_guards(void);
 void test_diagnostic_pressure_impulse_and_capacity(void);
@@ -486,6 +489,9 @@ static const struct {
     T(test_routing_component_controls),
     T(test_routing_reverse_jets_heard),
     T(test_routing_no_duplicated_pulse),
+    T(test_baseline_where_the_waves_are_weak),
+    T(test_baseline_whole_drive_books),
+    T(test_baseline_geometry_returns_upstream),
     T(test_candidate_wave_guards),
     T(test_diagnostic_pressure_impulse_and_capacity),
     T(test_diagnostic_orifice_thermal_and_radiation),
