@@ -123,6 +123,10 @@ void test_muffler_engine_grid_limits(void);
 void test_muffler_resolution_builds_finer_cans(void);
 void test_parts_helmholtz_side_branch(void);
 void test_parts_quarter_wave_tube(void);
+void test_walls_fit_follows_kirchhoff(void);
+void test_walls_pipe_rings_down_as_kirchhoff_says(void);
+void test_walls_keep_the_books(void);
+void test_walls_switch_live_without_a_jump(void);
 void test_parts_extended_tube_chamber(void);
 void test_parts_two_chambers_in_series(void);
 void test_parts_can_by_bands(void);
@@ -488,6 +492,10 @@ static const struct {
     T(test_muffler_resolution_builds_finer_cans),
     T(test_parts_helmholtz_side_branch),
     T(test_parts_quarter_wave_tube),
+    T(test_walls_fit_follows_kirchhoff),
+    T(test_walls_pipe_rings_down_as_kirchhoff_says),
+    T(test_walls_keep_the_books),
+    T(test_walls_switch_live_without_a_jump),
     T(test_parts_extended_tube_chamber),
     T(test_parts_two_chambers_in_series),
     T(test_parts_can_by_bands),

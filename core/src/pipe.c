@@ -12,6 +12,11 @@ static const double PI = 3.14159265358979323846;
 
 /* Prandtl number of air and exhaust gas, about 0.7: Pr^(-2/3) = 1.27. */
 #define PR_FACTOR 1.27
+/* The walls' viscothermal loss (pipe.h, rb_wall_fit): the bands its fit
+ * covers. */
+#define WALL_LOWEST_HZ 20.0
+#define WALL_HIGHEST_HZ 10000.0
+#define WALL_FIT_POINTS 60
 /* How far beyond a pipe's open end the moving gas reaches: the end
  * correction, about 0.6 radius for a pipe end in open space. */
 #define END_CORRECTION 0.3   /* diameters */
@@ -66,6 +71,119 @@ int rb_pipe_init(rb_pipe *p, rb_chamber *cell, rb_face *face, int cells, double 
         face_init(&p->face[k], &p->cell[k], &p->cell[k + 1], p->area, p->dx,
                   friction_factor * p->dx / diameter);
     return 0;
+}
+
+/* Solves the n x n system m x = v in place (Gauss, partial pivoting): x in
+ * v. The fit's normal equations, well conditioned (pipe.h). */
+static void solve(double m[RB_WALL_SECTIONS][RB_WALL_SECTIONS], double v[RB_WALL_SECTIONS], int n)
+{
+    for (int col = 0; col < n; col++) {
+        int best = col;
+        for (int r = col + 1; r < n; r++)
+            if (fabs(m[r][col]) > fabs(m[best][col])) best = r;
+        for (int c = 0; c < n; c++) {
+            const double t = m[col][c];
+            m[col][c] = m[best][c];
+            m[best][c] = t;
+        }
+        const double t = v[col];
+        v[col] = v[best];
+        v[best] = t;
+        for (int r = col + 1; r < n; r++) {
+            const double k = m[r][col] / m[col][col];
+            for (int c = col; c < n; c++) m[r][c] -= k * m[col][c];
+            v[r] -= k * v[col];
+        }
+    }
+    for (int r = n - 1; r >= 0; r--) {
+        double s = v[r];
+        for (int c = r + 1; c < n; c++) s -= m[r][c] * v[c];
+        v[r] = s / m[r][r];
+    }
+}
+
+void rb_wall_fit_init(rb_wall_fit *w, double dt)
+{
+    /* Each section as the steps make it (wall_step): with a = 1 - exp(-xi dt)
+     * and z^-1 = exp(-j w dt), its response to the flow is
+     * (1 - a) (1 - a z^-1 / (1 - (1 - a) z^-1)). The weights make the sum's
+     * real part (the damping) and, a third as strictly, its imaginary part
+     * follow sqrt(j w) = sqrt(w / 2) (1 + j), relative to its size. */
+    const int n = RB_WALL_SECTIONS;
+    const double rate = 1.0 / dt;
+    const double top = fmin(WALL_HIGHEST_HZ, 0.35 * rate);
+    double xi[RB_WALL_SECTIONS], m[RB_WALL_SECTIONS][RB_WALL_SECTIONS] = { { 0.0 } };
+    double v[RB_WALL_SECTIONS] = { 0.0 };
+    w->dt = dt;
+    for (int k = 0; k < n; k++) {
+        xi[k] = 2.0 * PI * 3.0 * pow(0.2 * rate / 3.0, (double)k / (n - 1));
+        w->a[k] = 1.0 - exp(-xi[k] * dt);
+    }
+    for (int i = 0; i < WALL_FIT_POINTS; i++) {
+        const double f = WALL_LOWEST_HZ * pow(top / WALL_LOWEST_HZ, (double)i / (WALL_FIT_POINTS - 1));
+        const double omega = 2.0 * PI * f, half = sqrt(0.5 * omega);   /* sqrt(j w) = half (1 + j) */
+        const double per = 1.0 / sqrt(omega);                          /* relative to |sqrt(j w)| */
+        const double zr = cos(omega * dt), zi = -sin(omega * dt);       /* z^-1 */
+        double hr[RB_WALL_SECTIONS], hi[RB_WALL_SECTIONS];
+        for (int k = 0; k < n; k++) {
+            const double a = w->a[k], q = 1.0 - a;
+            const double dr = 1.0 - q * zr, di = -q * zi;               /* 1 - q z^-1 */
+            const double nr = a * zr, ni = a * zi;                      /* a z^-1 */
+            const double d2 = dr * dr + di * di;
+            const double fr = (nr * dr + ni * di) / d2, fi = (ni * dr - nr * di) / d2;
+            hr[k] = q * (1.0 - fr) * per;
+            hi[k] = -q * fi * per * 0.3;
+        }
+        for (int r = 0; r < n; r++) {
+            for (int c = 0; c < n; c++) m[r][c] += hr[r] * hr[c] + hi[r] * hi[c];
+            v[r] += hr[r] * half * per + hi[r] * half * per * 0.3;
+        }
+    }
+    solve(m, v, n);
+    w->sum = 0.0;
+    for (int k = 0; k < n; k++) {
+        w->c[k] = v[k];
+        w->w[k] = v[k] * (1.0 - w->a[k]);
+        w->sum += w->w[k];
+    }
+}
+
+void rb_pipe_walls(rb_pipe *p, const rb_wall_fit *fit)
+{
+    if (fit && !p->wall) {
+        for (int k = 0; k + 1 < p->cells; k++)
+            for (int j = 0; j < RB_WALL_SECTIONS; j++) p->face[k].wall[j] = p->face[k].mdot;
+        for (int j = 0; j < RB_WALL_SECTIONS; j++) p->end_face[1].wall[j] = p->end_face[1].mdot;
+    }
+    p->wall = fit;
+}
+
+/* Sutherland's law for air's viscosity, mu = MU_K T^1.5 / (T + 110.4)
+ * (1.716e-5 Pa s at 273.15 K), and 1 / sqrt(Pr). */
+#define WALL_MU_K (1.716e-5 * (273.15 + 110.4) / (273.15 * 16.527250225007183))   /* sqrt(273.15) */
+#define WALL_PER_ROOT_PR 1.18678165819385   /* 1 / sqrt(0.71) */
+
+/* The walls' viscothermal loss over one step of a face between two cells
+ * (pipe.h, rb_wall_fit), taken at the new flow (implicitly, as the laminar
+ * loss is): with the drag D = (2 / r) kappa sqrt(nu) and each section's slow
+ * part s_k, the flow m solves m = m0 - dt D sum w_k (m - s_k), w_k = c_k
+ * (1 - a_k); then each s_k follows it by a_k of the way. The viscosity is
+ * air's at the face's temperature (Sutherland's law: the exhaust's is within
+ * about 10 %); r the pipe's radius. Every pipe step, on every face: no pow,
+ * two square roots. */
+static void wall_step(rb_face *f, const rb_wall_fit *w, double per_radius)
+{
+    const double T = 0.5 * (f->a->T + f->b->T), rho = 0.5 * (f->a->rho + f->b->rho);
+    if (!(T > 0.0) || !(rho > 1e-6)) return;
+    const double nu = WALL_MU_K * T * sqrt(T) / ((T + 110.4) * rho);
+    const double gamma = rb_chamber_gamma(f->a);
+    const double kappa = 1.0 + (gamma - 1.0) * WALL_PER_ROOT_PR;
+    const double drag = 2.0 * per_radius * kappa * sqrt(nu) * w->dt;
+    double slow = 0.0;
+    for (int k = 0; k < RB_WALL_SECTIONS; k++) slow += w->w[k] * f->wall[k];
+    const double mdot = (f->mdot + drag * slow) / (1.0 + drag * w->sum);
+    for (int k = 0; k < RB_WALL_SECTIONS; k++) f->wall[k] += w->a[k] * (mdot - f->wall[k]);
+    f->mdot = mdot;
 }
 
 rb_chamber *rb_pipe_end_cell(rb_pipe *p, int end)
@@ -562,6 +680,7 @@ static void push_face(rb_pipe *p, int k, double flux_a, double flux_b, double sh
 {
     rb_face *f = &p->face[k];
     push(f, f->friction, 0.5 * (f->a->rho + f->b->rho), flux_a, flux_b, shortest, p->since, dt);
+    if (p->wall && !f->fast && p->wall->dt == dt) wall_step(f, p->wall, 2.0 / p->diameter);
 }
 
 /* The face on into the next pipe: like one of the pipe's own, with the next
@@ -577,6 +696,7 @@ static void push_onward(rb_pipe *p, double shortest, double dt)
     push(f, f->friction + (r - 1.0) * (r - 1.0), 0.5 * (f->a->rho + f->b->rho),
          momentum_flux(p, n - 1, side_flow(p, n - 1, 0), side_flow(p, n - 1, 1)),
          momentum_flux(b, 0, side_flow(b, 0, 0), side_flow(b, 0, 1)), shortest, p->since, dt);
+    if (p->wall && !f->fast && p->wall->dt == dt) wall_step(f, p->wall, 2.0 / p->diameter);
 }
 
 void rb_pipe_accelerate(rb_pipe *p, int fast, double dt)

@@ -488,6 +488,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));
     if (e->pipe_every < 1) e->pipe_every = 1;
     e->pipe_dt = e->pipe_every * dt;
+    rb_wall_fit_init(&e->wall_fit, e->pipe_dt);
     /* The exhaust past the headers (stage 138): the description's network,
      * or the one its fields make. The volumes its headers open into are its
      * collectors; its outlets, its systems. */
@@ -633,6 +634,19 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     vary_init(e, RB_ENGINE_SEED);
     rb_engine_start_cycle(e);
     return 0;
+}
+
+void rb_engine_walls(rb_engine *e, int on)
+{
+    const rb_wall_fit *fit = on ? &e->wall_fit : NULL;
+    const int runners = e->desc.runner_length > 0.0;
+    for (int i = 0; i < e->desc.cylinders; i++) {
+        if (runners) rb_pipe_walls(&e->runner[i], fit);
+        rb_pipe_walls(&e->header[i], fit);
+    }
+    for (int k = 0; k < e->net.pipes; k++) rb_pipe_walls(&e->xpipe[k], fit);
+    rb_pipe_walls(&e->snorkel, fit);
+    e->walls = !!on;
 }
 
 int rb_engine_pipe_count(const rb_engine *e)

@@ -109,6 +109,42 @@
 /* The most cells one pipe can have. */
 #define RB_PIPE_MAX_CELLS 64
 
+/* The walls' viscothermal loss (stage 144, a candidate: RB_PARAM_VARIANT 6).
+ * A sound wave in a pipe loses energy in the thin layers at the wall where
+ * the gas's swings in speed and temperature are dragged to the wall's: the
+ * viscous and thermal boundary layers (Kirchhoff). For a plane wave of
+ * angular frequency w in a pipe of radius r that is a drag on the flow,
+ *
+ *   d(mdot)/dt = - (2 / r) kappa sqrt(nu) sqrt(j w) mdot,
+ *   kappa = 1 + (gamma - 1) / sqrt(Pr),
+ *
+ * whose real part damps the wave by alpha = sqrt(w nu / 2) / (r c) kappa
+ * nepers a metre (Kirchhoff's wide-tube law; the thermal layer's part lumped
+ * into the drag, which gives the same damping of a plane wave) and whose
+ * imaginary part slows it a little, as real pipes do. Its sqrt(j w) is made of
+ * RB_WALL_SECTIONS first-order high-passes, each a state per face:
+ *
+ *   sqrt(j w) ~ sum_k c_k  j w / (j w + xi_k),
+ *
+ * the corners xi_k spaced evenly in log from 3 Hz to a fifth of the pipes'
+ * rate and the weights c_k fitted (least squares, for the step dt, as the
+ * steps really make them) to Kirchhoff's from 20 Hz to 10 kHz: within -3 % and
+ * +13 % of its damping at every rate the qualities use. The quasi-steady
+ * friction (`friction`, quadratic in the flow) stays: the turbulent loss of
+ * the mean flow, which this linear loss of the swings doesn't replace. */
+#define RB_WALL_SECTIONS 7
+
+typedef struct rb_wall_fit {
+    double dt;                          /* s: the step it was fitted for        */
+    double a[RB_WALL_SECTIONS];         /* each section's 1 - exp(-xi dt)       */
+    double c[RB_WALL_SECTIONS];         /* its weight (s^-1/2)                  */
+    double w[RB_WALL_SECTIONS];         /* c (1 - a): its share of a step's loss */
+    double sum;                         /* the w's sum                          */
+} rb_wall_fit;
+
+/* Fits the sections for a step dt (s). */
+void rb_wall_fit_init(rb_wall_fit *w, double dt);
+
 /* A face: a column of gas between two chambers, moving as one. Positive flow
  * goes from a to b, which along a pipe is from its end 0 to its end 1. */
 typedef struct rb_face {
@@ -141,6 +177,8 @@ typedef struct rb_face {
                            mdot only if that would have emptied a chamber)     */
     double moved_h;     /* J/kg the moved gas carried: enthalpy + kinetic      */
     double moved_y[RB_NSPECIES];   /* and its composition                      */
+    double wall[RB_WALL_SECTIONS]; /* kg/s: the walls' sections' slow parts of
+                                      the flow (rb_wall_fit), when they're on  */
 } rb_face;
 
 enum { RB_PIPE_CLOSED = 0, RB_PIPE_JOINED, RB_PIPE_ORIFICE, RB_PIPE_ONWARD, RB_PIPE_ONWARD_FROM };
@@ -169,6 +207,10 @@ typedef struct rb_pipe {
     int momentum_order; /* 1: donor cell; 2: limited linear momentum reconstruction */
     int    cells;                       /* 1..RB_PIPE_MAX_CELLS                    */
     int    requested_cells;             /* pre-pool preparation request; diagnostics only */
+    const rb_wall_fit *wall;            /* the walls' viscothermal loss on the
+                                           faces between its cells and onward,
+                                           for this fit's step; NULL: none (the
+                                           default; rb_pipe_walls)            */
     double length, diameter;            /* m                                       */
     double area, dx;                    /* m^2; m: each cell's length              */
     double per_area;                    /* 1 / area                                */
@@ -229,6 +271,11 @@ void rb_pipe_restrict(rb_pipe *p, int end, double area);
 /* Adds a laminar loss at a joined end: `laminar` Pa per m/s of the gas in
  * the pipe, whichever way it flows. */
 void rb_pipe_resist(rb_pipe *p, int end, double laminar);
+
+/* Turns the walls' viscothermal loss on (a fit for the pipe's step) or off
+ * (NULL). Turned on, each face's sections start from its flow now, so the
+ * switch makes no jump (stage 144's A/B). */
+void rb_pipe_walls(rb_pipe *p, const rb_wall_fit *fit);
 
 /* The most two pipes' areas may differ (either way) to go straight on into
  * each other. Each side's momentum flux is taken at its own area, so at a

@@ -99,9 +99,10 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [ ] **053, 055, 056 → 054;**
    - [x] **129:** the cold end of the exhaust on delay lines, a faster tier (closed negative: docs/stage-129.md) (beside 050–056,
      before 062);
-   - [ ] **B2, the exhaust (Bernardo, 2026-11-24), before 3D:** [x] 137 → [x] 138 → [~] 139 → **144 (next, top
-     priority)** → 140,
+   - [ ] **B2, the exhaust (Bernardo, 2026-11-24), before 3D:** [x] 137 → [x] 138 → [~] 139 → [~] 144 → 140,
      [~] 141 → 142 → 143;
+   - [ ] **B3, a sound identical to a real car (Bernardo, 2026-11-25), before 3D:** 147 → 145 →
+     146 (when his recording comes) → 148 → 149 → 150 → 151;
    - [ ] **057 → 058 → 059 → 060 → (136) → 061 → 062 → 063:** base sound acceptance (060 chose no
      replacement: 136 is its bounded experiment, and 061 waits on it). Each of these
      updates the app too.
@@ -113,8 +114,9 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next stage: 144** (Bernardo, 2026-11-25: top priority, the solver's acoustic fidelity audit; begun only
-with his go-ahead), then the rest of phase B2 and phase B (their stages ask for his listening). 133, his request, is done.
+**Next:** Bernardo's A/B of 144's candidate 6 (the walls' viscothermal loss); then 144's ranked fixes
+(stage 147, the pipes on several cores, first), then phase B3's 145 (his Polo) and the rest of
+phases B2, B3 and B (their stages ask for his listening). 133, his request, is done.
 069 and 066 stay 🟡 for Bernardo's real-device runs, listening and checks (docs/stage-069.md and
 docs/stage-066.md, "What is left"). Open beside them: 118's stated misses (the four 1.05 dB off
 at idle; the V8s' lean tier, Bernardo's choice of 2026-11-16, with its four cells outside 1 dB
@@ -187,11 +189,28 @@ by their recordings, before 3D. Cards: [docs/roadmap/15-exhaust.md](docs/roadmap
 | ✅ | [137](docs/roadmap/15-exhaust.md#stage-137) | The exhaust audit and the real cars' exhausts (2026-11-24, docs/stage-137.md): what the template could and couldn't represent, part by part; the 458's, Mustang's, M3's and S2000's exhausts from public sources (factory drawings aren't public: every dimension marked published or estimated); the plan | 050, 051, 054 |
 | ✅ | [138](docs/roadmap/15-exhaust.md#stage-138) | The exhaust as a network (2026-11-24, docs/stage-138.md): pipes (pipe, can, tailpipe, header secondary), volumes and up to four outlets, each end closed, into a volume or a pipe's end cell, tapped into a pipe's middle, straight on, or out; the legacy fields compile into one in the old order (every preset bit-identical); side branches, closed tubes, H-pipes and extra outlets keep the books; the noise layer routes along the network; the listener and the scene hear every outlet at its place | 137, 044 |
 | 🟡 | [139](docs/roadmap/15-exhaust.md#stage-139) | The network's parts against four-pole theory (2026-11-24, docs/stage-139.md): Helmholtz 0.95 dB, quarter-wave 0.59, a chamber 1.54 in third-octave bands, their resonances where theory's are; an extended-tube chamber within 1.8 dB to 320 Hz (8.7 to 1 kHz, open) and two chambers in series within 3 dB (open); the noise layer's passes from each part's geometry (an expansion chamber's kL-averaged transmission, a packed core by Piening's law) | 138, 050 |
-| ⬜ | [144](docs/roadmap/15-exhaust.md#stage-144) | **Top priority, next (Bernardo, 2026-11-25; started only with his go-ahead).** The solver's acoustic fidelity audited against his guide's six areas (renders/guides/): the scheme's cutoff by cells a wavelength, the time step at blowdown, 0D junctions against momentum ones, Cd by lift and pressure ratio, the open ends' radiation and the dQ/dt listener, viscothermal walls and perforates; each measured, the fixes ranked, the first ones as A/B candidates. Reuses 043-049, 051, 060, 129 | 138, 139 |
+| 🟡 | [144](docs/roadmap/15-exhaust.md#stage-144) | The solver's acoustic fidelity audited against Bernardo's guide (2026-11-25, docs/stage-144.md): the grid carries the gas's sound to about 1.3 kHz (2.5 at ultra, about 5 on cells a quarter: each halving an octave more); the walls damped sound 100-1000 times too little, now Kirchhoff's viscothermal loss as candidate 6 on the A/B switch (within 6 % of theory, books to 1e-14, the accepted sound bit-identical; 1-4 dB off the slow gas's resonances); junctions right to 100-200 Hz (049); the valves' Cd a level, not a timbre; the ends' load in. Ranked next: the pipes on several cores, then finer cells with the noise layer rebalanced, junctions, the mouth's load | 138, 139 |
 | ⬜ | [140](docs/roadmap/15-exhaust.md#stage-140) | The network in the API and the app's editor | 138, 067 |
 | 🟡 | [141](docs/roadmap/15-exhaust.md#stage-141) | Real cars' exhausts as presets, against their recordings: the 458 first (its silencers from an EC type approval) | 138, 139, 039 |
 | ⬜ | [142](docs/roadmap/15-exhaust.md#stage-142) | Exhaust valves: a bypass flap's area as a live control | 138, 141 |
 | ⬜ | [143](docs/roadmap/15-exhaust.md#stage-143) | Tuning by recordings, each parameter within its physical range | 141, 039 |
+
+### Phase B3 — a sound identical to a real car (Bernardo, 2026-11-25)
+
+Bernardo: the end goal is to feel like listening to a real car, the sound identical, every
+variable on the way to the ear considered and changeable. Cards:
+[docs/roadmap/16-realism.md](docs/roadmap/16-realism.md). Order: 147 → 145 → 146 (when the
+recording comes) → 148 → 149 → 150 → 151.
+
+| | Stage | What | Depends on |
+| --- | --- | --- | --- |
+| ⬜ | [147](docs/roadmap/16-realism.md#stage-147) | The pipes on several cores: each step's phases pipe by pipe over a host-owned thread pool, the ends joined in a fixed order, renders bit-identical at any thread count; measured on the laptop and the PC | 144 |
+| ⬜ | [145](docs/roadmap/16-realism.md#stage-145) | Bernardo's 2023 Polo 1.0 TSI (110 PS, stock exhaust) as a preset, its turbine a part of the exhaust network (phase D's sound-shaping part brought forward), every dimension published or estimated | 138, 141 |
+| ⬜ | [146](docs/roadmap/16-realism.md#stage-146) | His recording as ground truth (outside, 1 m, phone, rpm stated): the protocol, the analysis (rpm from the firing frequency, background, the phone's limits), the preset judged against it. Waits on the recording | 145, 039 |
+| ⬜ | [148](docs/roadmap/16-realism.md#stage-148) | Finer cells (the gas to about 5 kHz), the limits raised, the noise layer turned down where the gas now carries the sound: a candidate | 147, 144 |
+| ⬜ | [149](docs/roadmap/16-realism.md#stage-149) | The source-to-ear chain, each link measured and, where a listening condition, a control with a right default: directivity, the body, the place, the ground, the air, the surroundings, background, "as a phone heard it" | 146, 056 |
+| ⬜ | [150](docs/roadmap/16-realism.md#stage-150) | Two ears (binaural for headphones) and the level (a calibrated output, a car at 1 m as loud as it is) | 149 |
+| ⬜ | [151](docs/roadmap/16-realism.md#stage-151) | Junctions with their size and angles, against 049's finite volumes: a candidate | 147, 049 |
 
 ### Phase C — the 3D engine
 

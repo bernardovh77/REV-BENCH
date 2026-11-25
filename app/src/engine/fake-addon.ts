@@ -60,8 +60,9 @@ const PRESETS: PresetInfo[] = [
   { index: 2, key: "v8-cross", name: "V8 cross-plane", quality: "lean", layout: { family: "v", cylinders: 8, crank: "cross-plane", bankAngle: 90 } },
   { index: 3, key: "v8-flat", name: "V8 flat-plane", quality: "lean", layout: { family: "v", cylinders: 8, crank: "common-pin", bankAngle: 90 } },
   { index: 4, key: "boxer4", name: "Boxer 4", quality: "low", layout: { family: "boxer", cylinders: 4, crank: "even", bankAngle: 0 } },
+  { index: 5, key: "ferrari-458", name: "Ferrari 458 Italia", quality: "lean", layout: { family: "v", cylinders: 8, crank: "common-pin", bankAngle: 90 } },
 ];
-const CYLINDERS: Record<string, number> = { i4: 4, i6: 6, "v8-cross": 8, "v8-flat": 8, boxer4: 4 };
+const CYLINDERS: Record<string, number> = { i4: 4, i6: 6, "v8-cross": 8, "v8-flat": 8, boxer4: 4, "ferrari-458": 8 };
 
 /** The layouts the fake builds: the core's set (rb.h, stages 131 and 134), written out again. */
 const FAKE_LAYOUTS: LayoutInfo[] = (() => {

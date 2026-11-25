@@ -165,8 +165,10 @@ typedef enum rb_param {
                                    accepted sound. Live: it switches while
                                    the engine runs, for A/B listening.
                                    In use: 1 and 2, stage 055's structure
-                                   (docs/stage-055.md). Retired: 3, 4, 5
-                                   (5 accepted, 3 and 4 deleted)          */
+                                   (docs/stage-055.md); 6, stage 144's
+                                   viscothermal walls (docs/stage-144.md).
+                                   Retired: 3, 4, 5 (5 accepted, 3 and 4
+                                   deleted)                               */
     RB_PARAM_AFR,               /* the air-fuel ratio (by mass) the
                                    injectors aim for; 14.596, the
                                    stoichiometric, by default (stage 067) */

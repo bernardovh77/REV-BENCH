@@ -218,7 +218,7 @@ void cli_usage(FILE *f)
         "                        charge model with no variation\n"
         "      --seed K          the variation's seed, 1..4294967295 (default: the core's)\n"
         "      --variant N       a candidate sound on the A/B switch (RB_PARAM_VARIANT): 0 (default)\n"
-        "                        the accepted one; 1, 2 stage 055's structure, 3 stage 054's routing\n"
+        "                        the accepted one; 1, 2 stage 055's structure, 6 stage 144's walls\n"
         "      --burn-model M   charge (default) or capped diagnostic duration control\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"

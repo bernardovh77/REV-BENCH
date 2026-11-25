@@ -503,6 +503,9 @@ typedef struct rb_engine {
                                                     * many physics steps ...           */
     int         pipe_phase;                        /* ... and this many have passed     */
     double      pipe_dt;                           /* s: pipe_every dt                  */
+    rb_wall_fit wall_fit;                          /* the walls' viscothermal loss for
+                                                    * pipe_dt (pipe.h; stage 144)     */
+    int         walls;                             /* 1: every pipe has it (variant 6) */
     double      tail_flow[RB_NET_OUTLETS];         /* m^3/s of gas each outlet's
                                                     * tailpipe let out into the air
                                                     * over the last slow step (< 0:
@@ -672,6 +675,11 @@ int    rb_exhaust_net_route(const rb_exhaust_net *n, const rb_engine_desc *d, in
 
 int    rb_engine_pipe_count(const rb_engine *e);
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k);
+
+/* Turns the walls' viscothermal loss (pipe.h, rb_wall_fit) on or off in
+ * every pipe, while the engine runs, without a jump: stage 144's candidate,
+ * RB_PARAM_VARIANT 6. Off by default. */
+void   rb_engine_walls(rb_engine *e, int on);
 
 /* Every time one of the model's numerical guards has stepped in since the
  * engine was built (stage 068): the pipes' faces' sonic and mass caps and a

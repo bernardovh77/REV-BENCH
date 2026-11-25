@@ -278,6 +278,7 @@ static inline void model_step(rb_sim *sim)
         const int what = ((sim->layers & RB_LAYER_FLOW) ? RB_NOISE_FLOW : 0)
                        | ((sim->layers & RB_LAYER_ENGINE) ? RB_NOISE_ENGINE : 0);
         sim->noise.variant = (sim->variant == 1 || sim->variant == 2) ? sim->variant : 0;   /* 055's */
+        if (e->walls != (sim->variant == 6)) rb_engine_walls(&sim->engine, sim->variant == 6);   /* 144's */
         rb_noise_step(&sim->noise, e, what);
         if (sim->scene_active) {
             /* A stereo scene (stage 024): each source's pressure 1 m away,

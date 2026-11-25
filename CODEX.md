@@ -4,6 +4,18 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-25: Stage 144, the solver's acoustic fidelity audited (Claude)
+
+- Bernardo's guide (renders/guides/) named six areas; each measured (docs/stage-144.md). The grid
+  carries the gas's sound to about 1.3 kHz (2.5 at ultra; each halving of the cells an octave
+  more: `tools/grid_convergence.py`); the walls damped a sound 100-1000 times too little
+  (`experiments/ringdown/pipe_ringdown.c`); junctions are volumes, right to 100-200 Hz (049);
+  the valves' Cd moves the level, not the timbre; the ends' load and the dQ/dt listener are in.
+- Candidate 6 (`RB_PARAM_VARIANT`): Kirchhoff's viscothermal wall loss in the pipes (pipe.h
+  `rb_wall_fit`, seven sections a face, fitted at build for the pipes' step); variant 0
+  bit-identical. Waiting for Bernardo's A/B. Next by rank: the pipe solver on several cores, then
+  finer cells with the noise layer rebalanced.
+
 ## 2026-11-24: Stages 137-139, the exhaust as a network (Claude)
 
 - Bernardo asked for every part of an exhaust to be simulable (mufflers of any kind and number,
