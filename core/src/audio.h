@@ -75,8 +75,12 @@
 
 /* ---- the listener ---- */
 
-#define RB_LISTEN_SOURCES 3      /* tailpipe 0, tailpipe 1 (twin exhausts) and
-                                    the intake's mouth                          */
+#define RB_LISTEN_OUTLETS 4      /* the exhaust's outlets (engine.h's
+                                    RB_NET_OUTLETS, the same: rb_sim.c checks) */
+#define RB_LISTEN_MOUTH   RB_LISTEN_OUTLETS   /* the intake's mouth: after them */
+#define RB_LISTEN_SOURCES (RB_LISTEN_OUTLETS + 1)   /* the outlets (tailpipe 0,
+                                    tailpipe 1 of a twin exhaust, ...) and the
+                                    intake's mouth                              */
 #define RB_LISTEN_HISTORY 2048   /* pipe steps of each source's flow kept: 42 ms
                                     at 48 kHz, 14 m of path difference         */
 #define RB_GROUND         0.9    /* the ground's reflection, of the pressure    */
@@ -93,9 +97,10 @@ enum {
     RB_HEAR_COUNT
 };
 
-/* Stage 12b's sources, heard as pressures 1 m away (noise.h: RB_NOISE_TAIL0,
- * _TAIL1, _MOUTH and _BAY, in that order). */
-#define RB_LISTEN_NOISES  4
+/* Stage 12b's sources, heard as pressures 1 m away (noise.h: RB_NOISE_TAIL0
+ * and the other outlets', _MOUTH and _BAY, in that order). */
+#define RB_LISTEN_BAY     (RB_LISTEN_OUTLETS + 1)
+#define RB_LISTEN_NOISES  (RB_LISTEN_OUTLETS + 2)
 #define RB_LISTEN_RING    8192   /* physics steps of each kept: 43 ms at 192 kHz */
 
 #define RB_CABIN_PASS     0.3    /* of the pressure outside, below the corners  */
@@ -239,6 +244,19 @@ void   rb_listener_push(rb_listener *l, const double q[RB_LISTEN_SOURCES]);
  * `diameter` (m), from place `where`; after placing. */
 void   rb_listener_aperture(rb_listener *l, int where, int tailpipes, double diameter, double c,
                             double pipe_dt, double dt);
+
+/* The same three for an exhaust of `outlets` outlets, outlet o at
+ * at[3 o .. 3 o + 2] (m, the frame above), opening `diameter[o]` wide (stage
+ * 138): the two above are these with the legacy two tailpipes. */
+int    rb_listener_place_at(rb_listener *l, int where, const double at[], int outlets,
+                            double c, double pipe_dt);
+int    rb_listener_place_noise_at(rb_listener *l, int where, const double at[], int outlets,
+                                  double c, double pipe_dt, double dt);
+void   rb_listener_aperture_at(rb_listener *l, int where, const double at[],
+                               const double diameter[], int outlets, double c,
+                               double pipe_dt, double dt);
+/* Where the legacy tailpipes are (at[0], at[1]). */
+void   rb_listener_legacy_outlets(double at[2][3]);
 
 /* Puts stage 12b's sources around the car for a listener rb_listener_place
  * put at `where` (the same place and tailpipes): each tailpipe's and the

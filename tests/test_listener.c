@@ -19,11 +19,13 @@
 
 static rb_scene sc;
 
+#define MOUTH RB_SCENE_OUTLETS   /* the scene's mouth: a point source (scene.h) */
+
 /* Silences every path but ear e's from source j by way k, and its shadow. */
 static void only(rb_scene *s, int e, int j, int k)
 {
     for (int a = 0; a < 2; a++)
-        for (int b = 0; b < 4; b++)
+        for (int b = 0; b < RB_SCENE_PLACED; b++)
             for (int c = 0; c < 3; c++) {
                 if (a != e || b != j || c != k) s->path[a][b][c].gain = 0.0;
                 s->path[a][b][c].shadow = 0.0;
@@ -58,12 +60,12 @@ void test_listener_fractional_delay_band(void)
     const double freqs[4] = { 500.0, 4000.0, 8000.0, 10000.0 };
     for (int q = 0; q < 4; q++) {
         rb_scene_init(&sc, RB_SCENE_ASPHALT, FS, 343.0, 1, 0.06);
-        only(&sc, 0, 2, 0);   /* the mouth: a point, no aperture */
-        rb_scene_path *p = &sc.path[0][2][0];
+        only(&sc, 0, MOUTH, 0);   /* the mouth: a point, no aperture */
+        rb_scene_path *p = &sc.path[0][MOUTH][0];
         p->delay = floor(p->delay) + 0.5;
         const double gain = p->gain, delay = p->delay;
         double a, ph;
-        response(&sc, 0, 2, freqs[q], &a, &ph);
+        response(&sc, 0, MOUTH, freqs[q], &a, &ph);
         const double loss = 20.0 * log10(a / gain);
         printf("    %5.0f Hz at half a sample: %+.3f dB\n", freqs[q], loss);
         CHECK(loss > -0.6 && loss < 0.01);
@@ -74,11 +76,11 @@ void test_listener_fractional_delay_band(void)
     }
     /* A whole-sample delay passes everything, to the history's float. */
     rb_scene_init(&sc, RB_SCENE_ASPHALT, FS, 343.0, 1, 0.06);
-    only(&sc, 0, 2, 0);
-    sc.path[0][2][0].delay = floor(sc.path[0][2][0].delay);
+    only(&sc, 0, MOUTH, 0);
+    sc.path[0][MOUTH][0].delay = floor(sc.path[0][MOUTH][0].delay);
     double a, ph;
-    response(&sc, 0, 2, 15000.0, &a, &ph);
-    CHECK_NEAR(a / sc.path[0][2][0].gain, 1.0, 1e-6);   /* the history is float */
+    response(&sc, 0, MOUTH, 15000.0, &a, &ph);
+    CHECK_NEAR(a / sc.path[0][MOUTH][0].gain, 1.0, 1e-6);   /* the history is float */
 }
 
 /* The pass-by's retarded flight time to the listener's left ear from the
@@ -130,9 +132,9 @@ void test_listener_doppler_analytic(void)
     double most = 0.0, worst = 0.0, loudest = 0.0;
     for (int i = 0; i < 480000; i++) {
         double in[RB_SCENE_SOURCES] = { 0.0 }, o[2];
-        in[2] = sin(2.0 * PI * 600.0 * i / FS);
+        in[MOUTH] = sin(2.0 * PI * 600.0 * i / FS);
         rb_scene_step(&sc, in, o);
-        most = fmax(most, sc.path[0][2][0].delay);
+        most = fmax(most, sc.path[0][MOUTH][0].delay);
         /* The tailpipe's opening, seen from where the car was when it
          * sent the sound: its spread is 0.5 D sin(angle) / c, the angle the
          * retarded position's (checked as each block's paths are worked out). */
@@ -170,22 +172,22 @@ void test_listener_bounded_history(void)
     /* A path longer than the history is silence, never a wrapped, unrelated
      * event; one just inside it is the source as it was. */
     rb_scene_init(&sc, RB_SCENE_ASPHALT, FS, 343.0, 1, 0.06);
-    only(&sc, 0, 2, 0);
+    only(&sc, 0, MOUTH, 0);
     double o[2];
     for (int i = 0; i < RB_SCENE_RING + 10; i++) {
         double in[RB_SCENE_SOURCES] = { 0.0 };
-        in[2] = 1.0;   /* a full history */
+        in[MOUTH] = 1.0;   /* a full history */
         rb_scene_step(&sc, in, o);
     }
-    sc.path[0][2][0].delay = RB_SCENE_RING + 5.25;
+    sc.path[0][MOUTH][0].delay = RB_SCENE_RING + 5.25;
     double in[RB_SCENE_SOURCES] = { 0.0 };
-    in[2] = 1.0;
+    in[MOUTH] = 1.0;
     rb_scene_step(&sc, in, o);
     CHECK(o[0] == 0.0);
-    sc.path[0][2][0].delay = RB_SCENE_RING - 4.5;
+    sc.path[0][MOUTH][0].delay = RB_SCENE_RING - 4.5;
     rb_scene_step(&sc, in, o);
-    CHECK_NEAR(o[0], sc.path[0][2][0].gain, 1e-9);
-    sc.path[0][2][0].delay = -1.0;
+    CHECK_NEAR(o[0], sc.path[0][MOUTH][0].gain, 1e-9);
+    sc.path[0][MOUTH][0].delay = -1.0;
     rb_scene_step(&sc, in, o);
     CHECK(o[0] == 0.0);
 }
@@ -199,15 +201,15 @@ void test_listener_stereo_known_position(void)
     for (int e = 0; e < 2; e++) {
         rb_scene_init(&sc, RB_SCENE_ASPHALT, FS, 343.0, 1, 0.06);
         for (int a = 0; a < 2; a++)
-            for (int b = 0; b < 4; b++)
+            for (int b = 0; b < RB_SCENE_PLACED; b++)
                 for (int c = 0; c < 3; c++)
-                    if (a != e || b != 2 || c != 0) sc.path[a][b][c].gain = 0.0;
-        rb_scene_path *p = &sc.path[e][2][0];
+                    if (a != e || b != MOUTH || c != 0) sc.path[a][b][c].gain = 0.0;
+        rb_scene_path *p = &sc.path[e][MOUTH][0];
         p->delay = floor(p->delay);
         const double h = 0.8, f = 4000.0;
         p->shadow = h;
         double a, ph;
-        response(&sc, e, 2, f, &a, &ph);
+        response(&sc, e, MOUTH, f, &a, &ph);
         const double k = sc.head_a, w = 2.0 * PI * f / FS;
         /* the one-pole y += k (x - y): H = k / (1 - (1 - k) e^-iw) */
         const double dr = 1.0 - (1.0 - k) * cos(w), di = (1.0 - k) * sin(w);
@@ -220,7 +222,7 @@ void test_listener_stereo_known_position(void)
     rb_scene_init(&sc, RB_SCENE_ASPHALT, FS, 343.0, 1, 0.06);
     for (int e = 0; e < 2; e++) {
         const double dx = -0.3 - (0.6 + (e ? 0.09 : -0.09)), dy = 3.7 + 3.0, dz = 0.75 - 1.6;
-        CHECK_NEAR(sc.path[e][2][0].delay, sqrt(dx * dx + dy * dy + dz * dz) / 343.0 * FS, 1e-8);
+        CHECK_NEAR(sc.path[e][MOUTH][0].delay, sqrt(dx * dx + dy * dy + dz * dz) / 343.0 * FS, 1e-8);
     }
 }
 
@@ -288,7 +290,7 @@ void test_listener_eight_scenes(void)
         int finite = 1;
         for (int i = 0; i < 96000; i++) {
             double in[RB_SCENE_SOURCES] = { 0.0 }, o[2];
-            if (i == 0) in[0] = in[1] = in[2] = in[3] = 1.0;
+            if (i == 0) in[0] = in[1] = in[MOUTH] = in[3] = 1.0;
             rb_scene_step(&sc, in, o);
             finite &= isfinite(o[0]) && isfinite(o[1]);
             if (i < 24000) early += o[0] * o[0] + o[1] * o[1];   /* the pass-by's car starts 90 m off */

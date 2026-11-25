@@ -33,9 +33,9 @@ int main(void)
         }
         if (!n) return 2;
         rb_engine_contents(&e, &m1, &u1, NULL);
-        int repairs = e.plenum.repairs+e.airbox.repairs+e.junction.repairs;
+        int repairs = e.plenum.repairs+e.airbox.repairs+(e.junction ? e.junction->repairs : 0);
         for (int i = 0; i < d.cylinders; i++) repairs += e.cyl[i].gas.repairs;
-        for (int i = 0; i < e.collectors; i++) repairs += e.collector[i].repairs;
+        for (int i = 0; i < e.collectors; i++) repairs += e.collector[i]->repairs;
         for (int i = 0; i < rb_engine_pipe_count(&e); i++) {
             const rb_pipe *pipe = rb_engine_pipe(&e, i);
             for (int j = 0; j < pipe->cells; j++) repairs += pipe->cell[j].repairs;

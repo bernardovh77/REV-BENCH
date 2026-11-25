@@ -88,7 +88,7 @@ static int output(rb_sim *sim,const char *preset)
     }
     printf("],\"geometry_inventory\":{\"collectors\":[");
     for(int c=0;c<sim->engine.collectors;c++)
-        printf("%s%.17g",c ? ",":"",sim->engine.collector[c].V);
+        printf("%s%.17g",c ? ",":"",sim->engine.collector[c]->V);
     printf("],\"junction_volume_m3\":%.17g,\"pipes\":[",d->junction_volume);
     for(int k=0;k<rb_pipe_count(sim);k++) {
         const rb_pipe *p=rb_engine_pipe(&sim->engine,k);

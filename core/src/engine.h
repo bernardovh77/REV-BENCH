@@ -83,6 +83,124 @@
  * cells. */
 #define RB_ENGINE_CELLS  512
 
+/* ---- the exhaust as a network (stage 138) ----
+ *
+ * Any exhaust a car has, past its headers: pipes (plain, wide cans, packed
+ * perforated cores), volumes where pipes meet (collectors, X junctions, the
+ * boxes of a silencer), and the outlets into the open air. Each header runs
+ * from its cylinder's exhaust valve to wherever header_to says. Every other
+ * pipe has two ends, and each end opens somewhere (rb_net_end):
+ *   - CLOSED: nothing (a quarter-wave resonator's far end);
+ *   - NODE k: into volume k, through a face of this pipe's;
+ *   - INTO m: into the end cell (end `end`) of pipe m, through this pipe's
+ *     face (a pipe opening into a can: the gas spreads out and loses its
+ *     speed);
+ *   - TAP m: into pipe m's cell at `at` (0 its first, 1 its last) through
+ *     this pipe's face: a side branch (a Helmholtz neck, an H-pipe's ends);
+ *   - ONWARD m: end 1 only, straight on into pipe m's end 0, the two sharing
+ *     this pipe's end face (pipe.h, rb_pipe_onward). If they can't (too
+ *     different in area, or a one-cell pipe), `back` says how they join
+ *     instead: 0, this end INTO m's end 0; 1, m's end 0 INTO this pipe's end
+ *     cell 1;
+ *   - OUTLET o: into the open air at outlet o (its place, for the listener:
+ *     rb_net_outlet).
+ * The face an end owns can be narrowed to an effective `area` (a catalyst's
+ * substrate, a muffler's baffles, a valve's flap) with a `laminar` loss, and
+ * has an `entry_loss` (K) for flow into the pipe.
+ *
+ * The legacy fields (the exhaust's single-template description, stages
+ * 10-13b) compile into a network in exactly the order the engine was built
+ * from them before (rb_exhaust_net_legacy), so every engine they describe
+ * runs bit-identical; a description with net.pipes > 0 is built from its
+ * network instead. */
+#define RB_NET_PIPES   40       /* pipes past the headers                     */
+#define RB_NET_NODES   12       /* volumes                                    */
+#define RB_NET_OUTLETS 4        /* outlets into the open air                  */
+
+enum rb_net_end_kind {
+    RB_NET_CLOSED = 0, RB_NET_NODE, RB_NET_INTO, RB_NET_TAP, RB_NET_ONWARD, RB_NET_OUTLET
+};
+
+/* What a pipe's cells and walls are like: each role's wall temperature and
+ * cell size (engine_build.c). */
+enum rb_net_role {
+    RB_NET_ROLE_PIPE = 0,       /* an exhaust pipe: long cells, its wall      */
+    RB_NET_ROLE_CAN,            /* a can or box: the cans' cells, muffler wall */
+    RB_NET_ROLE_TAILPIPE,       /* long cells, the tailpipe's wall            */
+    RB_NET_ROLE_HEADER          /* short cells, the headers' wall (a header's
+                                   secondary, a 4-2-1's)                       */
+};
+
+/* The legacy exhaust's losses (stages 10-12; engine_build.c builds with them,
+ * exhaust_net.c compiles them into its network): velocity heads lost by gas
+ * flowing into a pipe from a collector back into a header (0.5), into an
+ * exhaust pipe through the merging cone (0.3), and air drawn into a
+ * tailpipe's plain end (0.5). A chambered muffler's baffles are perforated:
+ * besides their restriction (muffler_area) they cost a laminar loss, Pa per
+ * m/s of the tailpipe's gas, which damps the exhaust's rings a little (its
+ * lowest, the boom at 1500-2500 rpm in the four, by 2 dB at three times this)
+ * and costs 3.7 kPa of back pressure at the four's full power. A
+ * straight-through one's packing, Pa per m/s of the swings per metre, takes
+ * the swings faster than about 640 Hz (settling in 0.25 ms), 10 dB over 45 cm
+ * of hot gas, and less of the slower ones. The exhaust pipes' wall: K. */
+#define RB_HEADER_ENTRY     0.5
+#define RB_COLLECTOR_ENTRY  0.3
+#define RB_TAILPIPE_ENTRY   0.5
+#define RB_BAFFLE_LAMINAR   30.0
+#define RB_PACKING          1500.0
+#define RB_PACKING_SETTLE   2.5e-4
+#define RB_EXHAUST_WALL     550.0
+
+typedef struct rb_net_end {
+    int    kind;                /* rb_net_end_kind                            */
+    int    index;               /* the node, pipe or outlet                   */
+    int    end;                 /* INTO: which end cell of pipe `index`       */
+    int    back;                /* ONWARD: how it joins if it can't go on     */
+    double at;                  /* TAP: where along pipe `index`, 0..1        */
+    double area;                /* m^2: effective area of this end's face (0:
+                                   not narrowed)                              */
+    double laminar;             /* Pa per m/s through it (0: none)            */
+    double entry_loss;          /* K for flow into this pipe                  */
+} rb_net_end;
+
+typedef struct rb_net_pipe {
+    int    role;                /* rb_net_role                                */
+    int    kind, number;        /* what the API calls it (rb.h rb_pipe_kind)  */
+    int    from, from_number, to, to_number;   /* where the API says its ends
+                                   open (rb.h rb_pipe_place)                  */
+    double length, diameter;    /* m                                          */
+    double packing;             /* Pa s/m^2 per m: a packed perforated core's
+                                   flow resistance (0: plain; pipe.h)         */
+    double catalyst;            /* 1: its end-1 restriction is a catalyst's
+                                   substrate (the noise layer's pass)         */
+    double wall;                /* K: its wall's temperature (0: its role's)  */
+    int    muffler;             /* rb_muffler_type (rb.h): what it muffles as,
+                                   for the noise layer's pass (a plain pipe:
+                                   RB_MUFFLER_NONE)                           */
+    rb_net_end end[2];
+} rb_net_pipe;
+
+typedef struct rb_net_node {
+    double volume;              /* m^3                                        */
+    int    place, number;       /* what the API calls it (rb_pipe_place)      */
+} rb_net_node;
+
+typedef struct rb_net_outlet {
+    double at[3];               /* m: where it opens, from the rear bumper's
+                                   middle on the ground (audio.c's frame)     */
+} rb_net_outlet;
+
+typedef struct rb_exhaust_net {
+    int    pipes, nodes, outlets;
+    rb_net_end    header_to[RB_MAX_CYLINDERS];   /* where each header's end 1 opens */
+    rb_net_pipe   pipe[RB_NET_PIPES];
+    rb_net_node   node[RB_NET_NODES];
+    rb_net_outlet outlet[RB_NET_OUTLETS];
+    int    snorkel_at;          /* where the snorkel comes in the engine's list
+                                   of pipes, after this many of these (the
+                                   legacy order; a network: all of them)      */
+} rb_exhaust_net;
+
 /* Everything that defines an engine. presets.c fills one in for each preset,
  * and the public API reads and changes it field by field (rb_engine_api.c). */
 typedef struct rb_engine_desc {
@@ -158,6 +276,9 @@ typedef struct rb_engine_desc {
                                            * to the can's cross mode; never shorter than
                                            * the pipes' stability floor, 2.6 cm at 48 kHz
                                            * pipes: rb_pipe_cells_for) */
+    rb_exhaust_net net;                   /* the exhaust as a network (stage 138):
+                                           * net.pipes 0 builds it from the fields
+                                           * above, as before                         */
     double p_ambient, T_ambient;          /* Pa, K: the air around the engine         */
     /* combustion (combustion.h) */
     double burn_duration;                 /* bulk-release crank degrees after kernel development,
@@ -344,23 +465,33 @@ typedef struct rb_engine {
     rb_orifice  exhaust[RB_MAX_CYLINDERS];         /* cylinder i -> header i's first cell */
     rb_pipe     runner[RB_MAX_CYLINDERS];          /* plenum -> intake valve i         */
     rb_pipe     header[RB_MAX_CYLINDERS];          /* exhaust valve i -> its collector  */
-    rb_chamber  collector[RB_MAX_COLLECTORS];      /* where a group of headers meets   */
-    rb_pipe     exhaust_pipe[RB_MAX_COLLECTORS];   /* collector c -> its system's
+    /* the exhaust past the headers (stage 138): the network it was built
+     * from, its pipes and volumes, and the parts named by their roles */
+    rb_exhaust_net net;                            /* as built (the description's, or
+                                                    * compiled from its fields)        */
+    rb_pipe     xpipe[RB_NET_PIPES];               /* net.pipe[k]'s gas                */
+    rb_chamber  xnode[RB_NET_NODES];               /* net.node[k]'s                    */
+    rb_chamber *collector[RB_NET_NODES];           /* the volumes headers open into    */
+    rb_pipe    *tailpipe[RB_NET_OUTLETS];          /* each outlet's pipe -> the open air */
+    /* the legacy roles (their fields' engines only; NULL otherwise) */
+    rb_pipe    *exhaust_pipe[RB_MAX_COLLECTORS];   /* collector c -> its system's
                                                     * muffler, through the catalyst at
                                                     * its end (rb_pipe_restrict)       */
-    rb_pipe     muffler[RB_MAX_COLLECTORS];        /* the exhaust pipes open into its
-                                                    * first cell ...                   */
-    rb_pipe     tailpipe[RB_MAX_COLLECTORS];       /* ... and this starts from its last
-                                                    * (through a chambered one's
-                                                    * baffles) -> the open air         */
-    rb_pipe     center[RB_MAX_COLLECTORS], link[RB_MAX_COLLECTORS];
-    rb_chamber  junction;                         /* common finite X/Y junction, optional */
-    int         collectors, systems;               /* how many of each                 */
+    rb_pipe    *muffler[RB_MAX_COLLECTORS];        /* the exhaust pipes open into its
+                                                    * first cell; the tailpipe starts
+                                                    * from its last                    */
+    rb_pipe    *center[RB_MAX_COLLECTORS], *link[RB_MAX_COLLECTORS];
+    rb_chamber *junction;                          /* common finite X/Y junction, or NULL */
+    int         collectors, systems;               /* how many collectors; systems: how
+                                                    * many outlets                     */
+    const rb_pipe *pipe_list[RB_MAX_CYLINDERS * 2 + RB_NET_PIPES + 1];   /* every pipe, in
+                                                    * the order they're stepped        */
+    int         pipe_total;
     int         pipe_every;                        /* the slow gas steps once every this
                                                     * many physics steps ...           */
     int         pipe_phase;                        /* ... and this many have passed     */
     double      pipe_dt;                           /* s: pipe_every dt                  */
-    double      tail_flow[RB_MAX_COLLECTORS];      /* m^3/s of gas each system's
+    double      tail_flow[RB_NET_OUTLETS];         /* m^3/s of gas each outlet's
                                                     * tailpipe let out into the air
                                                     * over the last slow step (< 0:
                                                     * it drew air in) ...             */
@@ -512,6 +643,21 @@ double rb_engine_pipe_heat(const rb_engine *e);
  * cylinder, if it has them), then the headers, the exhaust pipes (one per
  * collector), the tailpipes (one per system), the mufflers (one per system)
  * and the snorkel. NULL if k is out of range. */
+/* The exhaust network (exhaust_net.c): the legacy fields' network, in the
+ * engine's old build order; a network's checks (0, or -1); and the shortest
+ * way (m, headers included) from cylinder i's exhaust valve to each outlet,
+ * -1 where it can't get: returns how many outlets it reaches. */
+void   rb_exhaust_net_legacy(const rb_engine_desc *d, rb_exhaust_net *n);
+int    rb_exhaust_net_check(const rb_exhaust_net *n, const rb_engine_desc *d);
+int    rb_exhaust_net_paths(const rb_exhaust_net *n, const rb_engine_desc *d, int cylinder,
+                            double length[RB_NET_OUTLETS]);
+/* The same from cylinder i (pipe and end ignored) or, with cylinder -1, from
+ * pipe `pipe`'s end `end` (0 m there): each outlet's distance, and the pipes
+ * along the way to it (route[o][0..count[o]-1], the outlet's own first). */
+int    rb_exhaust_net_route(const rb_exhaust_net *n, const rb_engine_desc *d, int cylinder,
+                            int pipe, int end, double length[RB_NET_OUTLETS],
+                            int route[RB_NET_OUTLETS][RB_NET_PIPES], int count[RB_NET_OUTLETS]);
+
 int    rb_engine_pipe_count(const rb_engine *e);
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k);
 

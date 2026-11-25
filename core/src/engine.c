@@ -437,7 +437,7 @@ static double crank_turn(rb_engine *e)
 static double exhaust_pressure(const rb_engine *e)
 {
     double p = 0.0;
-    for (int c = 0; c < e->collectors; c++) p += e->collector[c].p;
+    for (int c = 0; c < e->collectors; c++) p += e->collector[c]->p;
     return p / e->collectors;
 }
 
@@ -450,8 +450,7 @@ static void slow_flows(rb_engine *e)
 {
     const double dt = e->pipe_dt;
     const int pipes = rb_engine_pipe_count(e);
-    for (int c = 0; c < e->collectors; c++) rb_chamber_clear_rates(&e->collector[c]);
-    if (e->desc.junction_volume > 0.0) rb_chamber_clear_rates(&e->junction);
+    for (int k = 0; k < e->net.nodes; k++) rb_chamber_clear_rates(&e->xnode[k]);
     for (int k = 0; k < pipes; k++) rb_pipe_clear((rb_pipe *)rb_engine_pipe(e, k), 0);
     for (int k = 0; k < pipes; k++) rb_pipe_flows((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }
@@ -477,7 +476,7 @@ static void slow_step(rb_engine *e, step_share *share)
     for (int j = 0; j < RB_NSPECIES; j++) e->species_in[j] += m_in * mouth->moved_y[j];
     e->mouth_flow = (mouth->b->rho > 0.0) ? -mouth->moved / mouth->b->rho : 0.0;
     for (int s = 0; s < e->systems; s++) {
-        const rb_face *out = &e->tailpipe[s].end_face[1];
+        const rb_face *out = &e->tailpipe[s]->end_face[1];
         const double m = out->moved * dt;
         e->mass_out += m;
         e->energy_out += m * out->moved_h;
@@ -493,8 +492,7 @@ static void slow_step(rb_engine *e, step_share *share)
     for (int k = 0; k < pipes; k++) radiated += rb_engine_pipe(e, k)->radiated;
     e->energy_out += radiated - e->acoustic_energy_out;
     e->acoustic_energy_out = radiated;
-    for (int c = 0; c < e->collectors; c++) rb_chamber_integrate(&e->collector[c], dt);
-    if (e->desc.junction_volume > 0.0) rb_chamber_integrate(&e->junction, dt);
+    for (int k = 0; k < e->net.nodes; k++) rb_chamber_integrate(&e->xnode[k], dt);
     for (int k = 0; k < pipes; k++) rb_pipe_integrate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
     for (int k = 0; k < pipes; k++) rb_pipe_accelerate((rb_pipe *)rb_engine_pipe(e, k), 0, dt);
 }

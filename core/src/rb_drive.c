@@ -227,8 +227,11 @@ uint64_t rb_variation_seed(const rb_sim *sim)
 
 double rb_listener_source_distance(const rb_sim *sim, int source)
 {
+    /* The API's numbering (rb.h) predates the third and fourth tailpipes
+     * (stage 138): they come after the mouth, which stays 2. */
+    static const int LISTENER_SOURCE[RB_LISTEN_SOURCES] = { 0, 1, RB_LISTEN_MOUTH, 2, 3 };
     if (!sim || source < 0 || source >= RB_LISTEN_SOURCES) return NAN;
-    return rb_listener_distance(&sim->listener, source);
+    return rb_listener_distance(&sim->listener, LISTENER_SOURCE[source]);
 }
 
 int rb_set_scene_time(rb_sim *sim, double seconds)

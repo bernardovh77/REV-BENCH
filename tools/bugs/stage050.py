@@ -46,3 +46,10 @@ BUGS = {
         "",
         ["test_muffler_resolution_builds_finer_cans"], 300),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['resolution-everywhere'] = ('core/src/engine_build.c',
+    '    const double role_cell[4] = { long_cell, can_cell, long_cell, short_cell };   /* rb_net_role */',
+    '    const double role_cell[4] = { long_cell, can_cell, can_cell, short_cell };   /* rb_net_role */',
+    BUGS['resolution-everywhere'][3], BUGS['resolution-everywhere'][4])

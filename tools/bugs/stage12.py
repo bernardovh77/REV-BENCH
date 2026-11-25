@@ -104,3 +104,30 @@ BUGS = {
         "    if (k < e->systems) return NULL;",
         ["test_engine_conserves_mass_and_energy"], 300),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['mouth-not-heard'] = ('core/src/rb_sim.c',
+    '    q[RB_LISTEN_MOUTH] = pipes * e->mouth_flow;',
+    '    q[RB_LISTEN_MOUTH] = 0.0 * e->mouth_flow;',
+    BUGS['mouth-not-heard'][3], BUGS['mouth-not-heard'][4])
+BUGS['no-packing'] = ('core/src/exhaust_net.c',
+    '                            .packing = (d->muffler_type == RB_MUFFLER_STRAIGHT) ? RB_PACKING : 0.0,',
+    '                            .packing = (d->muffler_type == RB_MUFFLER_STRAIGHT) ? 0.0 : 0.0,',
+    BUGS['no-packing'][3], BUGS['no-packing'][4])
+BUGS['tailpipe-from-inlet'] = ('core/src/exhaust_net.c',
+    '            t->end[0] = into_end(M + s, 1);',
+    '            t->end[0] = into_end(M + s, 0);',
+    BUGS['tailpipe-from-inlet'][3], BUGS['tailpipe-from-inlet'][4])
+BUGS['no-baffle-laminar'] = ('core/src/exhaust_net.c',
+    '            t->end[0].laminar = RB_BAFFLE_LAMINAR;\n',
+    '',
+    BUGS['no-baffle-laminar'][3], BUGS['no-baffle-laminar'][4])
+BUGS['onward-as-volume'] = ('core/src/exhaust_net.c',
+    '            x->end[1] = (straight && alone) ? onward_end(m, 0) : into_end(m, 0);',
+    '            x->end[1] = (0 && straight && alone) ? onward_end(m, 0) : into_end(m, 0);',
+    BUGS['onward-as-volume'][3], BUGS['onward-as-volume'][4])
+BUGS['muffler-not-stepped'] = ('core/src/engine_build.c',
+    '        if (k < net->pipes) e->pipe_list[e->pipe_total++] = &e->xpipe[k];',
+    '        if (k < net->pipes && net->pipe[k].kind != RB_PIPE_MUFFLER) e->pipe_list[e->pipe_total++] = &e->xpipe[k];',
+    BUGS['muffler-not-stepped'][3], BUGS['muffler-not-stepped'][4])

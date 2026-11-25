@@ -62,7 +62,8 @@
  * the intake's mouth and the engine bay. RB_NOISE_MOUNT isn't placed: it's
  * what the engine's mounts pass into the body, heard only in the cabin. */
 enum {
-    RB_NOISE_TAIL0 = 0, RB_NOISE_TAIL1, RB_NOISE_MOUTH, RB_NOISE_BAY,
+    RB_NOISE_TAIL0 = 0, RB_NOISE_TAIL1,      /* the outlets: RB_NET_OUTLETS of them */
+    RB_NOISE_MOUTH = RB_NET_OUTLETS, RB_NOISE_BAY,
     RB_NOISE_PLACED,
     RB_NOISE_MOUNT = RB_NOISE_PLACED,
     RB_NOISE_OUTPUTS
@@ -77,6 +78,7 @@ enum { RB_IMPACT_SLAP = 0, RB_IMPACT_SEAT, RB_IMPACT_LIFT, RB_IMPACT_INJECTOR, R
 #define RB_NOISE_MODES 6        /* the block's and head's resonances          */
 #define RB_NOISE_CMODES 8       /* stage 055's candidate: the block's bending
                                    modes from its geometry, then the local ones */
+#define RB_NOISE_HOLES 8         /* the restrictions' jets, at most            */
 #define RB_NOISE_DELAY 4096     /* physics steps the exhaust valves' noise can
                                    take down the pipes: 21 ms at 192 kHz      */
 
@@ -103,23 +105,37 @@ typedef struct rb_noise {
     double   dt;        /* s, the physics step                                  */
 
     /* the flow */
-    double   tail_area[RB_MAX_COLLECTORS];   /* m^2, each tailpipe's           */
-    double   tail_d;                         /* m, their diameter              */
+    double   tail_area[RB_NET_OUTLETS];      /* m^2, each outlet's (tailpipe's) */
+    double   tail_d[RB_NET_OUTLETS];         /* m, their diameters             */
     double   jet_hp, jet_top;                /* the jets' fixed filters        */
-    double   jet_hp_lp[RB_MAX_COLLECTORS], jet_mid[RB_MAX_COLLECTORS],
-             jet_out[RB_MAX_COLLECTORS];     /* ... their states               */
-    rb_noise_band blow[RB_MAX_COLLECTORS];   /* the exhaust valves' noise, at
-                                              * each tailpipe                   */
+    double   jet_hp_lp[RB_NET_OUTLETS], jet_mid[RB_NET_OUTLETS],
+             jet_out[RB_NET_OUTLETS];        /* ... their states               */
+    rb_noise_band blow[RB_NET_OUTLETS];      /* the exhaust valves' noise, at
+                                              * each outlet                     */
     double   blow_pass;                      /* of its power, through the
-                                              * catalyst (if any) and the muffler */
-    float    blow_ring[RB_MAX_COLLECTORS][RB_NOISE_DELAY];   /* on its way down */
-    int      blow_delay[RB_MAX_CYLINDERS];   /* physics steps, each cylinder's  */
-    double   blow_share[RB_MAX_CYLINDERS][RB_MAX_COLLECTORS];   /* how much of each
+                                              * catalyst (if any) and the muffler
+                                              * (a network's: 1, its passes are in
+                                              * blow_share)                     */
+    float    blow_ring[RB_NET_OUTLETS][RB_NOISE_DELAY];   /* on its way down    */
+    int      blow_delay[RB_MAX_CYLINDERS][RB_NET_OUTLETS];   /* physics steps,
+                                              * each cylinder's to each outlet  */
+    double   blow_share[RB_MAX_CYLINDERS][RB_NET_OUTLETS];   /* how much of each
                                               * cylinder's noise (pressure) comes
-                                              * out of each tailpipe: 1 from its
+                                              * out of each outlet: 1 from its
                                               * own; through an X or Y junction
                                               * 1/sqrt(n) from each of the n it
-                                              * reaches (stage 115)             */
+                                              * reaches (stage 115); a network's
+                                              * also its path's pass, sqrt'd    */
+    /* the restrictions' jets (a chambered muffler's baffles; a network's
+     * every narrowed face but a catalyst's): each at its pipe's end, heard at
+     * the outlets past it */
+    int      holes;
+    struct {
+        int    pipe, end;                    /* the engine's xpipe and its end  */
+        double area;                         /* m^2: its effective area         */
+        int    delay[RB_NET_OUTLETS];        /* physics steps to each outlet    */
+        double share[RB_NET_OUTLETS];        /* of its pressure at each         */
+    } hole[RB_NOISE_HOLES];
     int      blow_pos;
     rb_noise_band hiss;                      /* the throttle's, at the mouth    */
     rb_noise_band intake_roar;

@@ -191,3 +191,26 @@ BUGS = {
         "",
         HEARD, 300),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['second-tailpipe-silent'] = ('core/src/noise.c',
+    "    for (int s = 0; s < e->systems; s++) {\n        /* The tailpipe's jet",
+    "    for (int s = 0; s < 1; s++) {\n        /* The tailpipe's jet",
+    BUGS['second-tailpipe-silent'][3], BUGS['second-tailpipe-silent'][4])
+BUGS['valve-noise-not-delayed'] = ('core/src/noise.c',
+    'const int at = (n->blow_pos + n->blow_delay[i][s]) & (RB_NOISE_DELAY - 1);',
+    'const int at = n->blow_pos;',
+    BUGS['valve-noise-not-delayed'][3], BUGS['valve-noise-not-delayed'][4])
+BUGS['bay-never-shielded'] = ('core/src/audio.c',
+    'const double shield = (j == RB_LISTEN_BAY) ? BAY_SHIELD[where] : 1.0;',
+    'const double shield = (j == RB_LISTEN_BAY) ? BAY_SHIELD[RB_HEAR_FRONT] : 1.0;',
+    BUGS['bay-never-shielded'][3], BUGS['bay-never-shielded'][4])
+BUGS['mouth-behind-the-cabin'] = ('core/src/audio.c',
+    '#define NOISE_IN_FRONT(j) ((j) >= RB_LISTEN_OUTLETS)',
+    '#define NOISE_IN_FRONT(j) ((j) >= RB_LISTEN_OUTLETS + 1)',
+    BUGS['mouth-behind-the-cabin'][3], BUGS['mouth-behind-the-cabin'][4])
+BUGS['noise-never-placed'] = ('core/src/rb_sim.c',
+    '    rb_listener_place_noise_at(&sim->listener, sim->hear, at, e->systems, c, e->pipe_dt, sim->dt);\n',
+    '',
+    BUGS['noise-never-placed'][3], BUGS['noise-never-placed'][4])

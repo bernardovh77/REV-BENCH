@@ -389,56 +389,37 @@ const char *rb_pipe_field_unit(int field)
     return (field >= 0 && field < RB_PIPE_FIELD_COUNT) ? PIPE_FIELDS[field].unit : NULL;
 }
 
-/* Pipe k's kind and number, and where its ends open (rb_engine_pipe's order:
- * runners, headers, exhaust pipes, tailpipes, mufflers, the snorkel). */
+/* Pipe k's kind and number, and where its ends open: the runners, headers
+ * and snorkel by what they are; the exhaust's other pipes as its network
+ * names them (stage 138; the legacy fields' network names them as before). */
 static void describe_pipe(const rb_engine *e, int k, double out[RB_PIPE_FIELD_COUNT])
 {
     const rb_engine_desc *d = &e->desc;
-    const int n = d->cylinders, runners = (d->runner_length > 0.0) ? n : 0;
-    int kind, number, from, from_number, to, to_number;
-    if (k < runners) {
-        kind = RB_PIPE_RUNNER, number = k;
-        from = RB_PLACE_PLENUM, from_number = 0, to = RB_PLACE_INTAKE_VALVE, to_number = k;
-    } else if (k < runners + n) {
-        kind = RB_PIPE_HEADER, number = k - runners;
-        from = RB_PLACE_EXHAUST_VALVE, from_number = number;
-        to = RB_PLACE_COLLECTOR, to_number = d->collector[number];
-    } else if (k < runners + n + e->collectors) {
-        kind = RB_PIPE_EXHAUST, number = k - runners - n;
-        from = RB_PLACE_COLLECTOR, from_number = number;
-        to = RB_PLACE_MUFFLER, to_number = (e->systems == 2) ? number : 0;
-        if (d->center_length > 0.0) {
-            to = d->junction_before_center ? RB_PLACE_JUNCTION : RB_PLACE_CENTER;
-            to_number = d->junction_before_center ? 0 : number;
-        }
-    } else if (k < runners + n + e->collectors + e->systems) {
-        kind = RB_PIPE_TAILPIPE, number = k - runners - n - e->collectors;
-        from = RB_PLACE_MUFFLER_OUTLET, from_number = number, to = RB_PLACE_AIR, to_number = 0;
-    } else if (k < runners + n + e->collectors + 2 * e->systems) {
-        kind = RB_PIPE_MUFFLER, number = k - runners - n - e->collectors - e->systems;
-        from = RB_PLACE_MUFFLER, from_number = number, to = RB_PLACE_MUFFLER_OUTLET, to_number = number;
-    } else if (k == runners + n + e->collectors + 2 * e->systems) {
-        kind = RB_PIPE_SNORKEL, number = 0;
-        from = RB_PLACE_AIR, from_number = 0, to = RB_PLACE_AIRBOX, to_number = 0;
-    } else {
-        const int extra = k - runners - n - e->collectors - 2 * e->systems - 1;
-        number = extra % e->collectors;
-        if (extra < e->collectors) {
-            kind = RB_PIPE_CENTER;
-            from = d->junction_before_center ? RB_PLACE_JUNCTION : RB_PLACE_CENTER;
-            from_number = d->junction_before_center ? 0 : number;
-            to = RB_PLACE_CENTER_OUTLET, to_number = number;
-        } else {
-            kind = RB_PIPE_LINK;
-            from = RB_PLACE_CENTER_OUTLET, from_number = number;
-            to = d->junction_volume > 0.0 && !d->junction_before_center
-                ? RB_PLACE_JUNCTION : RB_PLACE_MUFFLER;
-            to_number = to == RB_PLACE_JUNCTION || e->systems == 1 ? 0 : number;
+    const rb_pipe *p = rb_engine_pipe(e, k);
+    int kind = RB_PIPE_SNORKEL, number = 0, from = RB_PLACE_AIR, from_number = 0,
+        to = RB_PLACE_AIRBOX, to_number = 0;
+    for (int i = 0; i < d->cylinders; i++) {
+        if (p == &e->runner[i]) {
+            kind = RB_PIPE_RUNNER, number = i;
+            from = RB_PLACE_PLENUM, from_number = 0, to = RB_PLACE_INTAKE_VALVE, to_number = i;
+        } else if (p == &e->header[i]) {
+            const rb_net_end *x = &e->net.header_to[i];
+            kind = RB_PIPE_HEADER, number = i;
+            from = RB_PLACE_EXHAUST_VALVE, from_number = i;
+            to = RB_PLACE_COLLECTOR, to_number = 0;
+            if (x->kind == RB_NET_NODE) {
+                to = e->net.node[x->index].place, to_number = e->net.node[x->index].number;
+            } else {
+                to = e->net.pipe[x->index].from, to_number = e->net.pipe[x->index].from_number;
+            }
         }
     }
-    if (kind == RB_PIPE_MUFFLER && d->junction_volume > 0.0 && !d->junction_before_center)
-        from = RB_PLACE_JUNCTION, from_number = 0;
-    const rb_pipe *p = rb_engine_pipe(e, k);
+    for (int q = 0; q < e->net.pipes; q++)
+        if (p == &e->xpipe[q]) {
+            const rb_net_pipe *n = &e->net.pipe[q];
+            kind = n->kind, number = n->number;
+            from = n->from, from_number = n->from_number, to = n->to, to_number = n->to_number;
+        }
     out[RB_PIPE_KIND] = kind;
     out[RB_PIPE_NUMBER] = number;
     out[RB_PIPE_LENGTH] = p->length;

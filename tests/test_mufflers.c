@@ -371,12 +371,12 @@ void test_muffler_resolution_builds_finer_cans(void)
         rb_engine_settle(&can_engine[k], 60, 1e-4);
     }
     CHECK_NEAR(d[0].muffler_resolution, 1.0, 0.0);
-    const int m0 = can_engine[0].muffler[0].cells, m1 = can_engine[1].muffler[0].cells;
-    const int c0 = can_engine[0].center[0].cells, c1 = can_engine[1].center[0].cells;
+    const int m0 = can_engine[0].muffler[0]->cells, m1 = can_engine[1].muffler[0]->cells;
+    const int c0 = can_engine[0].center[0]->cells, c1 = can_engine[1].center[0]->cells;
     CHECK(m1 >= 2.5 * m0 && m1 <= 3 * m0 + 1 && abs(c1 - 3 * c0) <= 1);
-    CHECK(can_engine[1].muffler[0].dx >= 1000.0 * can_engine[1].pipe_dt / 0.8 - 1e-12);
-    CHECK_EQ_INT(can_engine[1].tailpipe[0].cells, can_engine[0].tailpipe[0].cells);
-    CHECK_EQ_INT(can_engine[1].exhaust_pipe[0].cells, can_engine[0].exhaust_pipe[0].cells);
+    CHECK(can_engine[1].muffler[0]->dx >= 1000.0 * can_engine[1].pipe_dt / 0.8 - 1e-12);
+    CHECK_EQ_INT(can_engine[1].tailpipe[0]->cells, can_engine[0].tailpipe[0]->cells);
+    CHECK_EQ_INT(can_engine[1].exhaust_pipe[0]->cells, can_engine[0].exhaust_pipe[0]->cells);
     CHECK_NEAR(can_engine[1].result.torque / can_engine[0].result.torque, 1.0, 0.01);
     CHECK_NEAR(can_engine[1].result.ve / can_engine[0].result.ve, 1.0, 0.01);
     printf("    muffler %d -> %d cells, centre can %d -> %d; torque %+.2f %%, VE %+.2f %%\n", m0, m1, c0, c1,

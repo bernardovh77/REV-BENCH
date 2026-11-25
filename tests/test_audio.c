@@ -449,7 +449,7 @@ void test_audio_listener_paths(void)
     CHECK_NEAR(l.delay[0][1], (i0 - r0) / (c * pipe_dt), 1e-9);
     CHECK_NEAR(l.delay[1][1], (i1 - r0) / (c * pipe_dt), 1e-9);
 
-    const double off[RB_LISTEN_SOURCES] = { 0.0 }, on[RB_LISTEN_SOURCES] = { 1.0, 1.0, 1.0 };
+    const double off[RB_LISTEN_SOURCES] = { 0.0 }, on[RB_LISTEN_SOURCES] = { 1.0, 1.0, 1.0, 1.0, 1.0 };
     rb_listener_prime(&l, off);
     int wrong = 0;
     for (int n = 0; n < 1200; n++) {
@@ -478,14 +478,14 @@ void test_audio_listener_places(void)
     CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_TAILPIPE, 2, c, pipe_dt), 0);
     CHECK_NEAR(rb_listener_distance(&l, 0), sqrt(1.0 + 0.15 * 0.15), 1e-12);
     CHECK_NEAR(rb_listener_distance(&l, 1), sqrt(1.0 + 1.0 + 0.15 * 0.15), 1e-12);
-    CHECK(rb_listener_distance(&l, 2) > 4.0);
+    CHECK(rb_listener_distance(&l, RB_LISTEN_MOUTH) > 4.0);
     CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_TAILPIPE, 1, c, pipe_dt), 0);
     CHECK_NEAR(rb_listener_distance(&l, 1), 0.0, 0.0);
     CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_SIDE, 2, c, pipe_dt), 0);
     CHECK(rb_listener_distance(&l, 0) > 4.0 && rb_listener_distance(&l, 1) > rb_listener_distance(&l, 0) + 0.5);
     CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_FRONT, 1, c, pipe_dt), 0);
-    CHECK(rb_listener_distance(&l, 2) < 1.0 && rb_listener_distance(&l, 0) > 3.0);
-    CHECK_NEAR(l.delay[2][0], 0.0, 0.0);   /* the mouth's the nearest */
+    CHECK(rb_listener_distance(&l, RB_LISTEN_MOUTH) < 1.0 && rb_listener_distance(&l, 0) > 3.0);
+    CHECK_NEAR(l.delay[RB_LISTEN_MOUTH][0], 0.0, 0.0);   /* the mouth is the nearest */
     CHECK_EQ_INT(rb_listener_place(&l, RB_HEAR_BEHIND, 1, c, pipe_dt), 0);
     CHECK(rb_listener_distance(&l, 0) > 3.0 && rb_listener_distance(&l, 0) < 3.5);
     CHECK_EQ_INT(rb_listener_place(&l, -1, 1, c, pipe_dt), -1);
@@ -595,7 +595,7 @@ void test_audio_engine_sound(void)
                 m++;
             }
         }
-        const rb_pipe *tail = &twin.tailpipe[0];
+        const rb_pipe *tail = twin.tailpipe[0];
         const double expected = (twin.result.air_flow + twin.result.fuel_flow) * tail->cell[tail->cells - 1].gas.R
                               * twin.result.t_tailpipe / twin.desc.p_ambient;
         CHECK_NEAR(volume / m, expected, 1e-3 * expected);
@@ -974,7 +974,7 @@ void test_audio_listener_hears_each_tailpipe(void)
             rb_listener_set(&l, pos, at, RB_GROUND, c, twin.pipe_dt);
         } else {
             rb_listener_place(&l, RB_HEAR_TAILPIPE, 2, c, twin.pipe_dt);
-            l.gain[2][0] = l.gain[2][1] = 0.0;   /* the tailpipes alone */
+            l.gain[RB_LISTEN_MOUTH][0] = l.gain[RB_LISTEN_MOUTH][1] = 0.0;   /* the tailpipes alone */
         }
         const double zero[RB_LISTEN_SOURCES] = { 0.0 };
         rb_listener_prime(&l, zero);
@@ -1017,8 +1017,8 @@ void test_audio_sim_hears_every_source(void)
     CHECK(sim->engine.pipe_steps > 1000);
     CHECK(l->flow[0][l->pos] == sim->engine.tail_flow[0] && l->flow[0][l->pos] != 0.0);
     CHECK(l->flow[1][l->pos] == sim->engine.tail_flow[1] && l->flow[1][l->pos] != 0.0);
-    CHECK(l->flow[2][l->pos] == sim->engine.mouth_flow && l->flow[2][l->pos] < 0.0);
-    CHECK(rb_listener_distance(l, 0) > 3.0 && rb_listener_distance(l, 1) > 3.0 && rb_listener_distance(l, 2) > 6.0);
+    CHECK(l->flow[RB_LISTEN_MOUTH][l->pos] == sim->engine.mouth_flow && l->flow[RB_LISTEN_MOUTH][l->pos] < 0.0);
+    CHECK(rb_listener_distance(l, 0) > 3.0 && rb_listener_distance(l, 1) > 3.0 && rb_listener_distance(l, RB_LISTEN_MOUTH) > 6.0);
     CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("i4")), RB_OK);
     CHECK(rb_listener_distance(&sim->listener, 0) > 3.0 && rb_listener_distance(&sim->listener, 1) == 0.0);
     rb_destroy(sim);

@@ -369,7 +369,8 @@ int         rb_get_quality(const rb_sim *sim);
  * default), 0 for NULL. */
 uint64_t    rb_variation_seed(const rb_sim *sim);
 /* m from the listener to a source: 0, 1 the tailpipes, 2 the intake's
- * mouth (0 for a tailpipe the engine hasn't); NaN if unknown. */
+ * mouth, 3, 4 the third and fourth tailpipes (0 for a tailpipe the engine
+ * hasn't); NaN if unknown. */
 double      rb_listener_source_distance(const rb_sim *sim, int source);
 /* Sets the stereo scene's clock (s; a pass-by is at its nearest at 0). A
  * host that lets the engine settle before recording starts it negative.

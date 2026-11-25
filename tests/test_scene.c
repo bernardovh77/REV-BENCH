@@ -38,7 +38,7 @@ void test_scene_propagation_and_room(void)
     double tail_dry = 0, tail_room = 0, early = 0, late = 0, maximum = 0;
     int first = -1;
     for (int i = 0; i < 96000; i++) {
-        double in[5] = {i == 0 ? 1.0 : 0.0, 0, 0, 0, 0}, a[2], b[2];
+        double in[RB_SCENE_SOURCES] = {i == 0 ? 1.0 : 0.0}, a[2], b[2];
         rb_scene_step(&dry, in, a);
         rb_scene_step(&room, in, b);
         if (first < 0 && fabs(a[0]) > 1e-7)
@@ -101,7 +101,7 @@ void test_scene_doppler_tone(void)
     int approaching = 0, receding = 0;
     double previous = 0;
     for (int i = 0; i < 480000; i++) {
-        double source[5] = {sin(2.0 * 3.14159265358979323846 * 600.0 * i / 48000.0), 0, 0, 0, 0};
+        double source[RB_SCENE_SOURCES] = {sin(2.0 * 3.14159265358979323846 * 600.0 * i / 48000.0)};
         double out[2];
         rb_scene_step(&dry, source, out);
         if (previous < 0 && out[0] >= 0) {
@@ -136,7 +136,7 @@ void test_scene_aperture_radiation(void)
     }
     double energy = 0;
     for (int i = 0; i < 12000; i++) {
-        double source[5] = {sin(2.0 * 3.14159265358979323846 * f * i / 48000.0), 0, 0, 0, 0},
+        double source[RB_SCENE_SOURCES] = {sin(2.0 * 3.14159265358979323846 * f * i / 48000.0)},
                out[2];
         rb_scene_step(&dry, source, out);
         if (i >= 6000)

@@ -75,8 +75,8 @@ struct rb_sim {
     rb_dc_blocker scene_dc[2];
     int    variant;                /* RB_PARAM_VARIANT: the candidate sound that
                                       plays; code under listening reads it here  */
-    double scene_flow[3];
-    rb_smoother scene_smooth[3];   /* stage 127: each source's flow read between
+    double scene_flow[RB_LISTEN_SOURCES];      /* the outlets', the mouth's */
+    rb_smoother scene_smooth[RB_LISTEN_SOURCES];   /* stage 127: each source's flow read between
                                       its pipe steps (off at 48 kHz pipes)       */
 
     /* ---- model ----

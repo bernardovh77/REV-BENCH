@@ -307,6 +307,86 @@ static void structure_init(rb_noise *n, const rb_engine *e)
 
 /* ---- set up ---- */
 
+/* A network's routing (stage 138, engine.h): each cylinder's noise down the
+ * shortest way to each outlet it reaches, its power shared among them
+ * (1/sqrt(n) of its pressure each, as through stage 115's junctions),
+ * arriving after that way's length at EXHAUST_C, and passed by each part on
+ * the way as the legacy muffler and catalyst pass it: a catalyst (a pipe
+ * whose end-1 face has a laminar loss), and each muffling part as what it
+ * muffles as (its `muffler`). Each outlet's band tops where the most
+ * muffling part on its ways does. The narrowed faces but the catalysts' are
+ * jets, each heard at the outlets past it, passed by the mufflers between. */
+static double part_pass(const rb_exhaust_net *net, const int *route, int count, int q, int catalyst)
+{
+    const rb_net_pipe *p = &net->pipe[route[q]];
+    double pass = 1.0;
+    (void)count;
+    if (catalyst && p->catalyst > 0.0 && p->end[1].laminar > 0.0) pass *= PASS_CATALYST;
+    if (p->muffler == RB_MUFFLER_STRAIGHT) pass *= PASS_STRAIGHT;
+    if (p->muffler == RB_MUFFLER_CHAMBERED) pass *= PASS_CHAMBERED;
+    return pass;
+}
+
+static double part_top(const rb_exhaust_net *net, const int *route, int count, int q)
+{
+    const rb_net_pipe *p = &net->pipe[route[q]];
+    (void)count;
+    if (p->muffler == RB_MUFFLER_STRAIGHT) return TOP_STRAIGHT_HZ;
+    if (p->muffler == RB_MUFFLER_CHAMBERED) return TOP_CHAMBERED_HZ;
+    return TOP_NONE_HZ;
+}
+
+static void route_network(rb_noise *n, const rb_engine *e)
+{
+    const rb_engine_desc *d = &e->desc;
+    const rb_exhaust_net *net = &e->net;
+    double length[RB_NET_OUTLETS], top[RB_NET_OUTLETS];
+    int route[RB_NET_OUTLETS][RB_NET_PIPES], count[RB_NET_OUTLETS];
+    for (int s = 0; s < RB_NET_OUTLETS; s++) top[s] = TOP_NONE_HZ;
+    n->blow_pass = 1.0;
+    for (int i = 0; i < d->cylinders; i++) {
+        const int reached = rb_exhaust_net_route(net, d, i, 0, 0, length, route, count);
+        for (int s = 0; s < RB_NET_OUTLETS; s++) {
+            n->blow_share[i][s] = 0.0;
+            n->blow_delay[i][s] = 0;
+            if (!(length[s] >= 0.0) || reached < 1) continue;
+            double pass = 1.0;
+            for (int q = 0; q < count[s]; q++) {
+                pass *= part_pass(net, route[s], count[s], q, 1);
+                top[s] = fmin(top[s], part_top(net, route[s], count[s], q));
+            }
+            n->blow_share[i][s] = sqrt(pass / reached);
+            n->blow_delay[i][s] = (int)lround(fmin(length[s] / EXHAUST_C / n->dt, RB_NOISE_DELAY - 1.0));
+        }
+    }
+    for (int s = 0; s < RB_NET_OUTLETS; s++)
+        band_init(&n->blow[s], INNER_HP_HZ, INNER_LP_HZ, top[s], n->dt);
+    n->holes = 0;
+    for (int k = 0; k < net->pipes; k++)
+        for (int end = 0; end < 2; end++) {
+            const rb_net_end *x = &net->pipe[k].end[end];
+            if (!(x->area > 0.0) || (end == 1 && net->pipe[k].catalyst > 0.0) || n->holes >= RB_NOISE_HOLES)
+                continue;
+            const int reached = rb_exhaust_net_route(net, d, -1, k, end, length, route, count);
+            if (reached < 1) continue;
+            n->hole[n->holes].pipe = k;
+            n->hole[n->holes].end = end;
+            n->hole[n->holes].area = x->area;
+            for (int s = 0; s < RB_NET_OUTLETS; s++) {
+                n->hole[n->holes].share[s] = 0.0;
+                n->hole[n->holes].delay[s] = 0;
+                if (!(length[s] >= 0.0)) continue;
+                double pass = 1.0;
+                for (int q = 0; q < count[s]; q++)
+                    if (route[s][q] != k) pass *= part_pass(net, route[s], count[s], q, 0);
+                n->hole[n->holes].share[s] = sqrt(pass / reached);
+                n->hole[n->holes].delay[s] = (int)fmin(length[s] / EXHAUST_C / n->dt,
+                                                       RB_NOISE_DELAY - 1.0);   /* as the legacy */
+            }
+            n->holes++;
+        }
+}
+
 void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
 {
     const rb_engine_desc *d = &e->desc;
@@ -319,8 +399,11 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
 
     /* The flow. The tailpipes' jets; the exhaust valves' noise, each
      * cylinder's on its way to its system's tailpipe; the throttle's. */
-    n->tail_d = d->tailpipe_diameter;
-    for (int s = 0; s < RB_MAX_COLLECTORS; s++) n->tail_area[s] = PI / 4.0 * n->tail_d * n->tail_d;
+    for (int s = 0; s < RB_NET_OUTLETS; s++) {
+        n->tail_d[s] = (d->net.pipes > 0 && s < e->systems) ? e->tailpipe[s]->diameter
+                                                              : d->tailpipe_diameter;
+        n->tail_area[s] = PI / 4.0 * n->tail_d[s] * n->tail_d[s];
+    }
     n->jet_hp = one_pole(JET_FLOOR_HZ, n->dt);
     n->jet_top = one_pole(JET_TOP_HZ, n->dt);
     double pass, top_hz;
@@ -332,7 +415,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     /* The catalyst takes its share only if there is one: catalyst_laminar is
      * 0 for bypass pipes with no substrate (engine.h). */
     n->blow_pass = (d->catalyst_laminar > 0.0 ? PASS_CATALYST : 1.0) * pass;
-    for (int s = 0; s < RB_MAX_COLLECTORS; s++)
+    for (int s = 0; s < RB_NET_OUTLETS; s++)
         band_init(&n->blow[s], INNER_HP_HZ, INNER_LP_HZ, top_hz, n->dt);
 
     /* Where each cylinder's noise comes out. Its gas goes down its header,
@@ -357,7 +440,7 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
                           + d->muffler_length + d->tailpipe_length;
         double steps = path / EXHAUST_C / n->dt;
         if (!(steps < RB_NOISE_DELAY - 1)) steps = RB_NOISE_DELAY - 1;
-        n->blow_delay[i] = (int)lround(steps);
+        for (int s = 0; s < RB_NET_OUTLETS; s++) n->blow_delay[i][s] = (int)lround(steps);
         int reach[RB_MAX_COLLECTORS] = { 0 }, count = 0;
         if (d->junction_volume > 0.0) memcpy(reach, beyond, sizeof reach);
         else reach[(e->systems == 2) ? d->collector[i] : 0] = 1;
@@ -365,6 +448,21 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
         for (int s = 0; s < RB_MAX_COLLECTORS; s++)
             n->blow_share[i][s] = reach[s] ? 1.0 / sqrt((double)count) : 0.0;
     }
+    /* The chambered mufflers' baffles: each at its tailpipe's start, heard
+     * at that tailpipe's end. */
+    n->holes = 0;
+    if (d->muffler_type == RB_MUFFLER_CHAMBERED)
+        for (int s = 0; s < e->systems && n->holes < RB_NOISE_HOLES; s++) {
+            const int k = (int)(e->tailpipe[s] - e->xpipe);
+            n->hole[n->holes].pipe = k;
+            n->hole[n->holes].end = 0;
+            n->hole[n->holes].area = d->muffler_area;
+            n->hole[n->holes].delay[s] = (int)fmin(d->tailpipe_length / EXHAUST_C / n->dt,
+                                                    RB_NOISE_DELAY - 1.0);
+            n->hole[n->holes].share[s] = 1.0;
+            n->holes++;
+        }
+    if (d->net.pipes > 0) route_network(n, e);
     band_init(&n->hiss, INNER_HP_HZ, INNER_LP_HZ, TOP_AIRBOX_HZ, n->dt);
     band_init(&n->intake_roar, 150.0, 1200.0, TOP_AIRBOX_HZ, n->dt);
 
@@ -436,44 +534,50 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
     for (int i = 0; i < d->cylinders; i++) {
         const double w = inner_jet(&e->exhaust[i], GAMMA_BURNED, VALVE_ETA);
         if (w > 0.0) {
-            const int at = (n->blow_pos + n->blow_delay[i]) & (RB_NOISE_DELAY - 1);
             const double x = sqrt(radiate * w * n->blow_pass) * white(&n->state);
             for (int s = 0; s < e->systems; s++)
-                if (n->blow_share[i][s] > 0.0) n->blow_ring[s][at] += (float)(x * n->blow_share[i][s]);
+                if (n->blow_share[i][s] > 0.0) {
+                    const int at = (n->blow_pos + n->blow_delay[i][s]) & (RB_NOISE_DELAY - 1);
+                    n->blow_ring[s][at] += (float)(x * n->blow_share[i][s]);
+                }
         }
     }
 
+    /* The restrictions downstream: a chambered muffler's baffles, a
+     * network's narrowed faces. Their noise bypasses the catalyst; use the
+     * modelled effective hole area and the cells either side, with the same
+     * jet law, heard at the outlets past them. */
+    for (int h = 0; h < n->holes; h++) {
+        const rb_face *f = &e->xpipe[n->hole[h].pipe].end_face[n->hole[h].end];
+        rb_orifice hole = {0};
+        hole.a = f->a;
+        hole.b = f->b;
+        hole.area = n->hole[h].area;
+        hole.cd = 1.0;
+        hole.mdot = f->moved;   /* positive from its a to its b, either end (pipe.c) */
+        const double w = inner_jet(&hole, GAMMA_BURNED, VALVE_ETA);
+        n->baffle_power += w;
+        const double x = sqrt(radiate * w) * white(&n->detail_state);
+        for (int s = 0; s < e->systems; s++)
+            if (n->hole[h].share[s] > 0.0) {
+                const int at = (n->blow_pos + n->hole[h].delay[s]) & (RB_NOISE_DELAY - 1);
+                n->blow_ring[s][at] += (float)(x * n->hole[h].share[s]);
+            }
+    }
+
     for (int s = 0; s < e->systems; s++) {
-        /* Chambered baffles are a downstream constriction. Their generated
-         * noise bypasses the catalyst; use the modeled effective hole area
-         * and the cells either side, with the same jet law. */
-        if (d->muffler_type == RB_MUFFLER_CHAMBERED) {
-            const rb_face *f = &e->tailpipe[s].end_face[0];
-            rb_orifice hole = {0};
-            hole.a = f->a;
-            hole.b = f->b;
-            hole.area = d->muffler_area;
-            hole.cd = 1.0;
-            hole.mdot = f->moved;
-            const double w = inner_jet(&hole, GAMMA_BURNED, VALVE_ETA);
-            n->baffle_power += w;
-            int delay = (int)fmin(d->tailpipe_length / EXHAUST_C / n->dt,
-                                  RB_NOISE_DELAY - 1.0);
-            const int at = (n->blow_pos + delay) & (RB_NOISE_DELAY - 1);
-            n->blow_ring[s][at] += (float)(sqrt(radiate * w) * white(&n->detail_state));
-        }
         /* The tailpipe's jet: Lighthill's U^8, hot. */
         double jet = 0.0;
         const double q = e->tail_flow[s];
         if (q > 0.0) {
-            const rb_pipe *t = &e->tailpipe[s];
+            const rb_pipe *t = e->tailpipe[s];
             const double u = q / n->tail_area[s], u2 = u * u, u4 = u2 * u2;
             const double hot = t->cell[t->cells - 1].T / T0;
-            const double w = JET_K * rho0 * u4 * u4 * n->tail_d * n->tail_d / (c0 * c0 * c0 * c0 * c0) * hot;
+            const double w = JET_K * rho0 * u4 * u4 * n->tail_d[s] * n->tail_d[s] / (c0 * c0 * c0 * c0 * c0) * hot;
             /* Its spectrum: flat up to the Strouhal peak, then falling, a
              * one-pole low-pass there whose noise gain a / (2 - a) is undone;
              * faster above JET_TOP_HZ. */
-            const double wc = 2.0 * PI * JET_STROUHAL * u / n->tail_d * n->dt;
+            const double wc = 2.0 * PI * JET_STROUHAL * u / n->tail_d[s] * n->dt;
             const double a = wc / (1.0 + wc);
             const double x = white(&n->state);
             n->jet_hp_lp[s] += n->jet_hp * (x - n->jet_hp_lp[s]);

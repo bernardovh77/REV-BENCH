@@ -180,18 +180,44 @@ static int smooth_every(const rb_sim *sim)
     return (e->pipe_every >= 2 && e->pipe_every <= RB_SMOOTH_MAX) ? e->pipe_every : 0;
 }
 
+/* The listener's and the scene's outlets are the exhaust network's. */
+typedef char rb_outlets_agree[(RB_LISTEN_OUTLETS == RB_NET_OUTLETS
+                               && RB_SCENE_OUTLETS == RB_NET_OUTLETS
+                               && RB_NOISE_MOUTH == RB_LISTEN_MOUTH
+                               && RB_NOISE_BAY == RB_LISTEN_BAY) ? 1 : -1];
+
+/* What the listener hears of the pipes now: each outlet's flow and the
+ * mouth's (none with the pipes' layer off). */
+static void pipe_flows(const rb_sim *sim, double q[RB_LISTEN_SOURCES])
+{
+    const rb_engine *e = &sim->engine;
+    const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
+    for (int o = 0; o < RB_LISTEN_OUTLETS; o++) q[o] = pipes * e->tail_flow[o];
+    q[RB_LISTEN_MOUTH] = pipes * e->mouth_flow;
+}
+
+/* Each outlet's place (at[3 o .. 3 o + 2]) and opening. */
+static void outlets_of(const rb_engine *e, double at[3 * RB_NET_OUTLETS], double diameter[RB_NET_OUTLETS])
+{
+    for (int o = 0; o < RB_NET_OUTLETS; o++) {
+        for (int k = 0; k < 3; k++) at[3 * o + k] = e->net.outlet[o].at[k];
+        diameter[o] = (o < e->systems) ? e->tailpipe[o]->diameter : 0.0;
+    }
+}
+
 void rb_sim_listen(rb_sim *sim)
 {
     const rb_engine *e = &sim->engine;
     const rb_chamber *air = &e->exhaust_air;
     const double cv = rb_gas_cv(&air->gas, air->T);
     const double c = sqrt((cv + air->gas.R) / cv * air->gas.R * air->T);
-    const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
-    const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1], pipes * e->mouth_flow };
-    rb_listener_place(&sim->listener, sim->hear, e->systems, c, e->pipe_dt);
-    rb_listener_place_noise(&sim->listener, sim->hear, e->systems, c, e->pipe_dt, sim->dt);
-    rb_listener_aperture(&sim->listener, sim->hear, e->systems, e->desc.tailpipe_diameter, c,
-                         e->pipe_dt, sim->dt);   /* the tailpipes' openings (stage 051) */
+    double q[RB_LISTEN_SOURCES], at[3 * RB_NET_OUTLETS], diameter[RB_NET_OUTLETS];
+    pipe_flows(sim, q);
+    outlets_of(e, at, diameter);
+    rb_listener_place_at(&sim->listener, sim->hear, at, e->systems, c, e->pipe_dt);
+    rb_listener_place_noise_at(&sim->listener, sim->hear, at, e->systems, c, e->pipe_dt, sim->dt);
+    rb_listener_aperture_at(&sim->listener, sim->hear, at, diameter, e->systems, c,
+                            e->pipe_dt, sim->dt);   /* the tailpipes' openings (stage 051) */
     if (smooth_every(sim)) rb_listener_smooth(&sim->listener, smooth_every(sim));
     rb_listener_prime(&sim->listener, q);
     sim->pipe_steps_heard = e->pipe_steps;
@@ -211,16 +237,16 @@ int rb_set_scene(rb_sim *sim, int scene)
     const rb_chamber *air = &e->exhaust_air;
     const double cv = rb_gas_cv(&air->gas, air->T);
     const double c = sqrt((cv + air->gas.R) / cv * air->gas.R * air->T);
-    if (rb_scene_init(&sim->scene, scene, sim->cfg.sample_rate, c, e->systems,
-                      e->desc.tailpipe_diameter))
+    double at[3 * RB_NET_OUTLETS], diameter[RB_NET_OUTLETS];
+    outlets_of(e, at, diameter);
+    if (rb_scene_init_at(&sim->scene, scene, sim->cfg.sample_rate, c, at, diameter, e->systems))
         return RB_ERR_ARG;
     for (int j = 0; j < RB_SCENE_SOURCES; j++)
         rb_decimator_init(&sim->scene_aa[j], sim->cfg.oversample);
     for (int k = 0; k < 2; k++) rb_dc_blocker_init(&sim->scene_dc[k], 10.0, sim->cfg.sample_rate);
-    sim->scene_flow[0] = e->tail_flow[0];
-    sim->scene_flow[1] = e->tail_flow[1];
-    sim->scene_flow[2] = e->mouth_flow;
-    for (int j = 0; j < 3; j++) {
+    for (int o = 0; o < RB_LISTEN_OUTLETS; o++) sim->scene_flow[o] = e->tail_flow[o];
+    sim->scene_flow[RB_LISTEN_MOUTH] = e->mouth_flow;
+    for (int j = 0; j < RB_LISTEN_SOURCES; j++) {
         rb_smoother_init(&sim->scene_smooth[j], smooth_every(sim));   /* off if 0 */
         rb_smoother_prime(&sim->scene_smooth[j], sim->scene_flow[j]);
     }
@@ -238,14 +264,13 @@ static inline void model_step(rb_sim *sim)
         rb_engine_step(e);
         if (sim->param[RB_PARAM_EVENTS] == 1.0) rb_sim_events_step(sim);
         if (e->pipe_steps != sim->pipe_steps_heard) {   /* the pipe ends' new flows */
-            const int pipes = (sim->layers & RB_LAYER_PIPES) != 0;
-            const double q[RB_LISTEN_SOURCES] = { pipes * e->tail_flow[0], pipes * e->tail_flow[1],
-                                                  pipes * e->mouth_flow };
+            double q[RB_LISTEN_SOURCES];
+            pipe_flows(sim, q);
             rb_listener_push(&sim->listener, q);
             if (sim->scene_active && sim->scene_smooth[0].every) {
-                rb_smoother_push(&sim->scene_smooth[0], e->tail_flow[0]);
-                rb_smoother_push(&sim->scene_smooth[1], e->tail_flow[1]);
-                rb_smoother_push(&sim->scene_smooth[2], e->mouth_flow);
+                for (int o = 0; o < RB_LISTEN_OUTLETS; o++)
+                    if (o < e->systems) rb_smoother_push(&sim->scene_smooth[o], e->tail_flow[o]);
+                rb_smoother_push(&sim->scene_smooth[RB_LISTEN_MOUTH], e->mouth_flow);
             }
             sim->pipe_steps_heard = e->pipe_steps;
         }
@@ -259,12 +284,16 @@ static inline void model_step(rb_sim *sim)
              * at the physics rate, into its own anti-alias decimator. The
              * tailpipes and the mouth add their flows' monopoles,
              * rho / (4 pi) dq/dt, to their noise. */
-            double q[3] = { e->tail_flow[0], e->tail_flow[1], e->mouth_flow };
+            double q[RB_LISTEN_SOURCES];
+            for (int o = 0; o < RB_LISTEN_OUTLETS; o++) q[o] = e->tail_flow[o];
+            q[RB_LISTEN_MOUTH] = e->mouth_flow;
             if (sim->scene_smooth[0].every)   /* slower pipes: read between their steps */
-                for (int j = 0; j < 3; j++) q[j] = rb_smoother_next(&sim->scene_smooth[j]);
+                for (int j = 0; j < RB_LISTEN_SOURCES; j++)
+                    if (j >= RB_LISTEN_OUTLETS || j < e->systems) q[j] = rb_smoother_next(&sim->scene_smooth[j]);
             for (int j = 0; j < RB_SCENE_SOURCES; j++) {
+                if (j < RB_SCENE_OUTLETS && j >= e->systems) continue;   /* no such outlet: silent */
                 double pressure = sim->noise.out[j];
-                if (j < 3) {
+                if (j < RB_LISTEN_SOURCES) {
                     if (sim->layers & RB_LAYER_PIPES)
                         pressure += e->exhaust_air.rho / (4.0 * RB_PI)
                                   * (q[j] - sim->scene_flow[j]) / sim->dt;

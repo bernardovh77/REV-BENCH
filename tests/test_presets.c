@@ -102,10 +102,10 @@ void test_presets_table(void)
     memset(&d, 0x5a, sizeof d);
     before = d;
     CHECK_EQ_INT(rb_preset_desc(-1, &d), -1);
-    CHECK_EQ_INT(rb_preset_desc(5, &d), -1);
+    CHECK_EQ_INT(rb_preset_desc(rb_preset_count(), &d), -1);
     CHECK(memcmp(&d, &before, sizeof d) == 0);   /* untouched */
     CHECK_EQ_INT(rb_preset_desc(0, NULL), -1);
-    CHECK(rb_preset_key(5) == NULL && rb_preset_name(-1) == NULL);
+    CHECK(rb_preset_key(rb_preset_count()) == NULL && rb_preset_name(-1) == NULL);
     CHECK_EQ_INT(rb_preset_find("v12"), RB_ERR_ID);
     CHECK_EQ_INT(rb_preset_find(NULL), RB_ERR_ARG);
 }
@@ -623,7 +623,7 @@ void test_api_engine_changes(void)
     rb_reset(s);
     CHECK(s->engine.theta == 0.0 && s->engine.desc.bank_angle[0] == 30.0);
     CHECK_EQ_INT(rb_get_preset(s), 2);
-    CHECK_EQ_INT(rb_load_preset(s, 5), RB_ERR_ID);
+    CHECK_EQ_INT(rb_load_preset(s, rb_preset_count()), RB_ERR_ID);
     CHECK_EQ_INT(rb_load_preset(s, -1), RB_ERR_ID);
     CHECK_EQ_INT(rb_load_preset(NULL, 0), RB_ERR_ARG);
     CHECK_EQ_INT(rb_get_preset(NULL), RB_ERR_ARG);
@@ -736,17 +736,17 @@ void test_api_pipes(void)
             wrong += !(kind == RB_PIPE_HEADER && number == k - 8 && p == &en->header[k - 8]
                        && from == RB_PLACE_EXHAUST_VALVE && from_number == k - 8
                        && to == RB_PLACE_COLLECTOR && to_number == d->bank[k - 8]
-                       && p->end[1].chamber == &en->collector[d->bank[k - 8]]);   /* really */
+                       && p->end[1].chamber == en->collector[d->bank[k - 8]]);   /* really */
         else if (k < 18)  /* each bank's front pipe into the shared merge X, */
             wrong += !(kind == RB_PIPE_EXHAUST && number == k - 16 && from == RB_PLACE_COLLECTOR
                        && from_number == k - 16 && to == RB_PLACE_JUNCTION && to_number == 0
-                       && p->end[1].chamber == &en->junction);
+                       && p->end[1].chamber == en->junction);
         else if (k < 20)  /* its tailpipe from the muffler's outlet out into the air, */
             wrong += !(kind == RB_PIPE_TAILPIPE && number == k - 18 && from == RB_PLACE_MUFFLER_OUTLET
                        && from_number == k - 18 && to == RB_PLACE_AIR
-                       && p->end[0].chamber == rb_pipe_end_cell(&en->muffler[k - 18], 1));
+                       && p->end[0].chamber == rb_pipe_end_cell(en->muffler[k - 18], 1));
         else if (k < 22)  /* the muffler between them, */
-            wrong += !(kind == RB_PIPE_MUFFLER && number == k - 20 && p == &en->muffler[k - 20]
+            wrong += !(kind == RB_PIPE_MUFFLER && number == k - 20 && p == en->muffler[k - 20]
                        && from == RB_PLACE_MUFFLER && from_number == k - 20
                        && to == RB_PLACE_MUFFLER_OUTLET && to_number == k - 20);
         else              /* and the snorkel from the air into the air box */
@@ -763,15 +763,15 @@ void test_api_pipes(void)
     /* The V8's straight-throughs go on into their pipes; the four's chambered
      * can takes its exhaust pipe at its first cell and gives its tailpipe its
      * last (stage 12). */
-    CHECK(en->link[0].end[1].kind == RB_PIPE_ONWARD && en->tailpipe[0].end[0].kind == RB_PIPE_ONWARD_FROM);
+    CHECK(en->link[0]->end[1].kind == RB_PIPE_ONWARD && en->tailpipe[0]->end[0].kind == RB_PIPE_ONWARD_FROM);
     static rb_engine four;
     rb_engine_desc d4;
     rb_engine_desc_default(&d4);
     CHECK_EQ_INT(rb_engine_init(&four, &d4, rb_physics_dt(s)), 0);
-    CHECK(four.exhaust_pipe[0].end[1].kind == RB_PIPE_JOINED
-          && four.exhaust_pipe[0].end[1].chamber == rb_pipe_end_cell(&four.muffler[0], 0));
-    CHECK(four.tailpipe[0].end[0].kind == RB_PIPE_JOINED
-          && four.tailpipe[0].end[0].chamber == rb_pipe_end_cell(&four.muffler[0], 1));
+    CHECK(four.exhaust_pipe[0]->end[1].kind == RB_PIPE_JOINED
+          && four.exhaust_pipe[0]->end[1].chamber == rb_pipe_end_cell(four.muffler[0], 0));
+    CHECK(four.tailpipe[0]->end[0].kind == RB_PIPE_JOINED
+          && four.tailpipe[0]->end[0].chamber == rb_pipe_end_cell(four.muffler[0], 1));
     CHECK(isnan(rb_get_pipe(s, 0, RB_PIPE_FIELD_COUNT)) && isnan(rb_get_pipe(s, 0, -1)));
 
     en->rpm = 3000.0;
@@ -796,7 +796,7 @@ void test_api_pipes(void)
     CHECK_EQ_INT(differ, 0);
     CHECK(burned > 50);   /* the exhaust side is full of burned gas ...    */
     CHECK(waves > 20);    /* ... and the pipes are anything but still      */
-    CHECK(en->collector[0].y[RB_BURNED] > 0.9 && en->collector[1].y[RB_BURNED] > 0.9);   /* both banks' */
+    CHECK(en->collector[0]->y[RB_BURNED] > 0.9 && en->collector[1]->y[RB_BURNED] > 0.9);   /* both banks' */
     CHECK(isnan(rb_get_pipe_cell(s, 0, 0, RB_CELL_COUNT)) && isnan(rb_get_pipe_cell(s, 27, 0, RB_CELL_PRESSURE)));
     rb_destroy(s);
 }

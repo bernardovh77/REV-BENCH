@@ -140,16 +140,16 @@ void test_baseline_where_the_waves_are_weak(void)
         int owner[64], n = 0;
         for (int i = 0; i < d.cylinders; i++) { owner[n] = i; plain[n++] = &e.header[i]; }
         for (int c = 0; c < e.collectors; c++) {
-            owner[n] = 100 + c; plain[n++] = &e.exhaust_pipe[c];
-            if (d.center_length > 0.0) { owner[n] = 100 + c; plain[n++] = &e.link[c]; }
+            owner[n] = 100 + c; plain[n++] = e.exhaust_pipe[c];
+            if (d.center_length > 0.0) { owner[n] = 100 + c; plain[n++] = e.link[c]; }
             if (d.center_length > 0.0 && !(d.center_volume > 0.0) && !(d.center_packing > 0.0)) {
                 owner[n] = 100 + c;
-                plain[n++] = &e.center[c];
+                plain[n++] = e.center[c];
             }
         }
-        for (int s = 0; s < e.systems; s++) { owner[n] = 200 + s; plain[n++] = &e.tailpipe[s]; }
+        for (int s = 0; s < e.systems; s++) { owner[n] = 200 + s; plain[n++] = e.tailpipe[s]; }
         if (d.muffler_type == RB_MUFFLER_NONE)
-            for (int s = 0; s < e.systems; s++) { owner[n] = 200 + s; plain[n++] = &e.muffler[s]; }
+            for (int s = 0; s < e.systems; s++) { owner[n] = 200 + s; plain[n++] = e.muffler[s]; }
         const int samples = 8, gap = (int)(120.0 / 3000.0 / 8.0 * 192000.0);
         for (int k = 0; k < samples; k++) {
             for (int j = 0; j < gap; j++) rb_engine_step(&e);

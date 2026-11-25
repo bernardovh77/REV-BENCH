@@ -224,6 +224,11 @@ void test_api_settings(void)
     CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_LISTENER, RB_LISTENER_TAILPIPE), RB_OK);
     CHECK_NEAR(rb_listener_source_distance(sim, 0), 1.0, 0.3);
     CHECK(cabin > 1.5);
+    /* The sources' numbers (rb.h): 2 the intake's mouth, well forward of
+     * the tailpipe; 3 and 4 the third and fourth tailpipes. */
+    CHECK(rb_listener_source_distance(sim, 2) > rb_listener_source_distance(sim, 0) + 2.0);
+    CHECK(rb_listener_source_distance(sim, 3) == 0.0 && rb_listener_source_distance(sim, 4) == 0.0);
+    CHECK(isnan(rb_listener_source_distance(sim, 5)));
     CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_LAYERS, 0), RB_CLAMPED);   /* at least one */
     CHECK_EQ_INT(rb_set_param(sim, RB_PARAM_LAYERS, RB_LAYER_PIPES), RB_OK);
     rb_set_param(sim, RB_PARAM_IGNITION, 1);

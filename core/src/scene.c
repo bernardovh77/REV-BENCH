@@ -9,10 +9,12 @@
 #define GEOMETRY_BLOCK 64
 
 /* Where the sources are (m): x to the car's right, y forward from its rear
- * bumper, z up from the ground. The two tailpipes, the intake's mouth and
- * the engine bay. */
-static const double SOURCE[4][3] = {
-    {0.5, -0.05, 0.35}, {-0.5, -0.05, 0.35}, {-0.3, 3.7, 0.75}, {0, 3.3, 0.6}};
+ * bumper, z up from the ground. The legacy two tailpipes, the intake's mouth
+ * and the engine bay (a network's outlets are where it says: stage 138). */
+static const double TAILPIPES[2][3] = { {0.5, -0.05, 0.35}, {-0.5, -0.05, 0.35} };
+static const double MOUTH[3] = { -0.3, 3.7, 0.75 }, BAY[3] = { 0, 3.3, 0.6 };
+#define S_MOUTH RB_SCENE_OUTLETS
+#define S_BAY   (RB_SCENE_OUTLETS + 1)
 
 /* The time (s) sound takes from a source at r (m, relative to the ear) that
  * moves along y at v (m/s) to reach the ear now: the root of
@@ -44,7 +46,7 @@ static void geometry(const rb_scene *s, int ear, int j, int k, double time, doub
         at[1] = 0.0;
     }
     at[0] += ear ? 0.09 : -0.09;
-    double p[3] = {SOURCE[j][0], SOURCE[j][1], SOURCE[j][2]};
+    double p[3] = {s->at[j][0], s->at[j][1], s->at[j][2]};
     const double velocity = s->kind == RB_SCENE_PASSBY ? 15.0 : 0.0;
     p[1] += velocity * (time - 6.0);
     if (k == 1)
@@ -59,14 +61,14 @@ static void geometry(const rb_scene *s, int ear, int j, int k, double time, doub
                         : k == 1                   ? (s->kind == RB_SCENE_GRASS ? 0.35 : 0.9)
                         : s->kind == RB_SCENE_WALL ? 0.7
                                                    : 0.0;
-    if (j == 1 && s->tailpipes < 2)
-        reflection = 0.0;
-    if (j == 3 && s->kind != RB_SCENE_CABIN)
+    if (j < RB_SCENE_OUTLETS && j >= s->tailpipes)
+        reflection = 0.0;   /* no such outlet */
+    if (j == S_BAY && s->kind != RB_SCENE_CABIN)
         reflection *= 0.3;
     *delay = tau * s->fs;
     *gain = reflection / distance;
     /* Rayleigh disk integral via 8-node Gauss-Chebyshev quadrature. */
-    *spread = j < 2 ? 0.5 * s->diameter *
+    *spread = j < RB_SCENE_OUTLETS ? 0.5 * s->diameter[j] *
                           sqrt(fmax(0.0, 1.0 - r[1] * r[1] / (distance * distance))) / s->c * s->fs
                     : 0.0;
     *shadow = fmax(0.0, fmin(1.0, (ear ? -1.0 : 1.0) * r[0] / distance));
@@ -80,7 +82,7 @@ static void geometry(const rb_scene *s, int ear, int j, int k, double time, doub
 static void paths(rb_scene *s)
 {
     for (int e = 0; e < 2; e++)
-        for (int j = 0; j < 4; j++)
+        for (int j = 0; j < RB_SCENE_PLACED; j++)
             for (int k = 0; k < 3; k++) {
                 rb_scene_path *p = &s->path[e][j][k];
                 double d, g, w, h;
@@ -95,16 +97,32 @@ static void paths(rb_scene *s)
 
 int rb_scene_init(rb_scene *s, int kind, double fs, double c, int tailpipes, double diameter)
 {
-    if (!s || kind < 0 || kind >= RB_SCENE_COUNT || !(fs >= 8000 && fs <= 96000) ||
-        !(c >= 250 && c <= 450) || tailpipes < 1 || tailpipes > 2 ||
-        !(diameter > 0 && diameter <= 0.3))
+    const double each[2] = { diameter, diameter };
+    if (tailpipes < 1 || tailpipes > 2)
         return -1;
+    return rb_scene_init_at(s, kind, fs, c, &TAILPIPES[0][0], each, tailpipes);
+}
+
+int rb_scene_init_at(rb_scene *s, int kind, double fs, double c, const double at[],
+                     const double diameter[], int outlets)
+{
+    if (!s || kind < 0 || kind >= RB_SCENE_COUNT || !(fs >= 8000 && fs <= 96000) ||
+        !(c >= 250 && c <= 450) || outlets < 1 || outlets > RB_SCENE_OUTLETS)
+        return -1;
+    for (int o = 0; o < outlets; o++)
+        if (!(diameter[o] > 0 && diameter[o] <= 0.3))
+            return -1;
     memset(s, 0, sizeof *s);
     s->fs = fs;
     s->c = c;
     s->kind = kind;
-    s->tailpipes = tailpipes;
-    s->diameter = diameter;
+    s->tailpipes = outlets;
+    for (int o = 0; o < outlets; o++) {
+        memcpy(s->at[o], &at[3 * o], sizeof s->at[o]);
+        s->diameter[o] = diameter[o];
+    }
+    memcpy(s->at[S_MOUTH], MOUTH, sizeof MOUTH);
+    memcpy(s->at[S_BAY], BAY, sizeof BAY);
     /* Coprime delays at 48 kHz; orthogonal Householder feedback is lossless
      * before each line's RT60 gain and high-frequency damping. */
     const int lengths[4] = {1493, 1747, 1999, 2381};
@@ -160,12 +178,12 @@ void rb_scene_step(rb_scene *s, const double source[RB_SCENE_SOURCES], double ou
     if (s->kind == RB_SCENE_PASSBY && s->geometry_tick == 0)
         paths(s);
     s->pos = (s->pos + 1) & (RB_SCENE_RING - 1);
-    for (int j = 0; j < 4; j++)
+    for (int j = 0; j < RB_SCENE_PLACED; j++)
         s->source[j][s->pos] = (float)(rb_finite(source[j]) ? source[j] : 0.0);
     double wet_in = 0;
     for (int e = 0; e < 2; e++) {
         double rear = 0, front = 0;
-        for (int j = 0; j < 4; j++)
+        for (int j = 0; j < RB_SCENE_PLACED; j++)
             for (int k = 0; k < 3; k++) {
                 rb_scene_path *p = &s->path[e][j][k];
                 if (p->gain == 0)
@@ -178,7 +196,7 @@ void rb_scene_step(rb_scene *s, const double source[RB_SCENE_SOURCES], double ou
                         v += weight[q] * read_source(s, j, p->delay + p->spread * node[q]);
                 p->low += s->head_a * (v - p->low);
                 v = p->gain * ((1.0 - 0.7 * p->shadow) * v + 0.7 * p->shadow * p->low);
-                if (j < 2)
+                if (j < RB_SCENE_OUTLETS)
                     rear += v;
                 else
                     front += v;
@@ -188,7 +206,7 @@ void rb_scene_step(rb_scene *s, const double source[RB_SCENE_SOURCES], double ou
                 p->shadow += p->shadow_step;
             }
         out[e] = s->kind == RB_SCENE_CABIN
-                     ? rb_cabin_process(&s->cabin[e], rear, front, source[4], 1.0 / s->fs)
+                     ? rb_cabin_process(&s->cabin[e], rear, front, source[RB_SCENE_MOUNTS], 1.0 / s->fs)
                      : rear + front;
         wet_in += 0.5 * out[e];
     }

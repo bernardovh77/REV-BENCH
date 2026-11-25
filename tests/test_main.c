@@ -101,6 +101,12 @@ void test_pipe_onward(void);
 void test_exhaust_researched_topology(void);
 void test_exhaust_descriptor_guards(void);
 void test_exhaust_engine_books(void);
+void test_net_legacy_networks_are_valid(void);
+void test_net_as_description_builds_the_same_engine(void);
+void test_net_new_parts_run_and_keep_the_books(void);
+void test_net_check_refuses_bad_networks(void);
+void test_net_listener_hears_every_outlet(void);
+void test_net_noise_routes_as_the_legacy_exhaust(void);
 void test_exhaust_junction_scattering_conservation(void);
 void test_exhaust_coherent_x_modes(void);
 void test_exhaust_high_rpm_fired_books(void);
@@ -454,6 +460,12 @@ static const struct {
     T(test_exhaust_researched_topology),
     T(test_exhaust_descriptor_guards),
     T(test_exhaust_engine_books),
+    T(test_net_legacy_networks_are_valid),
+    T(test_net_as_description_builds_the_same_engine),
+    T(test_net_new_parts_run_and_keep_the_books),
+    T(test_net_check_refuses_bad_networks),
+    T(test_net_listener_hears_every_outlet),
+    T(test_net_noise_routes_as_the_legacy_exhaust),
     T(test_exhaust_junction_scattering_conservation),
     T(test_exhaust_coherent_x_modes),
     T(test_exhaust_high_rpm_fired_books),

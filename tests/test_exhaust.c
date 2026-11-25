@@ -30,39 +30,39 @@ void test_exhaust_researched_topology(void)
         CHECK(cells <= RB_ENGINE_CELLS);
         if (p != 3) {
             CHECK(d.center_length > 0.0);
-            CHECK_NEAR(engine.link[0].length, d.link_length, 1e-15);
+            CHECK_NEAR(engine.link[0]->length, d.link_length, 1e-15);
         }
         if (p == 0) {
-            CHECK_NEAR(engine.center[0].length, 0.2413, 1e-15);
-            CHECK_NEAR(engine.muffler[0].length, 0.7239, 1e-15);
-            CHECK_NEAR(engine.center[0].area * engine.center[0].length, 0.0026, 1e-15);
+            CHECK_NEAR(engine.center[0]->length, 0.2413, 1e-15);
+            CHECK_NEAR(engine.muffler[0]->length, 0.7239, 1e-15);
+            CHECK_NEAR(engine.center[0]->area * engine.center[0]->length, 0.0026, 1e-15);
         }
         if (p == 1) {
             CHECK_EQ_INT(engine.collectors, 2);
             CHECK_EQ_INT(engine.systems, 2);
-            CHECK(engine.link[0].end[1].chamber == rb_pipe_end_cell(&engine.muffler[0], 0));
-            CHECK(engine.link[1].end[1].chamber == rb_pipe_end_cell(&engine.muffler[1], 0));
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0516, 1e-15);
+            CHECK(engine.link[0]->end[1].chamber == rb_pipe_end_cell(engine.muffler[0], 0));
+            CHECK(engine.link[1]->end[1].chamber == rb_pipe_end_cell(engine.muffler[1], 0));
+            CHECK_NEAR(engine.tailpipe[0]->diameter, 0.0516, 1e-15);
         }
         if (p == 2) {
-            CHECK(engine.exhaust_pipe[0].end[1].chamber == &engine.junction);
-            CHECK(engine.exhaust_pipe[1].end[1].chamber == &engine.junction);
-            CHECK(engine.center[0].end[0].chamber == &engine.junction);
-            CHECK(engine.center[1].end[0].chamber == &engine.junction);
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.0738, 1e-15);
+            CHECK(engine.exhaust_pipe[0]->end[1].chamber == engine.junction);
+            CHECK(engine.exhaust_pipe[1]->end[1].chamber == engine.junction);
+            CHECK(engine.center[0]->end[0].chamber == engine.junction);
+            CHECK(engine.center[1]->end[0].chamber == engine.junction);
+            CHECK_NEAR(engine.tailpipe[0]->diameter, 0.0738, 1e-15);
         }
         if (p == 3) {
             CHECK_EQ_INT(d.muffler_type, RB_MUFFLER_NONE);
-            CHECK_NEAR(engine.tailpipe[0].diameter, 0.060, 1e-15);
+            CHECK_NEAR(engine.tailpipe[0]->diameter, 0.060, 1e-15);
             CHECK_NEAR(d.junction_volume, 0.0, 0.0);
         }
         if (p == 4) {
             CHECK_EQ_INT(engine.collectors, 1);
             CHECK_EQ_INT(engine.systems, 2);
-            CHECK(engine.link[0].end[1].chamber == &engine.junction);
-            CHECK(engine.muffler[0].end[0].chamber == &engine.junction);
-            CHECK(engine.muffler[1].end[0].chamber == &engine.junction);
-            CHECK_NEAR(engine.tailpipe[1].diameter, 0.0426, 1e-15);
+            CHECK(engine.link[0]->end[1].chamber == engine.junction);
+            CHECK(engine.muffler[0]->end[0].chamber == engine.junction);
+            CHECK(engine.muffler[1]->end[0].chamber == engine.junction);
+            CHECK_NEAR(engine.tailpipe[1]->diameter, 0.0426, 1e-15);
         }
     }
 }
@@ -165,7 +165,7 @@ void test_exhaust_engine_books(void)
                    + rb_engine_pipe_heat(&engine), fabs(engine.energy_out) * 1e-9);
         for (int s = 0; s < 3; s++)
             CHECK_NEAR(y1[s] - y0[s], engine.species_in[s] - engine.species_out[s], m0 * 1e-11);
-        CHECK_EQ_INT(engine.junction.repairs, 0);
+        for (int k = 0; k < engine.net.nodes; k++) CHECK_EQ_INT(engine.xnode[k].repairs, 0);
         for (int k = 0; k < rb_engine_pipe_count(&engine); k++) {
             const rb_pipe *pipe = rb_engine_pipe(&engine, k);
             int repairs = 0;
@@ -199,7 +199,7 @@ void test_exhaust_high_rpm_fired_books(void)
                             +engine.heat_released+engine.fuel_energy_in;
         CHECK_NEAR(u1-u0, energy, fabs(engine.heat_released)*1e-9);
         CHECK(engine.heat_released > 0.0 && engine.result.brake_torque > 0.0);
-        CHECK_EQ_INT(engine.junction.repairs, 0);
+        for (int k = 0; k < engine.net.nodes; k++) CHECK_EQ_INT(engine.xnode[k].repairs, 0);
         for (int i = 0; i < d.cylinders; i++) CHECK_EQ_INT(engine.cyl[i].gas.repairs, 0);
         for (int k = 0; k < rb_engine_pipe_count(&engine); k++) {
             const rb_pipe *p = rb_engine_pipe(&engine, k);

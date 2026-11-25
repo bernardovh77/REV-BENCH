@@ -7,6 +7,7 @@
  * it would without diagnostics. Nothing here allocates or writes files: the
  * caller owns the slots and the trace. See diagnostics.h for the units. */
 #include "diagnostics.h"
+#include "rb.h"
 #include "engine.h"
 #include <math.h>
 #include <string.h>
@@ -199,28 +200,16 @@ static int pipe_role(const rb_engine *e, const rb_pipe *p, int *index)
             return RB_D_HEADER;
         }
     }
-    for (int i = 0; i < e->collectors; i++) {
-        if (p == &e->exhaust_pipe[i]) {
-            *index = i;
-            return RB_D_EXHAUST;
-        }
-        if (p == &e->center[i]) {
-            *index = i;
-            return RB_D_CENTER;
-        }
-        if (p == &e->link[i]) {
-            *index = i;
-            return RB_D_LINK;
-        }
-    }
-    for (int i = 0; i < e->systems; i++) {
-        if (p == &e->tailpipe[i]) {
-            *index = i;
-            return RB_D_TAILPIPE;
-        }
-        if (p == &e->muffler[i]) {
-            *index = i;
-            return RB_D_MUFFLER;
+    /* the exhaust's network (stage 138): by what each pipe is (rb.h's kinds) */
+    for (int k = 0; k < e->net.pipes; k++) {
+        if (p != &e->xpipe[k]) continue;
+        *index = e->net.pipe[k].number;
+        switch (e->net.pipe[k].kind) {
+        case RB_PIPE_TAILPIPE: return RB_D_TAILPIPE;
+        case RB_PIPE_MUFFLER:  return RB_D_MUFFLER;
+        case RB_PIPE_CENTER:   return RB_D_CENTER;
+        case RB_PIPE_LINK:     return RB_D_LINK;
+        default:               return RB_D_EXHAUST;
         }
     }
     *index = 0;
@@ -237,7 +226,7 @@ static int pipe_role(const rb_engine *e, const rb_pipe *p, int *index)
 int rb_diag_bind_engine(rb_engine *e, rb_diagnostics *d)
 {
     if (!e) return -1;
-    size_t need = (size_t)(6 + 3 * e->desc.cylinders + e->collectors + (e->desc.junction_volume > 0));
+    size_t need = (size_t)(6 + 3 * e->desc.cylinders + e->net.nodes);
     for (int k = 0; k < rb_engine_pipe_count(e); k++)
         need += (size_t)(2 * rb_engine_pipe(e, k)->cells + 2);
     if (d && (!d->slots || need > d->capacity)) return -1;
@@ -255,8 +244,15 @@ int rb_diag_bind_engine(rb_engine *e, rb_diagnostics *d)
         BIND(e->intake[i], RB_D_INTAKE_VALVE, i, RB_D_ORIFICE, 0);
         BIND(e->exhaust[i], RB_D_EXHAUST_VALVE, i, RB_D_ORIFICE, 0);
     }
-    for (int i = 0; i < e->collectors; i++) BIND(e->collector[i], RB_D_COLLECTOR, i, RB_D_VOLUME, 0);
-    if (e->desc.junction_volume > 0) BIND(e->junction, RB_D_JUNCTION, 0, RB_D_VOLUME, 0);
+    /* the exhaust's volumes: those headers open into are collectors, in
+     * their order; the rest junctions */
+    for (int k = 0, junctions = 0; k < e->net.nodes; k++) {
+        int collector = -1;
+        for (int c = 0; c < e->collectors; c++)
+            if (e->collector[c] == &e->xnode[k]) collector = c;
+        if (collector >= 0) BIND(e->xnode[k], RB_D_COLLECTOR, collector, RB_D_VOLUME, 0);
+        else BIND(e->xnode[k], RB_D_JUNCTION, junctions++, RB_D_VOLUME, 0);
+    }
     for (int k = 0; k < rb_engine_pipe_count(e); k++) {
         rb_pipe *p = (rb_pipe *)rb_engine_pipe(e, k);
         int number;

@@ -37,7 +37,7 @@ int main(void)
         const double full = d.header_length[0] + d.exhaust_pipe_length + d.center_length
                           + d.link_length + d.muffler_length + d.tailpipe_length;
         printf("%s %.9g %.9g %.9g %d\n", rb_preset_key(p),
-               1000.0 * noise.blow_delay[0]/RATE, 1000.0 * full/580.0,
+               1000.0 * noise.blow_delay[0][0]/RATE, 1000.0 * full/580.0,
                noise.blow_pass, engine.systems);
     }
 

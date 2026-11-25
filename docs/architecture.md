@@ -286,6 +286,33 @@ Where this file and the code disagree, the code is right and this file is fixed.
     exhaust: centre pipes, links, X/Y junctions, `rb_exhaust_model`), `scene.c` (stereo scenes,
     `rb_set_scene`/`rb_render_stereo`), `diagnostics.c` (optional numerical observation slots);
     `RB_QUALITY_ULTRA`; the overrun spark retard before the fuel cut (`overrun_transition`).
+- **The exhaust as a network** (stages 137-139, `exhaust_net.c`, engine.h's `rb_exhaust_net`):
+  - **the description:** `rb_engine_desc.net`, pipes (`RB_NET_PIPES` 40, each a role, length,
+    bore, packing, wall, `muffler` and two ends), volumes (`RB_NET_NODES` 12), outlets
+    (`RB_NET_OUTLETS` 4, each at its place), and `header_to[]`. An end is `RB_NET_CLOSED`,
+    `_NODE` (into a volume), `_INTO` (into another pipe's end cell), `_TAP` (into another pipe's
+    cell at `at`), `_ONWARD` (end 1 straight on into the next pipe's end 0; `back` says how it
+    joins if it can't) or `_OUTLET` (end 1 only); its face narrowed (`area`), resisted
+    (`laminar`), with an entry loss;
+  - **the legacy fields** compile into a network (`rb_exhaust_net_legacy`) in the old order and
+    joins: `net.pipes == 0` builds that one, bit-identical; a network is checked
+    (`rb_exhaust_net_check`) and built as given;
+  - **the engine:** `xpipe[]`, `xnode[]` hold the exhaust past the headers; `tailpipe[o]` is outlet
+    o's pipe, `collector[c]` the volumes headers open into, `exhaust_pipe`, `muffler`, `center`,
+    `link`, `junction` the legacy roles (NULL for a network); `pipe_list[]` every pipe in step
+    order (runners, headers, the network's, the snorkel where the legacy order had it). The
+    builder's `join_end` makes each end's join;
+  - **ways through it:** `rb_exhaust_net_paths`, `rb_exhaust_net_route` (Dijkstra over the pipes'
+    ends and volumes);
+  - **the noise layer** (noise.c `route_network`): for a network, each cylinder's noise along its
+    ways to the outlets, passed by each part as what it muffles as (`part_pass`, the legacy
+    constants), every narrowed face but a catalyst's a jet (`hole[]`); the legacy engines keep
+    the legacy routing;
+  - **the listener and the scene:** sources are the outlets (`RB_LISTEN_OUTLETS`), then the mouth
+    (`RB_LISTEN_MOUTH`) and the bay (`RB_LISTEN_BAY`); `rb_listener_place_at`,
+    `rb_listener_place_noise_at`, `rb_listener_aperture_at` and `rb_scene_init_at` take the
+    outlets' places (flat, 3 per outlet) and openings; the legacy two-tailpipe calls remain;
+  - **tests:** tests/test_exhaust_net.c (the network).
   - `experiments/acoustics/`: research solvers (wave, euler, mixture, gas_graph, thermal,
     material, fixed_transport, junction). They are linked only into the tests and probes, never
     into the core or the browser, and run far below real time.

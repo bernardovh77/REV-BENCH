@@ -119,9 +119,10 @@ static void settle(double seconds)
 
 static long repairs(void)
 {
-    long total = engine.airbox.repairs + engine.plenum.repairs + engine.junction.repairs;
+    long total = engine.airbox.repairs + engine.plenum.repairs
+                 + (engine.junction ? engine.junction->repairs : 0);
     for (int i = 0; i < engine.desc.cylinders; i++) total += engine.cyl[i].gas.repairs;
-    for (int i = 0; i < engine.collectors; i++) total += engine.collector[i].repairs;
+    for (int i = 0; i < engine.collectors; i++) total += engine.collector[i]->repairs;
     for (int i = 0; i < rb_engine_pipe_count(&engine); i++) {
         const rb_pipe *p = rb_engine_pipe(&engine, i);
         for (int j = 0; j < p->cells; j++) total += p->cell[j].repairs;
@@ -131,7 +132,7 @@ static long repairs(void)
 
 static void trace_values(double t, int cut, double row[NCOLS])
 {
-    const rb_pipe *h = &engine.header[0], *tail = &engine.tailpipe[0];
+    const rb_pipe *h = &engine.header[0], *tail = engine.tailpipe[0];
     const rb_chamber *ha = &h->cell[0], *hb = &h->cell[h->cells-1];
     const rb_chamber *ta = &tail->cell[0], *tb = &tail->cell[tail->cells-1];
     const double values[] = {
@@ -140,11 +141,12 @@ static void trace_values(double t, int cut, double row[NCOLS])
         engine.exhaust[0].area, engine.burn[0].heat/engine.dt,
         ha->p, ha->T, rb_pipe_cell_velocity(h, 0),
         hb->p, hb->T, rb_pipe_cell_velocity(h, h->cells-1),
-        engine.collector[0].p, engine.collector[0].T,
+        engine.collector[0]->p, engine.collector[0]->T,
         ta->p, ta->T, rb_pipe_cell_velocity(tail, 0),
         tb->p, tb->T, rb_pipe_cell_velocity(tail, tail->cells-1),
         engine.tail_flow[0], engine.tail_flow[1], engine.mouth_flow,
-        noise.out[0], noise.out[1], noise.out[2], noise.out[3], engine.plenum.p,
+        noise.out[RB_NOISE_TAIL0], noise.out[RB_NOISE_TAIL1], noise.out[RB_NOISE_MOUTH], noise.out[RB_NOISE_BAY],
+        engine.plenum.p,
         engine.fuel_in, engine.fuel_burned, engine.heat_released
     };
     _Static_assert(sizeof values / sizeof values[0] == NCOLS, "trace column count");

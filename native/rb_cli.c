@@ -1799,9 +1799,9 @@ static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char 
 
     const int c = d->collector[0], s = (engine.systems == 2) ? c : 0;
     const rb_pipe *pipes[6] = { d->runner_length > 0.0 ? &engine.runner[0] : NULL, &engine.header[0],
-                                &engine.exhaust_pipe[c], &engine.tailpipe[s], &engine.muffler[s],
+                                engine.exhaust_pipe[c], engine.tailpipe[s], engine.muffler[s],
                                 &engine.snorkel };
-    const rb_chamber *volumes[4] = { &engine.cyl[0].gas, &engine.plenum, &engine.collector[c],
+    const rb_chamber *volumes[4] = { &engine.cyl[0].gas, &engine.plenum, engine.collector[c],
                                      &engine.airbox };
     const char *cols[] = { "crank_deg", "pipe", "cell", "x_m", "p_kPa", "T_K", "u_m_s",
                            "intake_lift_mm", "exhaust_lift_mm" };
@@ -1835,9 +1835,11 @@ static int pipes_engine(const rb_engine_desc *d, const op_point *op, const char 
         }
         rb_engine_step(&engine);
     }
+    /* a network's engine has no legacy exhaust pipe or muffler: none written, 0 cells */
+    int cells[6];
+    for (int j = 0; j < 6; j++) cells[j] = pipes[j] ? pipes[j]->cells : 0;
     printf("  cylinder 1's pipes: runner %d cells, header %d, exhaust pipe %d, muffler %d, "
-           "tailpipe %d; the snorkel %d\n", pipes[0] ? pipes[0]->cells : 0, pipes[1]->cells,
-           pipes[2]->cells, pipes[4]->cells, pipes[3]->cells, pipes[5]->cells);
+           "tailpipe %d; the snorkel %d\n", cells[0], cells[1], cells[2], cells[4], cells[3], cells[5]);
     printf("wrote %s\n", path);
     return csv_close(csv) ? 1 : 0;
 }

@@ -36,3 +36,14 @@ BUGS = {
         "        rb_pipe_resist(x, 1, d->catalyst_laminar + 1e5 * d->position[1]);\n",
         EDITOR, 900),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['catalyst-never-resists'] = ('core/src/exhaust_net.c',
+    '        x->end[1].laminar = d->catalyst_laminar;\n',
+    '',
+    BUGS['catalyst-never-resists'][3], BUGS['catalyst-never-resists'][4])
+BUGS['position-moves-the-sound'] = ('core/src/exhaust_net.c',
+    '        x->end[1].laminar = d->catalyst_laminar;\n',
+    '        x->end[1].laminar = d->catalyst_laminar + 1e5 * d->position[1];\n',
+    BUGS['position-moves-the-sound'][3], BUGS['position-moves-the-sound'][4])

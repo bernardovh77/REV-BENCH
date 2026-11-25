@@ -43,8 +43,8 @@ static const double BAY_SHIELD[RB_HEAR_COUNT] = {
 
 /* Which sources are in front of the cabin, for its firewall: the flows'
  * mouth (source 2), and the noise's mouth and engine bay (2 and 3). */
-#define FLOW_IN_FRONT(j)  ((j) == 2)
-#define NOISE_IN_FRONT(j) ((j) >= 2)
+#define FLOW_IN_FRONT(j)  ((j) == RB_LISTEN_MOUTH)
+#define NOISE_IN_FRONT(j) ((j) >= RB_LISTEN_OUTLETS)
 
 static double distance(const double a[3], const double b[3])
 {
@@ -85,10 +85,23 @@ void rb_listener_set(rb_listener *l, const double *const pos[RB_LISTEN_SOURCES],
     plan_reads(l);
 }
 
+void rb_listener_legacy_outlets(double at[2][3])
+{
+    memcpy(at, TAILPIPE, sizeof TAILPIPE);
+}
+
 int rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double pipe_dt)
 {
-    if (where < 0 || where >= RB_HEAR_COUNT) return -1;
-    const double *pos[RB_LISTEN_SOURCES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH };
+    return rb_listener_place_at(l, where, &TAILPIPE[0][0], tailpipes > 1 ? 2 : 1, c, pipe_dt);
+}
+
+int rb_listener_place_at(rb_listener *l, int where, const double at[], int outlets,
+                         double c, double pipe_dt)
+{
+    if (where < 0 || where >= RB_HEAR_COUNT || outlets < 1 || outlets > RB_LISTEN_OUTLETS) return -1;
+    const double *pos[RB_LISTEN_SOURCES] = { NULL };
+    for (int o = 0; o < outlets; o++) pos[o] = &at[3 * o];
+    pos[RB_LISTEN_MOUTH] = MOUTH;
     rb_listener_set(l, pos, PLACE[where], RB_GROUND, c, pipe_dt);
     l->inside = (where == RB_HEAR_CABIN);
     return 0;
@@ -96,10 +109,20 @@ int rb_listener_place(rb_listener *l, int where, int tailpipes, double c, double
 
 int rb_listener_place_noise(rb_listener *l, int where, int tailpipes, double c, double pipe_dt, double dt)
 {
-    if (where < 0 || where >= RB_HEAR_COUNT || !(dt > 0.0) || !(pipe_dt > 0.0)) return -1;
+    return rb_listener_place_noise_at(l, where, &TAILPIPE[0][0], tailpipes > 1 ? 2 : 1, c, pipe_dt, dt);
+}
+
+int rb_listener_place_noise_at(rb_listener *l, int where, const double outlet[], int outlets,
+                               double c, double pipe_dt, double dt)
+{
+    if (where < 0 || where >= RB_HEAR_COUNT || !(dt > 0.0) || !(pipe_dt > 0.0)
+        || outlets < 1 || outlets > RB_LISTEN_OUTLETS) return -1;
     const double *at = PLACE[where];
-    const double *flows[RB_LISTEN_SOURCES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH };
-    const double *src[RB_LISTEN_NOISES] = { TAILPIPE[0], (tailpipes > 1) ? TAILPIPE[1] : NULL, MOUTH, BAY };
+    const double *flows[RB_LISTEN_SOURCES] = { NULL };
+    const double *src[RB_LISTEN_NOISES] = { NULL };
+    for (int o = 0; o < outlets; o++) flows[o] = src[o] = &outlet[3 * o];
+    flows[RB_LISTEN_MOUTH] = src[RB_LISTEN_MOUTH] = MOUTH;
+    src[RB_LISTEN_BAY] = BAY;
 
     /* The flows' delays count from their nearest source (rb_listener_place).
      * If one of these is nearer still, everything counts from it. */
@@ -123,7 +146,7 @@ int rb_listener_place_noise(rb_listener *l, int where, int tailpipes, double c, 
         if (!src[j]) continue;
         const double image[3] = { src[j][0], src[j][1], -src[j][2] };
         const double r[2] = { distance(src[j], at), distance(image, at) };
-        const double shield = (j == 3) ? BAY_SHIELD[where] : 1.0;
+        const double shield = (j == RB_LISTEN_BAY) ? BAY_SHIELD[where] : 1.0;
         for (int k = 0; k < 2; k++) {
             const double rr = (r[k] > 0.1) ? r[k] : 0.1;
             l->ngain[j][k] = shield * ((k == 0) ? 1.0 : RB_GROUND) / rr;
@@ -182,23 +205,33 @@ static void plan_reads(rb_listener *l)
 void rb_listener_aperture(rb_listener *l, int where, int tailpipes, double diameter, double c,
                           double pipe_dt, double dt)
 {
+    const double each[2] = { diameter, diameter };
+    rb_listener_aperture_at(l, where, &TAILPIPE[0][0], each, tailpipes > 1 ? 2 : 1, c, pipe_dt, dt);
+}
+
+void rb_listener_aperture_at(rb_listener *l, int where, const double outlet[],
+                             const double diameter[], int outlets, double c, double pipe_dt,
+                             double dt)
+{
     l->lag = l->nlag = 0.0;
     for (int j = 0; j < RB_LISTEN_SOURCES; j++) l->spread[j][0] = l->spread[j][1] = 0.0;
     for (int j = 0; j < RB_LISTEN_NOISES; j++) l->nspread[j][0] = l->nspread[j][1] = 0.0;
-    if (where < 0 || where >= RB_HEAR_COUNT || !(diameter > 0.0) || !(c > 0.0)
-        || !(pipe_dt > 0.0) || !(dt > 0.0)) {
+    if (where < 0 || where >= RB_HEAR_COUNT || !(c > 0.0) || !(pipe_dt > 0.0) || !(dt > 0.0)
+        || outlets < 1 || outlets > RB_LISTEN_OUTLETS) {
         plan_reads(l);
         return;
     }
     const double *at = PLACE[where];
     double most = 0.0;
-    for (int j = 0; j < 2 && j < tailpipes; j++)
+    for (int j = 0; j < outlets; j++)
         for (int k = 0; k < 2; k++) {
+            if (!(diameter[j] > 0.0)) continue;
             /* the source, or its image under the ground; the pipe's axis is y */
-            const double p[3] = { TAILPIPE[j][0], TAILPIPE[j][1], k ? -TAILPIPE[j][2] : TAILPIPE[j][2] };
+            const double *o = &outlet[3 * j];
+            const double p[3] = { o[0], o[1], k ? -o[2] : o[2] };
             const double r = distance(p, at), along = at[1] - p[1];
             const double sine = (r > 0.0) ? sqrt(fmax(0.0, 1.0 - along * along / (r * r))) : 0.0;
-            const double half = 0.5 * diameter * sine / c;   /* s */
+            const double half = 0.5 * diameter[j] * sine / c;   /* s */
             l->spread[j][k] = half / pipe_dt;
             l->nspread[j][k] = half / dt;
             if (half > most) most = half;

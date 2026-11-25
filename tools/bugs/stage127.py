@@ -114,3 +114,14 @@ BUGS = {
         "v8_flat, RB_QUALITY_LOW, ",
         ["test_core_preset_quality"], 300),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['scene-hears-the-steps-anyway'] = ('core/src/rb_sim.c',
+    '                    if (j >= RB_LISTEN_OUTLETS || j < e->systems) q[j] = rb_smoother_next(&sim->scene_smooth[j]);',
+    '                    if (j >= RB_LISTEN_OUTLETS || j < e->systems) (void)rb_smoother_next(&sim->scene_smooth[j]);',
+    BUGS['scene-hears-the-steps-anyway'][3], BUGS['scene-hears-the-steps-anyway'][4])
+BUGS['scene-never-feeds-its-smoothers'] = ('core/src/rb_sim.c',
+    '                    if (o < e->systems) rb_smoother_push(&sim->scene_smooth[o], e->tail_flow[o]);',
+    '                    if (o < 0 * e->systems) rb_smoother_push(&sim->scene_smooth[o], e->tail_flow[o]);',
+    BUGS['scene-never-feeds-its-smoothers'][3], BUGS['scene-never-feeds-its-smoothers'][4])

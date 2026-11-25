@@ -62,9 +62,14 @@ int rb_fuzz_inspect_engine(rb_fuzz_result *r, const rb_engine *e, double t)
         if (!check_chamber(r, &e->cyl[i].gas, "cylinder", i, t)) return 0;
     if (!check_chamber(r, &e->plenum, "plenum", 0, t) || !check_chamber(r, &e->airbox, "air box", 0, t))
         return 0;
+    /* the exhaust's volumes (stage 138): its collectors, then the rest */
     for (int c = 0; c < e->collectors; c++)
-        if (!check_chamber(r, &e->collector[c], "collector", c, t)) return 0;
-    if(e->desc.junction_volume>0 && !check_chamber(r,&e->junction,"junction",0,t)) return 0;
+        if (!check_chamber(r, e->collector[c], "collector", c, t)) return 0;
+    for (int k = 0, j = 0; k < e->net.nodes; k++) {
+        int collector = 0;
+        for (int c = 0; c < e->collectors; c++) collector |= e->collector[c] == &e->xnode[k];
+        if (!collector && !check_chamber(r, &e->xnode[k], "junction", j++, t)) return 0;
+    }
     for (int k = 0; k < rb_engine_pipe_count(e); k++) {
         const rb_pipe *p = rb_engine_pipe(e, k);
         for (int j = 0; j < p->cells; j++)
@@ -76,9 +81,8 @@ int rb_fuzz_inspect_engine(rb_fuzz_result *r, const rb_engine *e, double t)
 static long repairs(const rb_engine *e)
 {
     long n = e->plenum.repairs + e->airbox.repairs;
-    if(e->desc.junction_volume>0) n+=e->junction.repairs;
+    for (int k = 0; k < e->net.nodes; k++) n += e->xnode[k].repairs;
     for (int i = 0; i < e->desc.cylinders; i++) n += e->cyl[i].gas.repairs;
-    for (int c = 0; c < e->collectors; c++) n += e->collector[c].repairs;
     for (int k = 0; k < rb_engine_pipe_count(e); k++) {
         const rb_pipe *p = rb_engine_pipe(e, k);
         for (int j = 0; j < p->cells; j++) n += p->cell[j].repairs;

@@ -30,11 +30,9 @@
  * its dynamic head: from the plenum into a runner (a rounded entry, 0.3),
  * from a collector back into a header, or into its exhaust pipe through the
  * merging cone, and air drawn into a tailpipe's plain end (0.5). Flowing out
- * of a pipe into a volume the gas's speed is lost anyway. */
+ * of a pipe into a volume the gas's speed is lost anyway. The exhaust's are
+ * engine.h's (RB_HEADER_ENTRY ...), shared with exhaust_net.c. */
 #define RUNNER_ENTRY     0.3
-#define HEADER_ENTRY     0.5
-#define COLLECTOR_ENTRY  0.3
-#define TAILPIPE_ENTRY   0.5
 /* A catalyst's laminar loss (pipe.h), Pa per m/s of its exhaust pipe's gas:
  * a 400-cell substrate 12 cm long and five times the pipe's area across
  * costs about 2.5 kPa at 100 m/s, near full power. */
@@ -47,9 +45,7 @@
  * power. A straight-through one's packing, Pa per m/s of the swings per
  * metre, takes the swings faster than about 640 Hz (settling in 0.25 ms),
  * 10 dB over 45 cm of hot gas, and less of the slower ones. */
-#define BAFFLE_LAMINAR   30.0
-#define PACKING          1500.0
-#define PACKING_SETTLE   2.5e-4
+#define PACKING_SETTLE   RB_PACKING_SETTLE
 /* The way in (stage 12): air drawn into the snorkel's flared mouth (an entry
  * loss of 0.2 velocity heads), then through the air box's clean paper filter:
  * a laminar loss, Pa per m/s of the snorkel's air, about 1.4 kPa at the
@@ -63,7 +59,7 @@
  * cylinder head, the exhaust's cooler the further from the engine. */
 #define RUNNER_WALL      330.0
 #define HEADER_WALL      650.0
-#define EXHAUST_WALL     550.0
+#define EXHAUST_WALL     RB_EXHAUST_WALL
 #define MUFFLER_WALL     450.0
 #define TAILPIPE_WALL    400.0
 
@@ -307,6 +303,8 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     if (d->junction_before_center != 0 && d->junction_before_center != 1) return -1;
     if (d->outlet_radiation != 0 && d->outlet_radiation != 1) return -1;
     if (!(d->muffler_resolution >= 1.0 && d->muffler_resolution <= 4.0)) return -1;
+    /* a network, if it has one (stage 138) */
+    if (d->net.pipes > 0 && rb_exhaust_net_check(&d->net, d) != 0) return -1;
     if (d->junction_before_center && !(d->junction_volume > 0.0 && joined[1]
         && d->exhaust_systems == 2)) return -1;
     if (d->center_length > 0.0) {
@@ -383,10 +381,33 @@ static void new_pipe(rb_engine *e, rb_pipe *p, int *used, double length, double 
     *used += n;
 }
 
-/* The system (muffler and tailpipe) collector c's exhaust pipe runs into. */
-static int system_of(const rb_engine *e, int c)
+/* Joins end `end` of pipe p where the network's end x says (engine.h,
+ * rb_net_end); an outlet into the open air. Closed: left alone. */
+static void join_end(rb_engine *e, rb_pipe *p, int end, const rb_net_end *x)
 {
-    return (e->systems == 2) ? c : 0;
+    rb_pipe *m = (x->kind == RB_NET_INTO || x->kind == RB_NET_TAP || x->kind == RB_NET_ONWARD)
+               ? &e->xpipe[x->index] : NULL;
+    switch (x->kind) {
+    case RB_NET_NODE:
+        rb_pipe_join(p, end, &e->xnode[x->index], x->entry_loss, 0);
+        break;
+    case RB_NET_INTO:
+        rb_pipe_join(p, end, rb_pipe_end_cell(m, x->end), x->entry_loss, 0);
+        break;
+    case RB_NET_TAP:
+        rb_pipe_join(p, end, &m->cell[(int)lround(x->at * (m->cells - 1))], x->entry_loss, 0);
+        break;
+    case RB_NET_ONWARD:
+        if (rb_pipe_onward(p, m) == 0) break;
+        if (x->back) rb_pipe_join(m, 0, rb_pipe_end_cell(p, 1), 0.0, 0);
+        else rb_pipe_join(p, 1, rb_pipe_end_cell(m, 0), x->entry_loss, 0);
+        break;
+    case RB_NET_OUTLET:
+        rb_pipe_join(p, end, &e->exhaust_air, x->entry_loss, 0);
+        break;
+    default:
+        break;
+    }
 }
 
 /* A normal number, kept within VARY_MOST. */
@@ -467,9 +488,19 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     e->pipe_every = (int)lround(1.0 / (pipe_rate * dt));
     if (e->pipe_every < 1) e->pipe_every = 1;
     e->pipe_dt = e->pipe_every * dt;
-    for (int i = 0; i < d->cylinders; i++)
-        if (d->collector[i] + 1 > e->collectors) e->collectors = d->collector[i] + 1;
-    e->systems = d->exhaust_systems;
+    /* The exhaust past the headers (stage 138): the description's network,
+     * or the one its fields make. The volumes its headers open into are its
+     * collectors; its outlets, its systems. */
+    if (d->net.pipes > 0) e->net = d->net;
+    else rb_exhaust_net_legacy(d, &e->net);
+    const rb_exhaust_net *net = &e->net;
+    for (int k = 0; k < net->nodes; k++)
+        for (int i = 0; i < d->cylinders; i++)
+            if (net->header_to[i].kind == RB_NET_NODE && net->header_to[i].index == k) {
+                e->collector[e->collectors++] = &e->xnode[k];
+                break;
+            }
+    e->systems = net->outlets;
 
     rb_cyl_geom g;
     rb_cyl_geom_init(&g, d->bore, d->stroke, d->rod, d->cr);
@@ -490,17 +521,16 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
      * gets one, and a share of the rest of what it wants (new_pipe): never
      * more than the pool, however many short pipes there are (at most 39). */
     const int runners = d->runner_length > 0.0;
-    const int pipes = rb_engine_pipe_count(e);
+    /* (Counted here: e->pipe_total, rb_engine_pipe_count's, is set only
+     * once the pipes are built, below.) */
+    const int pipes = 1 + d->cylinders * (1 + runners) + net->pipes;
     int want = rb_pipe_cells_for(d->snorkel_length, short_cell, e->pipe_dt), used = 0;
     for (int i = 0; i < d->cylinders; i++)
         want += rb_pipe_cells_for(d->header_length[i], short_cell, e->pipe_dt)
               + (runners ? rb_pipe_cells_for(d->runner_length, short_cell, e->pipe_dt) : 0);
-    want += e->collectors * rb_pipe_cells_for(d->exhaust_pipe_length, long_cell, e->pipe_dt)
-          + e->systems * (rb_pipe_cells_for(d->muffler_length, can_cell, e->pipe_dt)
-                          + rb_pipe_cells_for(d->tailpipe_length, long_cell, e->pipe_dt));
-    if (d->center_length > 0.0)
-        want += e->collectors * (rb_pipe_cells_for(d->center_length, can_cell, e->pipe_dt)
-                              + rb_pipe_cells_for(d->link_length, long_cell, e->pipe_dt));
+    const double role_cell[4] = { long_cell, can_cell, long_cell, short_cell };   /* rb_net_role */
+    for (int k = 0; k < net->pipes; k++)
+        want += rb_pipe_cells_for(net->pipe[k].length, role_cell[net->pipe[k].role], e->pipe_dt);
     const int room = (want > RB_ENGINE_CELLS) ? RB_ENGINE_CELLS - pipes : 1;
     const int over = (want > RB_ENGINE_CELLS) ? want - pipes : 1;
 
@@ -514,16 +544,10 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
     rb_pipe_join(&e->snorkel, 1, &e->airbox, 0.0, 1);
     rb_pipe_resist(&e->snorkel, 1, FILTER_LAMINAR);
 
-    /* Each collector merges its headers into its exhaust pipe through a cone
-     * about two pipe diameters long. */
-    const double header_area = 0.25 * PI * d->header_diameter * d->header_diameter;
-    const double pipe_area = 0.25 * PI * d->exhaust_pipe_diameter * d->exhaust_pipe_diameter;
-    for (int c = 0; c < e->collectors; c++) {
-        int headers = 0;
-        for (int i = 0; i < d->cylinders; i++) headers += (d->collector[i] == c);
-        const double volume = d->exhaust_pipe_diameter * (headers * header_area + pipe_area);
-        rb_chamber_init(&e->collector[c], volume, d->p_ambient, d->T_ambient, AIR);
-    }
+    /* The exhaust's volumes (the legacy collectors: a cone about two pipe
+     * diameters long merging the headers into the exhaust pipe). */
+    for (int k = 0; k < net->nodes; k++)
+        rb_chamber_init(&e->xnode[k], net->node[k].volume, d->p_ambient, d->T_ambient, AIR);
 
     /* The areas of the valves, catalysts and mufflers are effective areas
      * (Cd included), so cd = 1. */
@@ -552,79 +576,59 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
         rb_orifice_init(&e->exhaust[i], gas, rb_pipe_end_cell(h, 0), 0.0, 1.0);
         rb_pipe_attach(h, 0, gas, &e->exhaust[i]);
         rb_pipe_set_fast(h, 0);
-        rb_pipe_join(h, 1, &e->collector[d->collector[i]], HEADER_ENTRY, 0);
         e->burn[i].spark_angle = e->burn[i].start_angle = 720.0 - RB_SPARK_DEFAULT;
         e->burn[i].duration = d->burn_duration;
     }
-    /* Each system's muffler (stage 12; rb.h: rb_muffler_type) is a pipe:
-     * none, a straight one the tailpipe's size; straight-through, that pipe
-     * packed (pipe.h); chambered, a wide can. */
-    for (int s = 0; s < e->systems; s++) {
-        rb_pipe *m = &e->muffler[s];
-        new_pipe(e, m, &used, d->muffler_length, muffler_width(d), can_cell, room, over,
-                 MUFFLER_WALL, EXHAUST_FRICTION);
-        if (d->muffler_type == RB_MUFFLER_STRAIGHT) rb_pipe_pack(m, PACKING, PACKING_SETTLE);
+    /* The exhaust past the headers (stage 138, engine.h): each pipe with its
+     * role's cells and wall (a packed perforated core's packing, pipe.h);
+     * then the headers' ends and every pipe's two ends where the network
+     * says, each end's face narrowed and resisted as it says, the outlets
+     * radiating. Joins are pointers and faces, so their order doesn't
+     * matter; a face is narrowed after its join (rb_pipe_restrict adds to
+     * the join's entry loss). */
+    const double role_wall[4] = { EXHAUST_WALL, MUFFLER_WALL, TAILPIPE_WALL, HEADER_WALL };
+    for (int k = 0; k < net->pipes; k++) {
+        const rb_net_pipe *q = &net->pipe[k];
+        rb_pipe *p = &e->xpipe[k];
+        new_pipe(e, p, &used, q->length, q->diameter, role_cell[q->role], room, over,
+                 q->wall > 0.0 ? q->wall : role_wall[q->role], EXHAUST_FRICTION);
+        if (q->packing > 0.0) rb_pipe_pack(p, q->packing, PACKING_SETTLE);
     }
-    /* Each collector's exhaust pipe runs through the catalyst at its end
-     * into its system's muffler, and each muffler into its tailpipe, which
-     * opens into the open air. Into a chambered muffler's can the gas spreads
-     * out, losing its speed, and leaves it through the baffles: the pipes are
-     * joined to the can's end cells as to volumes. A straight pipe or a
-     * straight-through goes straight on from its exhaust pipe (unless two
-     * exhaust pipes meet there: then they open into its first cell) and on
-     * into its tailpipe (pipe.h). The catalyst and the baffles are
-     * restrictions with a laminar loss at the pipes' ends. */
-    const int straight = d->muffler_type != RB_MUFFLER_CHAMBERED;
-    const int alone = e->systems == e->collectors;   /* each muffler has one exhaust pipe */
-    const int extended = d->center_length > 0.0;
-    if (d->junction_volume > 0.0)
-        rb_chamber_init(&e->junction, d->junction_volume, d->p_ambient, d->T_ambient, AIR);
-    for (int c = 0; c < e->collectors; c++) {
-        rb_pipe *x = &e->exhaust_pipe[c], *m = &e->muffler[system_of(e, c)];
-        new_pipe(e, x, &used, d->exhaust_pipe_length, d->exhaust_pipe_diameter, long_cell, room, over,
-                 EXHAUST_WALL, EXHAUST_FRICTION);
-        rb_pipe_join(x, 0, &e->collector[c], COLLECTOR_ENTRY, 0);
-        if (extended) {
-            rb_pipe *z = &e->center[c], *l = &e->link[c];
-            const double width = d->center_volume > 0.0
-                ? sqrt(4.0 * d->center_volume / (PI * d->center_length)) : d->center_diameter;
-            new_pipe(e, z, &used, d->center_length, width, can_cell, room, over,
-                     EXHAUST_WALL, EXHAUST_FRICTION);
-            new_pipe(e, l, &used, d->link_length, d->exhaust_pipe_diameter, long_cell, room, over,
-                     EXHAUST_WALL, EXHAUST_FRICTION);
-            if (d->center_packing > 0.0) rb_pipe_pack(z, d->center_packing, PACKING_SETTLE);
-            if (d->junction_before_center) {
-                rb_pipe_join(x, 1, &e->junction, 0.0, 0);
-                rb_pipe_join(z, 0, &e->junction, 0.0, 0);
-            } else if (d->center_volume > 0.0 || rb_pipe_onward(x, z) != 0)
-                rb_pipe_join(x, 1, rb_pipe_end_cell(z, 0), 0.0, 0);
-            if (d->center_volume > 0.0 || rb_pipe_onward(z, l) != 0)
-                rb_pipe_join(l, 0, rb_pipe_end_cell(z, 1), 0.0, 0);
-            if (d->junction_volume > 0.0 && !d->junction_before_center)
-                rb_pipe_join(l, 1, &e->junction, 0.0, 0);
-            else if (!(straight && alone && rb_pipe_onward(l, m) == 0))
-                rb_pipe_join(l, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
-        } else if (!(straight && alone && rb_pipe_onward(x, m) == 0))
-            rb_pipe_join(x, 1, rb_pipe_end_cell(m, 0), 0.0, 0);
-        rb_pipe_restrict(x, 1, d->catalyst_area);
-        rb_pipe_resist(x, 1, d->catalyst_laminar);
-    }
-    for (int s = 0; s < e->systems; s++) {
-        rb_pipe *t = &e->tailpipe[s], *m = &e->muffler[s];
-        if (d->junction_volume > 0.0 && !d->junction_before_center)
-            rb_pipe_join(m, 0, &e->junction, 0.0, 0);
-        new_pipe(e, t, &used, d->tailpipe_length, d->tailpipe_diameter, long_cell, room, over,
-                 TAILPIPE_WALL, EXHAUST_FRICTION);
-        if (!(straight && rb_pipe_onward(m, t) == 0)) {
-            rb_pipe_join(t, 0, rb_pipe_end_cell(m, 1), 0.0, 0);
-            if (!straight) {
-                rb_pipe_restrict(t, 0, d->muffler_area);
-                rb_pipe_resist(t, 0, BAFFLE_LAMINAR);
+    for (int i = 0; i < d->cylinders; i++)
+        join_end(e, &e->header[i], 1, &net->header_to[i]);
+    for (int k = 0; k < net->pipes; k++)
+        for (int end = 0; end < 2; end++) {
+            const rb_net_end *x = &net->pipe[k].end[end];
+            rb_pipe *p = &e->xpipe[k];
+            join_end(e, p, end, x);
+            rb_pipe_restrict(p, end, x->area);
+            rb_pipe_resist(p, end, x->laminar);
+            if (x->kind == RB_NET_OUTLET) {
+                e->tailpipe[x->index] = p;
+                if (d->outlet_radiation)
+                    rb_pipe_radiate(p, end, e->exhaust_air.rho, rb_chamber_sound_speed(&e->exhaust_air));
             }
         }
-        rb_pipe_join(t, 1, &e->exhaust_air, TAILPIPE_ENTRY, 0);
-        if (d->outlet_radiation)
-            rb_pipe_radiate(t, 1, e->exhaust_air.rho, rb_chamber_sound_speed(&e->exhaust_air));
+    /* every pipe in the order they're stepped (the legacy order: runners,
+     * headers, then the network's, the snorkel where it was) */
+    e->pipe_total = 0;
+    for (int i = 0; runners && i < d->cylinders; i++) e->pipe_list[e->pipe_total++] = &e->runner[i];
+    for (int i = 0; i < d->cylinders; i++) e->pipe_list[e->pipe_total++] = &e->header[i];
+    for (int k = 0; k <= net->pipes; k++) {
+        if (k == net->snorkel_at) e->pipe_list[e->pipe_total++] = &e->snorkel;
+        if (k < net->pipes) e->pipe_list[e->pipe_total++] = &e->xpipe[k];
+    }
+    /* the legacy roles, for its fields' engines */
+    if (d->net.pipes == 0) {
+        const int c = e->collectors, s = e->systems;
+        for (int k = 0; k < c; k++) e->exhaust_pipe[k] = &e->xpipe[k];
+        for (int k = 0; k < s; k++) e->muffler[k] = &e->xpipe[c + s + k];
+        if (d->center_length > 0.0)
+            for (int k = 0; k < c; k++) {
+                e->center[k] = &e->xpipe[c + 2 * s + k];
+                e->link[k] = &e->xpipe[2 * c + 2 * s + k];
+            }
+        if (d->junction_volume > 0.0) e->junction = &e->xnode[c];
     }
     vary_init(e, RB_ENGINE_SEED);
     rb_engine_start_cycle(e);
@@ -633,9 +637,7 @@ int rb_engine_init_at(rb_engine *e, const rb_engine_desc *d, double dt, double p
 
 int rb_engine_pipe_count(const rb_engine *e)
 {
-    const int n = e->desc.cylinders;
-    return (e->desc.runner_length > 0.0 ? n : 0) + n + e->collectors + 2 * e->systems + 1
-         + (e->desc.center_length > 0.0 ? 2 * e->collectors : 0);
+    return e->pipe_total;
 }
 
 /* A pipe's faces' guards and its cells' repairs. */
@@ -650,9 +652,9 @@ static uint64_t pipe_guards(const rb_pipe *p)
 uint64_t rb_engine_guards(const rb_engine *e)
 {
     uint64_t n = 0;
-    const rb_chamber *const fixed[] = { &e->intake_air, &e->plenum, &e->exhaust_air, &e->airbox, &e->junction };
+    const rb_chamber *const fixed[] = { &e->intake_air, &e->plenum, &e->exhaust_air, &e->airbox };
     for (size_t k = 0; k < sizeof fixed / sizeof fixed[0]; k++) n += (uint64_t)fixed[k]->repairs;
-    for (int c = 0; c < RB_MAX_COLLECTORS; c++) n += (uint64_t)e->collector[c].repairs;
+    for (int k = 0; k < RB_NET_NODES; k++) n += (uint64_t)e->xnode[k].repairs;
     /* not the orifices' equalisation limit: by design it acts on about a quarter of the
      * valves' steps in a normal idle and on the throttle wide open (a big opening between
      * small volumes equalises faster than a step), so it tells nothing apart */
@@ -663,41 +665,19 @@ uint64_t rb_engine_guards(const rb_engine *e)
 
 const rb_pipe *rb_engine_pipe(const rb_engine *e, int k)
 {
-    const int n = e->desc.cylinders;
-    if (k < 0) return NULL;
-    if (e->desc.runner_length > 0.0) {
-        if (k < n) return &e->runner[k];
-        k -= n;
-    }
-    if (k < n) return &e->header[k];
-    k -= n;
-    if (k < e->collectors) return &e->exhaust_pipe[k];
-    k -= e->collectors;
-    if (k < e->systems) return &e->tailpipe[k];
-    k -= e->systems;
-    if (k < e->systems) return &e->muffler[k];
-    k -= e->systems;
-    if (k == 0) return &e->snorkel;
-    k--;
-    if (e->desc.center_length > 0.0) {
-        if (k < e->collectors) return &e->center[k];
-        k -= e->collectors;
-        if (k < e->collectors) return &e->link[k];
-    }
-    return NULL;
+    return (k >= 0 && k < e->pipe_total) ? e->pipe_list[k] : NULL;
 }
 
 void rb_engine_contents(const rb_engine *e, double *mass, double *energy,
                         double species[RB_NSPECIES])
 {
     double m = 0.0, u = 0.0, y[RB_NSPECIES] = { 0.0 };
-    const rb_chamber *volumes[RB_MAX_CYLINDERS + 3 + RB_MAX_COLLECTORS];
+    const rb_chamber *volumes[RB_MAX_CYLINDERS + 2 + RB_NET_NODES];
     int count = 0;
     volumes[count++] = &e->airbox;
     volumes[count++] = &e->plenum;
     for (int i = 0; i < e->desc.cylinders; i++) volumes[count++] = &e->cyl[i].gas;
-    for (int c = 0; c < e->collectors; c++) volumes[count++] = &e->collector[c];
-    if (e->desc.junction_volume > 0.0) volumes[count++] = &e->junction;
+    for (int k = 0; k < e->net.nodes; k++) volumes[count++] = &e->xnode[k];
     for (int k = 0; k < count; k++) {
         m += volumes[k]->mass;
         u += volumes[k]->U;

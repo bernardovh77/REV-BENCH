@@ -4,11 +4,17 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
-## 2026-11-24: Stage 137, the exhaust audit (Claude)
+## 2026-11-24: Stages 137-138, the exhaust as a network (Claude)
 
-- Bernardo asked for every part of an exhaust to be simulable, researched against real
-  cars, before 3D. Roadmap: docs/roadmap/15-exhaust.md (137-143); the audit and research:
-  docs/stage-137.md.
+- Bernardo asked for every part of an exhaust to be simulable (mufflers of any kind and number,
+  crossovers, junctions, diameters, tailpipes and exits), researched against real cars, before 3D.
+  Roadmap: docs/roadmap/15-exhaust.md (137-143).
+- 137: the audit and the research (docs/stage-137.md).
+- 138: `rb_exhaust_net` (engine.h, exhaust_net.c): the exhaust past the headers as pipes, volumes
+  and outlets; the legacy fields compile into one in the old order, every preset bit-identical.
+  The engine's exhaust storage is generic (`xpipe`, `xnode`; the old names are pointers). The
+  listener and the scene take up to four outlets; source indexes are named (`RB_LISTEN_MOUTH`...).
+  Twenty-one bugs of other stages retargeted by overrides at the end of their tables.
 
 ## 2026-11-24: Bernardo's A/B verdicts acted on (Claude)
 

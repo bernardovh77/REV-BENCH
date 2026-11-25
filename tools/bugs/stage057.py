@@ -39,3 +39,10 @@ BUGS = {
         "    if (!foot_off || e->rpm_smooth < d->idle_rpm + FUEL_BACK_ABOVE) {\n        e->fuel_cut = e->fuel_cut && foot_off;",
         DRIVE, 400),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['baffles-open'] = ('core/src/exhaust_net.c',
+    '            t->end[0].area = d->muffler_area;',
+    '            t->end[0].area = 0.01 + 0.0 * d->muffler_area;',
+    BUGS['baffles-open'][3], BUGS['baffles-open'][4])

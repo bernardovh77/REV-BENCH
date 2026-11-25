@@ -57,7 +57,7 @@ static double db(double ratio)
  * pi / (2 (a + b) (b + c) (c + a))). */
 static double jet_expected(int s, double u)
 {
-    const rb_pipe *t = &e.tailpipe[s];
+    const rb_pipe *t = e.tailpipe[s];
     const double D = e.desc.tailpipe_diameter;
     const double rho0 = e.exhaust_air.rho, T0 = e.exhaust_air.T;
     const double c0 = sqrt(1.4 * e.exhaust_air.gas.R * T0);
@@ -79,7 +79,7 @@ void test_noise_jet_eighth_power(void)
     rb_engine_desc d;
     preset_desc("i4", &d);
     rb_engine_init(&e, &d, DT);
-    rb_pipe *t = &e.tailpipe[0];
+    rb_pipe *t = e.tailpipe[0];
     t->cell[t->cells - 1].T = 600.0;
     const double A = PI / 4.0 * d.tailpipe_diameter * d.tailpipe_diameter;
     double rms[2];
@@ -238,31 +238,31 @@ void test_noise_valve_jets(void)
             const double path = d.header_length[0] + d.exhaust_pipe_length + d.center_length
                               + d.link_length + d.muffler_length + d.tailpipe_length;
             CHECK(d.center_length > 0.0 && d.link_length > 0.0);
-            CHECK_EQ_INT(n.blow_delay[0], lround(path / 580.0 / DT));
+            CHECK_EQ_INT(n.blow_delay[0][0], lround(path / 580.0 / DT));
             int first = -1;
-            for (int s = 0; s < n.blow_delay[0] + 10 && first < 0; s++) {
+            for (int s = 0; s < n.blow_delay[0][0] + 10 && first < 0; s++) {
                 rb_noise_step(&n, &e, RB_NOISE_FLOW);
                 if (n.out[RB_NOISE_TAIL0] != 0.0) first = s;
             }
-            CHECK_EQ_INT(first, n.blow_delay[0]);
+            CHECK_EQ_INT(first, n.blow_delay[0][0]);
         }
-        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0][0] + 20000);
         r[m] = flow_rms(&n, RB_NOISE_TAIL0, 192000);
         if (m != RB_MUFFLER_CHAMBERED) continue;
         v->mdot *= 2.0;
         rb_noise_init(&n, &e, 3);
-        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0][0] + 20000);
         twice = flow_rms(&n, RB_NOISE_TAIL0, 192000);
         across(v, 1.3e5, 1100.0, 1e5, BURNED, 1.32);
         law_gentle = at_a_metre(jet_power(1.3e5, 1100.0, 1e5, v->a->gas.R, 1.32, v->mdot, 5e-4)
                                 * 0.5 * 0.004);
         rb_noise_init(&n, &e, 3);
-        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0][0] + 20000);
         gentle = flow_rms(&n, RB_NOISE_TAIL0, 192000);
         e.desc.catalyst_laminar = 0.0;
         across(v, 4e5, 1100.0, 1e5, BURNED, 1.32);
         rb_noise_init(&n, &e, 3);
-        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0] + 20000);
+        flow_rms(&n, RB_NOISE_TAIL0, n.blow_delay[0][0] + 20000);
         bypass = flow_rms(&n, RB_NOISE_TAIL0, 192000);
     }
     const int c = RB_MUFFLER_CHAMBERED;
@@ -284,7 +284,7 @@ static void blow(int i, long steps, double rms[2], int *same)
     v->area = 2e-4;
     across(v, 4e5, 1100.0, 1e5, BURNED, 1.32);
     rb_noise_init(&n, &e, 3);
-    for (long s = 0; s < n.blow_delay[i] + 20000; s++) rb_noise_step(&n, &e, RB_NOISE_FLOW);
+    for (long s = 0; s < n.blow_delay[i][0] + 20000; s++) rb_noise_step(&n, &e, RB_NOISE_FLOW);
     double sum[2] = { 0.0, 0.0 };
     *same = 1;
     for (long s = 0; s < steps; s++) {
@@ -713,12 +713,14 @@ void test_audio_noise_sources_placed(void)
         CHECK_EQ_INT(rb_listener_place(&l, where, 2, c, pipe_dt), 0);
         CHECK_EQ_INT(rb_listener_place_noise(&l, where, 2, c, pipe_dt, dt), 0);
         CHECK_EQ_INT(l.inside, where == RB_HEAR_CABIN);
-        for (int j = 0; j < 3; j++)
+        const int flows[3] = { 0, 1, RB_LISTEN_MOUTH };   /* the two tailpipes, the mouth */
+        for (int q = 0; q < 3; q++)
             for (int k = 0; k < 2; k++) {
+                const int j = flows[q];
                 CHECK_NEAR(l.ngain[j][k], l.gain[j][k], 1e-12);
                 CHECK_NEAR(l.ndelay[j][k] * dt, l.delay[j][k] * pipe_dt, 1e-9);
             }
-        CHECK(l.ngain[3][0] > 0.0);
+        CHECK(l.ngain[RB_LISTEN_MOUTH][0] > 0.0 && l.ngain[RB_LISTEN_BAY][0] > 0.0);
         double nearest = INFINITY;   /* the nearest path, whichever source's, is heard first */
         for (int j = 0; j < RB_LISTEN_NOISES; j++) nearest = fmin(nearest, l.ndelay[j][0]);
         CHECK_NEAR(nearest, 0.0, 1e-9);
@@ -727,14 +729,14 @@ void test_audio_noise_sources_placed(void)
     rb_listener_place(&l, RB_HEAR_FRONT, 1, c, pipe_dt);
     rb_listener_place_noise(&l, RB_HEAR_FRONT, 1, c, pipe_dt, dt);
     CHECK(l.ngain[1][0] == 0.0 && l.ngain[1][1] == 0.0);   /* one tailpipe */
-    const double front = l.ngain[3][0];
+    const double front = l.ngain[RB_LISTEN_BAY][0];
     rb_listener_place(&l, RB_HEAR_BEHIND, 1, c, pipe_dt);
     rb_listener_place_noise(&l, RB_HEAR_BEHIND, 1, c, pipe_dt, dt);
     const double bay[3] = { 0.0, 3.3, 0.6 }, front_at[3] = { -0.1, 3.4, 1.3 }, behind_at[3] = { 0.6, -3.0, 1.6 };
     const double r_front = hypot(hypot(bay[0] - front_at[0], bay[1] - front_at[1]), bay[2] - front_at[2]);
     const double r_behind = hypot(hypot(bay[0] - behind_at[0], bay[1] - behind_at[1]), bay[2] - behind_at[2]);
     CHECK_NEAR(front, 1.0 / r_front, 1e-12);
-    CHECK_NEAR(l.ngain[3][0], 0.3 / r_behind, 1e-12);
+    CHECK_NEAR(l.ngain[RB_LISTEN_BAY][0], 0.3 / r_behind, 1e-12);
     /* A set listener (the tests' own) hears no noise sources at all. */
     const double src[3] = { 0.0, 0.0, 1.0 }, at[3] = { 0.0, 1.0, 1.0 };
     const double *pos[RB_LISTEN_SOURCES] = { src, NULL, NULL };
@@ -797,14 +799,14 @@ void test_audio_cabin(void)
      * the intake mouth's); then the boom, 8 dB up at 55 Hz. So 2 kHz from
      * the tailpipe is down about 36 dB, from the engine bay about 30. The mounts' pressure only gets the boom. Each to
      * 0.5 % of the filters' own response. */
-    const double cases[][3] = { { 0, 2000.0, 100.0 }, { 0, 55.0, 100.0 }, { 3, 2000.0, 200.0 },
-                                { 3, 55.0, 200.0 }, { 2, 2000.0, 200.0 } };
+    const double cases[][3] = { { 0, 2000.0, 100.0 }, { 0, 55.0, 100.0 }, { RB_LISTEN_BAY, 2000.0, 200.0 },
+                                { RB_LISTEN_BAY, 55.0, 200.0 }, { RB_LISTEN_MOUTH, 2000.0, 200.0 } };
     for (int k = 0; k < 5; k++) {
         const double got = cabin_gain((int)cases[k][0], cases[k][1]);
         CHECK_NEAR(got, cabin_expected(cases[k][1], cases[k][2], 1), 0.005 * got);
     }
     CHECK(db(cabin_gain(0, 2000.0)) < -33.0);
-    CHECK(db(cabin_gain(3, 2000.0)) > db(cabin_gain(0, 2000.0)) + 5.0);
+    CHECK(db(cabin_gain(RB_LISTEN_BAY, 2000.0)) > db(cabin_gain(0, 2000.0)) + 5.0);
     const double boom = cabin_gain(-1, 55.0);
     CHECK_NEAR(boom, cabin_expected(55.0, 0.0, 0), 0.005 * boom);
     CHECK_NEAR(db(boom), RB_CABIN_BOOM_DB, 0.1);
@@ -886,12 +888,13 @@ void test_noise_intake_and_baffles(void)
     for (int i = 0; i < d.cylinders; i++) e.intake[i].mdot *= 1.25;
     const double r2 = flow_rms(&n, RB_NOISE_MOUTH, 30000);
     CHECK(n.intake_power > p1 && r2 > r1);
-    rb_face *f = &e.tailpipe[0].end_face[0];   /* the can's baffles, 1.1 bar behind them */
+    rb_face *f = &e.tailpipe[0]->end_face[0];   /* the can's baffles, 1.1 bar behind them */
     rb_chamber_init(f->a, f->a->V, 1.1e5, 700.0, BURNED);
     f->moved = 0.04;
     flow_rms(&n, RB_NOISE_TAIL0, 1000);
     CHECK(n.baffle_power > 0.0);
-    e.desc.muffler_type = RB_MUFFLER_STRAIGHT;
+    e.desc.muffler_type = RB_MUFFLER_STRAIGHT;   /* a rebuild in the sim: the noise layer anew */
+    rb_noise_init(&n, &e, 19);
     flow_rms(&n, RB_NOISE_TAIL0, 1000);
     CHECK(n.baffle_power == 0.0);
 }

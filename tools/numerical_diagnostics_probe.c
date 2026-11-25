@@ -61,7 +61,7 @@ int main(int argc,char **argv) {
     printf("\"mass_error_kg\":%.17g,\"energy_error_J\":%.17g,\"energy_scale_J\":%.17g,\"species_error_kg\":",m-m0-e.mass_in+e.mass_out-e.fuel_in,U-U0-energy(),fabs(e.heat_released)+fabs(e.energy_in)+fabs(e.energy_out));array(species_error,RB_NSPECIES);
     printf(",\"mass_scale_kg\":%.17g,\"tap_boundary_mass_error_kg\":%.17g,\"tap_boundary_energy_error_J\":%.17g,\"tap_boundary_species_error_kg\":[",m0,tap_mass-e.mass_in+e.mass_out,tap_energy-e.energy_in+e.energy_out-e.acoustic_energy_out);
     for(int j=0;j<RB_NSPECIES;j++) printf("%s%.17g",j?",":"",tap_species[j]-e.species_in[j]+e.species_out[j]);
-    printf("],\"state\":[%.17g,%.17g,%.17g,%.17g,%.17g],\"reasons\":{",e.theta,m,U,e.heat_released,e.junction.U);
+    printf("],\"state\":[%.17g,%.17g,%.17g,%.17g,%.17g],\"reasons\":{",e.theta,m,U,e.heat_released,e.junction ? e.junction->U : 0.0);
     for(int j=0;j<RB_D_REASONS;j++) printf("%s\"%s\":%llu",j?",":"",rb_diag_reason_name(j),(unsigned long long)reasons[j]);
     printf("},\"memory_bytes\":{\"context\":%zu,\"slots\":%zu,\"trace\":%zu},\"components\":[",sizeof d,d.count*sizeof slots[0],d.trace_count*sizeof trace[0]);
     if(dump) for(size_t i=0;i<d.count;i++) {

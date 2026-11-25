@@ -29,3 +29,18 @@ BUGS = {
         "d->tailpipe_diameter = 0.1016; /* BUG: use trim diameter */",
         ["test_exhaust_researched_topology"], 30),
 }
+
+# 2026-11-24, stage 138: the exhaust is built from its network (engine.h, exhaust_net.c), so
+# these bugs moved with the code they break: the same faults, at their new text.
+BUGS['x-disconnected-bank'] = ('core/src/exhaust_net.c',
+    '                x->end[1] = node_end(J, 0.0);',
+    '                x->end[1] = (rb_net_end){ .kind = RB_NET_CLOSED };',
+    BUGS['x-disconnected-bank'][3], BUGS['x-disconnected-bank'][4])
+BUGS['junction-missing-update'] = ('core/src/engine.c',
+    '    for (int k = 0; k < e->net.nodes; k++) rb_chamber_integrate(&e->xnode[k], dt);',
+    '    for (int k = 0; k < e->collectors; k++) rb_chamber_integrate(&e->xnode[k], dt);',
+    BUGS['junction-missing-update'][3], BUGS['junction-missing-update'][4])
+BUGS['junction-missing-inventory'] = ('core/src/engine_build.c',
+    '    for (int k = 0; k < e->net.nodes; k++) volumes[count++] = &e->xnode[k];',
+    '    for (int k = 0; k < e->collectors; k++) volumes[count++] = &e->xnode[k];',
+    BUGS['junction-missing-inventory'][3], BUGS['junction-missing-inventory'][4])

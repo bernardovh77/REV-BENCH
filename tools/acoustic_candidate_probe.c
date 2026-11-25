@@ -154,15 +154,16 @@ static int component_name(const rb_engine *e,const rb_pipe *p,char name[80])
         if(p==&e->header[i]) {snprintf(name,80,"header-%d",i);return 0;}
     }
     for(int i=0;i<e->collectors;i++) {
-        if(p==&e->exhaust_pipe[i]) {snprintf(name,80,"exhaust-%d",i);return 0;}
-        if(p==&e->center[i]) {snprintf(name,80,"center-%d",i);return 0;}
-        if(p==&e->link[i]) {snprintf(name,80,"link-%d",i);return 0;}
+        if(p==e->exhaust_pipe[i]) {snprintf(name,80,"exhaust-%d",i);return 0;}
+        if(p==e->center[i]) {snprintf(name,80,"center-%d",i);return 0;}
+        if(p==e->link[i]) {snprintf(name,80,"link-%d",i);return 0;}
     }
     for(int i=0;i<e->systems;i++) {
-        if(p==&e->muffler[i]) {snprintf(name,80,"muffler-%d",i);return 0;}
-        if(p==&e->tailpipe[i]) {snprintf(name,80,"tailpipe-%d",i);return 0;}
+        if(p==e->muffler[i]) {snprintf(name,80,"muffler-%d",i);return 0;}
+        if(p==e->tailpipe[i]) {snprintf(name,80,"tailpipe-%d",i);return 0;}
     }
     if(p==&e->snorkel) {strcpy(name,"snorkel");return 0;}
+    for(int k=0;k<e->net.pipes;k++) if(p==&e->xpipe[k]) {snprintf(name,80,"net-pipe-%d",k);return 0;}
     strcpy(name,"UNKNOWN");return 1;
 }
 static int chamber_name(const rb_engine *e,const rb_chamber *ch,char name[80])
@@ -172,9 +173,10 @@ static int chamber_name(const rb_engine *e,const rb_chamber *ch,char name[80])
     if(ch==&e->exhaust_air) {strcpy(name,"ambient-exhaust");return 0;}
     if(ch==&e->plenum) {strcpy(name,"plenum");return 0;}
     if(ch==&e->airbox) {strcpy(name,"airbox");return 0;}
-    if(ch==&e->junction) {strcpy(name,"junction");return 0;}
+    if(e->junction && ch==e->junction) {strcpy(name,"junction");return 0;}
     for(int i=0;i<e->desc.cylinders;i++) if(ch==&e->cyl[i].gas) {snprintf(name,80,"cylinder-%d",i);return 0;}
-    for(int i=0;i<e->collectors;i++) if(ch==&e->collector[i]) {snprintf(name,80,"collector-%d",i);return 0;}
+    for(int i=0;i<e->collectors;i++) if(ch==e->collector[i]) {snprintf(name,80,"collector-%d",i);return 0;}
+    for(int k=0;k<e->net.nodes;k++) if(ch==&e->xnode[k]) {snprintf(name,80,"net-node-%d",k);return 0;}
     for(int k=0;k<rb_engine_pipe_count(e);k++) {
         const rb_pipe *p=rb_engine_pipe(e,k);
         for(int i=0;i<p->cells;i++) if(ch==&p->cell[i]) {
@@ -192,14 +194,15 @@ static const char *pipe_kind(const rb_engine *e,const rb_pipe *p)
         if(p==&e->header[i]) return "header";
     }
     for(int i=0;i<e->collectors;i++) {
-        if(p==&e->exhaust_pipe[i]) return "exhaust";
-        if(p==&e->center[i]) return "center";
-        if(p==&e->link[i]) return "link";
+        if(p==e->exhaust_pipe[i]) return "exhaust";
+        if(p==e->center[i]) return "center";
+        if(p==e->link[i]) return "link";
     }
     for(int i=0;i<e->systems;i++) {
-        if(p==&e->muffler[i]) return "muffler";
-        if(p==&e->tailpipe[i]) return "tailpipe";
+        if(p==e->muffler[i]) return "muffler";
+        if(p==e->tailpipe[i]) return "tailpipe";
     }
+    for(int k=0;k<e->net.pipes;k++) if(p==&e->xpipe[k]) return "net-pipe";
     return p==&e->snorkel ? "snorkel":"UNKNOWN";
 }
 static int topology(int without_runners)

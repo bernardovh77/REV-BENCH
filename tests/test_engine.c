@@ -73,9 +73,9 @@ typedef struct contents {
 static int repairs(void)
 {
     int n = e.airbox.repairs + e.plenum.repairs;
-    if(e.desc.junction_volume>0) n+=e.junction.repairs;
+    if(e.desc.junction_volume>0) n+=e.junction->repairs;
     for (int i = 0; i < e.desc.cylinders; i++) n += e.cyl[i].gas.repairs;
-    for (int c = 0; c < e.collectors; c++) n += e.collector[c].repairs;
+    for (int c = 0; c < e.collectors; c++) n += e.collector[c]->repairs;
     for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
         const rb_pipe *p = rb_engine_pipe(&e, k);
         for (int j = 0; j < p->cells; j++) n += p->cell[j].repairs;
@@ -485,8 +485,8 @@ static double watched_p(int j)
     if (j < 4) return e.cyl[j].gas.p;
     switch (j) {
     case 4:  return e.plenum.p;
-    case 5:  return e.collector[0].p;
-    case 6:  return rb_pipe_end_cell(&e.muffler[0], 0)->p;
+    case 5:  return e.collector[0]->p;
+    case 6:  return rb_pipe_end_cell(e.muffler[0], 0)->p;
     case 7:  return rb_pipe_end_cell(&e.runner[0], 1)->p;
     case 8:  return rb_pipe_end_cell(&e.header[0], 0)->p;
     default: return e.airbox.p;
