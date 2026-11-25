@@ -106,8 +106,9 @@
 #include "flow.h"
 #include "radiation.h"
 
-/* The most cells one pipe can have. */
-#define RB_PIPE_MAX_CELLS 64
+/* The most cells one pipe can have: 2.5 m of the studio quality's 1 cm cells
+ * (stage 148). */
+#define RB_PIPE_MAX_CELLS 256
 
 /* The walls' viscothermal loss (stage 144, a candidate: RB_PARAM_VARIANT 6).
  * A sound wave in a pipe loses energy in the thin layers at the wall where

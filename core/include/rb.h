@@ -97,7 +97,7 @@ enum {
 typedef struct rb_config {
     double sample_rate;  /* audio output rate, Hz        [8000, 384000] */
     int    oversample;   /* physics substeps per audio sample   [1, 32] */
-    double pipe_rate;    /* how often the pipes step, Hz [12000, 96000];
+    double pipe_rate;    /* how often the pipes step, Hz [12000, 192000];
                             0 = 48000 (stage 13). Faster than the physics:
                             every physics step                          */
 } rb_config;
@@ -115,6 +115,9 @@ enum {
                             118: the four's real-time default)               */
     RB_QUALITY_LEAN,     /* physics at about 96 kHz, the pipes at 19.2 kHz,
                             smoothed (2026-11-16: the V8s' real-time default) */
+    RB_QUALITY_STUDIO,   /* offline: physics 384 kHz, pipes 192 kHz, cells a
+                            quarter of high's: the gas's own sound to about
+                            3 kHz (stage 148); far slower than real time  */
     RB_QUALITY_COUNT
 };
 
@@ -166,7 +169,10 @@ typedef enum rb_param {
                                    the engine runs, for A/B listening.
                                    In use: 1 and 2, stage 055's structure
                                    (docs/stage-055.md); 6, stage 144's
-                                   viscothermal walls (docs/stage-144.md).
+                                   viscothermal walls (docs/stage-144.md);
+                                   7, stage 148's valves' noise taken
+                                   away below where a finer grid carries
+                                   the gas (ultra, studio: docs/stage-148.md).
                                    Retired: 3, 4, 5 (5 accepted, 3 and 4
                                    deleted)                               */
     RB_PARAM_AFR,               /* the air-fuel ratio (by mass) the

@@ -180,23 +180,26 @@ void test_engine_description(void)
     CHECK_EQ_INT(rb_engine_init(&e, &d, NAN), -1);
 
     /* Sixteen cylinders with 4.9 m runners and 5 cm headers, and 10 m of
-     * exhaust pipe and tailpipe, want 1181 cells (with the muffler and the
-     * snorkel): more than the pool holds. Every pipe still gets one, the rest
-     * share what's left, and it runs. */
+     * exhaust pipe and tailpipe, get 1863 cells at the high quality's grid
+     * (with the muffler and the snorkel), and want about four times that at
+     * the studio quality's (its pipes at 192 kHz, stage 148): more than the
+     * pool holds. Every pipe still gets one, the rest share what's left (a
+     * runner 110 cells of the 256 it wants), and it runs. */
     bad = d;
     CHECK_EQ_INT(rb_engine_layout_inline(&bad, 16), 0);
     bad.runner_length = 4.9;
     for (int i = 0; i < 16; i++) bad.header_length[i] = 0.05;
     bad.exhaust_pipe_length = bad.tailpipe_length = 10.0;
-    CHECK_EQ_INT(rb_engine_init(&e, &bad, DT), 0);
+    CHECK_EQ_INT(rb_engine_init_at(&e, &bad, DT, 192000.0), 0);
     CHECK_EQ_INT(rb_engine_pipe_count(&e), 36);
     int cells = 0, fewest = RB_PIPE_MAX_CELLS;
     for (int k = 0; k < rb_engine_pipe_count(&e); k++) {
         cells += rb_engine_pipe(&e, k)->cells;
         if (rb_engine_pipe(&e, k)->cells < fewest) fewest = rb_engine_pipe(&e, k)->cells;
     }
-    CHECK(cells <= RB_ENGINE_CELLS && fewest == 1);
+    CHECK(cells <= RB_ENGINE_CELLS && fewest >= 1);
     CHECK(rb_engine_pipe(&e, 0)->cells > 20);   /* the runners still have some */
+    CHECK(rb_engine_pipe(&e, 0)->cells < RB_PIPE_MAX_CELLS);   /* ... but fewer than they want */
     e.rpm = 3000.0;
     for (int k = 0; k < 2000; k++) rb_engine_step(&e);
     CHECK(e.plenum.p > 0.0 && e.cyl[15].gas.p > 0.0);

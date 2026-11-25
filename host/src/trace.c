@@ -87,8 +87,8 @@ static int integer(const char *token, long long *out)
 static int quality_from(const char *token, int *out)
 {
     /* RB_QUALITY_*, in order */
-    static const char *const names[] = { "low", "medium", "high", "ultra", "balanced", "lean" };
-    for (int i = 0; i < 6; i++)
+    static const char *const names[] = { "low", "medium", "high", "ultra", "balanced", "lean", "studio" };
+    for (int i = 0; i < (int)(sizeof names / sizeof names[0]); i++)
         if (!strcmp(token, names[i])) {
             *out = i;
             return 1;

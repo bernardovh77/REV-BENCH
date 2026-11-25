@@ -102,7 +102,7 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
    - [ ] **B2, the exhaust (Bernardo, 2026-11-24), before 3D:** [x] 137 → [x] 138 → [~] 139 → [~] 144 → 140,
      [~] 141 → 142 → 143;
    - [ ] **B3, a sound identical to a real car (Bernardo, 2026-11-25), before 3D:** [~] 145 → 146 (when
-     his recording comes) → 148 → 149 → 150 → 151; 147 on the PC;
+     his recording comes) → [~] 148 → 152 → 149 → 150 → 151; 147 on the PC;
    - [ ] **057 → 058 → 059 → 060 → (136) → 061 → 062 → 063:** base sound acceptance (060 chose no
      replacement: 136 is its bounded experiment, and 061 waits on it). Each of these
      updates the app too.
@@ -114,8 +114,8 @@ macOS and Linux ([app-design §1](docs/app-design.md#windows-first)).
 8. **Afterwards, if adopted:** 💤 064–065 (learned synthesis, only if 059/060 call for it),
    103–111 and 125 (optional extras, 125 a browser demo).
 
-**Next:** Bernardo's A/B of 144's candidate 6 (the walls' viscothermal loss); then 144's ranked fixes
-(147, the pipes on several cores, deferred to the PC), so phase B3's 145 (his Polo) and 148, then
+**Next:** Bernardo's A/B of 144's candidate 6 (the walls' viscothermal loss) and 148's candidate 7;
+his Polo recording (146), then 152 (the losses above the plane wave, 148's finding), then
 the rest of phases B2, B3 and B (their stages ask for his listening). 133, his request, is done.
 069 and 066 stay 🟡 for Bernardo's real-device runs, listening and checks (docs/stage-069.md and
 docs/stage-066.md, "What is left"). Open beside them: 118's stated misses (the four 1.05 dB off
@@ -200,14 +200,15 @@ by their recordings, before 3D. Cards: [docs/roadmap/15-exhaust.md](docs/roadmap
 Bernardo: the end goal is to feel like listening to a real car, the sound identical, every
 variable on the way to the ear considered and changeable. Cards:
 [docs/roadmap/16-realism.md](docs/roadmap/16-realism.md). Order: 145 → 146 (when the recording
-comes) → 148 → 149 → 150 → 151; 147 when it can be measured on the PC.
+comes) → 148 → 152 → 149 → 150 → 151; 147 when it can be measured on the PC.
 
 | | Stage | What | Depends on |
 | --- | --- | --- | --- |
 | ⏸ | [147](docs/roadmap/16-realism.md#stage-147) | The pipes on several cores. **Deferred** (2026-11-25, docs/stage-147.md): a prototype gave no speed-up on the laptop at any grid (0.86–1.01× at 2 threads: a phase is microseconds, two performance cores share 15 W); it waits for Bernardo's PC | 144 |
 | 🟡 | [145](docs/roadmap/16-realism.md#stage-145) | Bernardo's 2023 Polo 1.0 TSI (110 PS) as `polo-tsi` (2026-11-25, docs/stage-145.md): the EA211 three firing 1-2-3, its turbine and open wastegate as narrowed ways in the exhaust network, the catalyst and filter, centre and rear boxes; idles at 750 rpm, 7 rpm cycle to cycle; without boost (phase D) a non-turbo three's 88.6 N m, within 7 % of VW's own 1.0 MPI; level and the turbine's loss wait for his recording and the papers' stationary noise | 138, 141 |
 | ⬜ | [146](docs/roadmap/16-realism.md#stage-146) | His recording as ground truth (outside, 1 m, phone, rpm stated): the protocol, the analysis (rpm from the firing frequency, background, the phone's limits), the preset judged against it. Waits on the recording | 145, 039 |
-| ⬜ | [148](docs/roadmap/16-realism.md#stage-148) | Finer cells (the gas to about 5 kHz), the limits raised, the noise layer turned down where the gas now carries the sound: a candidate | 147, 144 |
+| 🟡 | [148](docs/roadmap/16-realism.md#stage-148) | The studio quality (2026-11-25, docs/stage-148.md): pipes at 192 kHz, cells a quarter of high's, the gas converged to about 3.2 kHz, the limits raised, every other tier bit-identical; candidate 7, the valves' noise only above a finer grid's edge. **Found:** on the converged grid the gas is about 10 dB brighter above 2 kHz than Bernardo's 458 clips (high matches them): the coarse grid's damping stood in for real losses; no modelled part explains it → 152. Waits on his A/B and the PC's speed | 147, 144 |
+| ⬜ | [152](docs/roadmap/16-realism.md#stage-152) | The losses above the plane wave (148's finding): a lining by frequency, perforates' and a monolith's channels, boxes above their cross modes, turbulence, the blowdown's front; each a candidate, judged against his Polo recording | 148, 146 |
 | ⬜ | [149](docs/roadmap/16-realism.md#stage-149) | The source-to-ear chain, each link measured and, where a listening condition, a control with a right default: directivity, the body, the place, the ground, the air, the surroundings, background, "as a phone heard it" | 146, 056 |
 | ⬜ | [150](docs/roadmap/16-realism.md#stage-150) | Two ears (binaural for headphones) and the level (a calibrated output, a car at 1 m as loud as it is) | 149 |
 | ⬜ | [151](docs/roadmap/16-realism.md#stage-151) | Junctions with their size and angles, against 049's finite volumes: a candidate | 147, 049 |

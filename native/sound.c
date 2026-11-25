@@ -334,8 +334,8 @@ static int read_options(int argc, char **argv, sound_options *o)
         fprintf(stderr, "rb_cli sound: --seed must be an integer in [1, 4294967295]\n");
         return 2;
     }
-    if (o->pipe_rate != 0.0 && !(o->pipe_rate >= 12000.0 && o->pipe_rate <= 96000.0)) {
-        fprintf(stderr, "rb_cli sound: --pipe-rate must be in [12000, 96000] Hz\n");
+    if (o->pipe_rate != 0.0 && !(o->pipe_rate >= 12000.0 && o->pipe_rate <= 192000.0)) {
+        fprintf(stderr, "rb_cli sound: --pipe-rate must be in [12000, 192000] Hz\n");
         return 2;
     }
     if (o->pipe_rate != 0.0 && o->trace_path) {

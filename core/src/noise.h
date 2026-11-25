@@ -159,6 +159,20 @@ typedef struct rb_noise {
      * its bank's angle say. 2: that, and the accessories' tones (the cam
      * drive's chain, the alternator). */
     int      variant;
+
+    /* Stage 148's candidate, heard when `rebalance` (RB_PARAM_VARIANT 7,
+     * copied here by the sim before each step) is 1: the exhaust valves'
+     * noise was calibrated (stage 115) on the high quality's grid, which
+     * carries the gas's own sound to about 1.3 kHz; a finer grid carries it
+     * higher (grid_edge_hz, measured: docs/stage-148.md), so there the noise
+     * is taken away below that edge by two first-order high-passes: a
+     * hand-over as gradual as the grid's own loss above its edge (2 dB off
+     * at twice the edge, under 1 dB at three times). On the high quality's
+     * grid and coarser, nothing. */
+    int      rebalance;
+    double   grid_edge_hz;                   /* 0: the grid is high's or coarser */
+    double   grid_hp;                        /* the high-passes' one-pole coefficient */
+    double   grid_lp[RB_NET_OUTLETS][2];     /* their low-passes' states          */
     rb_noise_mode cmode[RB_NOISE_CMODES];
     double   cmode_hz[RB_NOISE_CMODES];      /* their frequencies, diagnostic   */
     double   cweight[RB_MAX_CYLINDERS][RB_NOISE_CMODES][2];   /* how hard each

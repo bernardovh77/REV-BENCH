@@ -131,7 +131,7 @@ static const char *const DRIVES[DRIVE_COUNT] = { "idle", "hold", "rev" };
  * (Its "os2", twice the sample rate, became RB_QUALITY_BALANCED.) */
 #define EXTRA_QUALITIES 1
 #define QUALITY_COUNT (RB_QUALITY_COUNT + EXTRA_QUALITIES)
-static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean", "os3" };
+static const char *const QUALITIES[QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean", "studio", "os3" };
 
 /* The pipes' rate over every quality's, Hz (--pipe-rate); 0: the quality's. */
 static double pipe_rate_override = 0.0;

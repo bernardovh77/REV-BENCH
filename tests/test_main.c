@@ -128,6 +128,10 @@ void test_walls_fit_follows_kirchhoff(void);
 void test_walls_pipe_rings_down_as_kirchhoff_says(void);
 void test_walls_keep_the_books(void);
 void test_walls_switch_live_without_a_jump(void);
+void test_studio_cells_a_quarter(void);
+void test_studio_plays_the_largest_engines(void);
+void test_studio_carries_the_gas_higher(void);
+void test_studio_rebalance_only_where_the_gas_carries(void);
 void test_parts_extended_tube_chamber(void);
 void test_parts_two_chambers_in_series(void);
 void test_parts_can_by_bands(void);
@@ -498,6 +502,10 @@ static const struct {
     T(test_walls_pipe_rings_down_as_kirchhoff_says),
     T(test_walls_keep_the_books),
     T(test_walls_switch_live_without_a_jump),
+    T(test_studio_cells_a_quarter),
+    T(test_studio_plays_the_largest_engines),
+    T(test_studio_carries_the_gas_higher),
+    T(test_studio_rebalance_only_where_the_gas_carries),
     T(test_parts_extended_tube_chamber),
     T(test_parts_two_chambers_in_series),
     T(test_parts_can_by_bands),

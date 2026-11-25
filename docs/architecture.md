@@ -199,7 +199,11 @@ Where this file and the code disagree, the code is right and this file is fixed.
   physics 96/192/192 kHz, pipes 24/24/48 kHz. High is the default, and what the tests and renders
   use. Stage 118 appended `RB_QUALITY_BALANCED` (96 kHz, pipes 48 kHz), 2026-11-16 `RB_QUALITY_LEAN`
   (96 kHz, pipes 19.2 kHz, smoothed: the V8s'), and each preset's
-  real-time default, `rb_preset_quality` (docs/stage-118.md, "The declared tier"). `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
+  real-time default, `rb_preset_quality` (docs/stage-118.md, "The declared tier"). Stage 148
+  appended `RB_QUALITY_STUDIO` (384 kHz, pipes 192 kHz, cells a quarter of high's: offline, the
+  gas's own sound to about 3.2 kHz), raising the limits for it (`RB_ENGINE_CELLS` 2048,
+  `RB_PIPE_MAX_CELLS` 256, `RB_PIPE_RATE_MAX` 192 kHz; the sim 3.1 MB), and candidate 7, the
+  valves' noise taken away below a finer grid's edge (noise.c `grid_edge`). `rb_pipe_rate()` reads the actual rate. In the engine: `rb_engine_init_at(e, d, dt,
   pipe_rate)`; `rb_engine_init` is 48 kHz. Pipes at 24 kHz move the torque by under 0.3 %.
 - Speed: `make bench` (native/rb_bench.c) and `make bench-wasm` (the same as WASI WebAssembly,
   run by tools/bench_wasm.mjs) time each preset held wide open at 3000 rpm. Timings in Claude's

@@ -34,7 +34,7 @@ int rb_config_quality(rb_config *cfg, int quality)
     if (!cfg || quality < 0 || quality >= RB_QUALITY_COUNT
         || !(cfg->sample_rate >= RB_MIN_SAMPLE_RATE && cfg->sample_rate <= RB_MAX_SAMPLE_RATE))
         return RB_ERR_ARG;
-    const double physics = quality == RB_QUALITY_ULTRA ? 384000.0
+    const double physics = (quality == RB_QUALITY_ULTRA || quality == RB_QUALITY_STUDIO) ? 384000.0
                          : (quality == RB_QUALITY_LOW || quality == RB_QUALITY_BALANCED
                             || quality == RB_QUALITY_LEAN) ? 96000.0
                          : 192000.0;
@@ -42,7 +42,8 @@ int rb_config_quality(rb_config *cfg, int quality)
     if (os < 1) os = 1;
     if (os > RB_MAX_OVERSAMPLE) os = RB_MAX_OVERSAMPLE;
     cfg->oversample = (int)os;
-    cfg->pipe_rate = quality == RB_QUALITY_ULTRA ? 2.0 * RB_PIPE_RATE
+    cfg->pipe_rate = quality == RB_QUALITY_STUDIO ? 4.0 * RB_PIPE_RATE
+                   : quality == RB_QUALITY_ULTRA ? 2.0 * RB_PIPE_RATE
                    : (quality == RB_QUALITY_HIGH || quality == RB_QUALITY_BALANCED) ? RB_PIPE_RATE
                    : quality == RB_QUALITY_LEAN ? 0.4 * RB_PIPE_RATE
                    : 0.5 * RB_PIPE_RATE;
@@ -279,6 +280,7 @@ static inline void model_step(rb_sim *sim)
                        | ((sim->layers & RB_LAYER_ENGINE) ? RB_NOISE_ENGINE : 0);
         sim->noise.variant = (sim->variant == 1 || sim->variant == 2) ? sim->variant : 0;   /* 055's */
         if (e->walls != (sim->variant == 6)) rb_engine_walls(&sim->engine, sim->variant == 6);   /* 144's */
+        sim->noise.rebalance = sim->variant == 7;   /* 148's */
         rb_noise_step(&sim->noise, e, what);
         if (sim->scene_active) {
             /* A stereo scene (stage 024): each source's pressure 1 m away,

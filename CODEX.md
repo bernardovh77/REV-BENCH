@@ -4,6 +4,15 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-25: Stage 148, the studio quality, and stage 152 opened (Claude)
+
+- `RB_QUALITY_STUDIO` (appended): pipes 192 kHz, cells a quarter of high's, offline. Limits
+  raised: `RB_ENGINE_CELLS` 2048, `RB_PIPE_MAX_CELLS` 256, `RB_PIPE_RATE_MAX` 192 kHz (sim 3.1 MB).
+  Every other tier bit-identical (parity, every preset at ultra).
+- Finding: on the converged grid the gas itself is ~10 dB brighter above 2 kHz than Bernardo's
+  458 clips; the coarse grid's damping had stood in for real losses. Stage 152 (new, roadmap
+  16) takes them. Candidate 7 (variant 7): the valves' noise only above a finer grid's edge.
+
 ## 2026-11-25: Stages 147 (deferred) and 145, the Polo 1.0 TSI (Claude)
 
 - 147: a prototype of the pipes over threads gave no speed-up on the laptop (docs/stage-147.md);

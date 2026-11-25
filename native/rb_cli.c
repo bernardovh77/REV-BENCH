@@ -213,12 +213,15 @@ void cli_usage(FILE *f)
         "                        dyno, iso, passby or cabin (8..96 kHz output)\n"
         "      --layers LIST     what of the sound, comma-separated (default all): pipes (the\n"
         "                        pipe ends' flows), flow (the flow's noise), engine (its own,\n"
-        "                        mechanical sound)\n"
+        "                        mechanical sound)\n",
+        f);
+    fputs(   /* split: C99 compilers need only take string literals up to 4095 characters */
         "      --variation V     how much each cycle varies, 0..4 (default 1); 0 keeps the same\n"
         "                        charge model with no variation\n"
         "      --seed K          the variation's seed, 1..4294967295 (default: the core's)\n"
         "      --variant N       a candidate sound on the A/B switch (RB_PARAM_VARIANT): 0 (default)\n"
-        "                        the accepted one; 1, 2 stage 055's structure, 6 stage 144's walls\n"
+        "                        the accepted one; 1, 2 stage 055's structure, 6 stage 144's walls,\n"
+        "                        7 stage 148's valves' noise above a finer grid's band only\n"
         "      --burn-model M   charge (default) or capped diagnostic duration control\n"
         "      --gain G          output gain, linear        (default 1)\n"
         "  -o, --out FILE        output WAV                 (default renders/sound.wav)\n"
@@ -229,9 +232,10 @@ void cli_usage(FILE *f)
         "      --trace FILE      the drive's command trace (host/include/rb_host_trace.h), which\n"
         "                        rb_host_render plays through the real-time host: the same bits\n"
         "  -r, --rate HZ, -x, --oversample N    as for tone (default 48000, 4)\n"
-        "      --quality Q       low, medium, high, ultra, balanced or lean: physics/pipe rates\n"
-        "                        together (rb.h: RB_QUALITY_*; high is the default)\n"
-        "      --pipe-rate HZ    the pipes' rate over the quality's, 12000..96000 (a tier's\n"
+        "      --quality Q       low, medium, high, ultra, balanced, lean or studio: physics/pipe\n"
+        "                        rates together (rb.h: RB_QUALITY_*; high is the default;\n"
+        "                        studio is offline, its cells a quarter of high's)\n"
+        "      --pipe-rate HZ    the pipes' rate over the quality's, 12000..192000 (a tier's\n"
         "                        search; can't be traced)\n"
         "\n",
         f);
@@ -255,7 +259,7 @@ const char *cli_take_value(int argc, char **argv, int *i)
 }
 
 /* The quality levels by name (rb.h: RB_QUALITY_*). */
-static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean" };
+static const char *const QUALITIES[RB_QUALITY_COUNT] = { "low", "medium", "high", "ultra", "balanced", "lean", "studio" };
 
 /* A quality level's number from its name, or -1. */
 int cli_quality_from(const char *name)

@@ -356,8 +356,9 @@ void test_core_quality(void)
 {
     /* Stage 13: the quality levels set the physics and pipe rates together;
      * high is the default. */
-    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8, 2, 2 };
-    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0, 48000.0, 19200.0 };
+    static const int OS[RB_QUALITY_COUNT] = { 2, 4, 4, 8, 2, 2, 8 };
+    static const double PIPES[RB_QUALITY_COUNT] = { 24000.0, 24000.0, 48000.0, 96000.0, 48000.0, 19200.0,
+                                                    192000.0 };   /* studio (stage 148) */
     rb_config c, d;
     rb_sim *s;
 

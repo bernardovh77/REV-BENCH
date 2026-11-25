@@ -79,9 +79,9 @@
 #define RB_MAX_CYLINDERS 16
 #define RB_MAX_COLLECTORS 2      /* and as many exhaust systems                */
 /* The pipes' cells, all of them: the presets use 96 (the four) to 212 (the
- * cross-plane V8). An engine with more pipe than that gets fewer, longer
- * cells. */
-#define RB_ENGINE_CELLS  512
+ * cross-plane V8) at the high quality, four times that at the studio one
+ * (stage 148). An engine with more pipe than that gets fewer, longer cells. */
+#define RB_ENGINE_CELLS  2048
 
 /* ---- the exhaust as a network (stage 138) ----
  *
@@ -606,7 +606,7 @@ int    rb_engine_init(rb_engine *e, const rb_engine_desc *d, double dt);
  * number of physics steps (stage 13's quality setting). */
 #define RB_PIPE_RATE     48000.0
 #define RB_PIPE_RATE_MIN 12000.0
-#define RB_PIPE_RATE_MAX 96000.0
+#define RB_PIPE_RATE_MAX 192000.0   /* the studio quality's (stage 148) */
 
 /* rb_engine_init with the pipes at about `pipe_rate` (Hz): a whole number of
  * physics steps, and every step when the physics is slower. The public API

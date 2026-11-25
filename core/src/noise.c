@@ -431,6 +431,23 @@ static void route_network(rb_noise *n, const rb_engine *e)
         }
 }
 
+/* Stage 148: where a grid of pipes stepped at `rate` (Hz) stops carrying the
+ * gas's own sound, above the high quality's (48 kHz), or 0 at it and below.
+ * Measured (tools/grid_convergence.py, docs/stage-144.md and stage-148.md):
+ * each grid within about 2 dB of a grid twice as fine up to 1.3 kHz at
+ * 48 kHz, 2.5 kHz at 96 kHz (ultra), 3.2 kHz at 192 kHz (studio); between
+ * them, straight in the logarithm of the rate. */
+static double grid_edge(double rate)
+{
+    static const double RATE[3] = { 48000.0, 96000.0, 192000.0 };
+    static const double EDGE[3] = { 1300.0, 2500.0, 3200.0 };
+    if (!(rate > RATE[0] * 1.001)) return 0.0;
+    if (rate >= RATE[2]) return EDGE[2];
+    const int k = rate < RATE[1] ? 0 : 1;
+    const double t = log(rate / RATE[k]) / log(RATE[k + 1] / RATE[k]);
+    return EDGE[k] + t * (EDGE[k + 1] - EDGE[k]);
+}
+
 void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
 {
     const rb_engine_desc *d = &e->desc;
@@ -461,6 +478,8 @@ void rb_noise_init(rb_noise *n, const rb_engine *e, uint64_t seed)
     n->blow_pass = (d->catalyst_laminar > 0.0 ? PASS_CATALYST : 1.0) * pass;
     for (int s = 0; s < RB_NET_OUTLETS; s++)
         band_init(&n->blow[s], INNER_HP_HZ, INNER_LP_HZ, top_hz, n->dt);
+    n->grid_edge_hz = grid_edge(1.0 / e->pipe_dt);
+    n->grid_hp = n->grid_edge_hz > 0.0 ? one_pole(n->grid_edge_hz, n->dt) : 0.0;
 
     /* Where each cylinder's noise comes out. Its gas goes down its header,
      * its collector's exhaust pipe, the centre pipe and link if the exhaust
@@ -631,8 +650,15 @@ static void flow_noise(rb_noise *n, const rb_engine *e)
         }
         /* The exhaust valves' noise, arriving now. */
         float *slot = &n->blow_ring[s][n->blow_pos];
-        const double blow = band_step(&n->blow[s], *slot) * n->blow[s].norm;
+        double blow = band_step(&n->blow[s], *slot) * n->blow[s].norm;
         *slot = 0.0f;
+        if (n->rebalance && n->grid_hp > 0.0) {
+            /* stage 148's candidate: not below where the grid carries the gas */
+            for (int k = 0; k < 2; k++) {
+                n->grid_lp[s][k] += n->grid_hp * (blow - n->grid_lp[s][k]);
+                blow -= n->grid_lp[s][k];
+            }
+        }
         n->out[RB_NOISE_TAIL0 + s] = jet + blow;
     }
     n->blow_pos = (n->blow_pos + 1) & (RB_NOISE_DELAY - 1);

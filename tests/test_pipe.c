@@ -61,7 +61,7 @@ void test_pipe_cells(void)
     CHECK_EQ_INT(rb_pipe_cells_for(0.33, 0.05, SLOW_DT), 7);
     CHECK_EQ_INT(rb_pipe_cells_for(1.8, 0.075, SLOW_DT), 24);
     CHECK_EQ_INT(rb_pipe_cells_for(0.01, 0.05, SLOW_DT), 1);
-    CHECK_EQ_INT(rb_pipe_cells_for(10.0, 0.05, SLOW_DT), RB_PIPE_MAX_CELLS);
+    CHECK_EQ_INT(rb_pipe_cells_for(30.0, 0.05, SLOW_DT), RB_PIPE_MAX_CELLS);   /* 600 wanted */
     CHECK_EQ_INT(rb_pipe_cells_for(0.33, 0.05, 1.0 / 8000.0), 2);   /* 15.6 cm at 8 kHz */
     CHECK_EQ_INT(rb_pipe_cells_for(NAN, 0.05, SLOW_DT), 1);
     CHECK_EQ_INT(rb_pipe_cells_for(0.33, 0.0, SLOW_DT), 1);

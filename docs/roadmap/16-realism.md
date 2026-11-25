@@ -1,4 +1,4 @@
-# Phase B3 — a sound identical to a real car (stages 145–151)
+# Phase B3 — a sound identical to a real car (stages 145–152)
 
 Opened 2026-11-25 at Bernardo's request: "The objective in the end would be to feel like I'm
 listening to a car in real life, for the sound to be identical. I want the app to take all the
@@ -17,8 +17,9 @@ fact of the car, with a physically right default.
 **The order** (147 deferred to the PC on 2026-11-25: no speed-up on the laptop, docs/stage-147.md):
 145 (the Polo 1.0 TSI
 with its turbine) → 146 (Bernardo's recording of it, when it comes) → 148 (finer cells, the noise
-layer rebalanced) → 149 (the source-to-ear chain and its controls) → 150 (two ears and the level)
-→ 151 (junctions with their size and angles). 146 waits on the recording; the others don't.
+layer rebalanced) → 152 (the losses above the plane wave, opened by 148's finding) → 149 (the
+source-to-ear chain and its controls) → 150 (two ears and the level) → 151 (junctions with their
+size and angles). 146 waits on the recording, and 152 is judged against it; the others don't.
 
 <a id="stage-145"></a>
 ## Stage 145 — The Polo 1.0 TSI as a preset, with its turbine
@@ -150,3 +151,28 @@ A/B switch.
 orders at the outlets before and after; the books; speed; Bernardo's A/B.
 
 **Execution record:** `docs/stage-151.md`.
+
+<a id="stage-152"></a>
+## Stage 152 — The losses above the plane wave
+
+**Dependencies:** [148](#stage-148), [146](#stage-146).
+
+**Why (148's finding, docs/stage-148.md):** on studio's grid, converged to about 3.2 kHz, the
+gas alone is about 10 dB brighter above 2 kHz than Bernardo's 458 clips, where the high quality's
+mix matches them: the coarse grid's numerical damping had been standing in for real losses. No
+one modelled part explains it (the walls, the packing four times as lossy, the catalyst four
+times, the centre route narrowed: each 1–3 dB, and evenly across the bands).
+
+**Deliverable:** the losses a real exhaust has at kilohertz that the plane-wave pipes leave out,
+each from its physics and each a candidate on the A/B switch: a packed core's lining by
+frequency (Delany–Bazley's fibrous material, Piening's lined duct, the noise layer's already),
+the perforates' and a catalyst's narrow channels' viscothermal loss, the boxes above their first
+cross mode (where a can stops being a plane-wave chamber), the mean flow's turbulent absorption,
+and the source's own steepness (the blowdown's front against measured port pressures).
+
+**Required exit evidence:** each part's transmission against published measurements to 5 kHz;
+studio's mix against Bernardo's Polo recording at its known place (146) and his 458 clips, by
+band, slope and crest, before and after; the noise layer recalibrated where it changes; the
+books; speed; Bernardo's A/B.
+
+**Execution record:** `docs/stage-152.md`.
