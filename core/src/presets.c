@@ -284,6 +284,49 @@ static void ferrari_458(rb_engine_desc *d)
     v8_flat(d);
 }
 
+/* Bernardo's own car (stage 145): a 2023 Volkswagen Polo 1.0 TSI, 81 kW
+ * (110 PS), stock exhaust. VW's EA211 1.0 TSI three-cylinder, 999 cc, 74.5 x
+ * 76.4 mm, compression 10.5 (published: VW's EA211 data, de.wikipedia.org
+ * "VW EA211"); its 110 PS code with 200 N m at 2000-3000 rpm is most likely
+ * DLAA (inferred: the 2021-on Polo's isn't listed). Four valves a cylinder,
+ * sodium-filled exhaust valves; the exhaust manifold cast into the head, a
+ * single-scroll turbine with an electric wastegate (published), the exhaust
+ * a network (exhaust_models.c, ea211_polo). Estimated, and marked: the rod,
+ * the valves' sizes and timing, the runners, the plenum (its intercooler's
+ * volume in it), the air box, the inertia (with a dual-mass flywheel), the
+ * idle and the rev limit. Its compressor and boost are phase D's
+ * (078): here the turbine stands in the exhaust and the intake breathes at
+ * the air's pressure, so its torque off idle is a non-turbo three's, not 200
+ * N m (docs/stage-145.md). It fires 1-2-3 every 240 degrees. */
+static void polo_tsi(rb_engine_desc *d)
+{
+    static const int bank[3] = { 0, 0, 0 };
+    static const double pin[3] = { 0.0, 120.0, 240.0 };   /* 1-2-3: each 240 degrees after the last */
+    static const int order[3] = { 1, 2, 3 };
+    static const double header[3] = { 0.16, 0.10, 0.16 };   /* the ports in the head to the turbine (est.) */
+    static const int collector[3] = { 0, 0, 0 };
+    double position[3];
+    rb_engine_desc_default(d);
+    d->cylinders = 3;
+    d->bore = 74.5 * MM;
+    d->stroke = 76.4 * MM;
+    d->rod = 140 * MM;                                       /* est. */
+    d->cr = 10.5;
+    for (int i = 0; i < 3; i++) position[i] = 0.082 * i;     /* 82 mm bore spacing (published) */
+    layout(d, 1, 0.0, 0.0, bank, pin, position, order);
+    d->intake = valve(2, 27 * MM, 8.5 * MM, 235.0, 112.0, 1);  /* est. */
+    d->exhaust = valve(2, 23 * MM, 8.0 * MM, 235.0, 105.0, 0); /* est. */
+    airbox(d, 8 * L, 300 * MM, 70 * MM);                     /* est. */
+    intake(d, 49 * MM, 2 * MM2, 1.6 * L);                    /* est.: the plenum holds the charge cooler */
+    runners(d, 220 * MM, 32 * MM);                           /* est. */
+    exhaust(d, header, 30 * MM, collector, 1.2, 48 * MM, 1, 18 * CM2, 6 * L, 16 * CM2, 0.4, 48 * MM);
+    muffler(d, RB_MUFFLER_CHAMBERED, 400 * MM);
+    /* est.: the inertia with the dual-mass flywheel (a 1.0 L's, coasting from
+     * the limit to idle in about 4 s); the idle valve and gains tuned as the
+     * others' (about 15 % open idling; room for gains 1.5 times as strong) */
+    running(d, 0.10, 180.0, 250.0, 600.0, 750.0, 20 * MM2, 4.0e-4, 3.0e-4, 6300.0);
+}
+
 /* The last two columns: each preset's real-time default quality (stage
  * 118's tier, on the baseline machine: docs/stage-118.md has what each
  * misses; the V8s' lean tier is Bernardo's choice of 2026-11-16,
@@ -296,6 +339,8 @@ static const preset_info PRESETS[] = {
     { "boxer4", "Boxer 4", boxer4, RB_QUALITY_LOW, { RB_FAMILY_BOXER, 4, RB_CRANK_EVEN, 0.0 } },
     /* stage 141: real cars with their researched exhausts (exhaust_models.c) */
     { "ferrari-458", "Ferrari 458 Italia", ferrari_458, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_COMMON_PIN, 90.0 } },
+    /* stage 145: Bernardo's own car */
+    { "polo-tsi", "VW Polo 1.0 TSI", polo_tsi, RB_QUALITY_BALANCED, { RB_FAMILY_INLINE, 3, RB_CRANK_EVEN, 0.0 } },
 };
 enum { N_PRESETS = sizeof PRESETS / sizeof PRESETS[0] };
 

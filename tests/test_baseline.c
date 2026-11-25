@@ -212,7 +212,7 @@ void test_baseline_whole_drive_books(void)
      * (starter), idle, a held load, a pull to the limiter and a second on
      * it, the lift into the overrun's fuel cut, the coast to its resume, and
      * idle again. Each step does what it says (the rpm, the cuts; the part
-     * throttle with 40 N m only has to run); the sound
+     * throttle with 40 N m, a smaller engine's share of it, only has to run); the sound
      * stays a number inside full scale; the guards stay under their warning;
      * and the engine's books close over the whole drive: its mass to 1e-9 of
      * what passed through, its species as the burn moved them, its energy to
@@ -238,7 +238,10 @@ void test_baseline_whole_drive_books(void)
         loudest = fmax(loudest, run(sim, 2.0, &rpm));
         const double idled = rpm;
         rb_set_param(sim, RB_PARAM_THROTTLE, 0.4);
-        rb_set_param(sim, RB_PARAM_LOAD_TORQUE, 40.0);
+        /* 40 N m for 2 L and over; a smaller engine its share (stage 145: the
+         * Polo's 1.0 L, without its boost, makes 88 N m flat out) */
+        const double litres = rb_engine_displacement(x) * 1e3;
+        rb_set_param(sim, RB_PARAM_LOAD_TORQUE, 40.0 * fmin(1.0, litres / 2.0));
         loudest = fmax(loudest, run(sim, 1.0, &rpm));
         const double held = rpm;
         rb_set_param(sim, RB_PARAM_LOAD_TORQUE, 0.0);

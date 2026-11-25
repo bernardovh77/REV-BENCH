@@ -335,6 +335,7 @@ void test_core_preset_quality(void)
         { "i4", RB_QUALITY_BALANCED }, { "i6", RB_QUALITY_LOW }, { "v8-cross", RB_QUALITY_LEAN },
         { "v8-flat", RB_QUALITY_LEAN }, { "boxer4", RB_QUALITY_LOW },
         { "ferrari-458", RB_QUALITY_LEAN },   /* stage 141: docs/stage-141.md has its real-time cost */
+        { "polo-tsi", RB_QUALITY_BALANCED },  /* stage 145: 2.2x real time on the laptop (docs/stage-145.md) */
     };
     CHECK_EQ_INT(rb_preset_count(), (int)(sizeof TIER / sizeof TIER[0]));
     for (int i = 0; i < (int)(sizeof TIER / sizeof TIER[0]); i++) {

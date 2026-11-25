@@ -133,6 +133,91 @@ static void f136_458(rb_engine_desc *d)
     d->muffler_resolution = 3.0;
 }
 
+/* The Polo 1.0 TSI's exhaust (stage 145), its sound's way from the head:
+ *   - published: the manifold in the head (three short ports meeting in it),
+ *     a single-scroll turbine with an electric wastegate, a three-way
+ *     catalyst and a petrol particulate filter close to the engine (VW's
+ *     EA211 data), a centre silencer and a rear one (aftermarket centre
+ *     pipes are sold to replace the centre silencer: Supersprint 918113);
+ *   - estimated, every one: the volumes, lengths and bores below; the
+ *     turbine's effective nozzle area (a small turbo for a 1.0 L, its flow
+ *     at idle and light load), the wastegate's (open off boost: VW's
+ *     strategy for low back pressure there), the catalyst-and-filter's loss,
+ *     the silencers' insides, the tailpipe turned down out of sight at the
+ *     rear left.
+ * The turbine is a restriction (its nozzle) between the manifold's volume and
+ * its outlet's, the wastegate a pipe beside it: the pulses' energy is spent
+ * through them and the volumes smooth what's left, which is why such engines
+ * are quiet. At low frequencies a turbine passes sound almost unchanged
+ * (Rammal and Abom, KTH): what it takes off above, its rotor's own loss, is
+ * not in this model; Bernardo's recording (stage 146) is what will set it. */
+static void ea211_polo(rb_engine_desc *d)
+{
+    rb_exhaust_net *n = &d->net;
+    const double pipe = 0.048 - 2.0 * F_WALL;    /* est.: about 48 mm OD (an aftermarket oversize is 54) */
+    const double down = 0.055 - 2.0 * F_WALL;    /* est.: the downpipe to the catalyst */
+    memset(n, 0, sizeof *n);
+    n->node[0] = (rb_net_node){ 0.15e-3, RB_PLACE_COLLECTOR, 0 };   /* the manifold and the turbine's volute (est.) */
+    n->node[1] = (rb_net_node){ 0.25e-3, RB_PLACE_JUNCTION, 0 };    /* the turbine's outlet (est.) */
+    n->nodes = 2;
+    for (int i = 0; i < d->cylinders; i++) n->header_to[i] = f_node(0, RB_HEADER_ENTRY);
+    /* 0 the turbine's way, 1 the wastegate's, 2 the downpipe with the catalyst
+     * and the filter, 3 the front pipe, 4 the centre silencer, 5 the rear pipe,
+     * 6 the rear silencer's chamber, 7 its packed tube, 8 the tailpipe */
+    n->pipe[0] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_EXHAUST, .number = 0,
+                                .from = RB_PLACE_COLLECTOR, .from_number = 0, .to = RB_PLACE_JUNCTION,
+                                .length = 0.08, .diameter = 0.040 };            /* est. */
+    n->pipe[0].end[0] = (rb_net_end){ .kind = RB_NET_NODE, .index = 0, .entry_loss = RB_COLLECTOR_ENTRY,
+                                      .area = 3.5e-4 };   /* the turbine's nozzle: 3.5 cm^2 effective (est.) */
+    n->pipe[0].end[1] = f_node(1, 0.0);
+    n->pipe[1] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_EXHAUST, .number = 1,
+                                .from = RB_PLACE_COLLECTOR, .from_number = 0, .to = RB_PLACE_JUNCTION,
+                                .length = 0.05, .diameter = 0.022 };            /* est. */
+    n->pipe[1].end[0] = (rb_net_end){ .kind = RB_NET_NODE, .index = 0, .entry_loss = RB_COLLECTOR_ENTRY,
+                                      .area = 2.0e-4 };   /* the wastegate open: 2 cm^2 effective (est.) */
+    n->pipe[1].end[1] = f_node(1, 0.0);
+    n->pipe[2] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_EXHAUST, .number = 2,
+                                .from = RB_PLACE_JUNCTION, .from_number = 0, .to = RB_PLACE_CENTER,
+                                .length = 0.45, .diameter = down, .catalyst = 1.0 };   /* est. */
+    n->pipe[2].end[0] = f_node(1, RB_COLLECTOR_ENTRY);
+    n->pipe[2].end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 3,
+                                      .area = 18e-4, .laminar = 60.0 };   /* the catalyst and the filter (est.) */
+    n->pipe[3] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = 0,
+                                .from = RB_PLACE_CENTER, .from_number = 0, .to = RB_PLACE_CENTER,
+                                .length = 1.0, .diameter = pipe };              /* est. */
+    n->pipe[3].end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 4 };
+    n->pipe[4] = (rb_net_pipe){ .role = RB_NET_ROLE_CAN, .kind = RB_PIPE_CENTER, .number = 0,
+                                .from = RB_PLACE_CENTER, .from_number = 0, .to = RB_PLACE_CENTER,
+                                .length = 0.30, .diameter = pipe, .packing = RB_PACKING,
+                                .muffler = RB_MUFFLER_STRAIGHT };   /* a packed straight-through centre box (est.) */
+    n->pipe[4].end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 5 };
+    n->pipe[5] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = 1,
+                                .from = RB_PLACE_CENTER, .from_number = 0, .to = RB_PLACE_MUFFLER,
+                                .length = 0.9, .diameter = pipe };              /* est. */
+    n->pipe[5].end[1] = f_into(6, 0);
+    n->pipe[6] = (rb_net_pipe){ .role = RB_NET_ROLE_CAN, .kind = RB_PIPE_MUFFLER, .number = 0,
+                                .from = RB_PLACE_MUFFLER, .from_number = 0, .to = RB_PLACE_MUFFLER_OUTLET,
+                                .length = 0.22, .diameter = sqrt(0.30 * 0.16),
+                                .muffler = RB_MUFFLER_CHAMBERED };   /* a 300 x 160 mm oval box's chamber (est.) */
+    n->pipe[7] = (rb_net_pipe){ .role = RB_NET_ROLE_CAN, .kind = RB_PIPE_MUFFLER, .number = 0,
+                                .from = RB_PLACE_MUFFLER, .from_number = 0, .to = RB_PLACE_MUFFLER_OUTLET,
+                                .length = 0.18, .diameter = pipe, .packing = RB_PACKING,
+                                .muffler = RB_MUFFLER_STRAIGHT };    /* its packed half (est.) */
+    n->pipe[7].end[0] = f_into(6, 1);
+    n->pipe[7].end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 8, .back = 1 };
+    n->pipe[8] = (rb_net_pipe){ .role = RB_NET_ROLE_TAILPIPE, .kind = RB_PIPE_TAILPIPE, .number = 0,
+                                .from = RB_PLACE_MUFFLER_OUTLET, .from_number = 0, .to = RB_PLACE_AIR,
+                                .length = 0.20, .diameter = pipe };             /* est. */
+    n->pipe[8].end[1] = f_outlet(0);
+    n->pipes = 9;
+    n->snorkel_at = n->pipes;
+    /* the tailpipe turned down under the bumper at the rear left (est.) */
+    const double at[3] = { 0.40, 0.05, 0.22 };
+    for (int k = 0; k < 3; k++) n->outlet[0].at[k] = at[k];
+    n->outlets = 1;
+    d->muffler_resolution = 3.0;   /* the cans at stage 050's finer cells */
+}
+
 void rb_exhaust_model(rb_engine_desc *d, int preset)
 {
     const double wall = 0.0012;
@@ -203,6 +288,10 @@ void rb_exhaust_model(rb_engine_desc *d, int preset)
         rb_exhaust_model(d, 3);   /* the legacy fields as the flat V8's (unused) */
         d->outlet_radiation = 1;
         f136_458(d);
+        break;
+    case 6: /* the Polo 1.0 TSI with its turbine, as a network (stage 145) */
+        d->outlet_radiation = 1;
+        ea211_polo(d);
         break;
     }
 }

@@ -291,9 +291,11 @@ int rb_engine_desc_check(const rb_engine_desc *d)
     /* Each collector's pipe at most 6 times the area of the headers joining it (stage 131):
      * real collectors are 1 to 2 times their primaries. Past it a twin's pipes lost their state
      * at the slow pipe rates (fuzz seeds 131019, 132032, 132055: 6.6 to 8.6 times); the
-     * presets reach 5.7 at most within the editor's ranges. */
+     * presets reach 5.7 at most within the editor's ranges. Only where the fields build the
+     * exhaust: a network's own pipes replace that pipe (stage 145: the Polo's three 30 mm ports
+     * and the field's widest pipe). */
     for (int c = 0; c < RB_MAX_COLLECTORS; c++)
-        if (joined[c] && !(d->exhaust_pipe_diameter * d->exhaust_pipe_diameter
+        if (d->net.pipes == 0 && joined[c] && !(d->exhaust_pipe_diameter * d->exhaust_pipe_diameter
                            <= 6.0 * joined[c] * d->header_diameter * d->header_diameter)) return -1;
     if (!(d->exhaust_systems == 1 || (d->exhaust_systems == 2
         && (joined[1] || d->junction_volume > 0.0)))) return -1;

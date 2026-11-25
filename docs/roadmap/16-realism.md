@@ -14,7 +14,8 @@ speakers and the level. Stage 144 measured the pipes' part; these stages take th
 link checked, measured and made a control where it is a condition of the listening rather than a
 fact of the car, with a physically right default.
 
-**The order:** 147 (the pipes on several cores: it pays for the rest) → 145 (the Polo 1.0 TSI
+**The order** (147 deferred to the PC on 2026-11-25: no speed-up on the laptop, docs/stage-147.md):
+145 (the Polo 1.0 TSI
 with its turbine) → 146 (Bernardo's recording of it, when it comes) → 148 (finer cells, the noise
 layer rebalanced) → 149 (the source-to-ear chain and its controls) → 150 (two ears and the level)
 → 151 (junctions with their size and angles). 146 waits on the recording; the others don't.

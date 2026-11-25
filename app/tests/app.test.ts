@@ -213,7 +213,7 @@ describe("the window", () => {
     expect(target.querySelector(".state")?.textContent?.trim()).toBe("Engine running");
     const select = target.querySelector("select")!;
     expect(select.value).toBe("i4");
-    expect([...select.options].map((o) => o.value)).toEqual(["i4", "i6", "v8-cross", "v8-flat", "boxer4", "ferrari-458"]);
+    expect([...select.options].map((o) => o.value)).toEqual(["i4", "i6", "v8-cross", "v8-flat", "boxer4", "ferrari-458", "polo-tsi"]);
     expect(select.disabled).toBe(false);
   });
 

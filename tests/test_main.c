@@ -108,6 +108,7 @@ void test_net_check_refuses_bad_networks(void);
 void test_net_listener_hears_every_outlet(void);
 void test_net_noise_routes_as_the_legacy_exhaust(void);
 void test_net_passes_from_geometry(void);
+void test_net_polo_turbine(void);
 void test_exhaust_junction_scattering_conservation(void);
 void test_exhaust_coherent_x_modes(void);
 void test_exhaust_high_rpm_fired_books(void);
@@ -477,6 +478,7 @@ static const struct {
     T(test_net_listener_hears_every_outlet),
     T(test_net_noise_routes_as_the_legacy_exhaust),
     T(test_net_passes_from_geometry),
+    T(test_net_polo_turbine),
     T(test_exhaust_junction_scattering_conservation),
     T(test_exhaust_coherent_x_modes),
     T(test_exhaust_high_rpm_fired_books),

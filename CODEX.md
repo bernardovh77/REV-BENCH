@@ -4,6 +4,15 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
+## 2026-11-25: Stages 147 (deferred) and 145, the Polo 1.0 TSI (Claude)
+
+- 147: a prototype of the pipes over threads gave no speed-up on the laptop (docs/stage-147.md);
+  deferred to Bernardo's PC. Nothing in the core changed for it.
+- 145: `polo-tsi`, Bernardo's own car (presets.c `polo_tsi`, exhaust_models.c `ea211_polo`): the
+  turbine and wastegate are narrowed pipe ends between two volumes in the network. No boost
+  (phase D). Level and the turbine's loss wait for his recording (146). The preset lists in the
+  tests (C, web, the app's fake add-on) all name it.
+
 ## 2026-11-25: Stage 144, the solver's acoustic fidelity audited (Claude)
 
 - Bernardo's guide (renders/guides/) named six areas; each measured (docs/stage-144.md). The grid

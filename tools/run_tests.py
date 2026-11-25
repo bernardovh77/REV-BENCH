@@ -57,7 +57,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SUITES = ("native", "wasm", "wasm-c", "python", "web", "e2e", "cmake", "host", "addon", "app", "app-e2e", "layouts")
 # each suite's limit in seconds, far above its usual time: a hang is killed,
 # with every process it started, and the suite fails as "timeout"
-TIMEOUTS = {"native": 1800, "wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
+# (native 3600 as cmake, the same tests: 1180 s on the quiet laptop at stage 145, past 1800
+# with other work running beside it)
+TIMEOUTS = {"native": 3600,"wasm": 600, "wasm-c": 900, "python": 900, "web": 1200, "e2e": 1200,
             "cmake": 3600, "host": 1800, "addon": 1800, "app": 1200, "app-e2e": 1800,
             "layouts": 5400}
 OUT = Path(os.environ.get("RB_TESTS_OUT") or Path.home() / "rb-build" / "tests")

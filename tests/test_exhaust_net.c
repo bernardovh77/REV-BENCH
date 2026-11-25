@@ -410,3 +410,32 @@ void test_net_passes_from_geometry(void)
            two / one, want, per);
     CHECK_NEAR(two / one, want, 1e-12);
 }
+
+void test_net_polo_turbine(void)
+{
+    /* Stage 145: the Polo 1.0 TSI's turbine and wastegate (exhaust_models.c,
+     * ea211_polo), two narrowed ways out of the manifold's volume into the
+     * turbine's outlet. Its books balance (motored wide open); both ways
+     * carry the gas, in the share of their areas within a quarter (the same
+     * pressure drop across both, each flowing as its effective area); and the
+     * turbine's nozzle holds the manifold above its outlet. Off boost the
+ * wastegate is open: it carries at least 0.4 of the turbine's flow. */
+    rb_engine_desc d;
+    preset("polo-tsi", &d);
+    CHECK_EQ_INT(rb_exhaust_net_check(&d.net, &d), 0);
+    books(&a, &d, "Polo 1.0 TSI");
+    double turbine = 0.0, gate = 0.0, drop = 0.0;
+    for (long s = 0; s < 7680; s++) {
+        rb_engine_step(&a);
+        turbine += a.xpipe[0].end_face[0].mdot;
+        gate += a.xpipe[1].end_face[0].mdot;
+        drop += a.xnode[0].p - a.xnode[1].p;
+    }
+    const double share = gate / turbine, want = a.net.pipe[1].end[0].area / a.net.pipe[0].end[0].area;
+    printf("    the wastegate carries %.2f of the turbine's flow (their areas %.2f); "
+           "the manifold %.1f kPa over the turbine's outlet\n", share, want, 1e-3 * drop / 7680);
+    CHECK(turbine > 0.0 && gate > 0.0);
+    CHECK_NEAR(share, want, 0.25 * want);
+    CHECK(share > 0.4);   /* the wastegate open off boost (VW's strategy, ea211_polo) */
+    CHECK(drop / 7680 > 500.0);
+}
