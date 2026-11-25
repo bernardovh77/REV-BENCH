@@ -107,6 +107,7 @@ void test_net_new_parts_run_and_keep_the_books(void);
 void test_net_check_refuses_bad_networks(void);
 void test_net_listener_hears_every_outlet(void);
 void test_net_noise_routes_as_the_legacy_exhaust(void);
+void test_net_passes_from_geometry(void);
 void test_exhaust_junction_scattering_conservation(void);
 void test_exhaust_coherent_x_modes(void);
 void test_exhaust_high_rpm_fired_books(void);
@@ -120,6 +121,11 @@ void test_muffler_packing_is_its_stated_loss(void);
 void test_muffler_catalyst_is_a_series_resistance(void);
 void test_muffler_engine_grid_limits(void);
 void test_muffler_resolution_builds_finer_cans(void);
+void test_parts_helmholtz_side_branch(void);
+void test_parts_quarter_wave_tube(void);
+void test_parts_extended_tube_chamber(void);
+void test_parts_two_chambers_in_series(void);
+void test_parts_can_by_bands(void);
 void test_scheduler_pipe_rates_agree_on_one_grid(void);
 void test_scheduler_blocks_and_transitions_are_seamless(void);
 void test_flow_noise_is_external_source_work(void);
@@ -466,6 +472,7 @@ static const struct {
     T(test_net_check_refuses_bad_networks),
     T(test_net_listener_hears_every_outlet),
     T(test_net_noise_routes_as_the_legacy_exhaust),
+    T(test_net_passes_from_geometry),
     T(test_exhaust_junction_scattering_conservation),
     T(test_exhaust_coherent_x_modes),
     T(test_exhaust_high_rpm_fired_books),
@@ -479,6 +486,11 @@ static const struct {
     T(test_muffler_catalyst_is_a_series_resistance),
     T(test_muffler_engine_grid_limits),
     T(test_muffler_resolution_builds_finer_cans),
+    T(test_parts_helmholtz_side_branch),
+    T(test_parts_quarter_wave_tube),
+    T(test_parts_extended_tube_chamber),
+    T(test_parts_two_chambers_in_series),
+    T(test_parts_can_by_bands),
     T(test_scheduler_pipe_rates_agree_on_one_grid),
     T(test_scheduler_blocks_and_transitions_are_seamless),
     T(test_flow_noise_is_external_source_work),

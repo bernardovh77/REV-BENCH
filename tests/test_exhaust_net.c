@@ -294,16 +294,25 @@ void test_net_listener_hears_every_outlet(void)
 
 static rb_noise na, nb;
 
+/* The walls' viscothermal loss of the power down a pipe (noise.c's wall_pass,
+ * Kirchhoff at 3 kHz in the hot gas). */
+static double walls(double diameter, double length)
+{
+    const double alpha = sqrt(0.5 * 2.0 * 3.14159265358979323846 * 3000.0 * 9e-5) / (0.5 * diameter * 580.0)
+                       * (1.0 + 0.35 / sqrt(0.7));
+    return exp(-2.0 * alpha * length);
+}
+
 void test_net_noise_routes_as_the_legacy_exhaust(void)
 {
-    /* Where the parts on its ways are the legacy muffler and catalyst (the
-     * flat V8's: a catalyst and a "none" muffler; no centre can), the noise
-     * layer's network routing is the legacy routing: the same shares, delays
-     * and baffle jets, and the same sound, to the last bit, over 0.1 s at
-     * 4000 rpm wide open. The four has a centre can as well, which the legacy
-     * routing (older than its centre cans) doesn't count and the network's
-     * does: the same delays and baffle jets, and every cylinder's share less
-     * by the same factor, the can's. */
+    /* A network's noise routing against the legacy one, on the legacy
+     * networks: the same delays and the same baffle jets; and where the
+     * parts on its ways pass what the legacy constants do (the flat V8: a
+     * catalyst, and a "none" muffler a pipe the tailpipe's size, which passes
+     * all), every share is the legacy's times the walls' loss down that way
+     * (Kirchhoff, header and pipes), to 1e-12. The four's network passes its
+     * muffler and centre can from their geometry (stage 139): its shares
+     * differ from the legacy's by more than the walls. */
     const char *keys[2] = { "v8-flat", "i4" };
     for (int p = 0; p < 2; p++) {
         rb_engine_desc d, n;
@@ -317,34 +326,86 @@ void test_net_noise_routes_as_the_legacy_exhaust(void)
         int differ = na.holes != nb.holes;
         for (int h = 0; h < na.holes && h < nb.holes; h++)
             for (int s = 0; s < a.systems; s++)
-                differ += na.hole[h].delay[s] != nb.hole[h].delay[s] || na.hole[h].share[s] != nb.hole[h].share[s];
-        double ratio = -1.0;
-        for (int i = 0; i < d.cylinders; i++)
+                differ += na.hole[h].delay[s] != nb.hole[h].delay[s];
+        double worst = 0.0;
+        for (int i = 0; i < d.cylinders; i++) {
+            double length[RB_NET_OUTLETS];
+            int route[RB_NET_OUTLETS][RB_NET_PIPES], count[RB_NET_OUTLETS];
+            rb_exhaust_net_route(&b.net, &d, i, 0, 0, length, route, count);
             for (int s = 0; s < a.systems; s++) {
                 const double legacy = na.blow_share[i][s] * sqrt(na.blow_pass), net = nb.blow_share[i][s];
                 differ += (legacy > 0.0) != (net > 0.0);
                 if (!(legacy > 0.0)) continue;
                 differ += na.blow_delay[i][s] != nb.blow_delay[i][s];
-                if (ratio < 0.0) ratio = net / legacy;
-                differ += fabs(net / legacy - ratio) > 1e-12;
+                double wall = walls(d.header_diameter, d.header_length[i]);
+                for (int q = 0; q < count[s]; q++)
+                    wall *= walls(b.net.pipe[route[s][q]].diameter, b.net.pipe[route[s][q]].length);
+                worst = fmax(worst, fabs(net / (legacy * sqrt(wall)) - 1.0));
             }
-        double most = 0.0;
-        for (long s = 0; s < 19200; s++) {
-            rb_engine_step(&a);
-            rb_engine_step(&b);
-            rb_noise_step(&na, &a, RB_NOISE_FLOW);
-            rb_noise_step(&nb, &b, RB_NOISE_FLOW);
-            for (int k = 0; k < RB_NOISE_OUTPUTS; k++)
-                most = fmax(most, fabs(na.out[k] - nb.out[k]) / fmax(1e-30, fabs(na.out[k])));
         }
-        printf("    %-8s %d baffle jets; the network's shares %.4f of the legacy's; the sound's largest "
-               "difference %.1e of itself\n", keys[p], nb.holes, ratio, most);
+        printf("    %-8s %d baffle jets; the network's shares the legacy's times the walls' within %.1e\n",
+               keys[p], nb.holes, worst);
         CHECK_EQ_INT(differ, 0);
-        if (p == 0) {
-            CHECK(ratio == 1.0);
-            CHECK(most == 0.0);
-        } else {
-            CHECK(ratio > 0.01 && ratio < 0.2);   /* sqrt of a chambered can's pass */
-        }
+        if (p == 0) CHECK(worst < 1e-12);
+        else CHECK(worst > 0.1);   /* its cans from their geometry */
     }
+}
+
+/* The noise layer's share of cylinder 0's noise at outlet 0 for an engine
+ * built from network n on description d. */
+static double share_of(const rb_engine_desc *d)
+{
+    CHECK(rb_engine_init(&a, d, DT) == 0);
+    rb_noise_init(&na, &a, 7);
+    return na.blow_share[0][0];
+}
+
+void test_net_passes_from_geometry(void)
+{
+    /* Stage 139: a network's parts pass the valves' noise as their geometry
+     * says. The four's network with its centre can a plain pipe: its muffler
+     * an expansion chamber, which passes 1 / sqrt(1 + (m - 1/m)^2 / 4) of
+     * the power (m its area over the pipes'), so two bores' shares (the
+     * square root of the power) are in that ratio; a packed core is a lined
+     * duct (Piening: 1.05 a^1.4 4 / d dB a metre, a = 0.9), so twice its
+     * length takes that again. */
+    rb_engine_desc d;
+    preset("i4", &d);
+    rb_exhaust_net_legacy(&d, &d.net);
+    rb_net_pipe *z = NULL, *m = NULL;
+    for (int k = 0; k < d.net.pipes; k++) {
+        if (d.net.pipe[k].kind == RB_PIPE_CENTER) z = &d.net.pipe[k];
+        if (d.net.pipe[k].kind == RB_PIPE_MUFFLER) m = &d.net.pipe[k];
+    }
+    CHECK(z != NULL && m != NULL);
+    if (!z || !m) return;
+    z->role = RB_NET_ROLE_PIPE;
+    z->diameter = d.exhaust_pipe_diameter;
+    z->packing = 0.0;
+    z->muffler = RB_MUFFLER_NONE;
+    const double pipe = 0.25 * 3.14159265358979323846 * d.exhaust_pipe_diameter * d.exhaust_pipe_diameter;
+    const double tail = 0.25 * 3.14159265358979323846 * d.tailpipe_diameter * d.tailpipe_diameter;
+    double share[2], tau[2];
+    const double bore[2] = { 0.12, 0.18 };
+    for (int j = 0; j < 2; j++) {
+        m->diameter = bore[j];
+        const double ratio = 0.25 * 3.14159265358979323846 * bore[j] * bore[j] / sqrt(pipe * tail);
+        tau[j] = 1.0 / sqrt(1.0 + 0.25 * (ratio - 1.0 / ratio) * (ratio - 1.0 / ratio))
+               * walls(bore[j], m->length);   /* and its walls' loss, a wider can's less */
+        share[j] = share_of(&d);
+    }
+    printf("    a %.0f cm can's share over a %.0f cm's: %.4f (theory %.4f)\n", 100 * bore[1], 100 * bore[0],
+           share[1] / share[0], sqrt(tau[1] / tau[0]));
+    CHECK_NEAR(share[1] / share[0], sqrt(tau[1] / tau[0]), 1e-12);
+    /* the muffler packed: a straight-through, as long and then twice */
+    m->diameter = d.tailpipe_diameter;
+    m->packing = 1500.0;
+    const double one = share_of(&d);
+    m->length *= 2.0;
+    const double two = share_of(&d);
+    const double per = 1.05 * pow(0.9, 1.4) * 4.0 / m->diameter * 0.5 * m->length;   /* dB */
+    const double want = sqrt(pow(10.0, -0.1 * per) * walls(m->diameter, 0.5 * m->length));
+    printf("    its straight-through twice as long: the share %.4f of what it was (Piening %.4f, %.1f dB more)\n",
+           two / one, want, per);
+    CHECK_NEAR(two / one, want, 1e-12);
 }

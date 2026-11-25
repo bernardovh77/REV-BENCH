@@ -25,6 +25,7 @@
 #include "presets.h"
 #include "rb.h"
 #include "rb_test.h"
+#include "fourpole.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -153,41 +154,7 @@ static double spectrum(const double *x, double f)
     return sqrt(re * re + im * im);
 }
 
-/* ---- four-pole theory (no C99 complex: MSVC lacks it) ---- */
-typedef struct { double re, im; } cx;
-typedef struct { cx a, b, c, d; } pole4;
-
-static cx cx_add(cx x, cx y) { cx z = { x.re + y.re, x.im + y.im }; return z; }
-static cx cx_mul(cx x, cx y) { cx z = { x.re * y.re - x.im * y.im, x.re * y.im + x.im * y.re }; return z; }
-static cx cx_scale(cx x, double s) { cx z = { x.re * s, x.im * s }; return z; }
-
-static pole4 pole_times(pole4 x, pole4 y)
-{
-    pole4 z = { cx_add(cx_mul(x.a, y.a), cx_mul(x.b, y.c)), cx_add(cx_mul(x.a, y.b), cx_mul(x.b, y.d)),
-                cx_add(cx_mul(x.c, y.a), cx_mul(x.d, y.c)), cx_add(cx_mul(x.c, y.b), cx_mul(x.d, y.d)) };
-    return z;
-}
-
-/* A duct of length L, impedance Z (rho c / S), wavenumber k. */
-static pole4 pole_duct(double k, double L, double Z)
-{
-    pole4 z = { { cos(k * L), 0.0 }, { 0.0, Z * sin(k * L) }, { 0.0, sin(k * L) / Z }, { cos(k * L), 0.0 } };
-    return z;
-}
-
-/* A series resistance of Zs (Pa s/m^3). */
-static pole4 pole_series(double Zs)
-{
-    pole4 z = { { 1.0, 0.0 }, { Zs, 0.0 }, { 0.0, 0.0 }, { 1.0, 0.0 } };
-    return z;
-}
-
-/* Transmission loss, dB, between pipes of impedance Z either side. */
-static double pole_tl(pole4 T, double Z)
-{
-    const cx s = cx_add(cx_add(T.a, cx_scale(T.b, 1.0 / Z)), cx_add(cx_scale(T.c, Z), T.d));
-    return 20.0 * log10(0.5 * sqrt(s.re * s.re + s.im * s.im));
-}
+/* ---- four-pole theory: fourpole.h ---- */
 
 static double rho0(void) { return P0 / (287.0985 * T0); }
 static double c0(void) { return sqrt(1.4 * 287.0985 * T0); }   /* air at 300 K: gamma 1.40 */

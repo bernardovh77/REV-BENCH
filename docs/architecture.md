@@ -305,14 +305,15 @@ Where this file and the code disagree, the code is right and this file is fixed.
   - **ways through it:** `rb_exhaust_net_paths`, `rb_exhaust_net_route` (Dijkstra over the pipes'
     ends and volumes);
   - **the noise layer** (noise.c `route_network`): for a network, each cylinder's noise along its
-    ways to the outlets, passed by each part as what it muffles as (`part_pass`, the legacy
-    constants), every narrowed face but a catalyst's a jet (`hole[]`); the legacy engines keep
-    the legacy routing;
+    ways to the outlets, passed by each part from its geometry (`part_pass`: a catalyst's
+    constant, a can's kL-averaged expansion transmission, a packed core by Piening's law), every
+    narrowed face but a catalyst's a jet (`hole[]`); the legacy engines keep the legacy routing;
   - **the listener and the scene:** sources are the outlets (`RB_LISTEN_OUTLETS`), then the mouth
     (`RB_LISTEN_MOUTH`) and the bay (`RB_LISTEN_BAY`); `rb_listener_place_at`,
     `rb_listener_place_noise_at`, `rb_listener_aperture_at` and `rb_scene_init_at` take the
     outlets' places (flat, 3 per outlet) and openings; the legacy two-tailpipe calls remain;
-  - **tests:** tests/test_exhaust_net.c (the network).
+  - **tests:** tests/test_exhaust_net.c (the network), tests/test_parts.c (each part on 050's
+    bench against four-pole theory, `tests/fourpole.h`).
   - `experiments/acoustics/`: research solvers (wave, euler, mixture, gas_graph, thermal,
     material, fixed_transport, junction). They are linked only into the tests and probes, never
     into the core or the browser, and run far below real time.

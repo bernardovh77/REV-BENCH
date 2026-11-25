@@ -311,29 +311,73 @@ static void structure_init(rb_noise *n, const rb_engine *e)
  * shortest way to each outlet it reaches, its power shared among them
  * (1/sqrt(n) of its pressure each, as through stage 115's junctions),
  * arriving after that way's length at EXHAUST_C, and passed by each part on
- * the way as the legacy muffler and catalyst pass it: a catalyst (a pipe
- * whose end-1 face has a laminar loss), and each muffling part as what it
- * muffles as (its `muffler`). Each outlet's band tops where the most
- * muffling part on its ways does. The narrowed faces but the catalysts' are
- * jets, each heard at the outlets past it, passed by the mufflers between. */
+ * the way, from that part's own geometry (stage 139):
+ *   - a catalyst (a pipe whose end-1 face has a laminar loss): PASS_CATALYST,
+ *     its monolith's channels;
+ *   - a packed core (a perforated tube through absorbent): a lined duct,
+ *     Piening's law (Munjal 2014, sec. 9; Beranek and Ver), 1.05 a^1.4 P / S
+ *     dB a metre, P / S its perimeter over its area (4 / d), a the lining's
+ *     absorption coefficient above 2 kHz where this noise is (fibreglass or
+ *     basalt wool, PACKED_ABSORPTION). The pipes' packing (pipe.h) is the
+ *     same core's loss in the band they resolve; this is the band above.
+ *     The legacy 40 cm straight-through, 52 mm: 22 dB, its constant
+ *     PASS_STRAIGHT 11 dB;
+ *   - a can without one: an expansion chamber's plane-wave transmission
+ *     averaged over kL, 1 / sqrt(1 + (m - 1/m)^2 / 4), m its area over the
+ *     pipes' either side (their geometric mean): one can of m = 9 passes
+ *     -7 dB. The legacy constant PASS_CHAMBERED (-24 dB) stood for a whole
+ *     multi-chamber muffler; a network gives its muffler's chambers, and
+ *     their passes multiply (three such: -21 dB).
+ * Each outlet's band tops where the most muffling part on its ways does. The
+ * narrowed faces but the catalysts' are jets, each heard at the outlets past
+ * it, passed by the parts between. */
+#define PACKED_ABSORPTION 0.9   /* a fibreglass or basalt-wool lining's, 2-8 kHz (est.) */
+
+/* The walls' viscothermal loss along the way (Kirchhoff; Kinsler et al.,
+ * Fundamentals of Acoustics, sec. 9.4): a pipe of radius a takes
+ *     alpha = sqrt(w nu / 2) / (a c) (1 + (gamma - 1) / sqrt(Pr))
+ * nepers a metre of the pressure, at the valves' noise band's middle
+ * (WALL_LOSS_HZ), in the hot gas (nu 9e-5 m^2/s at about 800 K, gamma 1.35,
+ * Pr 0.7, c EXHAUST_C). The pipes' own friction is the mean flow's; this is
+ * the sound's boundary layer at kilohertz, which the pipes' cells don't
+ * resolve: 2 m of 60 mm pipe takes 1.3 dB at 3 kHz. */
+#define WALL_LOSS_HZ 3000.0
+#define HOT_NU       9e-5
+static double wall_pass(double diameter, double length)
+{
+    const double w = 2.0 * PI * WALL_LOSS_HZ;
+    const double alpha = sqrt(0.5 * w * HOT_NU) / (0.5 * diameter * EXHAUST_C)
+                       * (1.0 + 0.35 / sqrt(0.7));
+    return exp(-2.0 * alpha * length);   /* of the power */
+}
+
+static double area_of(const rb_net_pipe *p)
+{
+    return 0.25 * PI * p->diameter * p->diameter;
+}
+
+/* Part route[q] of a route (outlet first), its neighbours either side. */
 static double part_pass(const rb_exhaust_net *net, const int *route, int count, int q, int catalyst)
 {
     const rb_net_pipe *p = &net->pipe[route[q]];
     double pass = 1.0;
-    (void)count;
     if (catalyst && p->catalyst > 0.0 && p->end[1].laminar > 0.0) pass *= PASS_CATALYST;
-    if (p->muffler == RB_MUFFLER_STRAIGHT) pass *= PASS_STRAIGHT;
-    if (p->muffler == RB_MUFFLER_CHAMBERED) pass *= PASS_CHAMBERED;
-    return pass;
+    pass *= wall_pass(p->diameter, p->length);
+    if (p->role != RB_NET_ROLE_CAN) return pass;
+    if (p->packing > 0.0)   /* Piening: dB a metre */
+        return pass * pow(10.0, -0.1 * 1.05 * pow(PACKED_ABSORPTION, 1.4) * 4.0 / p->diameter * p->length);
+    const double up = (q + 1 < count) ? area_of(&net->pipe[route[q + 1]]) : area_of(p);
+    const double down = (q > 0) ? area_of(&net->pipe[route[q - 1]]) : area_of(p);
+    const double m = area_of(p) / sqrt(up * down), a = m - 1.0 / m;
+    return pass / sqrt(1.0 + 0.25 * a * a);
 }
 
 static double part_top(const rb_exhaust_net *net, const int *route, int count, int q)
 {
     const rb_net_pipe *p = &net->pipe[route[q]];
-    (void)count;
-    if (p->muffler == RB_MUFFLER_STRAIGHT) return TOP_STRAIGHT_HZ;
-    if (p->muffler == RB_MUFFLER_CHAMBERED) return TOP_CHAMBERED_HZ;
-    return TOP_NONE_HZ;
+    if (p->role != RB_NET_ROLE_CAN) return TOP_NONE_HZ;
+    if (p->packing > 0.0) return TOP_STRAIGHT_HZ;
+    return (part_pass(net, route, count, q, 0) < 0.5) ? TOP_CHAMBERED_HZ : TOP_NONE_HZ;
 }
 
 static void route_network(rb_noise *n, const rb_engine *e)
@@ -350,7 +394,7 @@ static void route_network(rb_noise *n, const rb_engine *e)
             n->blow_share[i][s] = 0.0;
             n->blow_delay[i][s] = 0;
             if (!(length[s] >= 0.0) || reached < 1) continue;
-            double pass = 1.0;
+            double pass = wall_pass(d->header_diameter, d->header_length[i]);   /* its header */
             for (int q = 0; q < count[s]; q++) {
                 pass *= part_pass(net, route[s], count[s], q, 1);
                 top[s] = fmin(top[s], part_top(net, route[s], count[s], q));

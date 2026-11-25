@@ -4,7 +4,7 @@ Read PLAN.md, CLAUDE.md and the latest stage notes before continuing. Claude's
 instructions, hooks and settings remain active; this file supplements them.
 CLAUDE.md and .claude/ have been preserved.
 
-## 2026-11-24: Stages 137-138, the exhaust as a network (Claude)
+## 2026-11-24: Stages 137-139, the exhaust as a network (Claude)
 
 - Bernardo asked for every part of an exhaust to be simulable (mufflers of any kind and number,
   crossovers, junctions, diameters, tailpipes and exits), researched against real cars, before 3D.
@@ -15,6 +15,9 @@ CLAUDE.md and .claude/ have been preserved.
   The engine's exhaust storage is generic (`xpipe`, `xnode`; the old names are pointers). The
   listener and the scene take up to four outlets; source indexes are named (`RB_LISTEN_MOUTH`...).
   Twenty-one bugs of other stages retargeted by overrides at the end of their tables.
+- 139: tests/test_parts.c (side branches, chambers, cascades against four-pole theory, by
+  bands); a network's noise passes from its parts' geometry. Open: the extended-tube chamber's
+  400/800 Hz bands, the cascade's spikes.
 
 ## 2026-11-24: Bernardo's A/B verdicts acted on (Claude)
 
