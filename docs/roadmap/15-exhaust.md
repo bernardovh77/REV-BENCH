@@ -1,4 +1,4 @@
-# Phase B2 — the exhaust, every part of it (stages 137–143)
+# Phase B2 — the exhaust, every part of it (stages 137–144)
 
 Opened 2026-11-24 at Bernardo's request: "I want to be able to completely simulate every part of
 the engines physics ... every style and size of muffler, if there's 1 or 2 or more mufflers,
@@ -13,6 +13,44 @@ one of three types for all, one tailpipe per system. These stages replace the te
 network and validate each part on its own.
 
 <a id="stage-137"></a>
+<a id="stage-144"></a>
+## Stage 144 — The solver's acoustic fidelity, audited against the six known culprits
+
+**Top priority (Bernardo, 2026-11-25): the next stage after the push of 137–141, before 140.**
+Source: Bernardo's guide "1D Engine Gas-Dynamics Solver: Acoustic Fidelity Guide & Codebase
+Audit" (a copy in `renders/guides/`, his machine only), which names five reasons 1D solvers
+sound synthetic and asks for an audit of six areas.
+
+**Dependencies:** [138](#stage-138), [139](#stage-139); it reuses, and must not redo, 043–049
+(the research solvers: the conservative scheme, finite junctions), 051 (the radiation load),
+060 (the renderer decision: A1 and A2 rejected) and 129 (the cold end, a negative result).
+
+**What is already known about each area** (to be confirmed with numbers, not taken as read):
+
+| Area | Today (production core) | The guide's bar | The open question |
+| --- | --- | --- | --- |
+| 1. Scheme and cells | Staggered grid, symplectic Euler, donor-cell momentum with a limited reconstruction (pipe.c); cells 5 cm (short pipes) and 7.5 cm (long), 2.6 cm at the CFL floor at high quality; the noise layer supplies the band above | 10–15 cells a wavelength: 7 mm at 4 kHz cold | The solver's own cutoff by measurement (a pulse's dispersion and damping per cells a wavelength), hot and cold; which part of the sound above it is solver and which the noise layer |
+| 2. Time step | Fixed: pipes at 48 kHz (24 kHz on the mixed-rate grid, 052), cylinders and valves at 192 kHz | dt from max(|u| + a), CFL 0.5–0.85; blowdown resolved | Whether EVO's first pressure rise (dP/dt) is clipped by the pipe rate; the header's first cells at the valve |
+| 3. Junctions | Collectors and junctions are 0D volumes (chamber.c); pipes joined straight on keep their momentum | Momentum- and angle-aware junctions | What a 0D volume costs a firing order's interference, measured against 049's finite junction on the cross and flat V8s' collectors |
+| 4. Valves | Cd 0.7 on the curtain in series with the port (valve.h), isentropic choked flow (flow.c) | Cd by L/D and pressure ratio, forward and reverse, fine at low lift | The low-lift blowdown spike's height and rise against a Cd(L/D, PR) map from published flow-bench data |
+| 5. Open ends, audio | Silva et al.'s causal radiation load (radiation.h, 051); the listener hears each outlet as a monopole, rho0/(4 pi r) dQ/dt (audio.c) | Levine–Schwinger R(ka) with end correction; dQ/dt monopole | Largely in place: confirm the load is on for every preset and tier, and its R(ka) against Levine–Schwinger |
+| 6. Walls, mufflers | Darcy friction and wall heat transfer in the gas; viscothermal (Kirchhoff) loss only in the noise layer (139); packing as a flow resistance; no perforate impedance | Viscothermal damping in the gas, perforates with porosity, wall thickness and grazing Mach | Whether the gas rings where real pipes don't (a decay-time measure per preset); 139's open extended-tube and cascade cases |
+
+**Deliverable:**
+1. The audit: for each area the files and functions, the measured behaviour (each claim above
+   turned into a number) and its effect on the sound.
+2. A ranked list of fixes, by audible effect for the work, each with its physics and its cost
+   on the real-time tiers.
+3. The first fixes from the top of that list, each as a candidate behind `RB_PARAM_VARIANT` for
+   Bernardo's A/B, with planted bugs; or, where a fix was already tried (060's A1/A2), the
+   reason it is or isn't worth trying again.
+
+**Required exit evidence:** the measures behind every row; the fixes' renders against the
+recordings (`tools/compare_real.py`) and their speed (`tools/speed_check.py`); cli_parity for
+the accepted sound (unchanged unless a candidate is accepted); Bernardo's listening.
+
+**Execution record:** `docs/stage-144.md`. **Started only with Bernardo's go-ahead.**
+
 ## Stage 137 — The exhaust audit and the real cars' exhausts
 
 **Dependencies:** [050](04-propagation.md#stage-050), [051](04-propagation.md#stage-051), [054](05-engine-qualification.md#stage-054)
