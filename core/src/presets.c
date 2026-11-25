@@ -277,6 +277,13 @@ static void boxer4(rb_engine_desc *d)
             2.6e-4 * 43.0 / 46.0, 3.1e-4 * 43.0 / 46.0, 6500.0);
 }
 
+/* The Ferrari 458 Italia (stage 141): the flat-plane V8's engine (which is the
+ * F136's, 94 x 81 mm), its exhaust the researched network (exhaust_models.c). */
+static void ferrari_458(rb_engine_desc *d)
+{
+    v8_flat(d);
+}
+
 /* The last two columns: each preset's real-time default quality (stage
  * 118's tier, on the baseline machine: docs/stage-118.md has what each
  * misses; the V8s' lean tier is Bernardo's choice of 2026-11-16,
@@ -287,6 +294,8 @@ static const preset_info PRESETS[] = {
     { "v8-cross", "V8 cross-plane", v8_cross, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_CROSS_PLANE, 90.0 } },
     { "v8-flat", "V8 flat-plane", v8_flat, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_COMMON_PIN, 90.0 } },
     { "boxer4", "Boxer 4", boxer4, RB_QUALITY_LOW, { RB_FAMILY_BOXER, 4, RB_CRANK_EVEN, 0.0 } },
+    /* stage 141: real cars with their researched exhausts (exhaust_models.c) */
+    { "ferrari-458", "Ferrari 458 Italia", ferrari_458, RB_QUALITY_LEAN, { RB_FAMILY_V, 8, RB_CRANK_COMMON_PIN, 90.0 } },
 };
 enum { N_PRESETS = sizeof PRESETS / sizeof PRESETS[0] };
 

@@ -6,6 +6,133 @@
 #include "exhaust_models.h"
 #include "rb.h"
 
+#include <math.h>
+#include <string.h>
+
+/* ---- the Ferrari 458 Italia (F136 FB), its exhaust as a network (stage 141) ----
+ *
+ * What is published (docs/stage-137.md, docs/stage-141.md):
+ *   - the manifolds carry the catalysts (EC type approval e24*70/157*2007/34*1364*00,
+ *     "Manifolds with catalysts: original parts"), 600 cells per square inch
+ *     (the makers of replacements);
+ *   - a left and a right rear silencer, each an oval clamshell 179 x 294.4 mm and
+ *     229 mm long, "reflection-absorption principle", one 70 mm inlet and two
+ *     outlets, 70 mm and 45 mm (the same approval, for Akrapovic's replacement,
+ *     which keeps the original's connections);
+ *   - three tailpipes in a triangle at the middle of the rear, the upper one
+ *     opening with a valve from mid revs (launch reports; unconfirmed).
+ * What is estimated (marked "est."): every length, the collectors' volumes, the
+ * silencers' insides, the catalysts' loss, the tips' places, the centre tip's
+ * bore. The bores published are outside diameters; walls 1.2 mm (est.).
+ *
+ * Each bank: four equal headers into a 4-1 collector, the manifold's catalyst
+ * at its outlet, an intermediate pipe to its silencer. Each silencer: a
+ * reflective chamber the inlet opens into (half the clamshell), then a
+ * perforated tube through a packed chamber (the other half) to its outer
+ * tailpipe; the chamber's 45 mm outlet to a small merge with the other's, and
+ * on up the centre tailpipe (the valve's way, open: stage 142 makes it move).
+ * Each tailpipe ends in its tip, wider: the gas leaves through the tip, and
+ * a jet's noise goes as its speed to the eighth (noise.c), so the tip's bore
+ * is what the jets' highs answer to. */
+static const double F_WALL = 0.0012;
+
+static rb_net_end f_node(int k, double entry)
+{
+    return (rb_net_end){ .kind = RB_NET_NODE, .index = k, .entry_loss = entry };
+}
+
+static rb_net_end f_into(int m, int end)
+{
+    return (rb_net_end){ .kind = RB_NET_INTO, .index = m, .end = end };
+}
+
+static rb_net_end f_outlet(int o)
+{
+    return (rb_net_end){ .kind = RB_NET_OUTLET, .index = o, .entry_loss = RB_TAILPIPE_ENTRY };
+}
+
+static void f136_458(rb_engine_desc *d)
+{
+    rb_exhaust_net *n = &d->net;
+    const double PI = 3.14159265358979323846;
+    const double header = d->header_diameter, pipe = 0.060;             /* est. (Kline: 63.5 OD) */
+    const double inlet = 0.070 - 2.0 * F_WALL, outer = inlet;           /* published 70 mm      */
+    const double small = 0.045 - 2.0 * F_WALL;                          /* published 45 mm      */
+    const double centre = 0.060 - 2.0 * F_WALL;                         /* est.                 */
+    const double tip = 0.095;   /* each tip's bore: the three are large, ~95 mm (est., photographs) */
+    const double box = sqrt(0.179 * 0.2944);   /* the oval 179 x 294.4 mm as a round bore of its area */
+    const double half = 0.5 * 0.229;           /* each chamber half the box's 229 mm (est.)  */
+    memset(n, 0, sizeof *n);
+    /* volumes: each bank's collector (a cone about two pipe diameters long, as
+     * engine_build.c's), and the centre tip's merge (est. 0.15 L) */
+    for (int b = 0; b < 2; b++)
+        n->node[b] = (rb_net_node){ pipe * (4.0 * 0.25 * PI * header * header + 0.25 * PI * pipe * pipe),
+                                    RB_PLACE_COLLECTOR, b };
+    n->node[2] = (rb_net_node){ 1.5e-4, RB_PLACE_JUNCTION, 0 };
+    n->nodes = 3;
+    for (int i = 0; i < d->cylinders; i++) n->header_to[i] = f_node(d->bank[i], RB_HEADER_ENTRY);
+    /* pipes, per bank b: 0 + b the catalyst pipe, 2 + b the intermediate,
+     * 4 + b the reflective chamber, 6 + b the packed chamber's tube, 8 + b the
+     * outer tailpipe, 10 + b the chamber's 45 mm outlet; 12 the centre tailpipe */
+    for (int b = 0; b < 2; b++) {
+        rb_net_pipe *cat = &n->pipe[0 + b], *mid = &n->pipe[2 + b], *room = &n->pipe[4 + b],
+                    *packed = &n->pipe[6 + b], *tail = &n->pipe[8 + b], *by = &n->pipe[10 + b];
+        *cat = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_EXHAUST, .number = b,
+                              .from = RB_PLACE_COLLECTOR, .from_number = b, .to = RB_PLACE_CENTER, .to_number = b,
+                              .length = 0.30, .diameter = pipe, .catalyst = 1.0 };      /* est. */
+        cat->end[0] = f_node(b, RB_COLLECTOR_ENTRY);
+        cat->end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 2 + b,
+                                    .area = 23e-4, .laminar = 37.5 };   /* 600 cpsi: 1.5 x the 400's (est.) */
+        *mid = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = b,
+                              .from = RB_PLACE_CENTER, .from_number = b, .to = RB_PLACE_MUFFLER, .to_number = b,
+                              .length = 0.85, .diameter = inlet };                       /* est. */
+        mid->end[1] = f_into(4 + b, 0);
+        *room = (rb_net_pipe){ .role = RB_NET_ROLE_CAN, .kind = RB_PIPE_MUFFLER, .number = b,
+                               .from = RB_PLACE_MUFFLER, .from_number = b,
+                               .to = RB_PLACE_MUFFLER_OUTLET, .to_number = b,
+                               .length = half, .diameter = box, .muffler = RB_MUFFLER_CHAMBERED };
+        *packed = (rb_net_pipe){ .role = RB_NET_ROLE_CAN, .kind = RB_PIPE_MUFFLER, .number = b,
+                                 .from = RB_PLACE_MUFFLER, .from_number = b,
+                                 .to = RB_PLACE_MUFFLER_OUTLET, .to_number = b,
+                                 .length = half, .diameter = outer, .packing = RB_PACKING,
+                                 .muffler = RB_MUFFLER_STRAIGHT };
+        packed->end[0] = f_into(4 + b, 1);
+        packed->end[1] = (rb_net_end){ .kind = RB_NET_ONWARD, .index = 8 + b, .back = 1 };
+        *tail = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = 4 + b,
+                               .from = RB_PLACE_MUFFLER_OUTLET, .from_number = b, .to = RB_PLACE_AIR,
+                               .length = 0.15, .diameter = outer };                      /* est. */
+        tail->end[1] = f_into(13 + b, 0);   /* its 70 mm into its tip, a step out */
+        n->pipe[13 + b] = (rb_net_pipe){ .role = RB_NET_ROLE_TAILPIPE, .kind = RB_PIPE_TAILPIPE, .number = b,
+                                         .from = RB_PLACE_MUFFLER_OUTLET, .from_number = b,
+                                         .to = RB_PLACE_AIR, .length = 0.12, .diameter = tip };   /* est. */
+        n->pipe[13 + b].end[1] = f_outlet(b);
+        *by = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = 2 + b,
+                             .from = RB_PLACE_MUFFLER, .from_number = b, .to = RB_PLACE_JUNCTION,
+                             .length = 0.30, .diameter = small };                        /* est. */
+        by->end[0] = f_into(4 + b, 1);
+        by->end[1] = f_node(2, 0.0);
+    }
+    n->pipe[12] = (rb_net_pipe){ .role = RB_NET_ROLE_PIPE, .kind = RB_PIPE_LINK, .number = 6,
+                                 .from = RB_PLACE_JUNCTION, .from_number = 0, .to = RB_PLACE_AIR,
+                                 .length = 0.20, .diameter = centre };                   /* est. */
+    n->pipe[12].end[0] = f_node(2, RB_COLLECTOR_ENTRY);
+    n->pipe[12].end[1] = f_into(15, 0);
+    n->pipe[15] = (rb_net_pipe){ .role = RB_NET_ROLE_TAILPIPE, .kind = RB_PIPE_TAILPIPE, .number = 2,
+                                 .from = RB_PLACE_JUNCTION, .from_number = 0, .to = RB_PLACE_AIR,
+                                 .length = 0.12, .diameter = tip };                      /* est. */
+    n->pipe[15].end[1] = f_outlet(2);
+    n->pipes = 16;
+    n->snorkel_at = n->pipes;
+    /* the tips (est.): two lower at either side of the middle, the centre one above */
+    const double tips[3][3] = { { 0.11, -0.03, 0.33 }, { -0.11, -0.03, 0.33 }, { 0.0, -0.03, 0.45 } };
+    for (int o = 0; o < 3; o++)
+        for (int k = 0; k < 3; k++) n->outlet[o].at[k] = tips[o][k];
+    n->outlets = 3;
+    /* the cans at stage 050's finer cells: their plane-wave modes to their
+     * cross mode, not 450-750 Hz (quality first: docs/stage-141.md) */
+    d->muffler_resolution = 3.0;
+}
+
 void rb_exhaust_model(rb_engine_desc *d, int preset)
 {
     const double wall = 0.0012;
@@ -71,6 +198,11 @@ void rb_exhaust_model(rb_engine_desc *d, int preset)
         d->muffler_length = 0.42;
         d->tailpipe_diameter = 0.045 - 2.0 * wall;
         d->tailpipe_length = 0.22;
+        break;
+    case 5: /* the Ferrari 458 Italia with its silencers, as a network (stage 141) */
+        rb_exhaust_model(d, 3);   /* the legacy fields as the flat V8's (unused) */
+        d->outlet_radiation = 1;
+        f136_458(d);
         break;
     }
 }

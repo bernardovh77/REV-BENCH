@@ -61,14 +61,14 @@ void test_presets_table(void)
     /* Five presets: each a possible engine of the size its name says, firing
      * in the order presets.h gives, found by its key, with its own idle valve
      * and idle gains. */
-    static const char *keys[] = { "i4", "i6", "v8-cross", "v8-flat", "boxer4" };
-    static const double litres[] = { 2.0, 3.0, 5.0, 4.5, 2.0 };
-    static const int cylinders[] = { 4, 6, 8, 8, 4 };
-    static const int orders[5][8] = { { 1, 3, 4, 2 }, { 1, 5, 3, 6, 2, 4 },
+    static const char *keys[] = { "i4", "i6", "v8-cross", "v8-flat", "boxer4", "ferrari-458" };
+    static const double litres[] = { 2.0, 3.0, 5.0, 4.5, 2.0, 4.5 };
+    static const int cylinders[] = { 4, 6, 8, 8, 4, 8 };
+    static const int orders[6][8] = { { 1, 3, 4, 2 }, { 1, 5, 3, 6, 2, 4 },
                                       { 1, 8, 4, 3, 6, 5, 7, 2 }, { 1, 6, 5, 8, 7, 4, 3, 2 },
-                                      { 1, 3, 2, 4 } };
-    CHECK_EQ_INT(rb_preset_count(), 5);
-    for (int p = 0; p < 5; p++) {
+                                      { 1, 3, 2, 4 }, { 1, 6, 5, 8, 7, 4, 3, 2 } };
+    CHECK_EQ_INT(rb_preset_count(), 6);
+    for (int p = 0; p < 6; p++) {
         rb_engine_desc d;
         CHECK_EQ_INT(rb_preset_desc(p, &d), 0);
         CHECK_EQ_INT(rb_engine_desc_check(&d), 0);

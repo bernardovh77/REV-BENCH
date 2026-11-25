@@ -19,6 +19,13 @@ CLAUDE.md and .claude/ have been preserved.
   bands); a network's noise passes from its parts' geometry. Open: the extended-tube chamber's
   400/800 Hz bands, the cascade's spikes.
 
+## 2026-11-24: Stage 141, the Ferrari 458 Italia as a preset (Claude)
+
+- `ferrari-458`: the flat V8's engine with its researched exhaust as a network
+  (exhaust_models.c `f136_458`: published silencers from an EC type approval, the rest
+  estimated and marked). Against Bernardo's 458 clips: within their brighter pair above
+  2 kHz, 1.4 dB over above 4 kHz; power 20 % short, the intake's (059), not the exhaust.
+
 ## 2026-11-24: Bernardo's A/B verdicts acted on (Claude)
 
 - **Variant 5 accepted** (stage 051's directivity): audio.c's mono listener reads every tailpipe

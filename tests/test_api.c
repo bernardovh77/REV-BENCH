@@ -254,6 +254,10 @@ void test_api_settings(void)
     CHECK(rb_get_param(sim, RB_PARAM_VARIATION) == 1.0 && rb_get_param(sim, RB_PARAM_SOURCE) == RB_SOURCE_ENGINE);
     CHECK_EQ_INT(rb_get_preset(sim), rb_preset_find("i6"));
     CHECK_EQ_INT(rb_set_quality(sim, 9), RB_ERR_ARG);
+    /* The 458's three tips: the third is source 3, past the mouth's 2. */
+    CHECK_EQ_INT(rb_load_preset(sim, rb_preset_find("ferrari-458")), RB_OK);
+    CHECK(rb_listener_source_distance(sim, 3) > 0.5 && rb_listener_source_distance(sim, 4) == 0.0);
+    CHECK(rb_listener_source_distance(sim, 2) > rb_listener_source_distance(sim, 3) + 2.0);
     rb_destroy(sim);
 }
 

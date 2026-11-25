@@ -163,20 +163,24 @@ typedef struct rb_net_end {
     double entry_loss;          /* K for flow into this pipe                  */
 } rb_net_end;
 
+/* The network's structs have no padding (their ints in even numbers before
+ * their doubles; the asserts below): a description is compared byte for
+ * byte (tests, the editor's "changed?"), and the padding a compound literal
+ * leaves is unspecified (MSVC leaves the stack's bytes there). */
 typedef struct rb_net_pipe {
     int    role;                /* rb_net_role                                */
     int    kind, number;        /* what the API calls it (rb.h rb_pipe_kind)  */
     int    from, from_number, to, to_number;   /* where the API says its ends
                                    open (rb.h rb_pipe_place)                  */
+    int    muffler;             /* rb_muffler_type (rb.h): what it muffles as,
+                                   for the noise layer's pass (a plain pipe:
+                                   RB_MUFFLER_NONE)                           */
     double length, diameter;    /* m                                          */
     double packing;             /* Pa s/m^2 per m: a packed perforated core's
                                    flow resistance (0: plain; pipe.h)         */
     double catalyst;            /* 1: its end-1 restriction is a catalyst's
                                    substrate (the noise layer's pass)         */
     double wall;                /* K: its wall's temperature (0: its role's)  */
-    int    muffler;             /* rb_muffler_type (rb.h): what it muffles as,
-                                   for the noise layer's pass (a plain pipe:
-                                   RB_MUFFLER_NONE)                           */
     rb_net_end end[2];
 } rb_net_pipe;
 
@@ -192,14 +196,22 @@ typedef struct rb_net_outlet {
 
 typedef struct rb_exhaust_net {
     int    pipes, nodes, outlets;
+    int    snorkel_at;          /* where the snorkel comes in the engine's list
+                                   of pipes, after this many of these (the
+                                   legacy order; a network: all of them)      */
     rb_net_end    header_to[RB_MAX_CYLINDERS];   /* where each header's end 1 opens */
     rb_net_pipe   pipe[RB_NET_PIPES];
     rb_net_node   node[RB_NET_NODES];
     rb_net_outlet outlet[RB_NET_OUTLETS];
-    int    snorkel_at;          /* where the snorkel comes in the engine's list
-                                   of pipes, after this many of these (the
-                                   legacy order; a network: all of them)      */
 } rb_exhaust_net;
+
+_Static_assert(sizeof(rb_net_end) == 4 * sizeof(int) + 4 * sizeof(double), "rb_net_end has padding");
+_Static_assert(sizeof(rb_net_pipe) == 8 * sizeof(int) + 5 * sizeof(double) + 2 * sizeof(rb_net_end),
+               "rb_net_pipe has padding");
+_Static_assert(sizeof(rb_net_node) == sizeof(double) + 2 * sizeof(int), "rb_net_node has padding");
+_Static_assert(sizeof(rb_exhaust_net) == 4 * sizeof(int) + RB_MAX_CYLINDERS * sizeof(rb_net_end)
+               + RB_NET_PIPES * sizeof(rb_net_pipe) + RB_NET_NODES * sizeof(rb_net_node)
+               + RB_NET_OUTLETS * sizeof(rb_net_outlet), "rb_exhaust_net has padding");
 
 /* Everything that defines an engine. presets.c fills one in for each preset,
  * and the public API reads and changes it field by field (rb_engine_api.c). */

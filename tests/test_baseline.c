@@ -128,6 +128,7 @@ void test_baseline_where_the_waves_are_weak(void)
     for (int p = 0; p < rb_preset_count(); p++) {
         rb_engine_desc d;
         rb_preset_desc(p, &d);
+        if (d.net.pipes > 0) continue;   /* a network preset's plain pipes have no legacy roles (stage 141) */
         rb_engine_init(&e, &d, 1.0 / 192000.0);
         e.rpm = 3000.0;
         e.throttle_pos = 1.0;

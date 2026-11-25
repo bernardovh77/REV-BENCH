@@ -79,6 +79,7 @@ void test_net_as_description_builds_the_same_engine(void)
     for (int p = 0; p < rb_preset_count(); p++) {
         rb_engine_desc d, n;
         rb_preset_desc(p, &d);
+        if (d.net.pipes > 0) continue;   /* a preset with its own network (stage 141) */
         n = d;
         rb_exhaust_net_legacy(&d, &n.net);
         CHECK(run(&a, &d, 4000.0, 1.0, 19200) == 0);
